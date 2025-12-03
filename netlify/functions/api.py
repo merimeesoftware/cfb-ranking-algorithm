@@ -7,7 +7,8 @@ import sys
 import os
 
 # Add the project root to the path so we can import our modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+# In Netlify, included files might be in the same directory, so we append root as fallback
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
@@ -21,8 +22,14 @@ from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
 
 # Create Flask app with correct template and static folders
-template_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'templates')
-static_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'static')
+base_dir = os.path.dirname(__file__)
+template_dir = os.path.join(base_dir, 'templates')
+if not os.path.exists(template_dir):
+    template_dir = os.path.join(base_dir, '..', '..', 'templates')
+
+static_dir = os.path.join(base_dir, 'static')
+if not os.path.exists(static_dir):
+    static_dir = os.path.join(base_dir, '..', '..', 'static')
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
