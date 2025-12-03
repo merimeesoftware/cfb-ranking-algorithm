@@ -1,7 +1,54 @@
 # Virtual Environment
 venv/
+.venv/
+env/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 
 # Environment variables
 .env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Netlify
+.netlify/
+
+# Local output
+ranking_results/
+*.json
+!package.json
+
+# Security scan reports
+bandit-report.json
