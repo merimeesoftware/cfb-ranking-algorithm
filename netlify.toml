@@ -18,13 +18,6 @@
 [functions]
   directory = "netlify/functions"
 
-# Redirect API calls to Python function
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true
-
 # Headers for security and caching
 [[headers]]
   for = "/*"

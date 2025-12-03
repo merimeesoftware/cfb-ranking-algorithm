@@ -1,5 +1,6 @@
 # Netlify configuration for SvelteKit Frontend
 # This file is used by the SvelteKit adapter-netlify
+# Note: Redirects must go in static/_redirects file, not here
 
 [build]
   command = "npm run build"
@@ -7,10 +8,3 @@
 
 [build.environment]
   NODE_VERSION = "20"
-
-# Redirect API calls to the Python backend function
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true

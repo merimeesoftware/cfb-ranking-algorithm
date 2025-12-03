@@ -1,0 +1,2 @@
+# API redirects to Python serverless function
+/api/*  /.netlify/functions/api/:splat  200
