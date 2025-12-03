@@ -1,6 +1,5 @@
-# Netlify configuration for SvelteKit Frontend
-# This file is used by the SvelteKit adapter-netlify
-# Note: Redirects must go in static/_redirects file, not here
+# Netlify configuration for SvelteKit Static Frontend
+# Using adapter-static for simple static hosting
 
 [build]
   command = "npm run build"

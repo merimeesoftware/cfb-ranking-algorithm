@@ -1,14 +1,14 @@
 # Netlify configuration for CFB Ranking Algorithm
-# Root-level config that points to the frontend subdirectory
+# Static SvelteKit frontend with Python API function
 
 [build]
-  # Build from the frontend directory (SvelteKit app)
+  # Build from the frontend directory
   base = "frontend"
   
   # Build command
   command = "npm run build"
   
-  # SvelteKit adapter-netlify outputs here
+  # Static output directory
   publish = "build"
 
 [build.environment]
@@ -17,6 +17,18 @@
 # Python API functions - path is relative to base (frontend)
 [functions]
   directory = "../netlify/functions"
+
+# SPA fallback for client-side routing
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
 # Headers for security and caching
 [[headers]]
