@@ -8,7 +8,9 @@ import os
 
 # Add the project root to the path so we can import our modules
 # In Netlify, included files might be in the same directory, so we append root as fallback
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+current_dir = os.path.dirname(__file__)
+sys.path.append(os.path.join(current_dir, '..'))
+sys.path.append(current_dir)
 
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
