@@ -5,7 +5,7 @@
   # Build from the frontend directory (SvelteKit app)
   base = "frontend"
   
-  # Build command is defined in frontend/netlify.toml
+  # Build command
   command = "npm run build"
   
   # SvelteKit adapter-netlify outputs here
@@ -14,9 +14,9 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Python API functions at root level
+# Python API functions - path is relative to base (frontend)
 [functions]
-  directory = "netlify/functions"
+  directory = "../netlify/functions"
 
 # Headers for security and caching
 [[headers]]
