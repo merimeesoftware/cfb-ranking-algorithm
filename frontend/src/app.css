@@ -62,6 +62,14 @@
 		@apply inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm;
 	}
 
+	.rank-cfp {
+		@apply bg-yellow-400 text-yellow-900 ring-2 ring-yellow-500;
+	}
+
+	.rank-bubble {
+		@apply bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200;
+	}
+
 	.rank-top5 {
 		@apply bg-yellow-400 text-yellow-900;
 	}

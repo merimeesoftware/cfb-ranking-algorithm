@@ -4,6 +4,7 @@
 
 	export let team: Team;
 	export let rank: number;
+	export let cfpClass: string = '';
 
 	const dispatch = createEventDispatcher();
 
@@ -12,9 +13,8 @@
 	}
 
 	function getRankClass(r: number): string {
-		if (r <= 4) return 'rank-top5';
-		if (r <= 10) return 'rank-top10';
-		if (r <= 25) return 'rank-top25';
+		if (r <= 12) return 'rank-cfp';
+		if (r <= 25) return 'rank-bubble';
 		return 'rank-other';
 	}
 
@@ -23,11 +23,21 @@
 		if (type === 'Group of 5') return 'badge-g5';
 		return 'badge-ind';
 	}
+	
+	function getRowBgClass(): string {
+		if (cfpClass === 'cfp-in') {
+			return 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30';
+		}
+		if (cfpClass === 'cfp-bubble') {
+			return 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50';
+		}
+		return 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
+	}
 </script>
 
 <tr
 	on:click={handleClick}
-	class="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+	class="{getRowBgClass()} cursor-pointer transition-colors"
 >
 	<td class="px-4 py-3">
 		<span class="rank-badge {getRankClass(rank)}">

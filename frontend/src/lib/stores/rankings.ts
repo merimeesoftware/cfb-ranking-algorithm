@@ -101,15 +101,33 @@ export const filteredTeams = derived(
 // API base URL - uses relative path for same-origin requests
 const API_BASE = '/api';
 
+// Custom weights interface
+interface AlgorithmWeights {
+	teamQuality: number;
+	recordScore: number;
+	conferenceQuality: number;
+	priorStrength: number;
+}
+
 /**
  * Fetch rankings from the API
  */
-export async function fetchRankings(year: number, week: number): Promise<void> {
+export async function fetchRankings(year: number, week: number, weights?: AlgorithmWeights): Promise<void> {
 	loading.set(true);
 	error.set(null);
 
 	try {
-		const response = await fetch(`${API_BASE}/rankings?year=${year}&week=${week}`);
+		let url = `${API_BASE}/rankings?year=${year}&week=${week}`;
+		
+		// Add weights if provided
+		if (weights) {
+			url += `&team_quality_weight=${weights.teamQuality}`;
+			url += `&record_score_weight=${weights.recordScore}`;
+			url += `&conference_quality_weight=${weights.conferenceQuality}`;
+			url += `&prior_strength=${weights.priorStrength}`;
+		}
+		
+		const response = await fetch(url);
 		
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));

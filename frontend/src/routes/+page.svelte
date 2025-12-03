@@ -32,6 +32,22 @@
 		setWeek(event.detail);
 		fetchRankings($filterState.year, event.detail);
 	}
+
+	function handleUpdateRankings(event: CustomEvent<{
+		year: number;
+		week: number;
+		weights: {
+			teamQuality: number;
+			recordScore: number;
+			conferenceQuality: number;
+			priorStrength: number;
+		}
+	}>) {
+		const { year, week, weights } = event.detail;
+		setYear(year);
+		setWeek(week);
+		fetchRankings(year, week, weights);
+	}
 </script>
 
 <svelte:head>
@@ -57,6 +73,7 @@
 		maxWeek={$maxWeek}
 		on:yearChange={handleYearChange}
 		on:weekChange={handleWeekChange}
+		on:updateRankings={handleUpdateRankings}
 	/>
 
 	<!-- Tab Navigation - Mobile Friendly -->
