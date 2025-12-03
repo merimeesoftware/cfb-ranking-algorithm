@@ -159,9 +159,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: |
-            frontend/build/
-            frontend/.netlify/
+          path: frontend/build/
           retention-days: 7
 
   # Job 5: Deploy to Netlify (Production)
