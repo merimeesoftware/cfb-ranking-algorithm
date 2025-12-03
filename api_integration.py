@@ -28,7 +28,7 @@ class CFBDApiClient:
         url = f"{self.BASE_URL}{endpoint}"
         # print(f"DEBUG: Requesting {url} with params {params}")
         try:
-            response = requests.get(url, headers=self.headers, params=params)
+            response = requests.get(url, headers=self.headers, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             # print(f"DEBUG: Response type: {type(data)}, Length: {len(data) if isinstance(data, list) else 'N/A'}")

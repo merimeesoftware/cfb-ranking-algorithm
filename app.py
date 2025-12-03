@@ -372,5 +372,6 @@ def get_team_breakdown(team_name):
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001)) 
-    app.run(debug=True, port=port)
+    port = int(os.environ.get('PORT', 5001))
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(debug=debug_mode, port=port)
