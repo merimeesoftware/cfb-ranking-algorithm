@@ -12,11 +12,12 @@ on:
 
 env:
   PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
 
 jobs:
-  # Job 1: Code Quality & Security Scanning
-  scan:
-    name: Code Scanning
+  # Job 1: Python Code Quality & Security Scanning
+  scan-python:
+    name: Python Code Scanning
     runs-on: ubuntu-latest
     
     steps:
@@ -38,14 +39,14 @@ jobs:
       - name: Lint with flake8
         run: |
           # Stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=frontend,node_modules,venv,.venv
           # Exit-zero treats all errors as warnings
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=frontend,node_modules,venv,.venv
 
       - name: Security scan with Bandit
         run: |
-          bandit -r . -x ./tests,./venv,./.venv,./node_modules --severity-level medium -f json -o bandit-report.json || true
-          bandit -r . -x ./tests,./venv,./.venv,./node_modules --severity-level medium
+          bandit -r . -x ./tests,./venv,./.venv,./node_modules,./frontend --severity-level medium -f json -o bandit-report.json || true
+          bandit -r . -x ./tests,./venv,./.venv,./node_modules,./frontend --severity-level medium
 
       - name: Check dependencies for vulnerabilities
         run: |
@@ -61,11 +62,40 @@ jobs:
             bandit-report.json
           retention-days: 30
 
-  # Job 2: Run Tests
-  test:
-    name: Run Tests
+  # Job 2: Frontend Linting & Type Checking
+  scan-frontend:
+    name: Frontend Code Scanning
     runs-on: ubuntu-latest
-    needs: scan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: frontend
+        run: npm run check
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint || true
+        continue-on-error: true
+
+  # Job 3: Run Python Tests
+  test-python:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    needs: scan-python
     
     steps:
       - name: Checkout code
@@ -85,7 +115,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=. --cov-report=xml --cov-report=html -v || echo "No tests found or tests failed"
+          pytest --cov=. --cov-report=xml --cov-report=html -v --ignore=frontend || echo "No tests found or tests failed"
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
         continue-on-error: true
@@ -100,65 +130,41 @@ jobs:
             htmlcov/
           retention-days: 30
 
-  # Job 3: Build
+  # Job 4: Build Frontend
   build:
-    name: Build Application
+    name: Build Frontend
     runs-on: ubuntu-latest
-    needs: [scan, test]
+    needs: [scan-python, scan-frontend]
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        working-directory: frontend
+        run: npm ci
 
-      - name: Verify application structure
-        run: |
-          echo "Checking required files..."
-          test -f app.py && echo "✓ app.py exists"
-          test -f requirements.txt && echo "✓ requirements.txt exists"
-          test -f netlify.toml && echo "✓ netlify.toml exists"
-          test -d templates && echo "✓ templates/ exists"
-          test -d static && echo "✓ static/ exists"
-          test -d netlify/functions && echo "✓ netlify/functions/ exists"
-
-      - name: Validate Python syntax
-        run: |
-          python -m py_compile app.py
-          python -m py_compile main.py
-          python -m py_compile data_processor.py
-          python -m py_compile ranking_algorithm.py
-          python -m py_compile netlify/functions/api.py
-          echo "✓ All Python files have valid syntax"
-
-      - name: Create build artifact
-        run: |
-          mkdir -p dist
-          cp -r templates dist/
-          cp -r static dist/
-          cp -r netlify dist/
-          cp *.py dist/
-          cp requirements.txt dist/
-          cp netlify.toml dist/
-          echo "✓ Build artifact created"
+      - name: Build SvelteKit app
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
-          path: dist/
+          path: frontend/build/
           retention-days: 7
 
-  # Job 4: Deploy to Netlify
+  # Job 5: Deploy to Netlify
   deploy:
     name: Deploy to Netlify
     runs-on: ubuntu-latest
@@ -174,18 +180,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          path: dist/
+          path: frontend/build/
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy to Netlify
-        run: netlify deploy --prod --dir=.
+        working-directory: frontend
+        run: netlify deploy --prod --dir=build
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
-  # Job 5: Deploy Preview (for PRs)
+  # Job 6: Deploy Preview (for PRs)
   deploy-preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
@@ -200,15 +207,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          path: dist/
+          path: frontend/build/
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy Preview to Netlify
         id: netlify-preview
+        working-directory: frontend
         run: |
-          OUTPUT=$(netlify deploy --dir=. --json)
+          OUTPUT=$(netlify deploy --dir=build --json)
           echo "deploy_url=$(echo $OUTPUT | jq -r '.deploy_url')" >> $GITHUB_OUTPUT
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

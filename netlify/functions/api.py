@@ -146,9 +146,8 @@ def calculate_rankings_logic(year, week, request_args):
 
 @app.route('/')
 def index():
-    """Renders the main dashboard."""
-    default_year, default_week = get_current_season_week()
-    return render_template('dashboard.html', default_year=default_year, default_week=default_week)
+    """Root endpoint."""
+    return jsonify({"message": "CFB Ranking API is running", "endpoints": ["/rankings", "/rankings/team/<team_name>"]})
 
 
 @app.route('/rankings', methods=['GET'])
@@ -170,9 +169,9 @@ def get_rankings():
         return jsonify({"error": f"An internal error occurred: {e}"}), 500
 
 
-@app.route('/rankings/full', methods=['GET'])
-def full_rankings():
-    """Renders the full rankings page."""
+@app.route('/rankings/team/<team_name>', methods=['GET'])
+def get_team_breakdown(team_name):
+    """API endpoint for team ranking breakdown with comparison to nearby teams."""
     try:
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
@@ -180,17 +179,166 @@ def full_rankings():
         data = calculate_rankings_logic(year, week, request.args)
         
         if not data:
-            return render_template('error.html', message="No data found"), 404
+            return jsonify({"error": f"No game data found for {year}."}), 404
+        
+        # Find the requested team
+        team_rankings = data.get('team_rankings', [])
+        team_index = None
+        team_data = None
+        
+        for i, team in enumerate(team_rankings):
+            if team['team_name'].lower() == team_name.lower():
+                team_index = i
+                team_data = team
+                break
+        
+        if team_data is None:
+            return jsonify({"error": f"Team '{team_name}' not found in rankings."}), 404
+        
+        # Get teams ahead (up to 3)
+        teams_ahead = []
+        for i in range(max(0, team_index - 3), team_index):
+            teams_ahead.append({
+                'rank': i + 1,
+                **team_rankings[i]
+            })
+        
+        # Get teams behind (up to 3)
+        teams_behind = []
+        for i in range(team_index + 1, min(len(team_rankings), team_index + 4)):
+            teams_behind.append({
+                'rank': i + 1,
+                **team_rankings[i]
+            })
+        
+        # Build comparison breakdown
+        def build_comparison(target, other, target_rank, other_rank):
+            """Build a detailed comparison between two teams."""
+            diff_final = target['final_ranking_score'] - other['final_ranking_score']
+            diff_tq = target['team_quality_score'] - other['team_quality_score']
+            diff_rec = target['record_score'] - other['record_score']
+            diff_cq = target['conference_quality_score'] - other['conference_quality_score']
+            diff_sos = target['sos'] - other['sos']
+            diff_sov = target['sov'] - other['sov']
             
-        return render_template('full_view.html', 
-                               year=year, 
-                               week=week if week else 'All', 
-                               team_rankings=data.get('team_rankings', []),
-                               conference_rankings=data.get('conference_rankings', []))
+            # Determine key factors
+            factors = []
+            
+            # Team Quality contribution (55%)
+            tq_contrib = diff_tq * 0.55
+            if abs(tq_contrib) > 5:
+                factors.append({
+                    'factor': 'Team Quality (Elo)',
+                    'advantage': 'target' if tq_contrib > 0 else 'other',
+                    'diff': abs(diff_tq),
+                    'contribution': abs(tq_contrib),
+                    'explanation': f"{'Higher' if diff_tq > 0 else 'Lower'} Elo rating ({target['team_quality_score']:.0f} vs {other['team_quality_score']:.0f})"
+                })
+            
+            # Record Score contribution (35%)
+            rec_contrib = diff_rec * 0.35
+            if abs(rec_contrib) > 5:
+                factors.append({
+                    'factor': 'Record Score (Resume)',
+                    'advantage': 'target' if rec_contrib > 0 else 'other',
+                    'diff': abs(diff_rec),
+                    'contribution': abs(rec_contrib),
+                    'explanation': f"{'Stronger' if diff_rec > 0 else 'Weaker'} resume ({target['record_score']:.0f} vs {other['record_score']:.0f})"
+                })
+            
+            # Conference Quality contribution (10%)
+            cq_contrib = diff_cq * 0.10
+            if abs(cq_contrib) > 2:
+                factors.append({
+                    'factor': 'Conference Quality',
+                    'advantage': 'target' if cq_contrib > 0 else 'other',
+                    'diff': abs(diff_cq),
+                    'contribution': abs(cq_contrib),
+                    'explanation': f"{'Stronger' if diff_cq > 0 else 'Weaker'} conference ({target['conference']} vs {other['conference']})"
+                })
+            
+            # SoS breakdown
+            if abs(diff_sos) > 20:
+                factors.append({
+                    'factor': 'Strength of Schedule',
+                    'advantage': 'target' if diff_sos > 0 else 'other',
+                    'diff': abs(diff_sos),
+                    'contribution': 0,  # Already included in record score
+                    'explanation': f"{'Tougher' if diff_sos > 0 else 'Easier'} schedule (avg opp: {target['sos']:.0f} vs {other['sos']:.0f})"
+                })
+            
+            # SoV breakdown
+            if abs(diff_sov) > 20:
+                factors.append({
+                    'factor': 'Strength of Victory',
+                    'advantage': 'target' if diff_sov > 0 else 'other',
+                    'diff': abs(diff_sov),
+                    'contribution': 0,  # Already included in record score
+                    'explanation': f"{'Better' if diff_sov > 0 else 'Weaker'} quality wins (avg win opp: {target['sov']:.0f} vs {other['sov']:.0f})"
+                })
+            
+            # Sort factors by contribution magnitude
+            factors.sort(key=lambda x: x['contribution'], reverse=True)
+            
+            return {
+                'other_team': other['team_name'],
+                'other_rank': other_rank,
+                'other_conference': other['conference'],
+                'other_record': f"{other['records']['total_wins']}-{other['records']['total_losses']}",
+                'score_diff': diff_final,
+                'factors': factors
+            }
+        
+        # Build comparisons
+        comparisons_ahead = []
+        for t in teams_ahead:
+            comp = build_comparison(team_data, t, team_index + 1, t['rank'])
+            comp['direction'] = 'ahead'
+            comparisons_ahead.append(comp)
+        
+        comparisons_behind = []
+        for t in teams_behind:
+            comp = build_comparison(team_data, t, team_index + 1, t['rank'])
+            comp['direction'] = 'behind'
+            comparisons_behind.append(comp)
+        
+        # Build response
+        response = {
+            'team': {
+                'rank': team_index + 1,
+                'name': team_data['team_name'],
+                'conference': team_data['conference'],
+                'record': f"{team_data['records']['total_wins']}-{team_data['records']['total_losses']}",
+                'conf_record': f"{team_data['records']['conf_wins']}-{team_data['records']['conf_losses']}",
+                'final_score': team_data['final_ranking_score'],
+                'team_quality': team_data['team_quality_score'],
+                'record_score': team_data['record_score'],
+                'conference_quality': team_data['conference_quality_score'],
+                'sos': team_data['sos'],
+                'sov': team_data['sov'],
+                'power_record': f"{team_data['records']['power_wins']}-{team_data['records']['power_losses']}",
+                'g5_record': f"{team_data['records']['group_five_wins']}-{team_data['records']['group_five_losses']}",
+            },
+            'formula_breakdown': {
+                'tq_contribution': team_data['team_quality_score'] * 0.55,
+                'rec_contribution': team_data['record_score'] * 0.35,
+                'cq_contribution': team_data['conference_quality_score'] * 0.10,
+                'total': team_data['final_ranking_score']
+            },
+            'comparisons_ahead': comparisons_ahead,
+            'comparisons_behind': comparisons_behind
+        }
+        
+        return jsonify(response)
 
     except Exception as e:
-        print(f"Error: {e}")
-        return f"An error occurred: {e}", 500
+        print(f"Error during team breakdown: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"An internal error occurred: {e}"}), 500
+
+# Legacy route for backward compatibility if needed
+# @app.route('/rankings_legacy')
 
 
 # Netlify Functions handler

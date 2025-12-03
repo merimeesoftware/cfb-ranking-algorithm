@@ -155,9 +155,8 @@ def calculate_rankings_logic(year, week, request_args):
 
 @app.route('/')
 def index():
-    """Renders the main dashboard."""
-    default_year, default_week = get_current_season_week()
-    return render_template('dashboard.html', default_year=default_year, default_week=default_week)
+    """Root endpoint."""
+    return jsonify({"message": "CFB Ranking API is running", "endpoints": ["/rankings", "/rankings/team/<team_name>"]})
 
 @app.route('/rankings', methods=['GET'])
 def get_rankings():
@@ -176,28 +175,6 @@ def get_rankings():
     except Exception as e:
         print(f"Error during ranking calculation: {e}")
         return jsonify({"error": f"An internal error occurred: {e}"}), 500
-
-@app.route('/rankings/full', methods=['GET'])
-def full_rankings():
-    """Renders the full rankings page."""
-    try:
-        year = request.args.get('year', default=2023, type=int)
-        week = request.args.get('week', default=None, type=int)
-        
-        data = calculate_rankings_logic(year, week, request.args)
-        
-        if not data:
-            return render_template('error.html', message="No data found"), 404
-            
-        return render_template('full_view.html', 
-                               year=year, 
-                               week=week if week else 'All', 
-                               team_rankings=data.get('team_rankings', []),
-                               conference_rankings=data.get('conference_rankings', []))
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return f"An error occurred: {e}", 500
 
 @app.route('/rankings/team/<team_name>', methods=['GET'])
 def get_team_breakdown(team_name):

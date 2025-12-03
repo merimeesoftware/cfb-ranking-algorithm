@@ -1,31 +1,26 @@
 # Netlify configuration for CFB Ranking Algorithm
-# This configures the build process and serverless functions
+# SvelteKit frontend with Netlify adapter
 
 [build]
-  # Command to build the application
-  command = "pip install -r requirements.txt"
+  # Build from the root, but run commands in frontend
+  base = "."
   
-  # Directory containing the static files to deploy
-  publish = "static"
+  # SvelteKit build command
+  command = "cd frontend && npm install && npm run build"
   
-  # Directory containing Netlify Functions
-  functions = "netlify/functions"
+  # SvelteKit adapter-netlify outputs to this directory
+  publish = "frontend/build"
 
 [build.environment]
-  # Python version for the build
-  PYTHON_VERSION = "3.11"
+  NODE_VERSION = "20"
+  PYTHON_VERSION = "3.9"
 
-# Redirects for SPA-style routing and API proxying
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = false
+# SvelteKit handles its own routing, no redirects needed
+# The adapter-netlify handles this automatically
 
 # Headers for security and caching
 [[headers]]
@@ -37,9 +32,9 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
 
 [[headers]]
-  for = "/static/*"
+  for = "/_app/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 # Environment variables (set via Netlify UI for secrets)
-# CFBD_API_KEY should be set in the Netlify dashboard
+# VITE_API_URL - URL to the Python backend API (e.g., https://your-api.fly.io)
