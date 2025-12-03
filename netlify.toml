@@ -1,0 +1,45 @@
+# Netlify configuration for CFB Ranking Algorithm
+# This configures the build process and serverless functions
+
+[build]
+  # Command to build the application
+  command = "pip install -r requirements.txt"
+  
+  # Directory containing the static files to deploy
+  publish = "static"
+  
+  # Directory containing Netlify Functions
+  functions = "netlify/functions"
+
+[build.environment]
+  # Python version for the build
+  PYTHON_VERSION = "3.11"
+
+# Redirects for SPA-style routing and API proxying
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = false
+
+# Headers for security and caching
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Environment variables (set via Netlify UI for secrets)
+# CFBD_API_KEY should be set in the Netlify dashboard
