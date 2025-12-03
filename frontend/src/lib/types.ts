@@ -33,6 +33,8 @@ export interface Conference {
 	ranked_teams: number;
 	power_win_pct: number;
 	g5_win_pct: number;
+	fcs_wins?: number;
+	fcs_losses?: number;
 }
 
 export interface RankingsResponse {

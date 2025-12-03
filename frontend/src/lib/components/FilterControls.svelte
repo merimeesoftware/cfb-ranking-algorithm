@@ -126,10 +126,11 @@
 			<div class="grid sm:grid-cols-3 gap-6 mb-6">
 				<!-- Team Quality Weight -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="team-quality-weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Team Quality (Elo)
 					</label>
 					<input
+						id="team-quality-weight"
 						type="range"
 						min="0"
 						max="100"
@@ -143,10 +144,11 @@
 
 				<!-- Record Score Weight -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="record-score-weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Record Score (Resume)
 					</label>
 					<input
+						id="record-score-weight"
 						type="range"
 						min="0"
 						max="100"
@@ -160,10 +162,11 @@
 
 				<!-- Conference Quality Weight -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="conference-quality-weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Conference Quality
 					</label>
 					<input
+						id="conference-quality-weight"
 						type="range"
 						min="0"
 						max="100"
@@ -180,10 +183,11 @@
 			
 			<div class="grid sm:grid-cols-2 gap-6">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+					<label for="prior-strength" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Prior Strength <span class="text-gray-400 font-normal">(Historical vs Fresh Start)</span>
 					</label>
 					<input
+						id="prior-strength"
 						type="range"
 						min="0"
 						max="100"

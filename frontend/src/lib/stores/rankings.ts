@@ -167,7 +167,9 @@ export async function fetchRankings(year: number, week: number, weights?: Algori
 			team_count: c.number_of_teams || c.team_count || 0,
 			ranked_teams: c.ranked_teams ?? 0,
 			power_win_pct: parseWinPct(c.record_vs_p4 || c.power_win_pct),
-			g5_win_pct: parseWinPct(c.record_vs_g5 || c.g5_win_pct)
+			g5_win_pct: parseWinPct(c.record_vs_g5 || c.g5_win_pct),
+			fcs_wins: c.fcs_wins ?? c.record_vs_fcs?.split('-')[0] ?? undefined,
+			fcs_losses: c.fcs_losses ?? c.record_vs_fcs?.split('-')[1] ?? undefined
 		}));
 		
 		teams.set(teamData);
