@@ -1,0 +1,40 @@
+<div class="card shadow-sm bg-light border-0">
+    <div class="card-body">
+        <h4 class="card-title mb-3"><i class="fas fa-calculator me-2"></i>How the Rankings Work (V3.9)</h4>
+        <p class="card-text">This ranking system balances <strong>Predictive Power</strong> (Elo) with <strong>Deserving Resume</strong> (Record & Schedule Strength), optimized to align with CFP philosophy.</p>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h5><i class="fas fa-balance-scale me-2"></i>The Formula</h5>
+                <div class="alert alert-secondary font-monospace">
+                    FRS = (0.55 × TeamQuality) + (0.35 × RecordScore) + (0.10 × ConfQuality)
+                </div>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><strong><i class="fas fa-chart-line text-primary me-2"></i>Team Quality (55%):</strong> The Elo rating. Measures pure team strength based on who you played and margin of victory.</li>
+                    <li class="mb-2"><strong><i class="fas fa-clipboard-list text-success me-2"></i>Record Score (35%):</strong> A composite of Winning %, Strength of Schedule (SoS), and Strength of Victory (SoV).</li>
+                    <li class="mb-2"><strong><i class="fas fa-users text-info me-2"></i>Conference Quality (10%):</strong> Contextual boost for playing in stronger leagues (weighted by P4 vs P4 performance).</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5><i class="fas fa-cogs me-2"></i>Key Features</h5>
+                <ul class="list-group list-group-flush bg-transparent">
+                    <li class="list-group-item bg-transparent ps-0">
+                        <strong>Logarithmic SoS:</strong> Strength of Schedule uses logarithmic scaling for smoother differentiation between tough and elite schedules.
+                    </li>
+                    <li class="list-group-item bg-transparent ps-0">
+                        <strong>Strength of Victory (SoV):</strong> Bonus points awarded for defeating opponents with an Elo > 1200.
+                    </li>
+                    <li class="list-group-item bg-transparent ps-0">
+                        <strong>Reduced Legacy Bias:</strong> Historical priors blend 30% past performance with 70% fresh tier-based start (configurable). Drops 3-year-old data.
+                    </li>
+                    <li class="list-group-item bg-transparent ps-0">
+                        <strong>Road Warriors:</strong> Road wins are weighted 1.1x compared to home wins.
+                    </li>
+                    <li class="list-group-item bg-transparent ps-0">
+                        <strong>Iterative Solver:</strong> The season is simulated 3 times to ensure early-season games are evaluated based on end-of-season team strength.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
