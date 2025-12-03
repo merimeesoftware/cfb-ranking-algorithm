@@ -176,10 +176,11 @@ jobs:
           name: build-artifact
           path: dist/
 
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
       - name: Deploy to Netlify
-        uses: netlify/actions/cli@master
-        with:
-          args: deploy --prod --dir=. 
+        run: netlify deploy --prod --dir=.
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -201,23 +202,25 @@ jobs:
           name: build-artifact
           path: dist/
 
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
       - name: Deploy Preview to Netlify
-        uses: netlify/actions/cli@master
         id: netlify-preview
-        with:
-          args: deploy --dir=.
+        run: |
+          OUTPUT=$(netlify deploy --dir=. --json)
+          echo "deploy_url=$(echo $OUTPUT | jq -r '.deploy_url')" >> $GITHUB_OUTPUT
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
         with:
           script: |
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🚀 **Deploy Preview Ready!**\n\nPreview URL: ${{ steps.netlify-preview.outputs.NETLIFY_URL }}'
+              body: '🚀 **Deploy Preview Ready!**\n\nPreview URL: ${{ steps.netlify-preview.outputs.deploy_url }}'
             })
