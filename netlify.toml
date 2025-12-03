@@ -14,6 +14,7 @@
 [functions]
   directory = "functions"
   included_files = ["data_processor.py", "ranking_algorithm.py", "api_integration.py", "templates/**", "static/**"]
+  node_bundler = "esbuild"
 
 # SPA fallback for client-side routing
 [[redirects]]
