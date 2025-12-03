@@ -1,23 +1,19 @@
 # Netlify configuration for CFB Ranking Algorithm
-# Static SvelteKit frontend with Python API function
+# Root configuration for Monorepo-style setup
 
 [build]
-  # Build from the frontend directory
-  base = "frontend"
-  
-  # Build command
-  command = "npm run build"
-  
-  # Static output directory
-  publish = "build"
+  # We run the build from the root, but execute commands in the frontend directory
+  command = "cd frontend && npm install && npm run build"
+  publish = "frontend/build"
 
 [build.environment]
   NODE_VERSION = "20"
+  PYTHON_VERSION = "3.8"
 
-# Python API functions - path is relative to base (frontend)
+# Python API functions
 [functions]
-  directory = "../netlify/functions"
-  included_files = ["../data_processor.py", "../ranking_algorithm.py", "../api_integration.py", "../templates/**", "../static/**"]
+  directory = "netlify/functions"
+  included_files = ["data_processor.py", "ranking_algorithm.py", "api_integration.py", "templates/**", "static/**"]
 
 # SPA fallback for client-side routing
 [[redirects]]
