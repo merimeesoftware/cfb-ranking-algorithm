@@ -1,30 +1,29 @@
 # Netlify configuration for CFB Ranking Algorithm
-# SvelteKit frontend with Netlify adapter
+# Root-level config that points to the frontend subdirectory
 
 [build]
-  # Run build from frontend directory
+  # Build from the frontend directory (SvelteKit app)
   base = "frontend"
   
-  # SvelteKit build command
-  command = "npm install && npm run build"
+  # Build command is defined in frontend/netlify.toml
+  command = "npm run build"
   
-  # SvelteKit adapter-netlify outputs to this directory
+  # SvelteKit adapter-netlify outputs here
   publish = "build"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# API functions (Python backend)
+# Python API functions at root level
 [functions]
-  directory = "../netlify/functions"
-  node_bundler = "esbuild"
-  included_files = ["../*.py", "../data_processor.py", "../ranking_algorithm.py", "../api_integration.py"]
+  directory = "netlify/functions"
 
 # Redirect API calls to Python function
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
+  force = true
 
 # Headers for security and caching
 [[headers]]
