@@ -454,13 +454,9 @@ class TeamQualityRanker:
             final_cq[conf] = raw * multiplier
             
         # Handle FBS Independents
-        # Assign them the average quality of Power 4 conferences
-        p4_confs = ['SEC', 'Big Ten', 'Big 12', 'ACC']
-        p4_scores = [final_cq.get(c, 0) for c in p4_confs if c in final_cq]
-        if p4_scores:
-            final_cq['FBS Independents'] = sum(p4_scores) / len(p4_scores)
-        else:
-            final_cq['FBS Independents'] = 1500.0 # Fallback
+        # V4.0.1: Independents get ZERO conference quality bonus
+        # They have no conference, so CQ shouldn't artificially boost them
+        final_cq['FBS Independents'] = 0.0
             
         return final_cq
 
@@ -526,10 +522,9 @@ class TeamQualityRanker:
             if win_elos:
                 avg_win_elo = sum(win_elos) / len(win_elos)
                 # V4.0 Phase 2: Tier-specific SoV thresholds
-                # P4 teams: threshold 1200, multiplier 0.5
+                # P4 teams (including FBS Independents): threshold 1200, multiplier 0.5
                 # G5 teams: threshold 1050, multiplier 0.55 (credits intra-G5 quality)
-                # V4.0.1: FBS Independents use P4 thresholds (they compete at P4 level)
-                if team_conf_type == 'Power 4' or data['conference'] == 'FBS Independents':
+                if team_conf_type == 'Power 4':
                     sov_threshold = self.sov_threshold_p4
                     sov_mult = self.sov_mult_p4
                 else:  # G5 or other
@@ -556,12 +551,9 @@ class TeamQualityRanker:
                 avg_opp_elo = 1500.0 # Default average
             
             # V4.0 Phase 2: Tier-specific SoS baselines
-            # P4 baseline: 1420 (higher bar for "tough" schedule)
+            # P4 baseline (including Independents): 1420 (higher bar for "tough" schedule)
             # G5 baseline: 1300 (less penalty for typical G5 slates)
-            # V4.0.1: Indie baseline: 1350 (no conference to pad schedule, held to higher standard)
-            if data['conference'] == 'FBS Independents':
-                sos_baseline = self.sos_baseline_indie  # V4.0.1: Indies get stricter SoS eval
-            elif team_conf_type == 'Power 4':
+            if team_conf_type == 'Power 4':
                 sos_baseline = self.sos_baseline_p4
             else:  # G5 or other
                 sos_baseline = self.sos_baseline_g5

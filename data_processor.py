@@ -59,7 +59,7 @@ class CFBDataProcessor:
         elif conference_name in GROUP_OF_5_CONFERENCES:
             return "Group of 5"
         elif conference_name == "FBS Independents":
-            return "Group of 5" # Treat Independents as G5 for now, or handle separately
+            return "Power 4"  # V4.0.1: Independents compete at P4 level (ND, Army, etc.)
         else: 
             return "FCS"
 
