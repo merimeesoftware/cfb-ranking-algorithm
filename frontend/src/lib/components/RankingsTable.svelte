@@ -153,5 +153,5 @@
 
 <!-- Team Detail Modal -->
 {#if showModal && selectedTeam}
-	<TeamDetailModal team={selectedTeam} rank={teams.indexOf(selectedTeam) + 1} on:close={closeModal} />
+	<TeamDetailModal team={selectedTeam} rank={teams.indexOf(selectedTeam) + 1} allTeams={teams} on:close={closeModal} />
 {/if}
