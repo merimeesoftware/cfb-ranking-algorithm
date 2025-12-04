@@ -104,8 +104,8 @@ class TeamQualityRanker:
         self.num_iterations = self.config.get('num_iterations', 4)
         
         # V4.0: Loss penalty configuration
-        # V4.0.1: Reduced base from 180 to 120 (less harsh on multi-loss teams)
-        self.loss_penalty_base = self.config.get('loss_penalty_base', 120.0)
+        # V4.0.2: Increased base from 120 to 150 (was 180 in V4.0, 120 in V4.0.1)
+        self.loss_penalty_base = self.config.get('loss_penalty_base', 150.0)
         self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.15)
         
         # V4.0 Phase 2: Upset bonus configuration
@@ -116,8 +116,9 @@ class TeamQualityRanker:
         # V4.0 Phase 2: Tier-specific SoV thresholds
         self.sov_threshold_p4 = self.config.get('sov_threshold_p4', 1200.0)
         self.sov_threshold_g5 = self.config.get('sov_threshold_g5', 1050.0)
-        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.5)
-        self.sov_mult_g5 = self.config.get('sov_mult_g5', 0.55)
+        # V4.0.2: Reduced multipliers to dampen SoV impact
+        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.35)   # Was 0.5
+        self.sov_mult_g5 = self.config.get('sov_mult_g5', 0.45)   # Was 0.55
         
         # V4.0 Phase 2: Tier-specific SoS baselines
         self.sos_baseline_p4 = self.config.get('sos_baseline_p4', 1420.0)
@@ -131,15 +132,17 @@ class TeamQualityRanker:
         self.cq_full_avg_weight = self.config.get('cq_full_avg_weight', 0.30)
         
         # V4.0 Phase 3: H2H Bonus configuration
-        self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 120.0)  # Points per top-10 win
-        self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 60.0)   # Points per top-25 win (non-top-10)
-        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 300.0)  # V4.0.1: Cap total H2H bonus
-        self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1500.0)  # V4.0.1: Min Elo for top-25 credit
+        # V4.0.2: Reduced bonuses to prevent resume inflation
+        self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 80.0)   # Was 120
+        self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 40.0)   # Was 60
+        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 200.0)      # Was 300
+        self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1550.0)  # Was 1500, raised for tighter criteria
         
         # V4.0 Phase 3: Quality Loss Bonus configuration
-        self.ql_threshold = self.config.get('ql_threshold', 1550.0)  # Elo threshold for "quality" loss
-        self.ql_multiplier = self.config.get('ql_multiplier', 0.25)  # Points per Elo above threshold
-        self.ql_max_per_loss = self.config.get('ql_max_per_loss', 50.0)  # V4.0.1: Cap per loss
+        # V4.0.2: Reduced impact to prevent rewarding losses too much
+        self.ql_threshold = self.config.get('ql_threshold', 1600.0)   # Was 1550, raised bar
+        self.ql_multiplier = self.config.get('ql_multiplier', 0.15)   # Was 0.25
+        self.ql_max_per_loss = self.config.get('ql_max_per_loss', 30.0)  # Was 50
         
         # V4.0 Phase 3: Win Streak Bonus configuration (G5-focused)
         self.winstreak_bonus = self.config.get('winstreak_bonus', 150.0)  # Bonus for dominant G5 teams
@@ -559,12 +562,12 @@ class TeamQualityRanker:
                 sos_baseline = self.sos_baseline_g5
             
             # V4.0: Logarithmic SoS scaling for smoother differentiation
-            # Rewards tough schedules with diminishing returns to prevent runaway inflation
+            # V4.0.2: Reduced multiplier from 160 to 80 to prevent schedule from dominating
             if avg_opp_elo > sos_baseline:
-                sos_score = math.log(max(avg_opp_elo - sos_baseline, 1)) * 160  # V4.0: multiplier 160
+                sos_score = math.log(max(avg_opp_elo - sos_baseline, 1)) * 80
             else:
                 # Penalty for weak schedules (below baseline)
-                sos_score = (avg_opp_elo - sos_baseline) * 0.8  # V4.0: steeper penalty
+                sos_score = (avg_opp_elo - sos_baseline) * 0.5  # V4.0.2: Reduced from 0.8
             
             # V4.0 Phase 3: H2H Bonus - rewards wins over top-ranked teams
             # Uses final Elo to approximate rankings (top 10 ~ Elo > 1650, top 25 ~ Elo > 1550)
