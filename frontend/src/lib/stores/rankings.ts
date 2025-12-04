@@ -98,8 +98,10 @@ export const filteredTeams = derived(
 	}
 );
 
-// API base URL - uses relative path for same-origin requests
-const API_BASE = '/api';
+// API base URL - in production, use the Render backend URL
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+	? 'http://localhost:5001'
+	: 'https://cfb-rankings-api.onrender.com';
 
 // Custom weights interface
 interface AlgorithmWeights {
