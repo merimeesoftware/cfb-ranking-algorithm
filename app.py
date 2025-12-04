@@ -23,8 +23,8 @@ DEFAULT_CONFIG = {
     'fcs_initial': 900.0,
     'base_factor': 40.0,
     'conference_weight': 0.10,
-    'record_weight': 0.50,
-    'prior_strength': 0.30,  # V3.9: 30% historical, 70% fresh
+    'record_weight': 0.38,  # V4.0: 38% resume weight
+    'prior_strength': 0.15,  # V4.0: 15% historical, 85% fresh
     'use_ats': False,
     'ats_bonus': 10.0
 }

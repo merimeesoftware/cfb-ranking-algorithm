@@ -494,7 +494,8 @@ Multiple mechanisms boost quality G5 teams:
 
 ## Version History
 
-- **V4.0 Phase 3 (Current):** Head-to-head bonus (+120 per Top 10 win, +60 per Top 25 win), quality loss bonus (scaled by opponent Elo above 1550), G5 win streak bonus (+150 for ≤1 loss and ≥7 conf wins).
+- **V4.0.1 (Current):** Hotfix for ND resume anomaly. Capped H2H bonus at 300 max, capped QL bonus at 50 per loss, added Elo floor (1500) for Top-25 H2H credit, added Indie SoS baseline (1350) to penalize soft independent schedules. Synced app.py defaults with V4.0.
+- **V4.0 Phase 3:** Head-to-head bonus (+120 per Top 10 win, +60 per Top 25 win), quality loss bonus (scaled by opponent Elo above 1550), G5 win streak bonus (+150 for ≤1 loss and ≥7 conf wins).
 - **V4.0 Phase 2:** Upset bonuses (×1.25 for 150+ Elo gap, ×1.20 for G5>P4), tier-specific SoV (P4: 1200/0.5, G5: 1050/0.55), tier-specific SoS baselines (P4: 1420, G5: 1300), hybrid CQ (70% top half + 30% full), cross-tier win bonus (+80 per G5>P4 win).
 - **V4.0 Phase 1:** 85% fresh priors (prior_strength=0.15), G5 matchup weight 0.65, 4 Elo iterations, explicit loss penalty (-180 × losses^1.15), reweighted FRS to 0.52/0.38/0.10.
 - **V3.9:** Reduced legacy bias (30% prior vs 70% fresh), dropped Y-3 from priors, logarithmic SoS scaling, reweighted FRS to 0.55/0.35/0.10.

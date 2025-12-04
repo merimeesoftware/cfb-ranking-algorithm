@@ -132,15 +132,21 @@ class TeamQualityRanker:
         # V4.0 Phase 3: H2H Bonus configuration
         self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 120.0)  # Points per top-10 win
         self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 60.0)   # Points per top-25 win (non-top-10)
+        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 300.0)  # V4.0.1: Cap total H2H bonus
+        self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1500.0)  # V4.0.1: Min Elo for top-25 credit
         
         # V4.0 Phase 3: Quality Loss Bonus configuration
         self.ql_threshold = self.config.get('ql_threshold', 1550.0)  # Elo threshold for "quality" loss
         self.ql_multiplier = self.config.get('ql_multiplier', 0.25)  # Points per Elo above threshold
+        self.ql_max_per_loss = self.config.get('ql_max_per_loss', 50.0)  # V4.0.1: Cap per loss
         
         # V4.0 Phase 3: Win Streak Bonus configuration (G5-focused)
         self.winstreak_bonus = self.config.get('winstreak_bonus', 150.0)  # Bonus for dominant G5 teams
         self.winstreak_max_losses = self.config.get('winstreak_max_losses', 1)  # Max losses to qualify
         self.winstreak_min_conf_wins = self.config.get('winstreak_min_conf_wins', 7)  # Min conf wins to qualify
+        
+        # V4.0.1: Indie SoS penalty amplifier (FBS Independents use lower baseline)
+        self.sos_baseline_indie = self.config.get('sos_baseline_indie', 1350.0)  # Indies held to higher standard
         
         # State
         self.team_stats: Dict[str, TeamStat] = defaultdict(self._create_default_team_stat)
@@ -550,7 +556,10 @@ class TeamQualityRanker:
             # V4.0 Phase 2: Tier-specific SoS baselines
             # P4 baseline: 1420 (higher bar for "tough" schedule)
             # G5 baseline: 1300 (less penalty for typical G5 slates)
-            if team_conf_type == 'Power 4':
+            # V4.0.1: Indie baseline: 1350 (no conference to pad schedule, held to higher standard)
+            if data['conference'] == 'FBS Independents':
+                sos_baseline = self.sos_baseline_indie  # V4.0.1: Indies get stricter SoS eval
+            elif team_conf_type == 'Power 4':
                 sos_baseline = self.sos_baseline_p4
             else:  # G5 or other
                 sos_baseline = self.sos_baseline_g5
@@ -565,23 +574,27 @@ class TeamQualityRanker:
             
             # V4.0 Phase 3: H2H Bonus - rewards wins over top-ranked teams
             # Uses final Elo to approximate rankings (top 10 ~ Elo > 1650, top 25 ~ Elo > 1550)
-            # This is calculated after all games, so reflects end-of-season opponent strength
+            # V4.0.1: Added h2h_top25_elo_floor (1500) to prevent mid-tier ranked wins from stacking
+            # V4.0.1: Added h2h_max_bonus cap (300) to prevent runaway inflation
             h2h_bonus = 0.0
             top10_wins = 0
             top25_wins = 0
             for win_info in data['wins_details']:
                 opp = win_info['opponent']
                 opp_elo = self.team_stats[opp]['quality_score']
-                # Approximate top-10 as Elo > 1650, top-25 as Elo > 1550
+                # Approximate top-10 as Elo > 1650
                 if opp_elo > 1650:
                     top10_wins += 1
-                elif opp_elo > 1550:
+                # V4.0.1: Top-25 only if Elo > floor (1500) to exclude soft ranked wins
+                elif opp_elo > self.h2h_top25_elo_floor:
                     top25_wins += 1
             h2h_bonus = (top10_wins * self.h2h_top10_bonus) + (top25_wins * self.h2h_top25_bonus)
+            # V4.0.1: Cap total H2H bonus to prevent runaway stacking
+            h2h_bonus = min(h2h_bonus, self.h2h_max_bonus)
             
             # V4.0 Phase 3: Quality Loss Bonus - rewards losses to elite teams
-            # Formula: sum(max(0, opp_Elo - 1550) * 0.25) / max(1, num_losses)
-            # Only counts losses to teams with Elo > 1550 (roughly top 15)
+            # Formula: sum(min(cap, (opp_Elo - threshold) * mult)) / num_losses
+            # V4.0.1: Added ql_max_per_loss cap (50) to prevent over-rewarding elite losses
             ql_bonus = 0.0
             num_losses = data['losses']
             if num_losses > 0 and data['losses_details']:
@@ -590,7 +603,10 @@ class TeamQualityRanker:
                     opp = loss_info['opponent']
                     opp_elo = self.team_stats[opp]['quality_score']
                     if opp_elo > self.ql_threshold:
-                        quality_loss_points += (opp_elo - self.ql_threshold) * self.ql_multiplier
+                        loss_credit = (opp_elo - self.ql_threshold) * self.ql_multiplier
+                        # V4.0.1: Cap per-loss credit
+                        loss_credit = min(loss_credit, self.ql_max_per_loss)
+                        quality_loss_points += loss_credit
                 # Average across all losses to prevent accumulating quality losses
                 ql_bonus = quality_loss_points / num_losses
             
