@@ -148,8 +148,8 @@ def calculate_rankings_logic(year, week, request_args):
     for team in rankings_data['team_rankings']:
         team_name = team['team_name']
         team_info = data_processor.team_info_map.get(team_name, {})
-        logos = team_info.get('logos', [])
-        team['logo'] = logos[0] if logos else None
+        logos = team_info.get('logos') or []  # Handle None case
+        team['logo'] = logos[0] if len(logos) > 0 else None
         team['logo_dark'] = logos[1] if len(logos) > 1 else team['logo']
         team['color'] = team_info.get('color')
         team['alt_color'] = team_info.get('alt_color')
