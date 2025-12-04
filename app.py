@@ -1,7 +1,8 @@
 # filepath: c:\Users\micha\DevProjects\CFB-Ranking-System\app.py
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from dotenv import load_dotenv
 from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
@@ -10,6 +11,9 @@ from ranking_algorithm import TeamQualityRanker
 load_dotenv()
 
 app = Flask(__name__)
+
+# Enable CORS for all routes - allows frontend to call API from different domain
+CORS(app, origins=["*"], supports_credentials=True)
 
 # --- Configuration ---
 # Default parameters

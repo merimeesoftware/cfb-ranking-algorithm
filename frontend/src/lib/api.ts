@@ -1,17 +1,20 @@
 import type { RankingsResponse, Team, Conference } from '$lib/types';
 
 // API configuration
-// In production, this would point to your Python backend hosted on Render, Fly.io, etc.
-// For development, proxy to local Flask app
+// VITE_API_URL should be set to your Render backend URL in production
+// e.g., https://cfb-rankings-api.onrender.com
 const API_BASE = import.meta.env.DEV 
-	? 'http://localhost:5000' 
+	? 'http://localhost:5001' 
 	: (import.meta.env.VITE_API_URL || '');
 
 /**
  * Fetch rankings from the backend API
  */
 export async function fetchRankings(year: number, week: number): Promise<RankingsResponse> {
-	const response = await fetch(`${API_BASE}/api/rankings?year=${year}&week=${week}`);
+	const url = `${API_BASE}/rankings?year=${year}&week=${week}`;
+	console.log('Fetching rankings from:', url);
+	
+	const response = await fetch(url);
 	
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -29,7 +32,7 @@ export async function fetchRankings(year: number, week: number): Promise<Ranking
  */
 export async function fetchAvailableWeeks(year: number): Promise<number[]> {
 	try {
-		const response = await fetch(`${API_BASE}/api/weeks?year=${year}`);
+		const response = await fetch(`${API_BASE}/weeks?year=${year}`);
 		if (!response.ok) {
 			return Array.from({ length: 15 }, (_, i) => i + 1);
 		}
@@ -101,7 +104,7 @@ function parseWinPct(value: any): number {
  */
 export async function checkApiHealth(): Promise<boolean> {
 	try {
-		const response = await fetch(`${API_BASE}/api/health`, { 
+		const response = await fetch(`${API_BASE}/`, { 
 			method: 'GET',
 			signal: AbortSignal.timeout(5000)
 		});

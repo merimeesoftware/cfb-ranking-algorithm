@@ -13,7 +13,7 @@
 # Python API functions
 [functions]
   directory = "netlify/functions"
-  included_files = ["data_processor.py", "ranking_algorithm.py", "api_integration.py", "templates/**", "static/**"]
+  included_files = ["data_processor.py", "ranking_algorithm.py", "api_integration.py"]
 
 # SPA fallback for client-side routing
 [[redirects]]
