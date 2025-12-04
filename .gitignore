@@ -48,6 +48,7 @@ Thumbs.db
 ranking_results/
 *.json
 !package.json
+!package-lock.json
 
 # Security scan reports
 bandit-report.json
