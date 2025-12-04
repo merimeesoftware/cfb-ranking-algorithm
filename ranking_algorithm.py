@@ -20,6 +20,10 @@ class WinDetail(TypedDict):
     opponent: str
     is_road: bool
 
+class LossDetail(TypedDict):
+    opponent: str
+    is_home: bool
+
 class TeamStat(TypedDict):
     quality_score: float
     conference: Optional[str]
@@ -36,19 +40,26 @@ class TeamStat(TypedDict):
     ats_record: Record
     inter_conf_records: InterConfRecords
     wins_details: List[WinDetail]
+    losses_details: List[LossDetail]
     schedule: List[str]
 
 class TeamQualityRanker:
     """
-    Implements the team quality ranking algorithm (Version 3.9).
+    Implements the team quality ranking algorithm (Version 4.0).
     Features:
-    - Iterative solver for convergence
-    - Asymmetric Elo-like updates
+    - Iterative solver (4 passes) for convergence
+    - Asymmetric Elo-like updates with upset bonuses
     - Margin of Victory scaling
-    - Configurable historical priors (reduced legacy bias)
-    - OOC-adjusted conference quality
-    - Logarithmic SoS scaling
-    - Resume-weighted FRS formula (0.55/0.35/0.10)
+    - Configurable historical priors (85% fresh, 15% prior)
+    - Hybrid depth-aware conference quality (70% top half + 30% full)
+    - Tier-specific SoS/SoV thresholds (P4 vs G5)
+    - Cross-tier win bonuses for G5 beating P4
+    - Explicit loss penalty for multi-loss teams
+    - H2H bonus for top-10/top-25 wins
+    - Quality loss bonus for losses to elite teams
+    - Win streak bonus for dominant G5 teams
+    - Resume-weighted FRS formula (0.52/0.38/0.10)
+    - Reduced G5 damping (0.65 weight)
     """
     
     def _create_default_team_stat(self) -> TeamStat:
@@ -68,6 +79,7 @@ class TeamQualityRanker:
             'ats_record': {'wins': 0, 'losses': 0},
             'inter_conf_records': {'p4': {'w': 0, 'l': 0}, 'g5': {'w': 0, 'l': 0}, 'fcs': {'w': 0, 'l': 0}},
             'wins_details': [],
+            'losses_details': [],
             'schedule': []
         }
 
@@ -84,9 +96,51 @@ class TeamQualityRanker:
         self.conference_weight = self.config.get('conference_weight', 0.1)
         self.record_weight = self.config.get('record_weight', 0.5)
         
-        # V3.9: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
-        # Default 0.3 means 70% tier initial + 30% historical prior
-        self.prior_strength = self.config.get('prior_strength', 0.3)
+        # V4.0: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
+        # Default 0.15 means 85% tier initial + 15% historical prior (reduced legacy bias)
+        self.prior_strength = self.config.get('prior_strength', 0.15)
+        
+        # V4.0: Number of iterative solver passes (increased from 3 to 4)
+        self.num_iterations = self.config.get('num_iterations', 4)
+        
+        # V4.0: Loss penalty configuration
+        self.loss_penalty_base = self.config.get('loss_penalty_base', 180.0)
+        self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.15)
+        
+        # V4.0 Phase 2: Upset bonus configuration
+        self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)  # Elo gap for upset bonus
+        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.25)  # Multiplier for major upsets
+        self.g5_beats_p4_mult = self.config.get('g5_beats_p4_mult', 1.20)  # G5 > P4 bonus (stacks)
+        
+        # V4.0 Phase 2: Tier-specific SoV thresholds
+        self.sov_threshold_p4 = self.config.get('sov_threshold_p4', 1200.0)
+        self.sov_threshold_g5 = self.config.get('sov_threshold_g5', 1050.0)
+        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.5)
+        self.sov_mult_g5 = self.config.get('sov_mult_g5', 0.55)
+        
+        # V4.0 Phase 2: Tier-specific SoS baselines
+        self.sos_baseline_p4 = self.config.get('sos_baseline_p4', 1420.0)
+        self.sos_baseline_g5 = self.config.get('sos_baseline_g5', 1300.0)
+        
+        # V4.0 Phase 2: Cross-tier win bonus
+        self.cross_tier_bonus = self.config.get('cross_tier_bonus', 80.0)  # G5 beating P4
+        
+        # V4.0 Phase 2: Hybrid CQ weights
+        self.cq_top_half_weight = self.config.get('cq_top_half_weight', 0.70)
+        self.cq_full_avg_weight = self.config.get('cq_full_avg_weight', 0.30)
+        
+        # V4.0 Phase 3: H2H Bonus configuration
+        self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 120.0)  # Points per top-10 win
+        self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 60.0)   # Points per top-25 win (non-top-10)
+        
+        # V4.0 Phase 3: Quality Loss Bonus configuration
+        self.ql_threshold = self.config.get('ql_threshold', 1550.0)  # Elo threshold for "quality" loss
+        self.ql_multiplier = self.config.get('ql_multiplier', 0.25)  # Points per Elo above threshold
+        
+        # V4.0 Phase 3: Win Streak Bonus configuration (G5-focused)
+        self.winstreak_bonus = self.config.get('winstreak_bonus', 150.0)  # Bonus for dominant G5 teams
+        self.winstreak_max_losses = self.config.get('winstreak_max_losses', 1)  # Max losses to qualify
+        self.winstreak_min_conf_wins = self.config.get('winstreak_min_conf_wins', 7)  # Min conf wins to qualify
         
         # State
         self.team_stats: Dict[str, TeamStat] = defaultdict(self._create_default_team_stat)
@@ -102,8 +156,9 @@ class TeamQualityRanker:
     def _initialize_team(self, team_name: str, conference: Optional[str], conference_type: str):
         """Initialize a team with base score if not already seen.
         
-        V3.9: Uses configurable prior_strength to blend tier initial with historical prior.
+        V4.0: Uses configurable prior_strength to blend tier initial with historical prior.
         Formula: initial = (1 - prior_strength) * tier_initial + prior_strength * historical_prior
+        Default prior_strength=0.15 means 85% fresh start + 15% prior (reduces legacy echo).
         """
         if team_name in self.initialized_teams:
             # Update conference info if it was missing (e.g. from FCS game)
@@ -119,8 +174,8 @@ class TeamQualityRanker:
         elif conference_type == 'Group of 5':
             tier_initial = self.group_five_initial
         
-        # V3.9: Blend tier initial with historical prior based on prior_strength
-        # prior_strength=0.3 means 70% tier + 30% prior (reduces legacy bias)
+        # V4.0: Blend tier initial with historical prior based on prior_strength
+        # prior_strength=0.15 means 85% tier + 15% prior (significantly reduces legacy bias)
         if team_name in self.priors:
             historical_prior = self.priors[team_name]
             initial_score = (1 - self.prior_strength) * tier_initial + self.prior_strength * historical_prior
@@ -196,7 +251,7 @@ class TeamQualityRanker:
              (winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4'):
             matchup_weight = 0.8
         elif winner_conf_type == 'Group of 5' and loser_conf_type == 'Group of 5':
-            matchup_weight = 0.5 # Dampen G5 movement to prevent them from catching P4 easily
+            matchup_weight = 0.65  # V4.0: Reduced damping (was 0.5) to allow quality G5 teams to build Elo
         elif (winner_conf_type in ['Power 4', 'Group of 5'] and loser_conf_type == 'FCS') or \
              (winner_conf_type == 'FCS' and loser_conf_type in ['Power 4', 'Group of 5']):
             matchup_weight = 0.2
@@ -227,6 +282,16 @@ class TeamQualityRanker:
         # Delta = K * Matchup_Weight * MoV_Multiplier * (Actual - Expected)
         
         delta = self.base_factor * matchup_weight * m_mov * (actual_score - expected_score)
+        
+        # V4.0 Phase 2: Upset Bonus Multipliers
+        # If winner Elo < loser Elo by threshold, apply upset bonus
+        elo_gap = r_loser - r_winner
+        if elo_gap > self.upset_elo_threshold:
+            delta *= self.upset_bonus_mult  # Major upset bonus (×1.25)
+        
+        # G5 beating P4 gets additional bonus (stacks with upset bonus)
+        if winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4':
+            delta *= self.g5_beats_p4_mult  # G5 > P4 bonus (×1.20)
         
         # Apply updates (Zero-Sum)
         self.team_stats[winner]['quality_score'] += delta
@@ -260,6 +325,12 @@ class TeamQualityRanker:
         self.team_stats[winner]['wins_details'].append({
             'opponent': loser,
             'is_road': not is_home_win
+        })
+        
+        # V4.0 Phase 3: Track loss details for Quality Loss Bonus
+        self.team_stats[loser]['losses_details'].append({
+            'opponent': winner,
+            'is_home': not is_home_win  # Loser was home if winner was away
         })
 
         # Update inter-conference records (for Conference Rankings)
@@ -302,11 +373,12 @@ class TeamQualityRanker:
     def calculate_conference_quality(self) -> Dict[str, float]:
         """
         Calculate Conference Quality (CQ) with OOC adjustment.
-        CQ = Raw_CQ * OOC_Multiplier
+        V4.0 Phase 2: Hybrid CQ = 0.7 * top50%_avg + 0.3 * full_avg
+        Final CQ = Raw_CQ * OOC_Multiplier
         """
         conf_scores = defaultdict(list)
         
-        # 1. Calculate Raw CQ (Avg of top 50% teams)
+        # 1. Calculate Raw CQ using Hybrid formula (rewards depth)
         for team, data in self.team_stats.items():
             if data['conference'] and data['conference'] != 'FBS Independents':
                 conf_scores[data['conference']].append(data['quality_score'])
@@ -318,10 +390,14 @@ class TeamQualityRanker:
                 continue
             # Sort descending
             scores.sort(reverse=True)
-            # Take top 50%
-            top_n = max(1, len(scores) // 2)
+            # V4.0 Phase 2: Hybrid CQ - blend top half with full average
+            # top_n rounds up: len//2 + len%2 ensures odd conferences include middle team
+            top_n = max(1, len(scores) // 2 + len(scores) % 2)
             top_scores = scores[:top_n]
-            raw_cq[conf] = sum(top_scores) / len(top_scores)
+            top_half_avg = sum(top_scores) / len(top_scores)
+            full_avg = sum(scores) / len(scores)
+            # Hybrid: 70% top half + 30% full (rewards depth, prevents bottom drag)
+            raw_cq[conf] = (self.cq_top_half_weight * top_half_avg) + (self.cq_full_avg_weight * full_avg)
             
         # 2. Calculate OOC Multiplier
         # New V3.7: Weighted Inter-Conference Performance (P4 vs P4 emphasis)
@@ -425,22 +501,38 @@ class TeamQualityRanker:
             # This rewards teams for WHO they beat, regardless of how many games they played.
             
             win_elos = []
+            cross_tier_wins = 0  # V4.0 Phase 2: Count G5 beating P4
+            team_conf_type = data['conference_type']
+            
             for win_info in data['wins_details']:
                 opp = win_info['opponent']
                 opp_elo = self.team_stats[opp]['quality_score']
+                opp_conf_type = self.team_stats[opp]['conference_type']
                 win_elos.append(opp_elo)
+                
+                # V4.0 Phase 2: Count cross-tier wins (G5 beating P4)
+                if team_conf_type == 'Group of 5' and opp_conf_type == 'Power 4':
+                    cross_tier_wins += 1
             
             sov_bonus = 0.0
             avg_win_elo = 0.0  # Initialize to avoid unbound variable
             if win_elos:
                 avg_win_elo = sum(win_elos) / len(win_elos)
-                # Bonus: If average win is against > 1200 competition (lowered threshold)
-                # Scale: (Avg - 1200) * 0.5 (Increased multiplier)
-                # e.g. Avg 1800 (Elite) -> 600 * 0.5 = 300 points.
-                # e.g. Avg 1500 (Avg) -> 300 * 0.5 = 150 points.
-                # This is a subtle tie-breaker, not a dominant factor.
-                if avg_win_elo > 1200:
-                    sov_bonus = (avg_win_elo - 1200.0) * 0.5
+                # V4.0 Phase 2: Tier-specific SoV thresholds
+                # P4 teams: threshold 1200, multiplier 0.5
+                # G5 teams: threshold 1050, multiplier 0.55 (credits intra-G5 quality)
+                if team_conf_type == 'Power 4':
+                    sov_threshold = self.sov_threshold_p4
+                    sov_mult = self.sov_mult_p4
+                else:  # G5 or other
+                    sov_threshold = self.sov_threshold_g5
+                    sov_mult = self.sov_mult_g5
+                
+                if avg_win_elo > sov_threshold:
+                    sov_bonus = (avg_win_elo - sov_threshold) * sov_mult
+            
+            # V4.0 Phase 2: Cross-tier win bonus (+80 per G5 > P4 win)
+            cross_tier_bonus = cross_tier_wins * self.cross_tier_bonus
             
             # Combine into Record Score
             # Base: 1000 + (WeightedWinPct * 1000)
@@ -455,23 +547,75 @@ class TeamQualityRanker:
             else:
                 avg_opp_elo = 1500.0 # Default average
             
-            # V3.9: Logarithmic SoS scaling for smoother differentiation
-            # Rewards tough schedules with diminishing returns to prevent runaway inflation
-            # log(max(avg - 1400, 1)) * 150 gives ~0 at 1400, ~150 at 1500, ~270 at 1700, ~330 at 2000
-            # This differentiates "tough" from "brutal" schedules without flattening at a cap
-            if avg_opp_elo > 1400:
-                sos_score = math.log(avg_opp_elo - 1400) * 150
-            else:
-                # Penalty for very weak schedules (below 1400 avg)
-                sos_score = (avg_opp_elo - 1400) * 0.5  # Linear penalty
+            # V4.0 Phase 2: Tier-specific SoS baselines
+            # P4 baseline: 1420 (higher bar for "tough" schedule)
+            # G5 baseline: 1300 (less penalty for typical G5 slates)
+            if team_conf_type == 'Power 4':
+                sos_baseline = self.sos_baseline_p4
+            else:  # G5 or other
+                sos_baseline = self.sos_baseline_g5
             
-            record_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score
+            # V4.0: Logarithmic SoS scaling for smoother differentiation
+            # Rewards tough schedules with diminishing returns to prevent runaway inflation
+            if avg_opp_elo > sos_baseline:
+                sos_score = math.log(max(avg_opp_elo - sos_baseline, 1)) * 160  # V4.0: multiplier 160
+            else:
+                # Penalty for weak schedules (below baseline)
+                sos_score = (avg_opp_elo - sos_baseline) * 0.8  # V4.0: steeper penalty
+            
+            # V4.0 Phase 3: H2H Bonus - rewards wins over top-ranked teams
+            # Uses final Elo to approximate rankings (top 10 ~ Elo > 1650, top 25 ~ Elo > 1550)
+            # This is calculated after all games, so reflects end-of-season opponent strength
+            h2h_bonus = 0.0
+            top10_wins = 0
+            top25_wins = 0
+            for win_info in data['wins_details']:
+                opp = win_info['opponent']
+                opp_elo = self.team_stats[opp]['quality_score']
+                # Approximate top-10 as Elo > 1650, top-25 as Elo > 1550
+                if opp_elo > 1650:
+                    top10_wins += 1
+                elif opp_elo > 1550:
+                    top25_wins += 1
+            h2h_bonus = (top10_wins * self.h2h_top10_bonus) + (top25_wins * self.h2h_top25_bonus)
+            
+            # V4.0 Phase 3: Quality Loss Bonus - rewards losses to elite teams
+            # Formula: sum(max(0, opp_Elo - 1550) * 0.25) / max(1, num_losses)
+            # Only counts losses to teams with Elo > 1550 (roughly top 15)
+            ql_bonus = 0.0
+            num_losses = data['losses']
+            if num_losses > 0 and data['losses_details']:
+                quality_loss_points = 0.0
+                for loss_info in data['losses_details']:
+                    opp = loss_info['opponent']
+                    opp_elo = self.team_stats[opp]['quality_score']
+                    if opp_elo > self.ql_threshold:
+                        quality_loss_points += (opp_elo - self.ql_threshold) * self.ql_multiplier
+                # Average across all losses to prevent accumulating quality losses
+                ql_bonus = quality_loss_points / num_losses
+            
+            # V4.0 Phase 3: Win Streak Bonus - rewards dominant G5 teams
+            # +150 if G5 team with <= 1 loss and >= 7 conference wins
+            winstreak_bonus = 0.0
+            if team_conf_type == 'Group of 5':
+                if num_losses <= self.winstreak_max_losses and data['conf_wins'] >= self.winstreak_min_conf_wins:
+                    winstreak_bonus = self.winstreak_bonus
+            
+            # V4.0: Explicit Loss Penalty - penalizes multi-loss teams progressively
+            # Formula: -180 * (losses ^ 1.15)
+            # 1 loss = -180, 2 losses = -399, 3 losses = -650, 4 losses = -923
+            num_losses = data['losses']
+            loss_penalty = 0.0
+            if num_losses > 0:
+                loss_penalty = self.loss_penalty_base * (num_losses ** self.loss_penalty_exp)
+            
+            record_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus + winstreak_bonus - loss_penalty
             
             # FRS = (W_Team * TQ) + (W_Conf * CQ) + (W_Rec * RS)
-            # V3.9 Weights: Team=0.55, Conf=0.1, Record=0.35 (More resume-focused like CFP)
-            tq_weight = 0.55
+            # V4.0 Weights: Team=0.52, Conf=0.1, Record=0.38 (More resume-focused like CFP)
+            tq_weight = 0.52
             conf_weight = self.conference_weight
-            rec_weight = 0.35
+            rec_weight = 0.38
             
             final_score = (tq_weight * data['quality_score']) + \
                           (conf_weight * cq) + \
@@ -567,14 +711,14 @@ class TeamQualityRanker:
         Expected history_data: List of ranking results (dicts) from previous years,
         ordered from most recent to oldest.
         
-        V3.9 Formula: T_prior = 0.67(T_Y-1) + 0.33(T_Y-2)
+        V4.0 Formula: T_prior = 0.70(T_Y-1) + 0.30(T_Y-2)
         - Dropped Y-3 to reduce legacy drag
         - These priors are then blended with tier_initial using prior_strength config
-        - Default prior_strength=0.3 means final = 0.7*tier + 0.3*prior
-        - Net effect: ~20% Y-1 + ~10% Y-2 influence (down from 50/30/20)
+        - Default prior_strength=0.15 means final = 0.85*tier + 0.15*prior
+        - Net effect: ~10.5% Y-1 + ~4.5% Y-2 influence (significantly reduced legacy echo)
         """
         priors = defaultdict(float)
-        weights = [0.67, 0.33]  # V3.9: Only Y-1 and Y-2, dropped Y-3
+        weights = [0.70, 0.30]  # V4.0: 70% Y-1, 30% Y-2 (slight adjustment from 0.67/0.33)
         
         for i, year_data in enumerate(history_data):
             if i >= len(weights):

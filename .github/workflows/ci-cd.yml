@@ -1,15 +1,12 @@
 # GitHub Actions CI/CD Pipeline for CFB Ranking Algorithm
-# Triggers on push/PR to main branch
-# Runs code scanning, tests, and builds
-# Render deployment is handled separately via Render's GitHub integration
+# Runs code scanning, tests, and builds on all pushes and PRs
+# Render deployment is triggered only on push/PR to main
 
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
 
 env:
   PYTHON_VERSION: "3.11"
@@ -187,6 +184,8 @@ jobs:
       - name: Validate Flask app imports
         run: |
           python -c "from app import app; print('Flask app validated successfully')"
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
 
       - name: Check gunicorn can load app
         run: |
@@ -210,4 +209,8 @@ jobs:
             exit 1
           fi
           echo "✅ All pipeline checks passed successfully!"
-          echo "Render will deploy automatically via its GitHub integration."
+          
+      - name: Deployment status
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Main branch - Render will deploy automatically via GitHub integration."

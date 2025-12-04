@@ -11,7 +11,8 @@ print(f"API Key loaded: {api_key[:10]}..." if api_key else "No API key found")
 # Check teams endpoint
 r = requests.get(
     'https://api.collegefootballdata.com/teams', 
-    headers={'Authorization': f'Bearer {api_key}'}
+    headers={'Authorization': f'Bearer {api_key}'},
+    timeout=30
 )
 print(f"\nTeams endpoint status: {r.status_code}")
 if r.status_code == 200:
@@ -24,7 +25,8 @@ else:
 # Check conferences endpoint  
 r2 = requests.get(
     'https://api.collegefootballdata.com/conferences',
-    headers={'Authorization': f'Bearer {api_key}'}
+    headers={'Authorization': f'Bearer {api_key}'},
+    timeout=30
 )
 print(f"\nConferences endpoint status: {r2.status_code}")
 if r2.status_code == 200:
