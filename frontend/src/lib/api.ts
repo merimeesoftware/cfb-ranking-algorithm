@@ -1,11 +1,11 @@
 import type { RankingsResponse, Team, Conference } from '$lib/types';
 
 // API configuration
-// VITE_API_URL should be set to your Render backend URL in production
-// e.g., https://cfb-rankings-api.onrender.com
+// In development, use local Flask server
+// In production, use Render backend URL
 const API_BASE = import.meta.env.DEV 
 	? 'http://localhost:5001' 
-	: (import.meta.env.VITE_API_URL || '');
+	: (import.meta.env.VITE_API_URL || 'https://cfb-rankings-api.onrender.com');
 
 /**
  * Fetch rankings from the backend API
