@@ -45,12 +45,29 @@
 		</span>
 	</td>
 	<td class="px-4 py-3">
-		<span class="font-semibold text-gray-900 dark:text-white">
-			{team.team_name}
-		</span>
+		<div class="flex items-center gap-2">
+			{#if team.logo}
+				<img 
+					src={team.logo} 
+					alt="{team.team_name} logo" 
+					class="w-6 h-6 object-contain"
+					loading="lazy"
+				/>
+			{:else}
+				<div 
+					class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+					style="background-color: {team.color || '#6b7280'}"
+				>
+					{team.team_name.charAt(0)}
+				</div>
+			{/if}
+			<span class="font-semibold text-gray-900 dark:text-white">
+				{team.team_name}
+			</span>
+		</div>
 	</td>
 	<td class="px-4 py-3">
-		<span class="badge {getConfClass(team.conference_type)}">
+		<span class="badge {getConfClass(team.conference_type || '')}">
 			{team.conference}
 		</span>
 	</td>

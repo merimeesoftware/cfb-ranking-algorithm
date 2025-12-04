@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import type { Conference } from '$lib/types';
 
 	export let conferences: Conference[] = [];
 	export let loading: boolean = false;
+
+	const dispatch = createEventDispatcher();
 
 	let showAllConferences = false;
 	const DEFAULT_DISPLAY_COUNT = 7;
@@ -19,11 +22,37 @@
 		return (pct * 100).toFixed(0) + '%';
 	}
 	
-	function formatFcsRecord(conf: Conference): string {
+	function formatFcsWinPct(conf: Conference): string {
 		if (conf.fcs_wins !== undefined && conf.fcs_losses !== undefined) {
-			return `${conf.fcs_wins}-${conf.fcs_losses}`;
+			const total = conf.fcs_wins + conf.fcs_losses;
+			if (total === 0) return '-';
+			const pct = conf.fcs_wins / total;
+			return formatWinPct(pct);
 		}
 		return '-';
+	}
+
+	function handleConferenceClick(conf: Conference, index: number) {
+		dispatch('click', { conference: conf, rank: index + 1 });
+	}
+
+	// Conference colors map
+	const conferenceColors: Record<string, string> = {
+		'SEC': '#ffd700',
+		'Big Ten': '#0033a0',
+		'Big 12': '#003087',
+		'ACC': '#013ca6',
+		'Pac-12': '#004b91',
+		'Mountain West': '#1c4d8f',
+		'American Athletic': '#c41230',
+		'Conference USA': '#1a3461',
+		'Sun Belt': '#f9a11b',
+		'Mid-American': '#1a1a1a',
+		'FBS Independents': '#4b5563'
+	};
+
+	function getConferenceColor(confName: string): string {
+		return conferenceColors[confName] || '#6b7280';
 	}
 </script>
 
@@ -50,11 +79,15 @@
 			<!-- Mobile Card View -->
 			<div class="sm:hidden">
 				{#each displayedConferences as conf, index}
-					<div class="p-4 border-b border-gray-100 dark:border-gray-700 last:border-0">
+					<button
+						on:click={() => handleConferenceClick(conf, index)}
+						class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+					>
 						<div class="flex items-start gap-3">
-							<span class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/50 
-								text-primary-600 dark:text-primary-400 flex items-center justify-center 
-								text-sm font-bold shrink-0">
+							<span 
+								class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 text-white"
+								style="background-color: {getConferenceColor(conf.conference)}"
+							>
 								{index + 1}
 							</span>
 							<div class="flex-1 min-w-0">
@@ -81,15 +114,15 @@
 										</div>
 									</div>
 									<div>
-										<div class="text-gray-500 dark:text-gray-400">vs FCS</div>
+										<div class="text-gray-500 dark:text-gray-400">FCS W%</div>
 										<div class="font-medium text-gray-900 dark:text-white">
-											{formatFcsRecord(conf)}
+											{formatFcsWinPct(conf)}
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-					</div>
+					</button>
 				{/each}
 			</div>
 
@@ -103,19 +136,22 @@
 							<th class="px-4 py-3">Conference</th>
 							<th class="px-4 py-3 text-right">Avg Rank</th>
 							<th class="px-4 py-3 text-right">Teams</th>
-							<th class="px-4 py-3 text-right">Ranked Teams</th>
 							<th class="px-4 py-3 text-right">Power 4 W%</th>
 							<th class="px-4 py-3 text-right">G5 W%</th>
-							<th class="px-4 py-3 text-right">vs FCS</th>
+							<th class="px-4 py-3 text-right">FCS W%</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
 						{#each displayedConferences as conf, index}
-							<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+							<tr 
+								on:click={() => handleConferenceClick(conf, index)}
+								class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+							>
 								<td class="px-4 py-3">
-									<span class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/50 
-										text-primary-600 dark:text-primary-400 flex items-center justify-center 
-										text-sm font-bold">
+									<span 
+										class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+										style="background-color: {getConferenceColor(conf.conference)}"
+									>
 										{index + 1}
 									</span>
 								</td>
@@ -127,17 +163,6 @@
 								</td>
 								<td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
 									{conf.team_count}
-								</td>
-								<td class="px-4 py-3 text-right">
-									{#if conf.ranked_teams > 0}
-										<span class="inline-flex items-center px-2 py-0.5 rounded text-xs 
-											font-medium bg-green-100 text-green-800 dark:bg-green-900/50 
-											dark:text-green-400">
-											{conf.ranked_teams}
-										</span>
-									{:else}
-										<span class="text-gray-400 dark:text-gray-500">0</span>
-									{/if}
 								</td>
 								<td class="px-4 py-3 text-right">
 									<span class="{conf.power_win_pct >= 0.5 
@@ -154,7 +179,7 @@
 									</span>
 								</td>
 								<td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-									{formatFcsRecord(conf)}
+									{formatFcsWinPct(conf)}
 								</td>
 							</tr>
 						{/each}

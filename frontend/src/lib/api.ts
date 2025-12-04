@@ -56,6 +56,10 @@ function transformRankingsResponse(data: any, year: number, week: number): Ranki
 		conference_quality_score: t.conference_quality_score || 0,
 		sos: t.sos ?? null,
 		sov: t.sov ?? null,
+		logo: t.logo ?? null,
+		logo_dark: t.logo_dark ?? null,
+		color: t.color ?? null,
+		alt_color: t.alt_color ?? null,
 		records: {
 			total_wins: t.records?.total_wins ?? 0,
 			total_losses: t.records?.total_losses ?? 0,
@@ -74,7 +78,9 @@ function transformRankingsResponse(data: any, year: number, week: number): Ranki
 		team_count: c.number_of_teams || c.team_count || 0,
 		ranked_teams: c.ranked_teams ?? 0,
 		power_win_pct: parseWinPct(c.record_vs_p4 || c.power_win_pct),
-		g5_win_pct: parseWinPct(c.record_vs_g5 || c.g5_win_pct)
+		g5_win_pct: parseWinPct(c.record_vs_g5 || c.g5_win_pct),
+		fcs_wins: c.fcs_wins ?? 0,
+		fcs_losses: c.fcs_losses ?? 0
 	}));
 
 	return {
