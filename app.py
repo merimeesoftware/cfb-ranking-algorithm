@@ -144,6 +144,30 @@ def calculate_rankings_logic(year, week, request_args):
     rankings_data = ranker.calculate_final_rankings()
     rankings_data = ranker.normalize_scores(rankings_data)
     
+    # Add team logos and colors to rankings
+    for team in rankings_data['team_rankings']:
+        team_name = team['team_name']
+        team_info = data_processor.team_info_map.get(team_name, {})
+        logos = team_info.get('logos', [])
+        team['logo'] = logos[0] if logos else None
+        team['logo_dark'] = logos[1] if len(logos) > 1 else team['logo']
+        team['color'] = team_info.get('color')
+        team['alt_color'] = team_info.get('alt_color')
+    
+    # Add FCS record to conference rankings
+    for conf in rankings_data['conference_rankings']:
+        conf_name = conf['conference_name']
+        # Calculate FCS record from teams in conference
+        fcs_wins = 0
+        fcs_losses = 0
+        for team_name, stats in ranker.team_stats.items():
+            if stats['conference'] == conf_name:
+                fcs_wins += stats['record_vs_fcs']['wins']
+                fcs_losses += stats['record_vs_fcs']['losses']
+        conf['fcs_wins'] = fcs_wins
+        conf['fcs_losses'] = fcs_losses
+        conf['record_vs_fcs'] = f"{fcs_wins}-{fcs_losses}"
+    
     # Filter Results
     show_all = request_args.get('all_divisions') == 'true'
     if not show_all:

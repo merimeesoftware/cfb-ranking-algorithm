@@ -68,6 +68,23 @@
 						{rank}
 					</div>
 
+					<!-- Team Logo -->
+					{#if team.logo}
+						<img 
+							src={team.logo} 
+							alt="{team.team_name} logo" 
+							class="w-8 h-8 object-contain"
+							loading="lazy"
+						/>
+					{:else}
+						<div 
+							class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+							style="background-color: {team.color || '#6b7280'}"
+						>
+							{team.team_name.charAt(0)}
+						</div>
+					{/if}
+
 					<!-- Team Info -->
 					<div class="flex-1 min-w-0">
 						<div class="font-semibold text-gray-900 dark:text-white truncate">

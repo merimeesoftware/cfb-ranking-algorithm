@@ -24,6 +24,10 @@ export interface Team {
 	sos: number | null;
 	sov: number | null;
 	records: TeamRecords;
+	logo?: string | null;
+	logo_dark?: string | null;
+	color?: string | null;
+	alt_color?: string | null;
 }
 
 export interface Conference {

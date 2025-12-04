@@ -1,8 +1,10 @@
 <script lang="ts">
 	import RankingsTable from '$lib/components/RankingsTable.svelte';
 	import ConferenceTable from '$lib/components/ConferenceTable.svelte';
+	import ConferenceDetailModal from '$lib/components/ConferenceDetailModal.svelte';
 	import FilterControls from '$lib/components/FilterControls.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import type { Conference } from '$lib/types';
 	import { 
 		filteredTeams, 
 		conferences, 
@@ -18,6 +20,11 @@
 	import { onMount } from 'svelte';
 
 	let activeTab: 'teams' | 'conferences' = 'teams';
+	
+	// Conference modal state
+	let selectedConference: Conference | null = null;
+	let selectedConferenceRank: number = 0;
+	let showConferenceModal = false;
 
 	onMount(() => {
 		fetchRankings($filterState.year, $filterState.week);
@@ -47,6 +54,17 @@
 		setYear(year);
 		setWeek(week);
 		fetchRankings(year, week, weights);
+	}
+
+	function handleConferenceClick(event: CustomEvent<{ conference: Conference; rank: number }>) {
+		selectedConference = event.detail.conference;
+		selectedConferenceRank = event.detail.rank;
+		showConferenceModal = true;
+	}
+
+	function closeConferenceModal() {
+		showConferenceModal = false;
+		selectedConference = null;
 	}
 </script>
 
@@ -133,7 +151,18 @@
 		{#if activeTab === 'teams'}
 			<RankingsTable teams={$filteredTeams} />
 		{:else}
-			<ConferenceTable conferences={$conferences} />
+			<ConferenceTable conferences={$conferences} on:click={handleConferenceClick} />
 		{/if}
 	{/if}
 </div>
+
+<!-- Conference Detail Modal -->
+{#if showConferenceModal && selectedConference}
+	<ConferenceDetailModal 
+		conference={selectedConference} 
+		rank={selectedConferenceRank} 
+		allConferences={$conferences}
+		allTeams={$filteredTeams}
+		on:close={closeConferenceModal} 
+	/>
+{/if}

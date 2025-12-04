@@ -30,11 +30,27 @@ class CFBDataProcessor:
             self.api_client = CFBDApiClient(api_key=api_key)
             
         self.team_conference_map = {}
+        self.team_info_map = {}  # Full team info including logos
         self._initialize_conference_map()
 
     def _initialize_conference_map(self):
-        """Fetch and store team conference mappings."""
-        self.team_conference_map = self.api_client.get_team_info()
+        """Fetch and store team conference mappings and full team info."""
+        self.team_info_map = self.api_client.get_teams_with_logos()
+        self.team_conference_map = {
+            team: info['conference'] 
+            for team, info in self.team_info_map.items()
+        }
+
+    def get_team_logo(self, team_name: str) -> Optional[str]:
+        """Get the primary logo URL for a team."""
+        info = self.team_info_map.get(team_name, {})
+        logos = info.get('logos', [])
+        return logos[0] if logos else None
+
+    def get_team_color(self, team_name: str) -> Optional[str]:
+        """Get the primary color for a team."""
+        info = self.team_info_map.get(team_name, {})
+        return info.get('color')
 
     def get_conference_type(self, conference_name: Optional[str]) -> str:
         """Classifies a conference name into Power 4, Group of 5, or FCS."""

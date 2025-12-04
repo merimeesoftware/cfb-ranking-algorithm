@@ -58,6 +58,23 @@ class CFBDApiClient:
         teams = self._make_request('/teams/fbs')
         return {team['school']: team['conference'] for team in teams}
 
+    def get_teams_with_logos(self) -> Dict[str, Dict[str, Any]]:
+        """Fetch all team info including logos and colors"""
+        teams = self._make_request('/teams')
+        result = {}
+        for team in teams:
+            result[team['school']] = {
+                'id': team.get('id'),
+                'conference': team.get('conference'),
+                'mascot': team.get('mascot'),
+                'abbreviation': team.get('abbreviation'),
+                'color': team.get('color'),
+                'alt_color': team.get('alternateColor'),
+                'logos': team.get('logos', []),
+                'classification': team.get('classification')
+            }
+        return result
+
     def get_rankings(self, year: int, week: Optional[int] = None) -> List[Dict]:
         """Fetch team rankings"""
         params = {'year': year}
