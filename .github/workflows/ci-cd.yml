@@ -184,6 +184,8 @@ jobs:
       - name: Validate Flask app imports
         run: |
           python -c "from app import app; print('Flask app validated successfully')"
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
 
       - name: Check gunicorn can load app
         run: |
