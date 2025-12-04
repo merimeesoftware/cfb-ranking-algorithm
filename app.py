@@ -6,6 +6,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
+from cache import get_cache, TTL_RANKINGS
 
 # Load environment variables (especially CFBD_API_KEY)
 load_dotenv()
@@ -14,6 +15,9 @@ app = Flask(__name__)
 
 # Enable CORS for all routes - allows frontend to call API from different domain
 CORS(app, origins=["*"], supports_credentials=True)
+
+# Global cache instance
+cache = get_cache()
 
 # --- Configuration ---
 # Default parameters
@@ -187,7 +191,29 @@ def calculate_rankings_logic(year, week, request_args):
 @app.route('/')
 def index():
     """Root endpoint."""
-    return jsonify({"message": "CFB Ranking API is running", "endpoints": ["/rankings", "/rankings/team/<team_name>"]})
+    return jsonify({
+        "message": "CFB Ranking API is running", 
+        "endpoints": ["/rankings", "/rankings/team/<team_name>", "/cache/stats", "/cache/clear"]
+    })
+
+@app.route('/cache/stats', methods=['GET'])
+def cache_stats():
+    """Get cache statistics."""
+    stats = cache.get_stats()
+    return jsonify(stats)
+
+@app.route('/cache/clear', methods=['POST'])
+def clear_cache():
+    """Clear all cached data (requires secret key in production)."""
+    # In production, you might want to require an API key
+    secret = request.headers.get('X-Cache-Secret') or request.args.get('secret')
+    expected_secret = os.environ.get('CACHE_CLEAR_SECRET')
+    
+    if expected_secret and secret != expected_secret:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    cache.clear_all()
+    return jsonify({"message": "Cache cleared successfully"})
 
 @app.route('/rankings', methods=['GET'])
 def get_rankings():
@@ -196,10 +222,36 @@ def get_rankings():
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
         
+        # Generate cache key based on all parameters that affect rankings
+        cache_params = {
+            'year': year,
+            'week': week,
+            'all_divisions': request.args.get('all_divisions', 'false'),
+            'power_conf_initial': request.args.get('power_conf_initial'),
+            'group5_initial': request.args.get('group5_initial'),
+            'fcs_initial': request.args.get('fcs_initial'),
+            'base_factor': request.args.get('base_factor'),
+            'team_quality_weight': request.args.get('team_quality_weight'),
+            'conference_weight': request.args.get('conference_weight'),
+            'record_weight': request.args.get('record_weight'),
+            'prior_strength': request.args.get('prior_strength'),
+        }
+        cache_key = cache._generate_key('rankings_computed', **cache_params)
+        
+        # Try cache first
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            print(f"Cache HIT: computed rankings {year} week={week}")
+            return jsonify(cached_data)
+        
+        print(f"Cache MISS: computed rankings {year} week={week}")
         data = calculate_rankings_logic(year, week, request.args)
         
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
+        
+        # Cache the computed rankings
+        cache.set(cache_key, data, TTL_RANKINGS)
             
         return jsonify(data)
 

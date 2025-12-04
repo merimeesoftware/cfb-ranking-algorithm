@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Any
 import os
 from dotenv import load_dotenv
 import requests
+from cache import get_cache, TTL_TEAMS, TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, get_games_ttl
 
 class CFBDApiClient:
     """Centralized API client for CFBD data using direct HTTP requests"""
@@ -22,6 +23,7 @@ class CFBDApiClient:
             'Authorization': f'Bearer {api_key}',
             'accept': 'application/json'
         }
+        self._cache = get_cache()
 
     def _make_request(self, endpoint: str, params: Dict[str, Any] = None) -> Any:
         """Helper to make API requests with error handling"""
@@ -41,8 +43,22 @@ class CFBDApiClient:
                 print(f"Response: {e.response.text}")
             return []
 
+    def _get_cache_key(self, prefix: str, *args, **kwargs) -> str:
+        """Generate a cache key for an API call."""
+        return self._cache._generate_key(prefix, *args, **kwargs)
+
     def get_games(self, year: int, week: Optional[int] = None, season_type: str = 'regular') -> List[Dict]:
-        """Fetch games with error handling and data transformation"""
+        """Fetch games with caching, error handling and data transformation"""
+        cache_key = self._get_cache_key('games', year, week, season_type)
+        
+        # Try cache first
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            print(f"Cache HIT: games {year} week={week} type={season_type}")
+            return cached
+        
+        print(f"Cache MISS: games {year} week={week} type={season_type}")
+        
         params = {
             'year': year,
             'seasonType': season_type
@@ -51,15 +67,43 @@ class CFBDApiClient:
             params['week'] = week
 
         games = self._make_request('/games', params)
-        return [self._transform_game(game) for game in games if self._is_valid_game(game)]
+        result = [self._transform_game(game) for game in games if self._is_valid_game(game)]
+        
+        # Cache with appropriate TTL
+        if result:
+            ttl = get_games_ttl(year)
+            self._cache.set(cache_key, result, ttl)
+        
+        return result
 
     def get_team_info(self) -> Dict[str, str]:
-        """Fetch team conference affiliations"""
+        """Fetch team conference affiliations with caching"""
+        cache_key = self._get_cache_key('team_info')
+        
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            print("Cache HIT: team_info")
+            return cached
+        
+        print("Cache MISS: team_info")
         teams = self._make_request('/teams/fbs')
-        return {team['school']: team['conference'] for team in teams}
+        result = {team['school']: team['conference'] for team in teams}
+        
+        if result:
+            self._cache.set(cache_key, result, TTL_TEAMS)
+        
+        return result
 
     def get_teams_with_logos(self) -> Dict[str, Dict[str, Any]]:
-        """Fetch all team info including logos and colors"""
+        """Fetch all team info including logos and colors with caching"""
+        cache_key = self._get_cache_key('teams_with_logos')
+        
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            print("Cache HIT: teams_with_logos")
+            return cached
+        
+        print("Cache MISS: teams_with_logos")
         teams = self._make_request('/teams')
         result = {}
         for team in teams:
@@ -73,19 +117,44 @@ class CFBDApiClient:
                 'logos': team.get('logos', []),
                 'classification': team.get('classification')
             }
+        
+        if result:
+            self._cache.set(cache_key, result, TTL_TEAMS)
+        
         return result
 
     def get_rankings(self, year: int, week: Optional[int] = None) -> List[Dict]:
-        """Fetch team rankings"""
+        """Fetch team rankings with caching"""
+        cache_key = self._get_cache_key('rankings', year, week)
+        
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            print(f"Cache HIT: rankings {year} week={week}")
+            return cached
+        
+        print(f"Cache MISS: rankings {year} week={week}")
         params = {'year': year}
         if week is not None:
             params['week'] = week
             
-        rankings = self._make_request('/rankings', params)
-        return rankings
+        result = self._make_request('/rankings', params)
+        
+        if result:
+            ttl = get_games_ttl(year)  # Use same TTL logic as games
+            self._cache.set(cache_key, result, ttl)
+        
+        return result
             
     def get_betting_lines(self, year: int, week: Optional[int] = None) -> List[Dict]:
-        """Fetch betting lines and spreads"""
+        """Fetch betting lines and spreads with caching"""
+        cache_key = self._get_cache_key('betting_lines', year, week)
+        
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            print(f"Cache HIT: betting_lines {year} week={week}")
+            return cached
+        
+        print(f"Cache MISS: betting_lines {year} week={week}")
         params = {
             'year': year,
             'seasonType': 'regular'
@@ -93,7 +162,13 @@ class CFBDApiClient:
         if week is not None:
             params['week'] = week
             
-        return self._make_request('/lines', params)
+        result = self._make_request('/lines', params)
+        
+        if result:
+            ttl = get_games_ttl(year)
+            self._cache.set(cache_key, result, ttl)
+        
+        return result
 
     def _transform_game(self, game: Dict) -> Dict:
         """Transform CFBD game dict to internal format"""
