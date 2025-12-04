@@ -104,7 +104,8 @@ class TeamQualityRanker:
         self.num_iterations = self.config.get('num_iterations', 4)
         
         # V4.0: Loss penalty configuration
-        self.loss_penalty_base = self.config.get('loss_penalty_base', 180.0)
+        # V4.0.1: Reduced base from 180 to 120 (less harsh on multi-loss teams)
+        self.loss_penalty_base = self.config.get('loss_penalty_base', 120.0)
         self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.15)
         
         # V4.0 Phase 2: Upset bonus configuration
@@ -527,7 +528,8 @@ class TeamQualityRanker:
                 # V4.0 Phase 2: Tier-specific SoV thresholds
                 # P4 teams: threshold 1200, multiplier 0.5
                 # G5 teams: threshold 1050, multiplier 0.55 (credits intra-G5 quality)
-                if team_conf_type == 'Power 4':
+                # V4.0.1: FBS Independents use P4 thresholds (they compete at P4 level)
+                if team_conf_type == 'Power 4' or data['conference'] == 'FBS Independents':
                     sov_threshold = self.sov_threshold_p4
                     sov_mult = self.sov_mult_p4
                 else:  # G5 or other
@@ -629,9 +631,10 @@ class TeamQualityRanker:
             
             # FRS = (W_Team * TQ) + (W_Conf * CQ) + (W_Rec * RS)
             # V4.0 Weights: Team=0.52, Conf=0.1, Record=0.38 (More resume-focused like CFP)
-            tq_weight = 0.52
+            # V4.0.1: Now uses config parameters for all weights
+            tq_weight = self.config.get('team_quality_weight', 0.52)
             conf_weight = self.conference_weight
-            rec_weight = 0.38
+            rec_weight = self.config.get('record_weight', 0.38)
             
             final_score = (tq_weight * data['quality_score']) + \
                           (conf_weight * cq) + \

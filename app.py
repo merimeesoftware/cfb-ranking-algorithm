@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
     'group5_initial': 1200.0,
     'fcs_initial': 900.0,
     'base_factor': 40.0,
+    'team_quality_weight': 0.52,  # V4.0.1: FRS Team Quality weight
     'conference_weight': 0.10,
     'record_weight': 0.38,  # V4.0: 38% resume weight
     'prior_strength': 0.15,  # V4.0: 15% historical, 85% fresh
@@ -122,22 +123,24 @@ def calculate_rankings_logic(year, week, request_args):
     config['group5_initial'] = get_float_arg('group5_initial', config['group5_initial'])
     config['fcs_initial'] = get_float_arg('fcs_initial', config['fcs_initial'])
     config['base_factor'] = get_float_arg('base_factor', config['base_factor'])
+    config['team_quality_weight'] = get_float_arg('team_quality_weight', config['team_quality_weight'])
     config['conference_weight'] = get_float_arg('conference_weight', config['conference_weight'])
     config['record_weight'] = get_float_arg('record_weight', config['record_weight'])
     config['prior_strength'] = get_float_arg('prior_strength', config['prior_strength'])
     
     # --- Calculate Rankings ---
-    print("Calculating rankings (Iterative V3.4)...")
+    print("Calculating rankings (Iterative V4.0)...")
     reference_ranks = None
     ranker = TeamQualityRanker(config, priors)
+    num_iterations = ranker.num_iterations  # V4.0: Use config (default 4)
     
-    for i in range(3):
-        print(f"  Iteration {i+1}/3...")
+    for i in range(num_iterations):
+        print(f"  Iteration {i+1}/{num_iterations}...")
         ranker = TeamQualityRanker(config, priors)
         for week_num in sorted(games_by_week.keys()):
             for game in games_by_week[week_num]:
                 ranker.update_quality_scores(game, reference_ranks)
-        if i < 2:
+        if i < num_iterations - 1:
             temp_results = ranker.calculate_final_rankings()
             reference_ranks = {t['team_name']: t['team_quality_score'] for t in temp_results['team_rankings']}
         

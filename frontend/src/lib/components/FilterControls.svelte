@@ -10,10 +10,10 @@
 
 	// Advanced controls state
 	let showAdvanced = false;
-	let teamQualityWeight = 55;
-	let recordScoreWeight = 35;
+	let teamQualityWeight = 52;  // V4.0: 52%
+	let recordScoreWeight = 38;  // V4.0: 38%
 	let conferenceQualityWeight = 10;
-	let priorStrength = 0;
+	let priorStrength = 15;  // V4.0: 15% historical
 
 	$: weeks = Array.from({ length: maxWeek }, (_, i) => i + 1);
 
