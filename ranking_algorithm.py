@@ -103,10 +103,10 @@ class TeamQualityRanker:
         # V4.0: Number of iterative solver passes (increased from 3 to 4)
         self.num_iterations = self.config.get('num_iterations', 4)
         
-        # V4.0: Loss penalty configuration
-        # V4.0.2: Increased base from 120 to 150 (was 180 in V4.0, 120 in V4.0.1)
-        self.loss_penalty_base = self.config.get('loss_penalty_base', 150.0)
-        self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.15)
+        # V4.1: Loss penalty configuration
+        # V4.1: Reduced base to 100 and exponent to 1.05 to diminish penalty
+        self.loss_penalty_base = self.config.get('loss_penalty_base', 100.0)
+        self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.05)
         
         # V4.0 Phase 2: Upset bonus configuration
         self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)  # Elo gap for upset bonus
@@ -131,23 +131,18 @@ class TeamQualityRanker:
         self.cq_top_half_weight = self.config.get('cq_top_half_weight', 0.70)
         self.cq_full_avg_weight = self.config.get('cq_full_avg_weight', 0.30)
         
-        # V4.0 Phase 3: H2H Bonus configuration
-        # V4.0.2: Reduced bonuses to prevent resume inflation
-        self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 80.0)   # Was 120
-        self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 40.0)   # Was 60
-        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 200.0)      # Was 300
-        self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1550.0)  # Was 1500, raised for tighter criteria
+        # V4.1: H2H Bonus configuration (Boosted 1.1x)
+        self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 88.0)   # 80 * 1.1
+        self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 44.0)   # 40 * 1.1
+        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 220.0)      # Boosted cap
+        self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1550.0)
         
-        # V4.0 Phase 3: Quality Loss Bonus configuration
-        # V4.0.2: Reduced impact to prevent rewarding losses too much
-        self.ql_threshold = self.config.get('ql_threshold', 1600.0)   # Was 1550, raised bar
-        self.ql_multiplier = self.config.get('ql_multiplier', 0.15)   # Was 0.25
-        self.ql_max_per_loss = self.config.get('ql_max_per_loss', 30.0)  # Was 50
+        # V4.1: Quality Loss Bonus configuration (Boosted 1.1x)
+        self.ql_threshold = self.config.get('ql_threshold', 1600.0)
+        self.ql_multiplier = self.config.get('ql_multiplier', 0.165)  # 0.15 * 1.1
+        self.ql_max_per_loss = self.config.get('ql_max_per_loss', 33.0) # 30 * 1.1
         
-        # V4.0 Phase 3: Win Streak Bonus configuration (G5-focused)
-        self.winstreak_bonus = self.config.get('winstreak_bonus', 150.0)  # Bonus for dominant G5 teams
-        self.winstreak_max_losses = self.config.get('winstreak_max_losses', 1)  # Max losses to qualify
-        self.winstreak_min_conf_wins = self.config.get('winstreak_min_conf_wins', 7)  # Min conf wins to qualify
+        # V4.1: Win Streak Bonus Removed
         
         # V4.0.1: Indie SoS penalty amplifier (FBS Independents use lower baseline)
         self.sos_baseline_indie = self.config.get('sos_baseline_indie', 1350.0)  # Indies held to higher standard
@@ -291,7 +286,20 @@ class TeamQualityRanker:
         # Calculate Delta
         # Delta = K * Matchup_Weight * MoV_Multiplier * (Actual - Expected)
         
-        delta = self.base_factor * matchup_weight * m_mov * (actual_score - expected_score)
+        # V4.1: Postseason Damping
+        # Reduce K-factor for postseason games to prevent "Bowl Bias"
+        season_type = game.get('season_type', 'regular')
+        notes = str(game.get('notes', '')).lower()
+        k_scale = 1.0
+        
+        if 'playoff' in notes or ('championship' in notes and season_type == 'postseason'):
+             k_scale = 0.6 # Playoff/Natty
+        elif season_type == 'postseason':
+             k_scale = 0.7 # Other bowls
+        elif 'championship' in notes:
+             k_scale = 0.7 # Conference championships
+             
+        delta = self.base_factor * k_scale * matchup_weight * m_mov * (actual_score - expected_score)
         
         # V4.0 Phase 2: Upset Bonus Multipliers
         # If winner Elo < loser Elo by threshold, apply upset bonus
@@ -457,9 +465,13 @@ class TeamQualityRanker:
             final_cq[conf] = raw * multiplier
             
         # Handle FBS Independents
-        # V4.0.1: Independents get ZERO conference quality bonus
-        # They have no conference, so CQ shouldn't artificially boost them
-        final_cq['FBS Independents'] = 0.0
+        # V4.1: Independents get a synthetic CQ based on their schedule (calculated per team later)
+        # For now, set a placeholder based on average P4 CQ for display purposes
+        p4_cqs = [cq for conf, cq in final_cq.items() if conf in ['SEC', 'Big Ten', 'ACC', 'Big 12', 'Pac-12']]
+        if p4_cqs:
+            final_cq['FBS Independents'] = sum(p4_cqs) / len(p4_cqs)
+        else:
+            final_cq['FBS Independents'] = 0.0
             
         return final_cq
 
@@ -473,8 +485,31 @@ class TeamQualityRanker:
         team_rankings = []
         rankings_dict = {}
         
+        # V4.1: Track Independent CQs for aggregate display
+        indie_cqs = []
+        
         for team, data in self.team_stats.items():
-            cq = conf_quality.get(data['conference'], 0) if data['conference'] else 0
+            # V4.1: Independent Pseudo-Conference Logic
+            # Instead of a flat conference score, Independents get a synthetic score
+            # based on the average CQ of the conferences they played against.
+            if data['conference'] == 'FBS Independents':
+                opp_cqs = []
+                for opp in data['schedule']:
+                    # Get opponent's conference
+                    opp_conf = self.team_stats[opp]['conference']
+                    if opp_conf:
+                        # Use the calculated CQ of the opponent's conference
+                        # If opponent is also Independent, use the placeholder (avg P4)
+                        opp_cqs.append(conf_quality.get(opp_conf, 0))
+                
+                if opp_cqs:
+                    cq = sum(opp_cqs) / len(opp_cqs)
+                else:
+                    # Fallback if no opponents with conferences (unlikely)
+                    cq = conf_quality.get('FBS Independents', 0)
+                indie_cqs.append(cq)
+            else:
+                cq = conf_quality.get(data['conference'], 0) if data['conference'] else 0
             
             # Calculate Record Score (0-1000 scale mapped to 1000-2000)
             # New V3.6: Weighted Wins (Road Wins count more)
@@ -607,22 +642,17 @@ class TeamQualityRanker:
                 # Average across all losses to prevent accumulating quality losses
                 ql_bonus = quality_loss_points / num_losses
             
-            # V4.0 Phase 3: Win Streak Bonus - rewards dominant G5 teams
-            # +150 if G5 team with <= 1 loss and >= 7 conference wins
-            winstreak_bonus = 0.0
-            if team_conf_type == 'Group of 5':
-                if num_losses <= self.winstreak_max_losses and data['conf_wins'] >= self.winstreak_min_conf_wins:
-                    winstreak_bonus = self.winstreak_bonus
+            # V4.1: Win Streak Bonus Removed
             
-            # V4.0: Explicit Loss Penalty - penalizes multi-loss teams progressively
-            # Formula: -180 * (losses ^ 1.15)
-            # 1 loss = -180, 2 losses = -399, 3 losses = -650, 4 losses = -923
+            # V4.1: Diminished Loss Penalty
+            # Formula: 100 * (losses ^ 1.05), capped at 500
             num_losses = data['losses']
             loss_penalty = 0.0
             if num_losses > 0:
                 loss_penalty = self.loss_penalty_base * (num_losses ** self.loss_penalty_exp)
+                loss_penalty = min(loss_penalty, 500.0)
             
-            record_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus + winstreak_bonus - loss_penalty
+            record_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus - loss_penalty
             
             # FRS = (W_Team * TQ) + (W_Conf * CQ) + (W_Rec * RS)
             # V4.0 Weights: Team=0.52, Conf=0.1, Record=0.38 (More resume-focused like CFP)
@@ -661,6 +691,10 @@ class TeamQualityRanker:
             }
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
+        
+        # V4.1: Update FBS Independents display CQ with average of actual team CQs
+        if indie_cqs:
+            conf_quality['FBS Independents'] = sum(indie_cqs) / len(indie_cqs)
             
         # Sort teams
         team_rankings.sort(key=lambda x: x['final_ranking_score'], reverse=True)

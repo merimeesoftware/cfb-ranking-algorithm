@@ -124,8 +124,8 @@ export async function fetchRankings(year: number, week: number, weights?: Algori
 		// Add weights if provided
 		if (weights) {
 			url += `&team_quality_weight=${weights.teamQuality}`;
-			url += `&record_score_weight=${weights.recordScore}`;
-			url += `&conference_quality_weight=${weights.conferenceQuality}`;
+			url += `&record_weight=${weights.recordScore}`;
+			url += `&conference_weight=${weights.conferenceQuality}`;
 			url += `&prior_strength=${weights.priorStrength}`;
 		}
 		

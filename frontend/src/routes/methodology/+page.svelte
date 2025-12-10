@@ -18,7 +18,7 @@
 			How the Rankings Work
 		</h1>
 		<p class="mt-2 text-lg text-gray-600 dark:text-gray-400">
-			Version 4.0 — Team Quality, Resume & Conference Strength
+			Version 4.1 — Refined Resume & Conference Logic
 		</p>
 		<p class="mt-1 text-sm text-gray-500 dark:text-gray-500">
 			A hybrid system balancing pure team strength with on-field accomplishments
@@ -144,7 +144,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Starting Elo Ratings by Tier</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Each team begins with a tier-based rating that reflects their competitive level:
+						Each team begins with a tier-based rating (85% weight) blended with their historical performance (15% weight) to reduce legacy bias while respecting pedigree:
 					</p>
 					<div class="grid grid-cols-3 gap-3 text-center">
 						<div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
@@ -174,7 +174,7 @@
 					<div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
 						<div class="flex gap-2">
 							<span class="font-medium text-gray-900 dark:text-white w-36">K-factor:</span>
-							<span>Base volatility = 40. Controls how much each game affects ratings.</span>
+							<span>Base volatility = 40. Reduced in postseason (0.6-0.7) to prevent "Bowl Bias".</span>
 						</div>
 						<div class="flex gap-2">
 							<span class="font-medium text-gray-900 dark:text-white w-36">Expected Win:</span>
@@ -363,7 +363,7 @@
 							Bonus for beating quality opponents (tier-specific thresholds):
 						</div>
 						<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded">
-							P4: threshold 1200 | G5: threshold 1100
+							P4: threshold 1200 | G5: threshold 1050
 						</div>
 					</div>
 
@@ -377,7 +377,7 @@
 							Logarithmic reward for tough schedules (tier-specific):
 						</div>
 						<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded">
-							P4: base 1400 | G5: base 1250
+							P4: base 1420 | G5: base 1300
 						</div>
 					</div>
 
@@ -388,10 +388,10 @@
 							Loss Penalty
 						</h5>
 						<div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-							Escalating penalty for each loss (tier-adjusted):
+							Diminished penalty for losses to prevent harsh drops:
 						</div>
 						<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded">
-							P4: -30/game | G5: -20/game
+							Penalty = 100 × (Losses ^ 1.05) [Max 500]
 						</div>
 					</div>
 				</div>
@@ -406,7 +406,7 @@
 							<div>
 								<h5 class="font-medium text-gray-900 dark:text-white">Head-to-Head Bonus</h5>
 								<p class="text-sm text-gray-600 dark:text-gray-400">
-									+40 points for defeating a team with same/better record. Rewards statement wins.
+									+88 points for Top 10 wins, +44 for Top 25 wins. Rewards beating the best.
 								</p>
 							</div>
 						</div>
@@ -417,10 +417,10 @@
 							<div>
 								<h5 class="font-medium text-gray-900 dark:text-white">Quality Loss Bonus</h5>
 								<p class="text-sm text-gray-600 dark:text-gray-400">
-									Partial credit for competitive losses to elite teams. Losing to the #1 team hurts less than losing to an unranked team.
+									Partial credit for competitive losses to elite teams (Elo > 1600).
 								</p>
 								<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded mt-2">
-									QL = (OppElo - {'{'}P4:1500, G5:1350{'}'}) × 0.15 <span class="text-gray-500">[if OppElo > threshold]</span>
+									QL = (OppElo - 1600) × 0.165 <span class="text-gray-500">[Max 33 pts]</span>
 								</div>
 							</div>
 						</div>
@@ -431,18 +431,7 @@
 							<div>
 								<h5 class="font-medium text-gray-900 dark:text-white">Cross-Tier Bonus (G5 only)</h5>
 								<p class="text-sm text-gray-600 dark:text-gray-400">
-									+60 points per P4 win for G5 teams. Rewards scheduling up and winning.
-								</p>
-							</div>
-						</div>
-
-						<!-- Win Streak -->
-						<div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-							<span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shrink-0">🔥</span>
-							<div>
-								<h5 class="font-medium text-gray-900 dark:text-white">Win Streak Bonus</h5>
-								<p class="text-sm text-gray-600 dark:text-gray-400">
-									+20 points per win after 3+ consecutive victories. Rewards momentum and consistency.
+									+80 points per P4 win for G5 teams. Rewards scheduling up and winning.
 								</p>
 							</div>
 						</div>
@@ -456,18 +445,17 @@
 						<div class="space-y-2 text-gray-600 dark:text-gray-400">
 							<div><strong>Record:</strong> 10-2 (6 home wins, 4 road wins)</div>
 							<div><strong>Avg Win Elo:</strong> 1450 | <strong>Avg Opp Elo:</strong> 1520</div>
-							<div><strong>Context:</strong> Beat 2 teams with equal record, 5-game win streak, lost to #3 team (1680 Elo)</div>
+							<div><strong>Context:</strong> Beat 2 teams with equal record, lost to #3 team (1680 Elo)</div>
 							<div class="mt-3 font-mono text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded space-y-1">
 								<div>Base: 1000</div>
 								<div>WinPct: (6×1.0 + 4×1.1) / 12 = 0.87 → +867</div>
-								<div>SoV: (1450 - 1200) × 0.5 = +125</div>
-								<div>SoS: log(1520 - 1400) × 150 = +303</div>
-								<div>LossPenalty: 2 × 30 = -60</div>
-								<div>H2H: 2 × 40 = +80</div>
-								<div>QL: (1680 - 1500) × 0.15 = +27</div>
-								<div>WinStreak: 2 × 20 = +40</div>
+								<div>SoV: (1450 - 1200) × 0.35 = +88</div>
+								<div>SoS: log(1520 - 1420) × 80 = +368</div>
+								<div>LossPenalty: 100 × (2^1.05) = -207</div>
+								<div>H2H: 2 × 44 = +88</div>
+								<div>QL: (1680 - 1600) × 0.165 = +13</div>
 								<div class="border-t border-gray-300 dark:border-gray-600 pt-1 mt-1 font-bold">
-									Total: 2382 → Normalized to ~78/100
+									Total: 2217 → Normalized to ~72/100
 								</div>
 							</div>
 						</div>
@@ -585,8 +573,9 @@
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">FBS Independents</h4>
 					<div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
 						<p class="text-sm text-gray-600 dark:text-gray-400">
-							Teams without a conference (Notre Dame, UConn, UMass) receive the <strong>average of all Power 4 
-							conference quality scores</strong>. This treats them as elite-level without giving artificial advantage or disadvantage.
+							Teams without a conference (Notre Dame, UConn, UMass) receive a <strong>Synthetic Conference Quality</strong> score. 
+							This is calculated as the average CQ of all the conferences on their schedule. If they play a P4 schedule, they get a P4 boost; 
+							if they play a G5 schedule, they get a G5 boost.
 						</p>
 					</div>
 				</div>
@@ -716,43 +705,43 @@
 
 		<!-- Additional Features List -->
 		<div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-			<h4 class="font-medium text-gray-900 dark:text-white mb-3">Additional V4.0 Innovations</h4>
+			<h4 class="font-medium text-gray-900 dark:text-white mb-3">Additional V4.1 Innovations</h4>
 			<div class="grid md:grid-cols-2 gap-3 text-sm">
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Head-to-Head Bonus:</strong> +40 for beating equal-record teams</span>
+					<span><strong>Head-to-Head Bonus:</strong> +88/+44 for Top 10/25 wins</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Quality Loss Credit:</strong> Less penalty for losses to elite teams</span>
+					<span><strong>Quality Loss Credit:</strong> Threshold raised to 1600 Elo</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Cross-Tier Bonus:</strong> +60 per P4 win for G5 teams</span>
+					<span><strong>Cross-Tier Bonus:</strong> +80 per P4 win for G5 teams</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Win Streak Momentum:</strong> +20/win after 3+ consecutive</span>
+					<span><strong>Postseason Damping:</strong> Reduced volatility for bowl games</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>G5 Credibility System:</strong> Fair evaluation for non-P4 teams</span>
+					<span><strong>Dynamic Priors:</strong> 85% fresh start / 15% historical</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Tier Damping:</strong> G5-vs-G5 = 0.5× to prevent inflation</span>
+					<span><strong>Tier Damping:</strong> G5-vs-G5 = 0.65× (was 0.5×)</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -804,8 +793,8 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white">Recency Without Recency Bias</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Win streaks matter (+20/win after 3+), but early-season games are re-evaluated fairly through iterative solving. 
-						No artificial late-season boost.
+						Early-season games are re-evaluated fairly through iterative solving. 
+						No artificial late-season boost or "eye test" bias.
 					</p>
 				</div>
 			</div>

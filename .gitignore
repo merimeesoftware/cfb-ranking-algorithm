@@ -56,3 +56,6 @@ bandit-report.json
 
 # Cache directory
 .cache/
+
+# AI Instructions (project-specific, not shared)
+.github/copilot-instructions.md

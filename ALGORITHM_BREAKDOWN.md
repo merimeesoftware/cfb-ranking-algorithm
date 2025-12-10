@@ -1,4 +1,4 @@
-# CFB Ranking Algorithm - Complete Breakdown (V4.0)
+# CFB Ranking Algorithm - Complete Breakdown (V4.1)
 
 ## Master Formula
 
@@ -192,49 +192,49 @@ else:
 | G5, average schedule | 1280 | -60 | -16 |
 | G5, good schedule | 1350 | -25 | +35 |
 
-#### Sub-Component 4: Loss Penalty (V4.0 New)
+#### Sub-Component 4: Loss Penalty (V4.1)
 
 ```
-Loss_Penalty = 150 × (num_losses ^ 1.15)
+Loss_Penalty = 100 × (num_losses ^ 1.05)
 ```
 
 | Losses | Penalty | Interpretation |
 |--------|---------|----------------|
 | 0 | 0 | No penalty for undefeated teams |
-| 1 | -150 | Single loss is costly but recoverable |
-| 2 | -333 | Two losses significantly hurts ranking |
-| 3 | -541 | Three losses drops team substantially |
-| 4 | -769 | Four losses puts team out of contention |
+| 1 | -100 | Single loss is costly but recoverable |
+| 2 | -207 | Two losses significantly hurts ranking |
+| 3 | -317 | Three losses drops team substantially |
+| 4 | -429 | Four losses puts team out of contention |
 
-**V4.0.2:** Base reduced from 180 to 150 (was briefly 120 in V4.0.1). This balances loss impact without being too harsh or too lenient.
+**V4.1:** Base reduced from 150 to 100 and exponent reduced to 1.05. This diminishes the penalty for losses, allowing quality teams with tough schedules to stay ranked higher. Capped at 500 points.
 
-#### Sub-Component 5: Head-to-Head Bonus (V4.0 Phase 3)
+#### Sub-Component 5: Head-to-Head Bonus (V4.1)
 
 Rewards teams for defeating top-ranked opponents in the current rankings:
 
 ```
-H2H_Bonus = min((Top10_Wins × 80) + (Top25_Wins × 40), 200)
+H2H_Bonus = min((Top10_Wins × 88) + (Top25_Wins × 44), 220)
 ```
 
 | Win Type | Bonus | Rationale |
 |----------|-------|----------|
-| Win vs Top 10 Team (Elo > 1650) | +80 | V4.0.2: Reduced from 120 |
-| Win vs Top 11-25 Team (Elo > 1550) | +40 | V4.0.2: Reduced from 60, raised floor from 1500 |
-| Maximum Total | 200 | V4.0.2: Capped to prevent runaway stacking |
+| Win vs Top 10 Team (Elo > 1650) | +88 | V4.1: Boosted by 10% |
+| Win vs Top 11-25 Team (Elo > 1550) | +44 | V4.1: Boosted by 10% |
+| Maximum Total | 220 | V4.1: Capped to prevent runaway stacking |
 
 **Examples:**
-- Team with 2 wins vs Top 10 + 1 win vs Top 20: `min((2 × 80) + (1 × 40), 200) = +200 points` (capped)
+- Team with 2 wins vs Top 10 + 1 win vs Top 20: `min((2 × 88) + (1 × 44), 220) = +220 points` (capped)
 - Team with 0 ranked wins: `+0 points`
-- Team with 3 wins vs Top 25 (none Top 10): `min((0 × 80) + (3 × 40), 200) = +120 points`
+- Team with 3 wins vs Top 25 (none Top 10): `min((0 × 88) + (3 × 44), 220) = +132 points`
 
-#### Sub-Component 6: Quality Loss Bonus (V4.0 Phase 3)
+#### Sub-Component 6: Quality Loss Bonus (V4.1)
 
 Rewards teams whose losses came against elite opponents (Elo > 1600):
 
 ```
 for each loss:
     if opponent_elo > 1600:
-        quality_loss_points += min((opponent_elo - 1600) × 0.15, 30)
+        quality_loss_points += min((opponent_elo - 1600) × 0.165, 33)
 
 QL_Bonus = quality_loss_points / num_losses   [if num_losses > 0]
 ```
@@ -242,42 +242,19 @@ QL_Bonus = quality_loss_points / num_losses   [if num_losses > 0]
 | Opponent Elo | Bonus per QL | Example |
 |--------------|--------------|----------|
 | 1600 | +0 | Threshold - no bonus |
-| 1650 | +7.5 | (1650-1600) × 0.15 |
-| 1700 | +15 | (1700-1600) × 0.15 |
-| 1800 | +30 | Capped at 30 per loss |
+| 1650 | +8.25 | (1650-1600) × 0.165 |
+| 1700 | +16.5 | (1700-1600) × 0.165 |
+| 1800 | +33 | Capped at 33 per loss |
 
-**V4.0.2 Changes:**
-- Raised threshold from 1550 to 1600 (higher bar for "quality" loss)
-- Reduced multiplier from 0.25 to 0.15 (less reward for losing)
-- Reduced cap from 50 to 30 per loss
+**V4.1 Changes:**
+- Multiplier increased to 0.165 (10% boost)
+- Cap increased to 33 per loss
 
 **Philosophy:** "Quality of losses" matters, but losing shouldn't be rewarded too much. Only losses to truly elite teams (Elo > 1600) count.
 
-#### Sub-Component 7: Win Streak Bonus (V4.0 Phase 3)
+#### Sub-Component 7: Win Streak Bonus (Removed in V4.1)
 
-Rewards G5 teams demonstrating conference dominance:
-
-```
-if team_conference_type == 'Group of 5' AND num_losses <= 1 AND conf_wins >= 7:
-    WinStreak_Bonus = 150
-else:
-    WinStreak_Bonus = 0
-```
-
-| Requirement | Threshold | Rationale |
-|-------------|-----------|----------|
-| Conference Type | Group of 5 | Only G5 teams need this boost |
-| Maximum Losses | ≤ 1 | Ensures team is truly elite |
-| Minimum Conf Wins | ≥ 7 | Demonstrates conference dominance |
-| Bonus Amount | +150 | Significant boost to close gap with P4 |
-
-**Examples:**
-- JMU (G5, 11-1, 8 conf wins): Eligible → `+150 points`
-- Tulane (G5, 10-2, 7 conf wins): NOT eligible (2 losses) → `+0 points`
-- Ohio State (P4, 12-0, 9 conf wins): NOT eligible (P4 team) → `+0 points`
-- Marshall (G5, 9-3, 6 conf wins): NOT eligible (3 losses, only 6 conf wins) → `+0 points`
-
-**Philosophy:** Helps elite G5 teams bridge the gap to P4 teams. A dominant G5 team that runs the table in conference play deserves CFP consideration alongside 1-loss P4 teams.
+*This component was removed in V4.1 to simplify the algorithm and rely more on the Cross-Tier Bonus and Upset Multipliers to reward G5 performance.*
 
 ### Full Record Score Example
 
@@ -384,15 +361,15 @@ OOC_Multiplier = 0.8 + (0.4 × 0.705) = 0.8 + 0.282 = 1.082
 
 Teams without a conference (like Notre Dame, Army) are handled specially:
 
-**V4.0.2 Changes:**
+**V4.1 Changes:**
 - **Conference Type:** Treated as "Power 4" for all tier-based calculations (SoV threshold 1200, SoS baseline 1420)
-- **Conference Quality:** Assigned **CQ = 0** (no conference to boost them)
+- **Conference Quality:** Assigned a **Synthetic CQ** based on their schedule.
 
 ```
-CQ = 0  # FBS Independents get no conference quality bonus
+Indie_CQ = Average(CQ of all opponents' conferences)
 ```
 
-**Rationale:** Independents compete at the P4 level but shouldn't get artificial CQ boost from not having a conference. They must earn their ranking purely through Team Quality and Record Score.
+**Rationale:** Independents don't have a conference to boost/drag them. Instead of an arbitrary zero or average, their "conference strength" is determined by the company they keep. If Notre Dame plays an all-ACC/Big Ten schedule, they get a P4-level CQ. If UMass plays mostly G5 teams, they get a G5-level CQ.
 
 ### Full Conference Quality Example
 
@@ -499,7 +476,8 @@ Multiple mechanisms boost quality G5 teams:
 
 ## Version History
 
-- **V4.0.2 (Current):** Resume rebalancing. Reduced SoV multipliers (P4: 0.35, G5: 0.45), reduced SoS log multiplier (80 from 160), reduced H2H bonuses (80/40, max 200), reduced QL impact (threshold 1600, mult 0.15, cap 30), adjusted loss penalty (base 150). FBS Independents now treated as Power 4 tier with CQ=0.
+- **V4.1 (Current):** Diminished loss penalty (power formula 100*L^1.05), boosted H2H bonuses (88/44), boosted Quality Loss bonus (0.165 mult), removed Win Streak bonus.
+- **V4.0.2:** Resume rebalancing. Reduced SoV multipliers (P4: 0.35, G5: 0.45), reduced SoS log multiplier (80 from 160), reduced H2H bonuses (80/40, max 200), reduced QL impact (threshold 1600, mult 0.15, cap 30), adjusted loss penalty (base 150). FBS Independents now treated as Power 4 tier with CQ=0.
 - **V4.0.1:** Hotfix for ND resume anomaly. Capped H2H bonus at 300 max, capped QL bonus at 50 per loss, added Elo floor (1500) for Top-25 H2H credit, added Indie SoS baseline (1350) to penalize soft independent schedules. Synced app.py defaults with V4.0.
 - **V4.0 Phase 3:** Head-to-head bonus (+120 per Top 10 win, +60 per Top 25 win), quality loss bonus (scaled by opponent Elo above 1550), G5 win streak bonus (+150 for ≤1 loss and ≥7 conf wins).
 - **V4.0 Phase 2:** Upset bonuses (×1.25 for 150+ Elo gap, ×1.20 for G5>P4), tier-specific SoV (P4: 1200/0.5, G5: 1050/0.55), tier-specific SoS baselines (P4: 1420, G5: 1300), hybrid CQ (70% top half + 30% full), cross-tier win bonus (+80 per G5>P4 win).

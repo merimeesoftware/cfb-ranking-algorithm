@@ -130,7 +130,16 @@ def calculate_rankings_logic(year, week, request_args):
     config['team_quality_weight'] = get_float_arg('team_quality_weight', config['team_quality_weight'])
     config['conference_weight'] = get_float_arg('conference_weight', config['conference_weight'])
     config['record_weight'] = get_float_arg('record_weight', config['record_weight'])
-    config['prior_strength'] = get_float_arg('prior_strength', config['prior_strength'])
+    
+    # V4.1: Dynamic Prior Strength
+    # If prior_strength is provided in request, use it. Otherwise calculate dynamically.
+    # Formula: max(0.0, 0.7 * (12.0 - calc_week) / 11.0) -> 70% at Week 1, 0% at Week 12
+    if request_args.get('prior_strength') is not None:
+        config['prior_strength'] = float(request_args.get('prior_strength'))
+    else:
+        # If week is None (postseason/all), treat as week 15+ (strength 0)
+        calc_week = week if week is not None else 15
+        config['prior_strength'] = max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
     
     # --- Calculate Rankings ---
     print("Calculating rankings (Iterative V4.0)...")

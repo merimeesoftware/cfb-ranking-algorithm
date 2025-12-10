@@ -119,6 +119,14 @@ class CFBRankingApp:
         # 2. Initialize the ranking algorithm for Current Year
         ranking_config = config or {}
         ranking_config['use_ats'] = use_ats
+        
+        # V4.1: Dynamic Prior Strength
+        # Formula: max(0.0, 0.7 * (12.0 - calc_week) / 11.0) -> 70% at Week 1, 0% at Week 12
+        if 'prior_strength' not in ranking_config:
+             calc_week = week if week is not None else 15
+             ranking_config['prior_strength'] = max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
+             logger.info(f"Using dynamic prior_strength: {ranking_config['prior_strength']:.3f} for week {calc_week}")
+
         ranker = TeamQualityRanker(config=ranking_config, priors=priors)
         
         # Fetch all game data
