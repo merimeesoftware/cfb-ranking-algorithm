@@ -11,7 +11,7 @@ const API_BASE = import.meta.env.DEV
  * Fetch rankings from the backend API
  */
 export async function fetchRankings(year: number, week: number): Promise<RankingsResponse> {
-	const url = `${API_BASE}/rankings?year=${year}&week=${week}`;
+	const url = `${API_BASE}/rankings?year=${year}&week=${week}&all_divisions=true`;
 	console.log('Fetching rankings from:', url);
 	
 	const response = await fetch(url);
