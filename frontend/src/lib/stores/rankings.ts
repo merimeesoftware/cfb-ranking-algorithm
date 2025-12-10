@@ -63,7 +63,8 @@ export const filterState = writable<FilterState>({
 	year: currentSeasonWeek.year,
 	week: currentSeasonWeek.week,
 	conferenceFilter: null,
-	searchQuery: ''
+	searchQuery: '',
+	view: 'fbs'
 });
 
 // Available years (last 5 years)
@@ -80,6 +81,15 @@ export const filteredTeams = derived(
 	([$teams, $filterState]) => {
 		let result = [...$teams];
 
+		// Filter by View
+		if ($filterState.view === 'p4') {
+			result = result.filter(t => t.conference_type === 'Power 4');
+		} else if ($filterState.view === 'g5') {
+			result = result.filter(t => t.conference_type === 'Group of 5');
+		} else if ($filterState.view === 'fcs') {
+			result = result.filter(t => t.conference_type === 'FCS');
+		}
+
 		// Filter by conference
 		if ($filterState.conferenceFilter) {
 			result = result.filter(t => t.conference === $filterState.conferenceFilter);
@@ -92,6 +102,24 @@ export const filteredTeams = derived(
 				t.team_name.toLowerCase().includes(query) ||
 				t.conference.toLowerCase().includes(query)
 			);
+		}
+
+		return result;
+	}
+);
+
+// Derived store for filtered conferences
+export const filteredConferences = derived(
+	[conferences, filterState],
+	([$conferences, $filterState]) => {
+		let result = [...$conferences];
+
+		if ($filterState.view === 'p4') {
+			result = result.filter(c => c.conference_type === 'Power 4');
+		} else if ($filterState.view === 'g5') {
+			result = result.filter(c => c.conference_type === 'Group of 5');
+		} else if ($filterState.view === 'fcs') {
+			result = result.filter(c => c.conference_type === 'FCS');
 		}
 
 		return result;
@@ -122,7 +150,8 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 
 		const data = await response.json();
 		
-		// Map API response to frontend types
+		/conference_type: c.conference_type || '',
+			/ Map API response to frontend types
 		// API returns: team_rankings, conference_rankings
 		// Frontend expects: teams, conferences
 		const teamData: Team[] = (data.team_rankings || data.teams || []).map((t: any) => ({
@@ -178,7 +207,14 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 	}
 }
 
+/**view filter
+ */
+export function setView(view: 'fbs' | 'p4' | 'g5' | 'fcs'): void {
+	filterState.update(state => ({ ...state, view, conferenceFilter: null }));
+}
+
 /**
+ * Set 
  * Set year filter
  */
 export function setYear(year: number): void {

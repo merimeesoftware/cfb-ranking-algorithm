@@ -7,6 +7,7 @@
 	import type { Conference } from '$lib/types';
 	import { 
 		filteredTeams, 
+		filteredConferences,
 		conferences, 
 		loading, 
 		error, 
@@ -15,7 +16,8 @@
 		maxWeek,
 		fetchRankings,
 		setYear,
-		setWeek
+		setWeek,
+		setView
 	} from '$lib/stores/rankings';
 	import { onMount } from 'svelte';
 
@@ -38,6 +40,10 @@
 	function handleWeekChange(event: CustomEvent<number>) {
 		setWeek(event.detail);
 		fetchRankings($filterState.year, event.detail);
+	}
+
+	function handleViewChange(event: CustomEvent<'fbs' | 'p4' | 'g5' | 'fcs'>) {
+		setView(event.detail);
 	}
 
 	function handleUpdateRankings(event: CustomEvent<{
@@ -82,9 +88,11 @@
 		years={$availableYears}
 		selectedYear={$filterState.year}
 		selectedWeek={$filterState.week}
+		selectedView={$filterState.view}
 		maxWeek={$maxWeek}
 		on:yearChange={handleYearChange}
 		on:weekChange={handleWeekChange}
+		on:viewChange={handleViewChange}
 		on:updateRankings={handleUpdateRankings}
 	/>
 
@@ -145,7 +153,7 @@
 		{#if activeTab === 'teams'}
 			<RankingsTable teams={$filteredTeams} />
 		{:else}
-			<ConferenceTable conferences={$conferences} on:click={handleConferenceClick} />
+			<ConferenceTable conferences={$filteredConferences} on:click={handleConferenceClick} />
 		{/if}
 	{/if}
 </div>
@@ -155,7 +163,7 @@
 	<ConferenceDetailModal 
 		conference={selectedConference} 
 		rank={selectedConferenceRank} 
-		allConferences={$conferences}
+		allConferences={$filteredConferences}
 		allTeams={$filteredTeams}
 		on:close={closeConferenceModal} 
 	/>

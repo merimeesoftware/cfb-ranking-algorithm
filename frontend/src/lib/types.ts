@@ -32,6 +32,7 @@ export interface Team {
 
 export interface Conference {
 	conference: string;
+	conference_type?: string;
 	avg_ranking: number;
 	team_count: number;
 	ranked_teams: number;
@@ -62,4 +63,5 @@ export interface FilterState {
 	week: number;
 	conferenceFilter: string | null;
 	searchQuery: string;
+	view: 'fbs' | 'p4' | 'g5' | 'fcs';
 }

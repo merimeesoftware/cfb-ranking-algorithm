@@ -4,6 +4,7 @@
 	export let years: number[] = [];
 	export let selectedYear: number;
 	export let selectedWeek: number;
+	export let selectedView: 'fbs' | 'p4' | 'g5' | 'fcs' = 'fbs';
 	export let maxWeek: number = 15;
 
 	const dispatch = createEventDispatcher();
@@ -26,6 +27,10 @@
 			week: selectedWeek
 		});
 	}
+
+	function handleViewChange(view: 'fbs' | 'p4' | 'g5' | 'fcs') {
+		dispatch('viewChange', view);
+	}
 </script>
 
 <div class="card mb-6 overflow-hidden">
@@ -38,6 +43,38 @@
 			</svg>
 			Ranking Controls
 		</h3>
+	</div>
+
+	<!-- View Tabs -->
+	<div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 overflow-x-auto">
+		<button 
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+				{selectedView === 'fbs' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			on:click={() => handleViewChange('fbs')}
+		>
+			National (FBS)
+		</button>
+		<button 
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+				{selectedView === 'g5' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			on:click={() => handleViewChange('g5')}
+		>
+			Group of 5
+		</button>
+		<button 
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+				{selectedView === 'p4' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			on:click={() => handleViewChange('p4')}
+		>
+			Power 4
+		</button>
+		<button 
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+				{selectedView === 'fcs' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			on:click={() => handleViewChange('fcs')}
+		>
+			FCS
+		</button>
 	</div>
 
 	<!-- Basic Controls -->
