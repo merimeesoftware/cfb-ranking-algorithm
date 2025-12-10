@@ -35,8 +35,8 @@
 		</h2>
 		<div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-mono text-center text-lg mb-4">
 			<span class="text-primary-600 dark:text-primary-400 font-bold">FRS</span> = 
-			(<span class="text-blue-600 dark:text-blue-400">0.52</span> × Team Quality) + 
-			(<span class="text-green-600 dark:text-green-400">0.38</span> × Resume) + 
+			(<span class="text-blue-600 dark:text-blue-400">0.60</span> × Team Quality) + 
+			(<span class="text-green-600 dark:text-green-400">0.30</span> × Resume) + 
 			(<span class="text-purple-600 dark:text-purple-400">0.10</span> × Conference Quality)
 		</div>
 		<p class="text-sm text-gray-600 dark:text-gray-400 text-center">
@@ -54,7 +54,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Team Quality (52%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Team Quality (60%)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Elo-based power rating measuring pure team strength. Uses iterative solving, upset bonuses, 
@@ -79,7 +79,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Resume (38%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Resume (30%)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				On-field accomplishments: win %, strength of victory, strength of schedule, head-to-head results, 
@@ -773,7 +773,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white">Balance Power & Resume</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Team Quality (52%) answers "How good are you?" while Resume (38%) answers "What have you actually done?" 
+						Team Quality (60%) answers "How good are you?" while Resume (30%) answers "What have you actually done?" 
 						Neither pure predictive nor pure résumé — a hybrid that rewards both.
 					</p>
 				</div>

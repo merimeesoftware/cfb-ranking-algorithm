@@ -94,7 +94,7 @@ class TeamQualityRanker:
         
         self.base_factor = self.config.get('base_factor', 40.0) # K-factor
         self.conference_weight = self.config.get('conference_weight', 0.1)
-        self.record_weight = self.config.get('record_weight', 0.5)
+        self.record_weight = self.config.get('record_weight', 0.30)
         
         # V4.0: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
         # Default 0.15 means 85% tier initial + 15% historical prior (reduced legacy bias)
@@ -655,11 +655,11 @@ class TeamQualityRanker:
             record_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus - loss_penalty
             
             # FRS = (W_Team * TQ) + (W_Conf * CQ) + (W_Rec * RS)
-            # V4.0 Weights: Team=0.52, Conf=0.1, Record=0.38 (More resume-focused like CFP)
+            # V4.0 Weights: Team=0.60, Conf=0.1, Record=0.30 (More resume-focused like CFP)
             # V4.0.1: Now uses config parameters for all weights
-            tq_weight = self.config.get('team_quality_weight', 0.52)
+            tq_weight = self.config.get('team_quality_weight', 0.60)
             conf_weight = self.conference_weight
-            rec_weight = self.config.get('record_weight', 0.38)
+            rec_weight = self.config.get('record_weight', 0.30)
             
             final_score = (tq_weight * data['quality_score']) + \
                           (conf_weight * cq) + \

@@ -26,9 +26,9 @@ DEFAULT_CONFIG = {
     'group5_initial': 1200.0,
     'fcs_initial': 900.0,
     'base_factor': 40.0,
-    'team_quality_weight': 0.52,  # V4.0.1: FRS Team Quality weight
+    'team_quality_weight': 0.60,  # V4.1: FRS Team Quality weight
     'conference_weight': 0.10,
-    'record_weight': 0.38,  # V4.0: 38% resume weight
+    'record_weight': 0.30,  # V4.1: 30% resume weight
     'prior_strength': 0.15,  # V4.0: 15% historical, 85% fresh
     'use_ats': False,
     'ats_bonus': 10.0

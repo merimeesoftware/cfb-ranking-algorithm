@@ -3,14 +3,14 @@
 ## Master Formula
 
 ```
-FRS = (0.52 × TeamQuality) + (0.38 × RecordScore) + (0.10 × ConferenceQuality)
+FRS = (0.60 × TeamQuality) + (0.30 × RecordScore) + (0.10 × ConferenceQuality)
 ```
 
 **Final Ranking Score (FRS)** combines three weighted components to produce the final rankings.
 
 ---
 
-## 1. Team Quality (52%) — Elo-Based Rating
+## 1. Team Quality (60%) — Elo-Based Rating
 
 The foundation of the ranking system. This component measures **pure team strength** through a zero-sum Elo system that updates after every game.
 
@@ -101,7 +101,7 @@ The season is **simulated 4 times** (V4.0: increased from 3):
 
 ---
 
-## 2. Record Score (38%) — Resume / Deserving Component
+## 2. Record Score (30%) — Resume / Deserving Component
 
 Rewards **winning record**, **schedule difficulty**, and **quality of victories**. Penalizes **multi-loss teams** progressively. This component answers: "Does this team's resume deserve a high ranking?"
 
@@ -398,28 +398,28 @@ Final CQ = 1300 × 1.031 = 1340
 
 | Component | Calculation | Score |
 |-----------|-------------|-------|
-| **Team Quality (52%)** | Elo = 1750 | 1750 |
-| **Record Score (38%)** | (calculated above) = 2775 | 2775 |
+| **Team Quality (60%)** | Elo = 1750 | 1750 |
+| **Record Score (30%)** | (calculated above) = 2775 | 2775 |
 | **Conference Quality (10%)** | SEC CQ = 1380 | 1380 |
 
 ```
-Final Score = (0.52 × 1750) + (0.38 × 2775) + (0.1 × 1380)
-            = 910 + 1054.5 + 138
-            = 2102.5
+Final Score = (0.60 × 1750) + (0.30 × 2775) + (0.1 × 1380)
+            = 1050 + 832.5 + 138
+            = 2020.5
 ```
 
 ### Example: Tulane (11-1) in different conference
 
 | Component | Calculation | Score |
 |-----------|-------------|-------|
-| **Team Quality (52%)** | Elo = 1600 (lower from playing weaker opponents) | 1600 |
-| **Record Score (38%)** | (same 11-1) = 2775 | 2775 |
+| **Team Quality (60%)** | Elo = 1600 (lower from playing weaker opponents) | 1600 |
+| **Record Score (30%)** | (same 11-1) = 2775 | 2775 |
 | **Conference Quality (10%)** | AAC CQ = 1150 | 1150 |
 
 ```
-Final Score = (0.52 × 1600) + (0.38 × 2775) + (0.1 × 1150)
-            = 832 + 1054.5 + 115
-            = 2001.5
+Final Score = (0.60 × 1600) + (0.30 × 2775) + (0.1 × 1150)
+            = 960 + 832.5 + 115
+            = 1907.5
 ```
 
 **Key:** Same record (11-1), but Georgia ranks higher due to:
