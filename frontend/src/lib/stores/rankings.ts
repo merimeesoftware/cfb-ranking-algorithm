@@ -103,31 +103,15 @@ const API_BASE = typeof window !== 'undefined' && window.location.hostname === '
 	? 'http://localhost:5001'
 	: 'https://cfb-rankings-api.onrender.com';
 
-// Custom weights interface
-interface AlgorithmWeights {
-	teamQuality: number;
-	recordScore: number;
-	conferenceQuality: number;
-	priorStrength: number;
-}
-
 /**
  * Fetch rankings from the API
  */
-export async function fetchRankings(year: number, week: number, weights?: AlgorithmWeights): Promise<void> {
+export async function fetchRankings(year: number, week: number): Promise<void> {
 	loading.set(true);
 	error.set(null);
 
 	try {
-		let url = `${API_BASE}/rankings?year=${year}&week=${week}`;
-		
-		// Add weights if provided
-		if (weights) {
-			url += `&team_quality_weight=${weights.teamQuality}`;
-			url += `&record_weight=${weights.recordScore}`;
-			url += `&conference_weight=${weights.conferenceQuality}`;
-			url += `&prior_strength=${weights.priorStrength}`;
-		}
+		const url = `${API_BASE}/rankings?year=${year}&week=${week}`;
 		
 		const response = await fetch(url);
 		

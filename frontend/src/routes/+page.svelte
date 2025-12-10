@@ -43,17 +43,11 @@
 	function handleUpdateRankings(event: CustomEvent<{
 		year: number;
 		week: number;
-		weights: {
-			teamQuality: number;
-			recordScore: number;
-			conferenceQuality: number;
-			priorStrength: number;
-		}
 	}>) {
-		const { year, week, weights } = event.detail;
+		const { year, week } = event.detail;
 		setYear(year);
 		setWeek(week);
-		fetchRankings(year, week, weights);
+		fetchRankings(year, week);
 	}
 
 	function handleConferenceClick(event: CustomEvent<{ conference: Conference; rank: number }>) {
