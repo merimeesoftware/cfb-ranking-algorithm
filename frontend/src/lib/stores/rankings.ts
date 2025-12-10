@@ -150,8 +150,7 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 
 		const data = await response.json();
 		
-		/conference_type: c.conference_type || '',
-			/ Map API response to frontend types
+		// Map API response to frontend types
 		// API returns: team_rankings, conference_rankings
 		// Frontend expects: teams, conferences
 		const teamData: Team[] = (data.team_rankings || data.teams || []).map((t: any) => ({
@@ -178,6 +177,7 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 
 		const conferenceData: Conference[] = (data.conference_rankings || data.conferences || []).map((c: any) => ({
 			conference: c.conference_name || c.conference || '',
+			conference_type: c.conference_type || '',
 			avg_ranking: c.average_team_quality || c.avg_ranking || 0,
 			team_count: c.number_of_teams || c.team_count || 0,
 			ranked_teams: c.ranked_teams ?? 0,
