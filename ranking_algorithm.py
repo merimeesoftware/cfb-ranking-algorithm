@@ -255,13 +255,13 @@ class TeamQualityRanker:
         # Blowouts against weak teams shouldn't inflate Elo as much
         # Use ABSOLUTE opponent Elo threshold - beating a 1200 Elo team by 60 isn't impressive
         mov_dampening = 1.0
-        if r_loser < 1400:  # Weak opponent (absolute threshold)
+        if r_loser < 1450:  # Weak opponent (absolute threshold)
             # Dampen MoV significantly for weak opponents
-            # At 1400 Elo: no dampening
-            # At 1200 Elo: 35% dampening
-            # At 1000 Elo: 70% dampening (max)
-            weakness_factor = min((1400 - r_loser) / 400.0, 1.0)
-            mov_dampening = 1.0 - (0.70 * weakness_factor)
+            # At 1450 Elo: no dampening
+            # At 1250 Elo: 42.5% dampening
+            # At 1050 Elo: 85% dampening (max)
+            weakness_factor = min((1450 - r_loser) / 400.0, 1.0)
+            mov_dampening = 1.0 - (0.85 * weakness_factor)
         
         m_mov *= mov_dampening
         
@@ -364,16 +364,16 @@ class TeamQualityRanker:
     def _calculate_bad_loss_penalty(self, team_elo: float, losses: List[LossDetail]) -> tuple[float, int]:
         """Calculate penalty for losses to WEAK teams (absolute Elo threshold).
         
-        V4.7: Bad Loss = loss to team with Elo < 1500 (objective threshold).
+        V4.7: Bad Loss = loss to team with Elo < 1550 (objective threshold).
         This is NOT relative to your own Elo - a loss to a 1450 Elo team is bad for everyone.
-        1500 Elo roughly corresponds to a .500 P4 team or excellent G5 team.
+        1550 Elo roughly corresponds to a .500 P4 team or excellent G5 team.
         """
         if not losses:
             return 0.0, 0
             
         total_penalty = 0.0
         bad_loss_count = 0
-        bad_loss_elo_ceiling = self.config.get('bad_loss_elo_ceiling', 1500.0)
+        bad_loss_elo_ceiling = self.config.get('bad_loss_elo_ceiling', 1550.0)
         
         for loss in losses:
             opp_name = loss['opponent']
@@ -381,7 +381,7 @@ class TeamQualityRanker:
             mov = loss.get('mov', -10)
             is_bad = False
             
-            # V4.7: Bad Loss = loss to team with Elo < 1400 (ABSOLUTE threshold)
+            # V4.7: Bad Loss = loss to team with Elo < 1550 (ABSOLUTE threshold)
             # Losing to a weak team is bad regardless of your own rating
             if opp_elo < bad_loss_elo_ceiling:
                 # Base penalty scales with how weak the opponent is
@@ -416,15 +416,25 @@ class TeamQualityRanker:
         for win in wins:
             opp_name = win['opponent']
             opp_elo = self.team_stats[opp_name]['quality_score']
+            opp_wins = self.team_stats[opp_name]['wins']
             mov = win.get('mov', 10)
             
             # Quality Win: Beat a TOP team (absolute threshold)
-            # 1550+ Elo = roughly top 25 caliber
+            # 1600+ Elo = roughly top 25 caliber
+            # OR 1500+ Elo AND 9+ Wins (Reward beating good record teams like Houston)
+            is_quality = False
+            base_bonus = 0.0
+            
             if opp_elo >= self.qw_elo_floor:
-                # Base bonus scales with how good the opponent is
                 elo_above_floor = opp_elo - self.qw_elo_floor
                 base_bonus = 20.0 + (elo_above_floor * self.qw_mult)
+                is_quality = True
+            elif opp_elo >= 1500 and opp_wins >= 8:
+                # Special case for good record but lower Elo
+                base_bonus = 15.0 + ((opp_elo - 1500) * 0.2)
+                is_quality = True
                 
+            if is_quality:
                 # MoV multiplier: bonus for dominant wins over top teams
                 mov_mult = 1.0
                 if mov >= 14:
