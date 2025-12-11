@@ -726,7 +726,8 @@ class TeamQualityRanker:
                     'cq': cq,
                     'top10_wins': top10_wins,
                     'top25_wins': top25_wins,
-                    'cross_tier_wins': cross_tier_wins
+                    'cross_tier_wins': cross_tier_wins,
+                    'quality_loss_count': quality_loss_count
                 }
             }
 
@@ -784,7 +785,7 @@ class TeamQualityRanker:
                     'fcs_wins': self.team_stats[team]['record_vs_fcs']['wins'],
                     'fcs_losses': self.team_stats[team]['record_vs_fcs']['losses']
                 },
-                'quality_losses': quality_loss_count,
+                'quality_losses': comps['quality_loss_count'],
                 'quality_wins': quality_win_counts.get(team, 0),
                 'bad_losses': bad_loss_counts.get(team, 0),
                 'bad_wins': bad_win_counts.get(team, 0),
