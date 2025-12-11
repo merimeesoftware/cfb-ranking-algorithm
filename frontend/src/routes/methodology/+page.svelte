@@ -18,7 +18,7 @@
 			How the Rankings Work
 		</h1>
 		<p class="mt-2 text-lg text-gray-600 dark:text-gray-400">
-			Version 4.1 — Refined Resume & Conference Logic
+			Version 4.5 — Resume Emphasis
 		</p>
 		<p class="mt-1 text-sm text-gray-500 dark:text-gray-500">
 			A hybrid system balancing pure team strength with on-field accomplishments
@@ -35,9 +35,9 @@
 		</h2>
 		<div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-mono text-center text-lg mb-4">
 			<span class="text-primary-600 dark:text-primary-400 font-bold">FRS</span> = 
-			(<span class="text-blue-600 dark:text-blue-400">0.60</span> × Team Quality) + 
-			(<span class="text-green-600 dark:text-green-400">0.30</span> × Resume) + 
-			(<span class="text-purple-600 dark:text-purple-400">0.10</span> × Conference Quality)
+			(<span class="text-blue-600 dark:text-blue-400">0.50</span> × Team Quality) + 
+			(<span class="text-green-600 dark:text-green-400">0.42</span> × Resume) + 
+			(<span class="text-purple-600 dark:text-purple-400">0.08</span> × Conference Quality)
 		</div>
 		<p class="text-sm text-gray-600 dark:text-gray-400 text-center">
 			<strong>FRS</strong> = Final Ranking Score — All components are normalized to 0-100 scale before weighting
@@ -54,7 +54,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Team Quality (60%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Team Quality (50%)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Elo-based power rating measuring pure team strength. Uses iterative solving, upset bonuses, 
@@ -79,11 +79,11 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Resume (30%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Resume (42%)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				On-field accomplishments: win %, strength of victory, strength of schedule, head-to-head results, 
-				loss penalty, and momentum bonuses.
+				bad loss penalty, and quality win bonuses.
 			</p>
 			<button 
 				on:click={() => toggleSection('resume')}
@@ -104,10 +104,10 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Conference Quality (10%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Conference Quality (8%)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
-				League strength contextual boost. Uses hybrid formula (70% top-half, 30% full) with OOC performance multiplier.
+				League strength contextual boost. Uses hybrid formula (70% top-half, 30% full) with depth adjustment and OOC multiplier.
 			</p>
 			<button 
 				on:click={() => toggleSection('confQuality')}
@@ -330,7 +330,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Resume Score Formula</h4>
 					<div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-mono text-xs mb-3 overflow-x-auto">
-						Resume = Base + WeightedWinPct + SoV + SoS - LossPenalty + H2H + QL + CrossTier + WinStreak
+						Resume = Base + WeightedWinPct + SoV + SoS - BadLoss + H2H + QL + QW - BadWin + CrossTier
 					</div>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
 						All components are calculated then normalized to 0-100 scale.
@@ -381,17 +381,21 @@
 						</div>
 					</div>
 
-					<!-- Loss Penalty -->
+					<!-- Bad Loss Penalty -->
 					<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
 						<h5 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
 							<span class="w-5 h-5 bg-red-500 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
-							Loss Penalty
+							Bad Loss Penalty
 						</h5>
 						<div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-							Diminished penalty for losses to prevent harsh drops:
-						</div>
-						<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded">
-							Penalty = 100 × (Losses ^ 1.05) [Max 500]
+						Penalizes losses to significantly weaker opponents (Elo gap > 200) OR blowout losses (21+ pts) to similar/weaker teams:
+					</div>
+					<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded">
+						Penalty = (TeamElo - OppElo - 200) × 0.15<br/>
+						<span class="text-gray-500 italic">OR</span><br/>
+						Penalty = 10 + (MoV - 21) × 1.0 <span class="text-gray-500">(if blowout)</span><br/>
+						<span class="text-gray-500 italic">OR</span><br/>
+						Penalty = (gap - 150) × 0.08 + (MoV - 21) × 0.5 <span class="text-gray-500">(minor: 150-200 gap + blowout)</span>
 						</div>
 					</div>
 				</div>
@@ -425,6 +429,34 @@
 							</div>
 						</div>
 
+						<!-- Quality Win -->
+						<div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+							<span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shrink-0">QW</span>
+							<div>
+								<h5 class="font-medium text-gray-900 dark:text-white">Quality Win Bonus</h5>
+								<p class="text-sm text-gray-600 dark:text-gray-400">
+									Bonus for beating significantly stronger opponents (Elo gap > 100).
+								</p>
+								<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded mt-2">
+									QW = (OppElo - TeamElo) × 0.08 <span class="text-gray-500">[Max 50 pts]</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Bad Win Penalty -->
+						<div class="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+							<span class="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shrink-0">BW</span>
+							<div>
+								<h5 class="font-medium text-gray-900 dark:text-white">Bad Win Penalty</h5>
+								<p class="text-sm text-gray-600 dark:text-gray-400">
+									Penalty for close wins (≤7 pts) against significantly weaker opponents (Elo gap > 100).
+								</p>
+								<div class="font-mono text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded mt-2">
+									BW = 20 + (7 - MoV) × 2 <span class="text-gray-500">[Max 50 pts]</span>
+								</div>
+							</div>
+						</div>
+
 						<!-- Cross-Tier -->
 						<div class="flex items-start gap-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
 							<span class="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shrink-0">CT</span>
@@ -451,11 +483,11 @@
 								<div>WinPct: (6×1.0 + 4×1.1) / 12 = 0.87 → +867</div>
 								<div>SoV: (1450 - 1200) × 0.35 = +88</div>
 								<div>SoS: log(1520 - 1420) × 80 = +368</div>
-								<div>LossPenalty: 100 × (2^1.05) = -207</div>
+								<div>BadLoss: 0 (Loss was to stronger team)</div>
 								<div>H2H: 2 × 44 = +88</div>
 								<div>QL: (1680 - 1600) × 0.165 = +13</div>
 								<div class="border-t border-gray-300 dark:border-gray-600 pt-1 mt-1 font-bold">
-									Total: 2217 → Normalized to ~72/100
+									Total: 2424 → Normalized to ~78/100
 								</div>
 							</div>
 						</div>
@@ -487,12 +519,12 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Hybrid Conference Quality Formula</h4>
 					<div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-mono text-sm mb-3">
-						RawCQ = (0.70 × TopHalfAvg) + (0.30 × FullAvg)
+						RawCQ = (0.70 × TopHalfAvg) + (0.30 × FullAvg) + DepthAdj - BadLossAgg
 					</div>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
 						This hybrid approach weights the top half of the conference more heavily (70%) while still 
-						considering the full conference average (30%). This prevents weak bottom teams from artificially 
-						dragging down strong conferences.
+						considering the full conference average (30%). It also rewards depth (low variance) and penalizes 
+						conferences with many bad losses.
 					</p>
 				</div>
 
@@ -554,7 +586,7 @@
 					</p>
 					<div class="grid grid-cols-3 gap-3 text-center text-sm">
 						<div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
-							<div class="font-bold text-blue-600 dark:text-blue-400">1.0×</div>
+							<div class="font-bold text-blue-600 dark:text-blue-400">1.2×</div>
 							<div class="text-xs text-gray-600 dark:text-gray-400">vs Power 4</div>
 						</div>
 						<div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
@@ -608,7 +640,7 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 			</svg>
-			Key Features of V4.0
+			Key Features of V4.5
 		</h2>
 		
 		<!-- Feature Grid -->
@@ -697,7 +729,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white">Tier-Specific Thresholds</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						G5 teams have adjusted thresholds for SoV (1100 vs 1200), SoS (1250 vs 1400), and loss penalties (20 vs 30 pts). Fair comparisons within tier.
+						G5 teams have adjusted thresholds for SoV (1050 vs 1200) and SoS (1300 vs 1400). Fair comparisons within tier.
 					</p>
 				</div>
 			</div>
@@ -705,8 +737,38 @@
 
 		<!-- Additional Features List -->
 		<div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-			<h4 class="font-medium text-gray-900 dark:text-white mb-3">Additional V4.1 Innovations</h4>
+			<h4 class="font-medium text-gray-900 dark:text-white mb-3">Additional V4.5 Innovations</h4>
 			<div class="grid md:grid-cols-2 gap-3 text-sm">
+				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+					<span><strong>Bad Loss Penalty:</strong> Context-aware penalty for losing to weaker teams</span>
+				</div>
+				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+					<span><strong>Bad Win Penalty:</strong> Penalty for struggling against weak teams</span>
+				</div>
+				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+					<span><strong>Quality Win Bonus:</strong> Reward for beating significantly stronger teams</span>
+				</div>
+				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+					<span><strong>Conference Depth:</strong> StdDev adjustment rewards deep leagues</span>
+				</div>
+				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+					<span><strong>Bad Loss Aggregation:</strong> Conferences penalized for bad losses</span>
+				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -730,30 +792,6 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
 					<span><strong>Postseason Damping:</strong> Reduced volatility for bowl games</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Dynamic Priors:</strong> 85% fresh start / 15% historical</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Tier Damping:</strong> G5-vs-G5 = 0.65× (was 0.5×)</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Hybrid CQ Formula:</strong> 70% top-half + 30% full average</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>OOC Performance:</strong> Multiplier 0.8-1.2 based on results</span>
 				</div>
 			</div>
 		</div>

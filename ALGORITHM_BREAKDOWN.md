@@ -1,16 +1,16 @@
-# CFB Ranking Algorithm - Complete Breakdown (V4.1)
+# CFB Ranking Algorithm - Complete Breakdown (V4.5)
 
 ## Master Formula
 
 ```
-FRS = (0.60 × TeamQuality) + (0.30 × RecordScore) + (0.10 × ConferenceQuality)
+FRS = (0.50 × TeamQuality) + (0.42 × RecordScore) + (0.08 × ConferenceQuality)
 ```
 
 **Final Ranking Score (FRS)** combines three weighted components to produce the final rankings.
 
 ---
 
-## 1. Team Quality (60%) — Elo-Based Rating
+## 1. Team Quality (50%) — Elo-Based Rating
 
 The foundation of the ranking system. This component measures **pure team strength** through a zero-sum Elo system that updates after every game.
 
@@ -101,15 +101,15 @@ The season is **simulated 4 times** (V4.0: increased from 3):
 
 ---
 
-## 2. Record Score (30%) — Resume / Deserving Component
+## 2. Record Score (42%) — Resume / Deserving Component
 
-Rewards **winning record**, **schedule difficulty**, and **quality of victories**. Penalizes **multi-loss teams** progressively. This component answers: "Does this team's resume deserve a high ranking?"
+Rewards **winning record**, **schedule difficulty**, and **quality of victories**. Penalizes **bad losses** specifically rather than all losses. This component answers: "Does this team's resume deserve a high ranking?"
 
 ### Record Score Formula
 
 ```
 RecordScore = 1000 + (WeightedWinPct × 1000) + SoV_Bonus + SoS_Score + CrossTier_Bonus 
-            + H2H_Bonus + QL_Bonus + WinStreak_Bonus - Loss_Penalty
+            + H2H_Bonus + QL_Bonus + QW_Bonus - BadLoss_Penalty
 ```
 
 The base of 1000 is then modified by the sub-components below.
@@ -165,11 +165,11 @@ G5 teams get +80 points in RecordScore for each P4 opponent defeated, separate f
 V4.0 uses **tier-specific baselines** to reduce unfair penalties on G5 teams:
 
 ```
-# Power 4 teams (baseline 1420) - V4.0.2: reduced log multiplier
-if AvgOpponentElo > 1420:
-    SoS_Score = log(max(AvgOpponentElo - 1420, 1)) × 80
+# Power 4 teams (baseline 1400) - V4.3: reduced baseline
+if AvgOpponentElo > 1400:
+    SoS_Score = log(max(AvgOpponentElo - 1400, 1)) × 80
 else:
-    SoS_Score = (AvgOpponentElo - 1420) × 0.5
+    SoS_Score = (AvgOpponentElo - 1400) × 0.5
 
 # Group of 5 teams (baseline 1300)
 if AvgOpponentElo > 1300:
@@ -180,7 +180,7 @@ else:
 
 | Tier | Baseline | Rationale |
 |------|----------|------------|
-| Power 4 | 1420 | Higher bar; P4 schedules should be tough |
+| Power 4 | 1400 | V4.3: Reduced from 1420 to better value "good" schedules |
 | Group of 5 | 1300 | Lower bar; typical G5 slate shouldn't be heavily penalized |
 
 **V4.0.2 Change:** Reduced log multiplier from 160 to 80 and penalty multiplier from 0.8 to 0.5 to prevent schedule from dominating resume score.
@@ -192,40 +192,58 @@ else:
 | G5, average schedule | 1280 | -60 | -16 |
 | G5, good schedule | 1350 | -25 | +35 |
 
-#### Sub-Component 4: Loss Penalty (V4.1)
+#### Sub-Component 4: Bad Loss Penalty (V4.5)
+
+Replaces the flat loss penalty. Penalizes losses to **significantly weaker opponents** (200+ Elo gap), blowout losses to weaker teams, OR moderate-gap blowouts.
 
 ```
-Loss_Penalty = 100 × (num_losses ^ 1.05)
+# Case 1: Loss to much weaker team (200+ Elo gap)
+if OpponentElo < (TeamElo - 200):
+    EloGap = TeamElo - OpponentElo
+    BasePenalty = (EloGap - 200) × 0.15
+    MoV_Mult = log(abs(MoV) + 1) if MoV < -10 else 1.0
+    Penalty = min(BasePenalty × MoV_Mult, 75)
+
+# Case 2: Blowout loss (21+ pts) to a WEAKER opponent only
+elif MoV <= -21 and OpponentElo < TeamElo:
+    Penalty = min(10 + (abs(MoV) - 21) × 1.0, 37.5)
+
+# Case 3: Minor bad loss - moderate gap (150-200) AND blowout (21+ pts)
+elif MoV <= -21 and (TeamElo - 150) > OpponentElo >= (TeamElo - 200):
+    EloGap = TeamElo - OpponentElo
+    Penalty = min((EloGap - 150) × 0.08 + (abs(MoV) - 21) × 0.5, 25)
 ```
 
-| Losses | Penalty | Interpretation |
-|--------|---------|----------------|
-| 0 | 0 | No penalty for undefeated teams |
-| 1 | -100 | Single loss is costly but recoverable |
-| 2 | -207 | Two losses significantly hurts ranking |
-| 3 | -317 | Three losses drops team substantially |
-| 4 | -429 | Four losses puts team out of contention |
+| Scenario | Penalty | Interpretation |
+|----------|---------|----------------|
+| Loss to stronger team | 0 | "Quality loss" - no penalty |
+| Loss to similar team | 0 | Expected variance |
+| Loss to 200+ weaker team | Scaled (max 75) | Truly bad loss |
+| Blowout (21+) to weaker team | 10-37.5 | Non-competitive performance |
+| Moderate gap (150-200) + blowout | Scaled (max 25) | Minor bad loss |
 
-**V4.1:** Base reduced from 150 to 100 and exponent reduced to 1.05. This diminishes the penalty for losses, allowing quality teams with tough schedules to stay ranked higher. Capped at 500 points.
+**V4.5 Change:** Added **Case 3: Minor bad loss tier** for moderate Elo gaps (150-200) combined with blowouts (21+ points). This catches scenarios like:
+- Texas losing to a decent-but-not-great team by 21+ points
+- A top team getting blown out by a middling opponent
+
+**V4.4 Change:** Increased threshold from 100 to **200 Elo gap** for Case 1. This ensures:
+- Georgia losing to Alabama (151 Elo gap, 3 points) is NOT a bad loss
+- Only losses to genuinely inferior teams (200+ gap) are heavily penalized
+- Blowout losses only count if the opponent was weaker (getting blown out by #1 is expected)
 
 #### Sub-Component 5: Head-to-Head Bonus (V4.1)
 
 Rewards teams for defeating top-ranked opponents in the current rankings:
 
 ```
-H2H_Bonus = min((Top10_Wins × 88) + (Top25_Wins × 44), 220)
+H2H_Bonus = min((Top10_Wins × 100) + (Top25_Wins × 50), 250)
 ```
 
 | Win Type | Bonus | Rationale |
 |----------|-------|----------|
-| Win vs Top 10 Team (Elo > 1650) | +88 | V4.1: Boosted by 10% |
-| Win vs Top 11-25 Team (Elo > 1550) | +44 | V4.1: Boosted by 10% |
-| Maximum Total | 220 | V4.1: Capped to prevent runaway stacking |
-
-**Examples:**
-- Team with 2 wins vs Top 10 + 1 win vs Top 20: `min((2 × 88) + (1 × 44), 220) = +220 points` (capped)
-- Team with 0 ranked wins: `+0 points`
-- Team with 3 wins vs Top 25 (none Top 10): `min((0 × 88) + (3 × 44), 220) = +132 points`
+| Win vs Top 10 Team (Elo > 1650) | +100 | V4.3: Boosted to reward elite wins |
+| Win vs Top 11-25 Team (Elo > 1550) | +50 | V4.3: Boosted to reward ranked wins |
+| Maximum Total | 250 | V4.3: Capped to prevent runaway stacking |
 
 #### Sub-Component 6: Quality Loss Bonus (V4.1)
 
@@ -252,9 +270,57 @@ QL_Bonus = quality_loss_points / num_losses   [if num_losses > 0]
 
 **Philosophy:** "Quality of losses" matters, but losing shouldn't be rewarded too much. Only losses to truly elite teams (Elo > 1600) count.
 
-#### Sub-Component 7: Win Streak Bonus (Removed in V4.1)
+#### Sub-Component 7: Quality Win Bonus (V4.4)
 
-*This component was removed in V4.1 to simplify the algorithm and rely more on the Cross-Tier Bonus and Upset Multipliers to reward G5 performance.*
+Rewards wins against **top-25 caliber teams** using an absolute Elo threshold.
+
+```
+if OpponentElo >= 1550:
+    EloAboveFloor = OpponentElo - 1550
+    BaseBonus = 20 + (EloAboveFloor × 0.50)
+    
+    # MoV multiplier for dominant wins
+    if MoV >= 14:
+        MoV_Mult = 1.0 + log(MoV - 12) × 0.15  # Up to ~1.4x
+    elif MoV >= 7:
+        MoV_Mult = 1.0
+    else:
+        MoV_Mult = 0.8  # Close game penalty
+    
+    Bonus = min(BaseBonus × MoV_Mult, 100)
+```
+
+| Opponent Elo | Base Bonus | With 21-pt MoV |
+|--------------|------------|----------------|
+| 1550 | +20 | +28 |
+| 1600 | +45 | +63 |
+| 1700 | +95 | +100 (capped) |
+| 1800 | +100 (capped) | +100 (capped) |
+
+**V4.4 Change:** Switched from relative threshold (TeamElo - 50) to **absolute threshold (1550)**. This ensures:
+- Good teams aren't penalized for not having "quality wins" when they ARE the quality team
+- Georgia (1818 Elo) beating Alabama (1667 Elo) counts as a quality win
+- Only wins over genuinely ranked-caliber teams (1550+ Elo ≈ Top 25) count
+
+#### Sub-Component 8: Bad Win Penalty (V4.4)
+
+Penalizes close wins (7 points or fewer) against **truly weak teams** using an absolute Elo threshold.
+
+```
+if OpponentElo < 1300 and MoV <= 7:
+    Penalty = min(10 + (7 - MoV) × 1.5, 40)
+```
+
+| MoV | Penalty |
+|-----|--------|
+| 7 pts | 10 |
+| 3 pts | 16 |
+| 1 pt | 19 |
+
+**V4.4 Change:** Switched from relative threshold (TeamElo - 200) to **absolute threshold (1300)**. This ensures:
+- Good teams aren't unfairly penalized for close wins against average opponents
+- Only close wins against genuinely weak teams (1300 Elo ≈ bottom-tier FBS) count as "bad"
+- Georgia beating a 1450 Elo team by 3 points is NOT a bad win (they're a decent team)
 
 ### Full Record Score Example
 
@@ -262,6 +328,7 @@ A team with:
 - 11-1 record (9 home wins, 2 road wins)
 - Beaten opponents average Elo = 1600
 - Overall schedule average Elo = 1650
+- Loss was to #3 team (Quality Loss, not Bad Loss)
 
 ```
 Weighted Win %  = ((9 × 1.0) + (2 × 1.1)) / 11 = 10.2 / 11 = 0.927
@@ -269,24 +336,24 @@ Win contribution = 0.927 × 1000 = 927 points
 
 SoV Bonus       = (1600 - 1200) × 0.5 = 400 × 0.5 = 200 points
 SoS Score       = log(max(1650 - 1400, 1)) × 150 = log(250) × 150 = 828 points
-Loss Penalty    = 180 × (1 ^ 1.15) = 180 points
+Bad Loss Penalty = 0 (Loss was to stronger team)
 
-RecordScore     = 1000 + 927 + 200 + 828 - 180 = 2775 points
+RecordScore     = 1000 + 927 + 200 + 828 - 0 = 2955 points
 ```
 
 ---
 
-## 3. Conference Quality (10%) — Contextual League Boost
+## 3. Conference Quality (8%) — Contextual League Boost
 
 Measures the overall strength of a team's conference to provide contextual credit. A team in a weak conference should be penalized; a team in a strong conference gets a small boost.
 
 ### Conference Quality Formula
 
 ```
-CQ = RawCQ × OOC_Multiplier
+CQ = (RawCQ + Depth_Adj - BadLoss_Agg) × OOC_Multiplier
 ```
 
-The raw conference strength is then adjusted by how well the conference performs outside the conference.
+The raw conference strength is adjusted by depth, bad losses, and OOC performance.
 
 #### Sub-Component 1: Raw Conference Quality (RawCQ) — V4.0 Hybrid
 
@@ -315,7 +382,26 @@ RawCQ = (0.70 × top_half_avg) + (0.30 × full_avg)
 
 **Philosophy:** Conferences with more depth (SEC) lose less from the hybrid formula than top-heavy conferences (Big Ten). This better reflects overall conference strength.
 
-#### Sub-Component 2: Out-of-Conference (OOC) Multiplier
+#### Sub-Component 2: Depth Adjustment (V4.2)
+
+Uses standard deviation to reward deep conferences and penalize top-heavy ones.
+
+```
+Depth_Adj = (200 - StdDev) * 0.2
+```
+
+- **Low StdDev (Tight grouping):** Bonus (e.g., Big 12 often has many teams clustered together)
+- **High StdDev (Top heavy):** Penalty (e.g., CUSA often has 1-2 good teams and many bad ones)
+
+#### Sub-Component 3: Bad Loss Aggregation (V4.2)
+
+Conferences are penalized if their member teams frequently suffer "bad losses" (losing to significantly weaker opponents).
+
+```
+BadLoss_Agg = Average(BadLossPenalty per team) * 0.05
+```
+
+#### Sub-Component 4: Out-of-Conference (OOC) Multiplier
 
 ```
 OOC_Multiplier = 0.8 + (0.4 × PerformanceRatio)
@@ -339,23 +425,11 @@ Where weighted games emphasize Power 4 competition:
 
 | Opponent Tier | Weight |
 |---------------|--------|
-| vs Power 4 | 1.0 |
+| vs Power 4 | 1.2 |
 | vs Group of 5 | 0.5 |
 | vs FCS | 0.1 |
 
-**Example:** A conference with OOC record of:
-- 10-5 vs P4 (weight 1.0) = 10 wins, 5 losses
-- 8-2 vs G5 (weight 0.5) = 4 wins, 1 loss
-- 6-1 vs FCS (weight 0.1) = 0.6 wins, 0.1 loss
-
-```
-WeightedWins = 10 + 4 + 0.6 = 14.6
-WeightedLosses = 5 + 1 + 0.1 = 6.1
-WeightedTotal = 20.7
-
-PerformanceRatio = 14.6 / 20.7 = 0.705
-OOC_Multiplier = 0.8 + (0.4 × 0.705) = 0.8 + 0.282 = 1.082
-```
+**V4.2:** Increased P4 weight to 1.2 to further emphasize quality OOC wins.
 
 ### Special Case: FBS Independents
 
@@ -366,7 +440,7 @@ Teams without a conference (like Notre Dame, Army) are handled specially:
 - **Conference Quality:** Assigned a **Synthetic CQ** based on their schedule.
 
 ```
-Indie_CQ = Average(CQ of all opponents' conferences)
+Indie_CQ = (0.7 * Avg_Sched_CQ) + (0.3 * Avg_Opp_Elo)
 ```
 
 **Rationale:** Independents don't have a conference to boost/drag them. Instead of an arbitrary zero or average, their "conference strength" is determined by the company they keep. If Notre Dame plays an all-ACC/Big Ten schedule, they get a P4-level CQ. If UMass plays mostly G5 teams, they get a G5-level CQ.
@@ -377,6 +451,8 @@ Indie_CQ = Average(CQ of all opponents' conferences)
 
 ```
 RawCQ = 1300 (top 50% of teams average 1300)
+Depth Adjustment = +10 (Tight grouping)
+Bad Loss Aggregation = -5 (Some bad losses)
 OOC Performance:
   - vs P4: 5-8 (weighted: 5 wins, 8 losses)
   - vs G5: 12-3 (weighted: 6 wins, 1.5 losses)
@@ -387,7 +463,7 @@ WeightedTotal = 5 + 8 + 6 + 1.5 + 2 + 0 = 22.5
 PerformanceRatio = 13 / 22.5 = 0.578
 OOC_Multiplier = 0.8 + (0.4 × 0.578) = 0.8 + 0.231 = 1.031
 
-Final CQ = 1300 × 1.031 = 1340
+Final CQ = (1300 + 10 - 5) × 1.031 = 1345
 ```
 
 ---
@@ -398,28 +474,28 @@ Final CQ = 1300 × 1.031 = 1340
 
 | Component | Calculation | Score |
 |-----------|-------------|-------|
-| **Team Quality (60%)** | Elo = 1750 | 1750 |
-| **Record Score (30%)** | (calculated above) = 2775 | 2775 |
-| **Conference Quality (10%)** | SEC CQ = 1380 | 1380 |
+| **Team Quality (50%)** | Elo = 1750 | 1750 |
+| **Record Score (42%)** | (calculated above) = 2955 | 2955 |
+| **Conference Quality (8%)** | SEC CQ = 1380 | 1380 |
 
 ```
-Final Score = (0.60 × 1750) + (0.30 × 2775) + (0.1 × 1380)
-            = 1050 + 832.5 + 138
-            = 2020.5
+Final Score = (0.50 × 1750) + (0.42 × 2955) + (0.08 × 1380)
+            = 875 + 1241.1 + 110.4
+            = 2226.5
 ```
 
 ### Example: Tulane (11-1) in different conference
 
 | Component | Calculation | Score |
 |-----------|-------------|-------|
-| **Team Quality (60%)** | Elo = 1600 (lower from playing weaker opponents) | 1600 |
-| **Record Score (30%)** | (same 11-1) = 2775 | 2775 |
-| **Conference Quality (10%)** | AAC CQ = 1150 | 1150 |
+| **Team Quality (50%)** | Elo = 1600 (lower from playing weaker opponents) | 1600 |
+| **Record Score (42%)** | (same 11-1) = 2955 | 2955 |
+| **Conference Quality (8%)** | AAC CQ = 1150 | 1150 |
 
 ```
-Final Score = (0.60 × 1600) + (0.30 × 2775) + (0.1 × 1150)
-            = 960 + 832.5 + 115
-            = 1907.5
+Final Score = (0.50 × 1600) + (0.42 × 2955) + (0.08 × 1150)
+            = 800 + 1241.1 + 92
+            = 2133.1
 ```
 
 **Key:** Same record (11-1), but Georgia ranks higher due to:
@@ -459,8 +535,8 @@ A team with 5 elite wins scores better than 10 mediocre wins. The average oppone
 ### 8. Conference Quality Adjustment
 Weak OOC records reduce conference CQ; strong OOC records increase it. Prevents weak conferences from unfairly boosting all members.
 
-### 9. Explicit Loss Penalty (V4.0 New)
-Multi-loss teams are penalized progressively: 1 loss = -180, 2 losses = -399, 3 losses = -650. This addresses fan perception that 2-3 loss teams were ranked too high compared to polls.
+### 9. Contextual Loss Penalty (V4.2 New)
+Replaced flat loss penalty with "Bad Loss Penalty". Losing to a superior team is forgiven; losing to an inferior team is penalized.
 
 ### 10. G5 Credibility System (V4.0 Phase 2)
 Multiple mechanisms boost quality G5 teams:
@@ -476,7 +552,11 @@ Multiple mechanisms boost quality G5 teams:
 
 ## Version History
 
-- **V4.1 (Current):** Diminished loss penalty (power formula 100*L^1.05), boosted H2H bonuses (88/44), boosted Quality Loss bonus (0.165 mult), removed Win Streak bonus.
+- **V4.5 (Current):** Reduced Conference Quality weight from 10% to **8%**, increased Record Score from 40% to **42%** (weights now 0.50/0.42/0.08). Added **minor bad loss tier** (Case 3) for moderate Elo gaps (150-200) combined with blowouts (21+ points). This catches scenarios like Texas losing badly to a decent opponent while Georgia's close loss to Alabama correctly remains penalty-free.
+- **V4.4:** Switched Quality Win and Bad Win from relative thresholds to **absolute thresholds**. Quality Win now requires opponent Elo ≥ 1550 (top-25 caliber). Bad Win now requires opponent Elo < 1300 (weak teams only). Bad Loss threshold increased to 200 Elo gap. Blowout bad loss only applies to weaker opponents. This prevents good teams from being unfairly penalized.
+- **V4.3:** Rebalanced FRS weights (0.50/0.40/0.10) to emphasize on-field results. Added SOS, Quality Wins, Bad Wins, and Bad Losses to comparison metrics.
+- **V4.2:** Contextual overhaul. Replaced flat loss penalty with Bad Loss Penalty (threshold 100 Elo). Added Quality Win Bonus (threshold 100 Elo). Enhanced Conference Quality with Depth Adjustment (StdDev) and Bad Loss Aggregation. Rebalanced FRS weights (0.62/0.28/0.10).
+- **V4.1:** Diminished loss penalty (power formula 100*L^1.05), boosted H2H bonuses (88/44), boosted Quality Loss bonus (0.165 mult), removed Win Streak bonus.
 - **V4.0.2:** Resume rebalancing. Reduced SoV multipliers (P4: 0.35, G5: 0.45), reduced SoS log multiplier (80 from 160), reduced H2H bonuses (80/40, max 200), reduced QL impact (threshold 1600, mult 0.15, cap 30), adjusted loss penalty (base 150). FBS Independents now treated as Power 4 tier with CQ=0.
 - **V4.0.1:** Hotfix for ND resume anomaly. Capped H2H bonus at 300 max, capped QL bonus at 50 per loss, added Elo floor (1500) for Top-25 H2H credit, added Indie SoS baseline (1350) to penalize soft independent schedules. Synced app.py defaults with V4.0.
 - **V4.0 Phase 3:** Head-to-head bonus (+120 per Top 10 win, +60 per Top 25 win), quality loss bonus (scaled by opponent Elo above 1550), G5 win streak bonus (+150 for ≤1 loss and ≥7 conf wins).

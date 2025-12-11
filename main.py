@@ -120,11 +120,13 @@ class CFBRankingApp:
         ranking_config = config or {}
         ranking_config['use_ats'] = use_ats
         
-        # V4.1: Dynamic Prior Strength
-        # Formula: max(0.0, 0.7 * (12.0 - calc_week) / 11.0) -> 70% at Week 1, 0% at Week 12
+        # V4.3: Dynamic Prior Strength
+        # Formula: 0.2 * (1 - week/15) -> 20% at Week 0, 0% at Week 15
         if 'prior_strength' not in ranking_config:
              calc_week = week if week is not None else 15
-             ranking_config['prior_strength'] = max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
+             # Ensure week doesn't exceed 15 for calculation to avoid negative priors
+             calc_week = min(calc_week, 15)
+             ranking_config['prior_strength'] = max(0.0, 0.2 * (1.0 - (calc_week / 15.0)))
              logger.info(f"Using dynamic prior_strength: {ranking_config['prior_strength']:.3f} for week {calc_week}")
 
         ranker = TeamQualityRanker(config=ranking_config, priors=priors)
@@ -355,7 +357,8 @@ class CFBRankingApp:
             team1: First team name
             team2: Second team name
         """
-        rankings = rankings_data['rankings']
+        # Fix: Access the nested 'rankings' dictionary which maps team names to data
+        rankings = rankings_data['rankings']['rankings']
         
         # Check if teams exist in rankings
         if team1 not in rankings or team2 not in rankings:
@@ -365,12 +368,6 @@ class CFBRankingApp:
         # Extract team data
         team1_data = rankings[team1]
         team2_data = rankings[team2]
-        
-        # Create visualizer and generate comparison chart
-        visualizer = RankingVisualizer()
-        
-        # Display comparison chart
-        visualizer.create_team_matchup_chart(team1, team2, rankings)
         
         # Print comparison table
         comparison = [
@@ -386,11 +383,22 @@ class CFBRankingApp:
             ["vs P5", f"{team1_data['records']['power_wins']}-{team1_data['records']['power_losses']}", 
                     f"{team2_data['records']['power_wins']}-{team2_data['records']['power_losses']}"],
             ["vs G5", f"{team1_data['records']['group_five_wins']}-{team1_data['records']['group_five_losses']}", 
-                    f"{team2_data['records']['group_five_wins']}-{team2_data['records']['group_five_losses']}"]
+                    f"{team2_data['records']['group_five_wins']}-{team2_data['records']['group_five_losses']}"],
+            ["SOS", f"{team1_data['sos']:.2f}", f"{team2_data['sos']:.2f}"],
+            ["Quality Wins", team1_data['quality_wins'], team2_data['quality_wins']],
+            ["Quality Losses", team1_data.get('quality_losses', 0), team2_data.get('quality_losses', 0)],
+            ["Bad Wins", team1_data['bad_wins'], team2_data['bad_wins']],
+            ["Bad Losses", team1_data['bad_losses'], team2_data['bad_losses']]
         ]
         
         print("\nTeam Comparison:")
         print(tabulate(comparison, tablefmt="fancy_grid"))
+
+        # Create visualizer and generate comparison chart
+        visualizer = RankingVisualizer()
+        
+        # Display comparison chart
+        # visualizer.create_team_matchup_chart(team1, team2, rankings)
 
 
 def parse_args():

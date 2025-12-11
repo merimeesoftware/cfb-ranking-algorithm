@@ -28,6 +28,20 @@ export interface Team {
 	logo_dark?: string | null;
 	color?: string | null;
 	alt_color?: string | null;
+	
+	// V4.2 Resume Metrics
+	quality_wins?: number;
+	quality_losses?: number;
+	bad_losses?: number;
+	bad_wins?: number;
+	top_10_wins?: number;
+	top_25_wins?: number;
+	cross_tier_wins?: number;
+	h2h_bonus?: number;
+	quality_loss_bonus?: number;
+	bad_loss_penalty?: number;
+	quality_win_bonus?: number;
+	bad_win_penalty?: number;
 }
 
 export interface Conference {

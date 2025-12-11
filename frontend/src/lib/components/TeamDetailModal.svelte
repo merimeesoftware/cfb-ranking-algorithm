@@ -232,6 +232,65 @@
 				</div>
 			</div>
 
+			<!-- Resume Details (V4.2) -->
+			<div class="card p-4">
+				<h3 class="font-semibold text-gray-900 dark:text-white mb-3">Resume Details</h3>
+				
+				<!-- Key Stats -->
+				<div class="grid grid-cols-2 gap-2 mb-4 text-center">
+					<div class="bg-green-50 dark:bg-green-900/20 rounded p-2">
+						<div class="text-lg font-bold text-green-700 dark:text-green-400">{team.quality_wins ?? 0}</div>
+						<div class="text-xs text-gray-600 dark:text-gray-400">Quality Wins</div>
+					</div>
+					<div class="bg-blue-50 dark:bg-blue-900/20 rounded p-2">
+						<div class="text-lg font-bold text-blue-700 dark:text-blue-400">{team.top_25_wins ?? 0}</div>
+						<div class="text-xs text-gray-600 dark:text-gray-400">Top 25 Wins</div>
+					</div>
+					<div class="bg-red-50 dark:bg-red-900/20 rounded p-2">
+						<div class="text-lg font-bold text-red-700 dark:text-red-400">{team.bad_losses ?? 0}</div>
+						<div class="text-xs text-gray-600 dark:text-gray-400">Bad Losses</div>
+					</div>
+					<div class="bg-orange-50 dark:bg-orange-900/20 rounded p-2">
+						<div class="text-lg font-bold text-orange-700 dark:text-orange-400">{team.bad_wins ?? 0}</div>
+						<div class="text-xs text-gray-600 dark:text-gray-400">Bad Wins</div>
+					</div>
+				</div>
+
+				<!-- Bonus Breakdown -->
+				<div class="space-y-2 text-sm">
+					<div class="flex justify-between items-center">
+						<span class="text-gray-600 dark:text-gray-400">Head-to-Head Bonus</span>
+						<span class="font-mono text-green-600 dark:text-green-400">+{team.h2h_bonus?.toFixed(0) ?? 0}</span>
+					</div>
+					<div class="flex justify-between items-center">
+						<span class="text-gray-600 dark:text-gray-400">Quality Win Bonus</span>
+						<span class="font-mono text-green-600 dark:text-green-400">+{team.quality_win_bonus?.toFixed(0) ?? 0}</span>
+					</div>
+					<div class="flex justify-between items-center">
+						<span class="text-gray-600 dark:text-gray-400">Quality Loss Credit</span>
+						<span class="font-mono text-blue-600 dark:text-blue-400">+{team.quality_loss_bonus?.toFixed(0) ?? 0}</span>
+					</div>
+					{#if (team.bad_loss_penalty ?? 0) > 0}
+					<div class="flex justify-between items-center">
+						<span class="text-gray-600 dark:text-gray-400">Bad Loss Penalty</span>
+						<span class="font-mono text-red-600 dark:text-red-400">-{team.bad_loss_penalty?.toFixed(0) ?? 0}</span>
+					</div>
+					{/if}
+					{#if (team.bad_win_penalty ?? 0) > 0}
+					<div class="flex justify-between items-center">
+						<span class="text-gray-600 dark:text-gray-400">Bad Win Penalty</span>
+						<span class="font-mono text-red-600 dark:text-red-400">-{team.bad_win_penalty?.toFixed(0) ?? 0}</span>
+					</div>
+					{/if}
+					{#if (team.cross_tier_wins ?? 0) > 0}
+					<div class="flex justify-between items-center">
+						<span class="text-gray-600 dark:text-gray-400">Cross-Tier Bonus</span>
+						<span class="font-mono text-green-600 dark:text-green-400">+{((team.cross_tier_wins ?? 0) * 80).toFixed(0)}</span>
+					</div>
+					{/if}
+				</div>
+			</div>
+
 			<!-- Record Breakdown -->
 			<div class="card p-4">
 				<h3 class="font-semibold text-gray-900 dark:text-white mb-3">Record Breakdown</h3>

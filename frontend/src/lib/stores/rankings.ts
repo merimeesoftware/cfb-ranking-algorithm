@@ -172,7 +172,20 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 				power_losses: t.records?.power_losses ?? 0,
 				group_five_wins: t.records?.group_five_wins ?? 0,
 				group_five_losses: t.records?.group_five_losses ?? 0
-			}
+			},
+			// V4.2 Resume Breakdown Metrics
+			quality_wins: t.quality_wins ?? 0,
+			quality_losses: t.quality_losses ?? 0,
+			bad_losses: t.bad_losses ?? 0,
+			bad_wins: t.bad_wins ?? 0,
+			top_10_wins: t.top_10_wins ?? 0,
+			top_25_wins: t.top_25_wins ?? 0,
+			cross_tier_wins: t.cross_tier_wins ?? 0,
+			h2h_bonus: t.h2h_bonus ?? 0,
+			quality_loss_bonus: t.quality_loss_bonus ?? 0,
+			bad_loss_penalty: t.bad_loss_penalty ?? 0,
+			quality_win_bonus: t.quality_win_bonus ?? 0,
+			bad_win_penalty: t.bad_win_penalty ?? 0
 		}));
 
 		const conferenceData: Conference[] = (data.conference_rankings || data.conferences || []).map((c: any) => ({
