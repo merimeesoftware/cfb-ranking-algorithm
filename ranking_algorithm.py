@@ -98,24 +98,25 @@ class TeamQualityRanker:
         
         self.base_factor = self.config.get('base_factor', 40.0) # K-factor
         self.conference_weight = self.config.get('conference_weight', 0.08) # V4.5: Reduced to 0.08
-        self.record_weight = self.config.get('record_weight', 0.42) # V4.5: Increased to 0.42
+        self.record_weight = self.config.get('record_weight', 0.42) # V4.4.1: Increased to 0.42
+        self.team_quality_weight = self.config.get('team_quality_weight', 0.50) # V4.4.1: Reduced to 0.50
         
         # V4.3: Dynamic prior strength handled in main.py or passed in config
         self.prior_strength = self.config.get('prior_strength', 0.15)
         
         # V4.3: Number of iterative solver passes (reduced to 3)
-        self.num_iterations = self.config.get('num_iterations', 3)
+        self.num_iterations = self.config.get('num_iterations', 4) # V4.4: Increased to 4
         
         # V4.2/4.6: Contextual Loss/Win Configuration
-        self.bl_threshold = self.config.get('bl_threshold', 200.0)  # V4.4: Increased to 200
-        self.bl_mult = self.config.get('bl_mult', 0.35)  # V4.6: Increased from 0.15 to 0.35
+        self.bl_threshold = self.config.get('bl_threshold', 180.0)  # V4.4: Reduced to 180
+        self.bl_mult = self.config.get('bl_mult', 0.40)  # V4.4: Increased to 0.40
         self.bl_max_per_loss = self.config.get('bl_max_per_loss', 100.0)  # V4.6: Increased from 75 to 100
         
         # V4.7: Quality Win uses ABSOLUTE threshold (top-15 caliber teams)
-        self.qw_elo_floor = self.config.get('qw_elo_floor', 1600.0)  # V4.7: Raised to 1600 for truly elite wins
-        self.qw_mult = self.config.get('qw_mult', 0.50)              # Bonus per Elo above floor
+        self.qw_elo_floor = self.config.get('qw_elo_floor', 1625.0)  # V4.5: Set to 1625 (Top 20)
+        self.qw_mult = self.config.get('qw_mult', 0.30)              # V4.5: Reduced to 0.30
         self.qw_max_per_win = self.config.get('qw_max_per_win', 100.0)
-        self.qw_max_total = self.config.get('qw_max_total', 400.0)
+        self.qw_max_total = self.config.get('qw_max_total', 300.0) # V4.4: Reduced to 300
         
         # V4.4: Bad Win uses ABSOLUTE threshold (truly weak teams only)
         self.bw_elo_ceiling = self.config.get('bw_elo_ceiling', 1300.0)  # Absolute: only weak teams
@@ -123,19 +124,19 @@ class TeamQualityRanker:
         
         # V4.3: Conference Quality Adjustments
         self.conf_bl_weight = self.config.get('conf_bl_weight', 0.1)  # V4.3: Increased to 0.1
-        self.conf_depth_weight = self.config.get('conf_depth_weight', 20.0)  # V4.3: Weight for depth penalty
+        self.conf_depth_weight = self.config.get('conf_depth_weight', 25.0)  # V4.4: Increased to 25.0
         
         # V4.3: Upset bonus configuration
         self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)
         self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.25)
         self.g5_beats_p4_mult = self.config.get('g5_beats_p4_mult', 1.20)
-        self.upset_mult_cap = self.config.get('upset_mult_cap', 1.3) # V4.3: Cap total multiplier
+        self.upset_mult_cap = self.config.get('upset_mult_cap', 1.25) # V4.4: Reduced to 1.25
         
         # V4.0 Phase 2: Tier-specific SoV thresholds
         self.sov_threshold_p4 = self.config.get('sov_threshold_p4', 1200.0)
         self.sov_threshold_g5 = self.config.get('sov_threshold_g5', 1050.0)
         # V4.3: Reduced multipliers
-        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.30)   # V4.3: Was 0.35
+        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.25)   # V4.4: Reduced to 0.25
         self.sov_mult_g5 = self.config.get('sov_mult_g5', 0.40)   # V4.3: Was 0.45
         
         # V4.0 Phase 2: Tier-specific SoS baselines
@@ -153,7 +154,7 @@ class TeamQualityRanker:
         # V4.1: H2H Bonus configuration
         self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 100.0) # V4.3: Increased to 100
         self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 50.0)  # V4.3: Increased to 50
-        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 250.0)     # V4.3: Increased to 250
+        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 200.0)     # V4.4: Reduced to 200
         self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1550.0)
         
         # V4.1: Quality Loss Bonus configuration
@@ -161,7 +162,7 @@ class TeamQualityRanker:
         self.ql_multiplier = self.config.get('ql_multiplier', 0.165)
         self.ql_max_per_loss = self.config.get('ql_max_per_loss', 33.0)
         
-        self.sos_baseline_indie = self.config.get('sos_baseline_indie', 1350.0)
+        self.sos_baseline_indie = self.config.get('sos_baseline_indie', 1320.0) # V4.4: Reduced to 1320
         
         # State
         self.team_stats: Dict[str, TeamStat] = defaultdict(self._create_default_team_stat)
@@ -420,18 +421,13 @@ class TeamQualityRanker:
             mov = win.get('mov', 10)
             
             # Quality Win: Beat a TOP team (absolute threshold)
-            # 1600+ Elo = roughly top 25 caliber
-            # OR 1500+ Elo AND 9+ Wins (Reward beating good record teams like Houston)
+            # 1625+ Elo = roughly top 20 caliber
             is_quality = False
             base_bonus = 0.0
             
             if opp_elo >= self.qw_elo_floor:
                 elo_above_floor = opp_elo - self.qw_elo_floor
-                base_bonus = 20.0 + (elo_above_floor * self.qw_mult)
-                is_quality = True
-            elif opp_elo >= 1500 and opp_wins >= 8:
-                # Special case for good record but lower Elo
-                base_bonus = 15.0 + ((opp_elo - 1500) * 0.2)
+                base_bonus = 25.0 + (elo_above_floor * self.qw_mult)
                 is_quality = True
                 
             if is_quality:
@@ -669,10 +665,8 @@ class TeamQualityRanker:
             else:
                 sos_baseline = self.sos_baseline_g5
             
-            if avg_opp_elo > sos_baseline:
-                sos_score = math.log(max(avg_opp_elo - sos_baseline, 1)) * 80
-            else:
-                sos_score = (avg_opp_elo - sos_baseline) * 0.5
+            # V4.4.1: Linear SOS to avoid cliff at baseline
+            sos_score = (avg_opp_elo - sos_baseline) * 2.0
             
             h2h_bonus = 0.0
             top10_wins = 0
@@ -706,8 +700,16 @@ class TeamQualityRanker:
             qw_bonus = quality_win_map.get(team, 0.0)
             bw_penalty = bad_win_map.get(team, 0.0)
             
+            # V4.4.1: Increased base loss penalty
+            loss_penalty = 200.0 * (data['losses'] ** 1.1)
+            
+            # V4.4.1: Increased undefeated bonus
+            undefeated_bonus = 0.0
+            if data['losses'] == 0:
+                undefeated_bonus = 250.0
+            
             # Raw Record Score Calculation
-            raw_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus + qw_bonus - bl_penalty - bw_penalty
+            raw_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus + qw_bonus - bl_penalty - bw_penalty - loss_penalty + undefeated_bonus
             
             raw_record_scores[team] = {
                 'raw_score': raw_score,
@@ -721,6 +723,8 @@ class TeamQualityRanker:
                     'qw_bonus': qw_bonus,
                     'bl_penalty': bl_penalty,
                     'bw_penalty': bw_penalty,
+                    'loss_penalty': loss_penalty,
+                    'undefeated_bonus': undefeated_bonus,
                     'avg_opp_elo': avg_opp_elo,
                     'avg_win_elo': avg_win_elo,
                     'cq': cq,
@@ -749,7 +753,7 @@ class TeamQualityRanker:
             z_score = (raw - mean_raw) / stdev_raw if stdev_raw > 0 else 0
             record_score = 1500.0 + (z_score * 200.0)
             
-            tq_weight = self.config.get('team_quality_weight', 0.50)
+            tq_weight = self.team_quality_weight
             conf_weight = self.conference_weight
             rec_weight = self.record_weight
             
@@ -796,7 +800,11 @@ class TeamQualityRanker:
                 'quality_loss_bonus': comps['ql_bonus'],
                 'bad_loss_penalty': comps['bl_penalty'],
                 'quality_win_bonus': comps['qw_bonus'],
-                'bad_win_penalty': comps['bw_penalty']
+                'bad_win_penalty': comps['bw_penalty'],
+                'loss_penalty': comps['loss_penalty'],
+                'undefeated_bonus': comps['undefeated_bonus'],
+                'wins_details': self.team_stats[team]['wins_details'],
+                'losses_details': self.team_stats[team]['losses_details']
             }
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
@@ -806,6 +814,23 @@ class TeamQualityRanker:
             
         team_rankings.sort(key=lambda x: x['final_ranking_score'], reverse=True)
         
+        # Enrich game details with opponent rank and Elo
+        team_rank_map = {t['team_name']: i + 1 for i, t in enumerate(team_rankings)}
+        team_elo_map = {t['team_name']: t['team_quality_score'] for t in team_rankings}
+        
+        for team in team_rankings:
+            # Enrich wins
+            for win in team['wins_details']:
+                opp = win['opponent']
+                win['opponent_rank'] = team_rank_map.get(opp, 999) # 999 for unranked/FCS
+                win['opponent_elo'] = team_elo_map.get(opp, self.team_stats[opp]['quality_score'])
+                
+            # Enrich losses
+            for loss in team['losses_details']:
+                opp = loss['opponent']
+                loss['opponent_rank'] = team_rank_map.get(opp, 999)
+                loss['opponent_elo'] = team_elo_map.get(opp, self.team_stats[opp]['quality_score'])
+
         conf_rankings = []
         conf_records = defaultdict(lambda: {'p4': {'w':0,'l':0}, 'g5': {'w':0,'l':0}, 'fcs': {'w':0,'l':0}})
         conf_team_counts = defaultdict(int)

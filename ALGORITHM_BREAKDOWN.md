@@ -1,9 +1,9 @@
-# CFB Ranking Algorithm - Complete Breakdown (V4.5)
+# CFB Ranking Algorithm - Complete Breakdown (V4.4 Recalibration)
 
 ## Master Formula
 
 ```
-FRS = (0.50 × TeamQuality) + (0.42 × RecordScore) + (0.08 × ConferenceQuality)
+FRS = (0.55 × TeamQuality) + (0.37 × RecordScore) + (0.08 × ConferenceQuality)
 ```
 
 **Final Ranking Score (FRS)** combines three weighted components to produce the final rankings.
@@ -109,7 +109,7 @@ Rewards **winning record**, **schedule difficulty**, and **quality of victories*
 
 ```
 RecordScore = 1000 + (WeightedWinPct × 1000) + SoV_Bonus + SoS_Score + CrossTier_Bonus 
-            + H2H_Bonus + QL_Bonus + QW_Bonus - BadLoss_Penalty
+            + H2H_Bonus + QL_Bonus + QW_Bonus - BadLoss_Penalty - BaseLoss_Penalty + Undefeated_Bonus
 ```
 
 The base of 1000 is then modified by the sub-components below.
@@ -135,8 +135,8 @@ WeightedWinPct = ((HomeWins × 1.0) + (RoadWins × 1.1)) / TotalGames
 V4.0 uses **tier-specific thresholds** to give G5 teams credit for quality intra-conference wins:
 
 ```
-# Power 4 teams (V4.0.2: reduced multiplier)
-SoV_Bonus = (AvgWinElo - 1200) × 0.35   [if AvgWinElo > 1200]
+# Power 4 teams (V4.4: reduced multiplier)
+SoV_Bonus = (AvgWinElo - 1200) × 0.25   [if AvgWinElo > 1200]
 
 # Group of 5 teams (V4.0.2: reduced multiplier)
 SoV_Bonus = (AvgWinElo - 1050) × 0.45   [if AvgWinElo > 1050]
@@ -144,11 +144,11 @@ SoV_Bonus = (AvgWinElo - 1050) × 0.45   [if AvgWinElo > 1050]
 
 | Tier | Threshold | Multiplier | Rationale |
 |------|-----------|------------|------------|
-| Power 4 | 1200 | 0.35 | V4.0.2: Reduced from 0.5 to dampen resume inflation |
+| Power 4 | 1200 | 0.25 | V4.4: Reduced from 0.35 to dampen resume inflation |
 | Group of 5 | 1050 | 0.45 | V4.0.2: Reduced from 0.55 to balance with P4 |
 
 **Examples:**
-- P4 team, Avg win Elo = 1500: `(1500 - 1200) × 0.5 = +150 points`
+- P4 team, Avg win Elo = 1500: `(1500 - 1200) × 0.25 = +75 points`
 - G5 team, Avg win Elo = 1250: `(1250 - 1050) × 0.55 = +110 points` (previously +25)
 - G5 team, Avg win Elo = 1100: `(1100 - 1050) × 0.55 = +27.5 points` (previously 0)
 
@@ -197,19 +197,19 @@ else:
 Replaces the flat loss penalty. Penalizes losses to **significantly weaker opponents** (200+ Elo gap), blowout losses to weaker teams, OR moderate-gap blowouts.
 
 ```
-# Case 1: Loss to much weaker team (200+ Elo gap)
-if OpponentElo < (TeamElo - 200):
+# Case 1: Loss to much weaker team (180+ Elo gap)
+if OpponentElo < (TeamElo - 180):
     EloGap = TeamElo - OpponentElo
-    BasePenalty = (EloGap - 200) × 0.15
+    BasePenalty = (EloGap - 180) × 0.40
     MoV_Mult = log(abs(MoV) + 1) if MoV < -10 else 1.0
-    Penalty = min(BasePenalty × MoV_Mult, 75)
+    Penalty = min(BasePenalty × MoV_Mult, 100)
 
 # Case 2: Blowout loss (21+ pts) to a WEAKER opponent only
 elif MoV <= -21 and OpponentElo < TeamElo:
     Penalty = min(10 + (abs(MoV) - 21) × 1.0, 37.5)
 
-# Case 3: Minor bad loss - moderate gap (150-200) AND blowout (21+ pts)
-elif MoV <= -21 and (TeamElo - 150) > OpponentElo >= (TeamElo - 200):
+# Case 3: Minor bad loss - moderate gap (150-180) AND blowout (21+ pts)
+elif MoV <= -21 and (TeamElo - 150) > OpponentElo >= (TeamElo - 180):
     EloGap = TeamElo - OpponentElo
     Penalty = min((EloGap - 150) × 0.08 + (abs(MoV) - 21) × 0.5, 25)
 ```
@@ -218,18 +218,13 @@ elif MoV <= -21 and (TeamElo - 150) > OpponentElo >= (TeamElo - 200):
 |----------|---------|----------------|
 | Loss to stronger team | 0 | "Quality loss" - no penalty |
 | Loss to similar team | 0 | Expected variance |
-| Loss to 200+ weaker team | Scaled (max 75) | Truly bad loss |
+| Loss to 180+ weaker team | Scaled (max 100) | Truly bad loss |
 | Blowout (21+) to weaker team | 10-37.5 | Non-competitive performance |
-| Moderate gap (150-200) + blowout | Scaled (max 25) | Minor bad loss |
+| Moderate gap (150-180) + blowout | Scaled (max 25) | Minor bad loss |
 
-**V4.5 Change:** Added **Case 3: Minor bad loss tier** for moderate Elo gaps (150-200) combined with blowouts (21+ points). This catches scenarios like:
-- Texas losing to a decent-but-not-great team by 21+ points
-- A top team getting blown out by a middling opponent
+**V4.5 Change:** Added **Case 3: Minor bad loss tier** for moderate Elo gaps (150-180) combined with blowouts (21+ points).
 
-**V4.4 Change:** Increased threshold from 100 to **200 Elo gap** for Case 1. This ensures:
-- Georgia losing to Alabama (151 Elo gap, 3 points) is NOT a bad loss
-- Only losses to genuinely inferior teams (200+ gap) are heavily penalized
-- Blowout losses only count if the opponent was weaker (getting blown out by #1 is expected)
+**V4.4 Change:** Tightened threshold to **180 Elo gap** and increased multiplier to 0.40. This ensures losses to genuinely inferior teams are heavily penalized.
 
 #### Sub-Component 5: Head-to-Head Bonus (V4.1)
 
@@ -270,14 +265,14 @@ QL_Bonus = quality_loss_points / num_losses   [if num_losses > 0]
 
 **Philosophy:** "Quality of losses" matters, but losing shouldn't be rewarded too much. Only losses to truly elite teams (Elo > 1600) count.
 
-#### Sub-Component 7: Quality Win Bonus (V4.4)
+#### Sub-Component 7: Quality Win Bonus (V4.5)
 
-Rewards wins against **top-25 caliber teams** using an absolute Elo threshold.
+Rewards wins against **top-20 caliber teams** using an absolute Elo threshold.
 
 ```
-if OpponentElo >= 1550:
-    EloAboveFloor = OpponentElo - 1550
-    BaseBonus = 20 + (EloAboveFloor × 0.50)
+if OpponentElo >= 1625:
+    EloAboveFloor = OpponentElo - 1625
+    BaseBonus = 25 + (EloAboveFloor × 0.30)
     
     # MoV multiplier for dominant wins
     if MoV >= 14:
@@ -292,15 +287,14 @@ if OpponentElo >= 1550:
 
 | Opponent Elo | Base Bonus | With 21-pt MoV |
 |--------------|------------|----------------|
-| 1550 | +20 | +28 |
-| 1600 | +45 | +63 |
-| 1700 | +95 | +100 (capped) |
-| 1800 | +100 (capped) | +100 (capped) |
+| 1625 | +25 | +35 |
+| 1700 | +47.5 | +66.5 |
+| 1800 | +77.5 | +100 (capped) |
 
-**V4.4 Change:** Switched from relative threshold (TeamElo - 50) to **absolute threshold (1550)**. This ensures:
-- Good teams aren't penalized for not having "quality wins" when they ARE the quality team
-- Georgia (1818 Elo) beating Alabama (1667 Elo) counts as a quality win
-- Only wins over genuinely ranked-caliber teams (1550+ Elo ≈ Top 25) count
+**V4.5 Change:** Raised threshold to **1625 (Top 20)** and removed the "Good Record" loophole (previously 1500+ Elo & 8+ wins). This ensures:
+- Only wins over genuinely elite teams count
+- Prevents "farming" bonuses from beating average Power 4 teams
+- Reduces inflation for conferences with many mid-tier teams
 
 #### Sub-Component 8: Bad Win Penalty (V4.4)
 
@@ -552,7 +546,8 @@ Multiple mechanisms boost quality G5 teams:
 
 ## Version History
 
-- **V4.5 (Current):** Reduced Conference Quality weight from 10% to **8%**, increased Record Score from 40% to **42%** (weights now 0.50/0.42/0.08). Added **minor bad loss tier** (Case 3) for moderate Elo gaps (150-200) combined with blowouts (21+ points). This catches scenarios like Texas losing badly to a decent opponent while Georgia's close loss to Alabama correctly remains penalty-free.
+- **V4.4 Recalibration (Current):** Adjusted FRS weights to 0.55/0.37/0.08 to reduce Record Score inflation. Added exponential loss penalty (-150 * L^1.1) and undefeated bonus (+100). Raised Quality Win threshold to 1650 (Top 15). Tightened Bad Loss threshold to 180.
+- **V4.5 (Legacy):** Reduced Conference Quality weight from 10% to **8%**, increased Record Score from 40% to **42%** (weights now 0.50/0.42/0.08). Added **minor bad loss tier** (Case 3) for moderate Elo gaps (150-200) combined with blowouts (21+ points). This catches scenarios like Texas losing badly to a decent opponent while Georgia's close loss to Alabama correctly remains penalty-free.
 - **V4.4:** Switched Quality Win and Bad Win from relative thresholds to **absolute thresholds**. Quality Win now requires opponent Elo ≥ 1550 (top-25 caliber). Bad Win now requires opponent Elo < 1300 (weak teams only). Bad Loss threshold increased to 200 Elo gap. Blowout bad loss only applies to weaker opponents. This prevents good teams from being unfairly penalized.
 - **V4.3:** Rebalanced FRS weights (0.50/0.40/0.10) to emphasize on-field results. Added SOS, Quality Wins, Bad Wins, and Bad Losses to comparison metrics.
 - **V4.2:** Contextual overhaul. Replaced flat loss penalty with Bad Loss Penalty (threshold 100 Elo). Added Quality Win Bonus (threshold 100 Elo). Enhanced Conference Quality with Depth Adjustment (StdDev) and Bad Loss Aggregation. Rebalanced FRS weights (0.62/0.28/0.10).
