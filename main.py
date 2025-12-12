@@ -388,7 +388,9 @@ class CFBRankingApp:
             ["Quality Wins", team1_data['quality_wins'], team2_data['quality_wins']],
             ["Quality Losses", team1_data.get('quality_losses', 0), team2_data.get('quality_losses', 0)],
             ["Bad Wins", team1_data['bad_wins'], team2_data['bad_wins']],
-            ["Bad Losses", team1_data['bad_losses'], team2_data['bad_losses']]
+            ["Bad Losses", team1_data['bad_losses'], team2_data['bad_losses']],
+            ["Loss Penalty", f"{team1_data.get('loss_penalty', 0):.1f}", f"{team2_data.get('loss_penalty', 0):.1f}"],
+            ["Undefeated Bonus", f"{team1_data.get('undefeated_bonus', 0):.1f}", f"{team2_data.get('undefeated_bonus', 0):.1f}"]
         ]
         
         print("\nTeam Comparison:")

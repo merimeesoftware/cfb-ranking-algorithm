@@ -13,6 +13,22 @@ export interface TeamRecords {
 	group_five_losses: number;
 }
 
+export interface WinDetail {
+	opponent: string;
+	opponent_rank: number;
+	opponent_elo: number;
+	is_road: boolean;
+	mov: number;
+}
+
+export interface LossDetail {
+	opponent: string;
+	opponent_rank: number;
+	opponent_elo: number;
+	is_home: boolean;
+	mov: number;
+}
+
 export interface Team {
 	team_name: string;
 	conference: string;
@@ -42,6 +58,10 @@ export interface Team {
 	bad_loss_penalty?: number;
 	quality_win_bonus?: number;
 	bad_win_penalty?: number;
+
+	// V4.5 Game Details
+	wins_details?: WinDetail[];
+	losses_details?: LossDetail[];
 }
 
 export interface Conference {

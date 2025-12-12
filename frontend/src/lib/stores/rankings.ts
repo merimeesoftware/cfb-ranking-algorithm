@@ -185,7 +185,11 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 			quality_loss_bonus: t.quality_loss_bonus ?? 0,
 			bad_loss_penalty: t.bad_loss_penalty ?? 0,
 			quality_win_bonus: t.quality_win_bonus ?? 0,
-			bad_win_penalty: t.bad_win_penalty ?? 0
+			bad_win_penalty: t.bad_win_penalty ?? 0,
+
+			// V4.5 Game Details
+			wins_details: t.wins_details || [],
+			losses_details: t.losses_details || []
 		}));
 
 		const conferenceData: Conference[] = (data.conference_rankings || data.conferences || []).map((c: any) => ({
