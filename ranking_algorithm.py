@@ -49,7 +49,7 @@ class TeamStat(TypedDict):
 
 class TeamQualityRanker:
     """
-    Implements the team quality ranking algorithm (Version 5.3).
+    Implements the team quality ranking algorithm (Version 5).
     Features:
     - Iterative solver (2 passes) for convergence
     - Home-field advantage (HFA=65) with neutral site detection

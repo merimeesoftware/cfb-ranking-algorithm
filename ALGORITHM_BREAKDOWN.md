@@ -1,4 +1,4 @@
-# CFB Ranking Algorithm - Complete Breakdown (V5.3)
+# CFB Ranking Algorithm - Complete Breakdown (V5)
 
 ## Master Formula
 
@@ -45,7 +45,7 @@ Loser:   New_Elo = Current_Elo - Δ
 | **Margin of Victory (MoV)** | `log(score_diff + 1)` | Logarithmic scaling prevents exploitation of blowout wins. |
 | **Matchup Weight** | Varies | Tier-based damping (P4 vs P4 = 1.0, G5 vs G5 = 0.65). |
 
-### V5.3: Home-Field Advantage (HFA)
+### Home-Field Advantage (HFA)
 
 HFA adjusts the **expected** score calculation, not actual ratings:
 
@@ -61,7 +61,7 @@ HFA Values:
 
 **Result:** Road wins yield larger positive deltas; home wins yield smaller deltas.
 
-### Upset Bonus Multipliers (V5.3 Dampened)
+### Upset Bonus Multipliers
 
 ```
 if (loser_Elo - winner_Elo) > 150:
@@ -77,7 +77,7 @@ The season is **simulated 2 times** (reduced from 4 for efficiency):
 1. **Iteration 1:** Games processed with tier-based starting Elos.
 2. **Iteration 2:** Re-processed using Iteration 1's final scores as reference.
 
-### V5.3: Elo Clamp
+### Elo Clamp
 
 Winner Elo is capped at **1850** to prevent runaway outliers.
 
@@ -100,14 +100,14 @@ RecordScore = (BaseScore + Bonuses - Penalties) × PerfectionMultiplier
 | **Base + Win%** | `1000 + (WeightedWinPct × 1000)` | Road wins count 1.1×, home wins 1.0× |
 | **SoV Bonus** | `(AvgWinElo - Threshold) × 0.35` | P4 threshold: 1200, G5 threshold: 1050 |
 | **SoS Score** | `log(max(AvgOppElo - Baseline, 1)) × 80` | P4 baseline: 1420, G5 baseline: 1300 |
-| **Cross-Tier Bonus** | `60 × num_G5_beats_P4` | V5.3: Reduced from 80 |
-| **Quality Win Bonus** | `0.35 × (OppElo - P75)` per win | V5.3: UNCAPPED (was 250) |
-| **Quality Loss Bonus** | `0.10 × (OppElo - P80)` per loss | V5.3: NEW - credit for Top 20% losses |
-| **Bad Loss Penalty** | `0.25 × (P25 - OppElo)` per loss | V5.3: NEW - penalty for Bottom 25% losses |
+| **Cross-Tier Bonus** | `60 × num_G5_beats_P4` | Reduced from 80 |
+| **Quality Win Bonus** | `0.35 × (OppElo - P75)` per win | UNCAPPED (was 250) |
+| **Quality Loss Bonus** | `0.10 × (OppElo - P80)` per loss | Credit for Top 20% losses |
+| **Bad Loss Penalty** | `0.25 × (P25 - OppElo)` per loss | Penalty for Bottom 25% losses |
 | **Loss Penalty** | `150 × (losses ^ 1.1)` | Progressive penalty |
 | **Champ Anchors** | +100 (champ), +50 (finalist) | Conference success bonus |
 
-### V5.3: Perfection Bonus (Multiplicative)
+### Perfection Bonus (Multiplicative)
 
 Applied after all other RecordScore components:
 
@@ -129,7 +129,7 @@ Raw_CQ = (0.70 × TopHalfAvg) + (0.30 × FullAvg)
 Final_CQ = Raw_CQ × OOC_Multiplier × ChaosTax_Multiplier
 ```
 
-### V5.3: Chaos Tax
+### Chaos Tax
 
 Conferences with high internal variance (cannibalization) receive a penalty:
 
@@ -140,7 +140,7 @@ else:
     ChaosTax_Multiplier = 1.00
 ```
 
-### V5.3: Synthetic CQ for FBS Independents
+### Synthetic CQ for FBS Independents
 
 Instead of CQ=0, independents receive a **schedule-weighted synthetic CQ**:
 
@@ -161,7 +161,7 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 
 ---
 
-## V5.3 Feature Summary
+## V5 Feature Summary
 
 | Feature | Description | Impact |
 |---------|-------------|--------|
@@ -181,7 +181,7 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 
 ## Version History
 
-- **V5.3 (Current):**
+- **V5 (Current):**
   - **Weights:** 65/27/08 (TQ/RS/CQ)
   - **Iterations:** 2 (reduced from 4)
   - **New Features:**
@@ -197,7 +197,7 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
   - **Removed:** Winstreak bonus (G5-exclusive advantage)
   - **Dampened:** G5 upset bonus (1.18×), cross-tier bonus (60pts), SoV mult G5 (0.35)
 
-- **V4.0+ (Previous):**
+- **V4 (Previous):****
   - Weights: 52/38/10
   - Winstreak bonus for G5 (+150)
   - QW cap at 250
