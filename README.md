@@ -171,29 +171,27 @@ The conference rankings include:
 - **Win%** - Win percentages against each tier
 - **Quality Score** - Mean of member teams' quality scores
 
-## Math Behind the Rankings (Version 3.0)
+## Math Behind the Rankings (Version 5.1 Lean Pure)
 
-See the [Idea.md](Idea.md) file for detailed explanation of the mathematical model.
+See the [ALGORITHM_BREAKDOWN.md](ALGORITHM_BREAKDOWN.md) file for detailed explanation of the mathematical model.
 
 Key components:
 
-1.  **Logistic Elo Model**
+1.  **Master Formula**
+    -   `FRS = (0.65 * TeamQuality) + (0.27 * RecordScore) + (0.08 * ConferenceQuality)`
+
+2.  **Team Quality (Elo)**
     -   **Expectation:** $E_A = 1 / (1 + 10 ^ ((R_B - R_A) / 400))$
     -   **Update:** $\Delta = K \times MatchupWeight \times MoV \times (Actual - Expected)$
-    -   **Zero-Sum:** Points gained by the winner are subtracted from the loser.
+    -   **Iterative Solver:** Season is simulated 2 times to ensure convergence.
 
-2.  **Tiered Initialization**
-    -   Power 4: 1500
-    -   Group of 5: 1200
-    -   FCS: 900
-    -   *Note: This creates a mathematical barrier that requires significant OOC wins to cross.*
+3.  **Resume (Record Score)**
+    -   Rewards winning percentage, strength of schedule, and quality wins.
+    -   **Milestone Multipliers:** Boosts for Undefeated seasons (1.05x) and Conference Championships.
 
-3.  **Damping & Matchup Weights**
-    -   G5 vs G5 games have a 0.5x weight to prevent internal inflation.
-    -   FCS games have reduced weight (0.1x or 0.2x).
-
-4.  **Final Ranking Scores**
-    -   `FRS = (0.8 * TeamQuality) + (0.2 * ConferenceQuality)`
+4.  **Conference Quality**
+    -   `CQ = Mean_Elo - (0.15 * StdDev)`
+    -   Rewards depth and penalizes high variance (cannibalization).
 
 ## Advanced Customization
 
@@ -203,7 +201,7 @@ The model can be customized with the following parameters:
 - `--group5-initial`: Initial quality score for Group of 5 conferences (default: 1200)
 - `--fcs-initial`: Initial quality score for FCS conferences (default: 900)
 - `--base-factor`: Base K-factor for Elo updates (default: 40.0)
-- `--conference-weight`: Weight of conference quality in final score (default: 0.2)
+- `--conference-weight`: Weight of conference quality in final score (default: 0.08)
 
 ## License
 
