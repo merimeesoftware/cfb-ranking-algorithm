@@ -155,7 +155,7 @@ class CFBRankingApp:
         
         # 3. Iterative Solver
         # We run the season multiple times to allow scores to converge
-        iterations = 3 # Number of convergence iterations
+        iterations = 4 # V4.0: 4 iterations
         
         final_ranks_ref = None # Reference ranks for opponent strength
         
@@ -385,12 +385,10 @@ class CFBRankingApp:
             ["vs G5", f"{team1_data['records']['group_five_wins']}-{team1_data['records']['group_five_losses']}", 
                     f"{team2_data['records']['group_five_wins']}-{team2_data['records']['group_five_losses']}"],
             ["SOS", f"{team1_data['sos']:.2f}", f"{team2_data['sos']:.2f}"],
-            ["Quality Wins", team1_data['quality_wins'], team2_data['quality_wins']],
-            ["Quality Losses", team1_data.get('quality_losses', 0), team2_data.get('quality_losses', 0)],
-            ["Bad Wins", team1_data['bad_wins'], team2_data['bad_wins']],
-            ["Bad Losses", team1_data['bad_losses'], team2_data['bad_losses']],
-            ["Loss Penalty", f"{team1_data.get('loss_penalty', 0):.1f}", f"{team2_data.get('loss_penalty', 0):.1f}"],
-            ["Undefeated Bonus", f"{team1_data.get('undefeated_bonus', 0):.1f}", f"{team2_data.get('undefeated_bonus', 0):.1f}"]
+            ["Quality Wins", team1_data.get('quality_wins', 'N/A'), team2_data.get('quality_wins', 'N/A')],
+            ["Bad Losses", team1_data.get('bad_losses', 'N/A'), team2_data.get('bad_losses', 'N/A')],
+            ["Milestone Points", f"{team1_data.get('milestone_points', 0):.1f}", f"{team2_data.get('milestone_points', 0):.1f}"],
+            ["Milestone Mult", f"{team1_data.get('milestone_mult', 1.0):.2f}x", f"{team2_data.get('milestone_mult', 1.0):.2f}x"]
         ]
         
         print("\nTeam Comparison:")

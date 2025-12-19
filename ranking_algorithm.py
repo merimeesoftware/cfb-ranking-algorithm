@@ -1,4 +1,4 @@
-# filepath: c:\\Users\\micha\\DevProjects\\CFB-Ranking-System\\ranking_algorithm.py
+
 import math
 import statistics
 import numpy as np
@@ -21,12 +21,12 @@ class InterConfRecords(TypedDict):
 class WinDetail(TypedDict):
     opponent: str
     is_road: bool
-    mov: int
+    notes: Optional[str]
 
 class LossDetail(TypedDict):
     opponent: str
     is_home: bool
-    mov: int
+    notes: Optional[str]
 
 class TeamStat(TypedDict):
     quality_score: float
@@ -49,21 +49,26 @@ class TeamStat(TypedDict):
 
 class TeamQualityRanker:
     """
-    Implements the team quality ranking algorithm (Version 4.3).
+    Implements the team quality ranking algorithm (Version 5).
     Features:
-    - Iterative solver (3 passes) for convergence
-    - Asymmetric Elo-like updates with upset bonuses (capped at 1.3x)
-    - Margin of Victory scaling
-    - Dynamic historical priors (0.2 * (1 - week/15))
-    - Hybrid depth-aware conference quality (70% top half + 30% full)
-    - Tier-specific SoS/SoV thresholds (P4 vs G5)
-    - Cross-tier win bonuses for G5 beating P4 (capped)
+    - Iterative solver (2 passes) for convergence
+    - Home-field advantage (HFA=65) with neutral site detection
+    - Asymmetric Elo-like updates with upset bonuses (capped at 1.18x)
+    - Elo clamping (max 1850) to prevent runaway outliers
+    - Margin of Victory scaling (logarithmic)
+    - Configurable historical priors (85% fresh, 15% prior)
+    - Chaos Tax: conferences with StdDev > 160 get 10% CQ penalty
+    - Postseason K-factor reduction (0.65x) to prevent Bowl Bias
+    - Synthetic CQ for FBS Independents (schedule-weighted average)
+    - Tier-specific SoS/SoV thresholds (P4 vs G5, now equalized)
+    - Cross-tier win bonuses for G5 beating P4 (reduced from V4)
     - Explicit loss penalty for multi-loss teams
-    - H2H bonus for top-10/top-25 wins
-    - Quality loss bonus for losses to elite teams
-    - Resume-weighted FRS formula (0.60/0.25/0.15)
-    - Reduced G5 damping (0.65 weight)
-    - Normalized Record Score (1500 + Z-score * 200)
+    - Relative Quality Win Bonus (Top 25%) - uncapped
+    - Quality Loss Bonus for losses to Top 20% teams
+    - Bad Loss Penalty for losses to Bottom 25% teams
+    - Perfection bonus (1.05x undefeated, 1.02x one-loss)
+    - Champ Anchors (+100/+50)
+    - Resume-weighted FRS formula (0.65/0.27/0.08)
     """
     
     def _create_default_team_stat(self) -> TeamStat:
@@ -97,78 +102,75 @@ class TeamQualityRanker:
         self.fcs_initial = self.config.get('fcs_initial', 900.0)
         
         self.base_factor = self.config.get('base_factor', 40.0) # K-factor
-        self.conference_weight = self.config.get('conference_weight', 0.08) # V4.5: Reduced to 0.08
-        self.record_weight = self.config.get('record_weight', 0.42) # V4.4.1: Increased to 0.42
-        self.team_quality_weight = self.config.get('team_quality_weight', 0.50) # V4.4.1: Reduced to 0.50
+        self.conference_weight = self.config.get('conference_weight', 0.08)   # V5.3: 8% CQ
+        self.record_weight = self.config.get('record_weight', 0.27)           # V5.3: 27% Resume
+        self.team_quality_weight = self.config.get('team_quality_weight', 0.65) # V5.3: 65% TQ
         
-        # V4.3: Dynamic prior strength handled in main.py or passed in config
+        # V4.0: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
+        # Default 0.15 means 85% tier initial + 15% prior (reduced legacy bias)
         self.prior_strength = self.config.get('prior_strength', 0.15)
         
-        # V4.3: Number of iterative solver passes (reduced to 3)
-        self.num_iterations = self.config.get('num_iterations', 4) # V4.4: Increased to 4
+        # V5.3: Number of iterative solver passes (reduced from 4 to 2 for efficiency)
+        self.num_iterations = self.config.get('num_iterations', 2)
         
-        # V4.2/4.6: Contextual Loss/Win Configuration
-        self.bl_threshold = self.config.get('bl_threshold', 180.0)  # V4.4: Reduced to 180
-        self.bl_mult = self.config.get('bl_mult', 0.40)  # V4.4: Increased to 0.40
-        self.bl_max_per_loss = self.config.get('bl_max_per_loss', 100.0)  # V4.6: Increased from 75 to 100
+        # V5.3: Home-Field Advantage (HFA) configuration
+        self.hfa_elo = self.config.get('hfa_elo', 65.0)  # Standard CFB HFA ~65 Elo points
+        self.hfa_postseason = self.config.get('hfa_postseason', 20.0)  # Reduced HFA for bowls
+        self.postseason_k_mult = self.config.get('postseason_k_mult', 0.65)  # Bowl K-factor reduction
         
-        # V4.7: Quality Win uses ABSOLUTE threshold (top-15 caliber teams)
-        self.qw_elo_floor = self.config.get('qw_elo_floor', 1625.0)  # V4.5: Set to 1625 (Top 20)
-        self.qw_mult = self.config.get('qw_mult', 0.30)              # V4.5: Reduced to 0.30
-        self.qw_max_per_win = self.config.get('qw_max_per_win', 100.0)
-        self.qw_max_total = self.config.get('qw_max_total', 300.0) # V4.4: Reduced to 300
+        # V5.3: Elo clamp to prevent runaway outliers
+        self.elo_clamp_max = self.config.get('elo_clamp_max', 1850.0)
         
-        # V4.4: Bad Win uses ABSOLUTE threshold (truly weak teams only)
-        self.bw_elo_ceiling = self.config.get('bw_elo_ceiling', 1300.0)  # Absolute: only weak teams
-        self.bw_max_penalty = self.config.get('bw_max_penalty', 40.0)
+        # V5.3: Chaos Tax configuration (CQ penalty for high-variance conferences)
+        self.chaos_stddev_threshold = self.config.get('chaos_stddev_threshold', 160.0)
+        self.chaos_tax_multiplier = self.config.get('chaos_tax_multiplier', 0.90)  # 10% penalty
         
-        # V4.3: Conference Quality Adjustments
-        self.conf_bl_weight = self.config.get('conf_bl_weight', 0.1)  # V4.3: Increased to 0.1
-        self.conf_depth_weight = self.config.get('conf_depth_weight', 25.0)  # V4.4: Increased to 25.0
+        # V4.0+ Loss penalty configuration
+        self.loss_penalty_base = self.config.get('loss_penalty_base', 150.0)
+        self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.1) # V4.0+
         
-        # V4.3: Upset bonus configuration
-        self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)
-        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.25)
-        self.g5_beats_p4_mult = self.config.get('g5_beats_p4_mult', 1.20)
-        self.upset_mult_cap = self.config.get('upset_mult_cap', 1.25) # V4.4: Reduced to 1.25
+        # V5.3: Upset bonus configuration (dampened from V4)
+        self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)  # Elo gap for upset bonus
+        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.18)  # V5.3: Reduced from 1.25
+        self.g5_beats_p4_mult = self.config.get('g5_beats_p4_mult', 1.12)  # V5.3: Reduced from 1.20
         
-        # V4.0 Phase 2: Tier-specific SoV thresholds
+        # V5.3: Tier-specific SoV thresholds (now equalized)
         self.sov_threshold_p4 = self.config.get('sov_threshold_p4', 1200.0)
         self.sov_threshold_g5 = self.config.get('sov_threshold_g5', 1050.0)
-        # V4.3: Reduced multipliers
-        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.25)   # V4.4: Reduced to 0.25
-        self.sov_mult_g5 = self.config.get('sov_mult_g5', 0.40)   # V4.3: Was 0.45
+        # V5.3: Equalized multipliers (G5 no longer gets higher SoV mult)
+        self.sov_mult_p4 = self.config.get('sov_mult_p4', 0.35)
+        self.sov_mult_g5 = self.config.get('sov_mult_g5', 0.35)  # V5.3: Reduced from 0.45 to match P4
         
         # V4.0 Phase 2: Tier-specific SoS baselines
-        self.sos_baseline_p4 = self.config.get('sos_baseline_p4', 1400.0)
+        self.sos_baseline_p4 = self.config.get('sos_baseline_p4', 1420.0)
         self.sos_baseline_g5 = self.config.get('sos_baseline_g5', 1300.0)
         
-        # V4.3: Cross-tier win bonus
-        self.cross_tier_bonus = self.config.get('cross_tier_bonus', 40.0)  # V4.3: Reduced to 40
-        self.cross_tier_cap = self.config.get('cross_tier_cap', 200.0) # V4.3: Cap total
+        # V5.3: Cross-tier win bonus (reduced from V4)
+        self.cross_tier_bonus = self.config.get('cross_tier_bonus', 60.0)  # V5.3: Reduced from 80.0
         
         # V4.0 Phase 2: Hybrid CQ weights
         self.cq_top_half_weight = self.config.get('cq_top_half_weight', 0.70)
         self.cq_full_avg_weight = self.config.get('cq_full_avg_weight', 0.30)
         
-        # V4.1: H2H Bonus configuration
-        self.h2h_top10_bonus = self.config.get('h2h_top10_bonus', 100.0) # V4.3: Increased to 100
-        self.h2h_top25_bonus = self.config.get('h2h_top25_bonus', 50.0)  # V4.3: Increased to 50
-        self.h2h_max_bonus = self.config.get('h2h_max_bonus', 200.0)     # V4.4: Reduced to 200
-        self.h2h_top25_elo_floor = self.config.get('h2h_top25_elo_floor', 1550.0)
+        # V5.3: Winstreak bonus REMOVED - G5 teams compete on equal footing
+        # (previously: winstreak_bonus=150 for G5 teams with ≤1 loss and ≥7 conf wins)
         
-        # V4.1: Quality Loss Bonus configuration
-        self.ql_threshold = self.config.get('ql_threshold', 1600.0)
-        self.ql_multiplier = self.config.get('ql_multiplier', 0.165)
-        self.ql_max_per_loss = self.config.get('ql_max_per_loss', 33.0)
+        # V5.3: Quality Loss / Bad Loss configuration
+        self.quality_loss_mult = self.config.get('quality_loss_mult', 0.10)  # Conservative to avoid V4 imbalance
+        self.bad_loss_mult = self.config.get('bad_loss_mult', 0.25)  # Moderate penalty for losing to weak teams
         
-        self.sos_baseline_indie = self.config.get('sos_baseline_indie', 1320.0) # V4.4: Reduced to 1320
+        # V5.3: Perfection bonus multipliers
+        self.undefeated_mult = self.config.get('undefeated_mult', 1.05)  # 5% bonus for 0-loss 12+ games
+        self.one_loss_mult = self.config.get('one_loss_mult', 1.02)  # 2% bonus for 1-loss 12+ games
         
         # State
         self.team_stats: Dict[str, TeamStat] = defaultdict(self._create_default_team_stat)
         
         self.weekly_scores = {} # week_num -> {team -> score}
         self.initialized_teams = set()
+        
+        # V5.3: Conference StdDevs for chaos tax (populated by previous iteration)
+        self.conference_stddevs: Dict[str, float] = {}
 
     @property
     def team_conferences(self) -> Dict[str, str]:
@@ -176,19 +178,28 @@ class TeamQualityRanker:
         return {team: data['conference'] for team, data in self.team_stats.items() if data['conference']}
 
     def _initialize_team(self, team_name: str, conference: Optional[str], conference_type: str):
-        """Initialize a team with base score if not already seen."""
+        """Initialize a team with base score if not already seen.
+        
+        V4.0: Uses configurable prior_strength to blend tier initial with historical prior.
+        Formula: initial = (1 - prior_strength) * tier_initial + prior_strength * historical_prior
+        Default prior_strength=0.15 means 85% fresh start + 15% prior (reduces legacy bias).
+        """
         if team_name in self.initialized_teams:
+            # Update conference info if it was missing (e.g. from FCS game)
             if conference and not self.team_stats[team_name]['conference']:
                 self.team_stats[team_name]['conference'] = conference
                 self.team_stats[team_name]['conference_type'] = conference_type
             return
         
+        # Determine tier-based initial score
         tier_initial = self.fcs_initial
         if conference_type == 'Power 4':
             tier_initial = self.power_conf_initial
         elif conference_type == 'Group of 5':
             tier_initial = self.group_five_initial
         
+        # V4.0: Blend tier initial with historical prior based on prior_strength
+        # prior_strength=0.15 means 85% tier + 15% prior (significantly reduces legacy bias)
         if team_name in self.priors:
             historical_prior = self.priors[team_name]
             initial_score = (1 - self.prior_strength) * tier_initial + self.prior_strength * historical_prior
@@ -201,16 +212,31 @@ class TeamQualityRanker:
         self.initialized_teams.add(team_name)
 
     def update_quality_scores(self, game: Dict[str, Any], reference_ranks: Optional[Dict[str, float]] = None):
-        """Update team scores based on a single game result using Asymmetric Elo."""
+        """
+        Update team scores based on a single game result using Asymmetric Elo.
+        
+        V5.3 Features:
+        - Home-Field Advantage (HFA=65) adjusts expected score, not actual ratings
+        - Neutral site detection via keyword parsing in game notes
+        - Postseason K-factor reduction (0.65x) to prevent Bowl Bias
+        - Elo clamping at 1850 to prevent runaway outliers
+        
+        Args:
+            game: Game data dictionary
+            reference_ranks: Optional dictionary of team scores to use for opponent strength.
+                           If None, uses current live scores.
+        """
         home_team = game['home_team_name']
         away_team = game['away_team_name']
         
+        # Initialize teams
         self._initialize_team(home_team, game.get('home_conference'), game.get('home_conference_type', 'FCS'))
         self._initialize_team(away_team, game.get('away_conference'), game.get('away_conference_type', 'FCS'))
         
         home_score = game['home_score']
         away_score = game['away_score']
         
+        # Determine outcome
         if home_score > away_score:
             winner, loser = home_team, away_team
             is_home_win = True
@@ -218,124 +244,154 @@ class TeamQualityRanker:
             winner, loser = away_team, home_team
             is_home_win = False
         else:
+            # Tie - just update games played
             self.team_stats[home_team]['games_played'] += 1
             self.team_stats[away_team]['games_played'] += 1
             return
 
-        if reference_ranks:
-            s_winner_opp = reference_ranks.get(loser, self.team_stats[loser]['quality_score'])
-            s_loser_opp = reference_ranks.get(winner, self.team_stats[winner]['quality_score'])
-        else:
-            s_winner_opp = self.team_stats[loser]['quality_score']
-            s_loser_opp = self.team_stats[winner]['quality_score']
+        # V5.3: Detect neutral site and postseason games
+        game_notes = str(game.get('notes', '')).lower()
+        season_type = str(game.get('season_type', 'regular')).lower()
+        
+        is_neutral_site = 'neutral' in game_notes or 'kickoff' in game_notes
+        is_postseason = season_type == 'postseason' or 'bowl' in game_notes or 'playoff' in game_notes or 'championship' in game_notes
 
+        # Calculate Margin of Victory Multiplier (M_mov)
         score_diff = abs(home_score - away_score)
         m_mov = math.log(score_diff + 1)
         
         winner_conf_type = self.team_stats[winner]['conference_type']
         loser_conf_type = self.team_stats[loser]['conference_type']
 
+        # Calculate Matchup Weight (K-factor scaling based on division)
+        # This prevents lower division teams from inflating their scores in closed pools
         matchup_weight = 1.0
+        
         if winner_conf_type == 'Power 4' and loser_conf_type == 'Power 4':
             matchup_weight = 1.0
         elif (winner_conf_type == 'Power 4' and loser_conf_type == 'Group of 5') or \
              (winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4'):
             matchup_weight = 0.8
         elif winner_conf_type == 'Group of 5' and loser_conf_type == 'Group of 5':
-            matchup_weight = 0.65
+            matchup_weight = 0.65  # V4.0: Reduced damping (was 0.5) to allow quality G5 teams to build Elo
         elif (winner_conf_type in ['Power 4', 'Group of 5'] and loser_conf_type == 'FCS') or \
              (winner_conf_type == 'FCS' and loser_conf_type in ['Power 4', 'Group of 5']):
             matchup_weight = 0.2
         else:
+            # FCS vs FCS (or lower) - drastically reduce point exchange
             matchup_weight = 0.1
 
-        r_winner = self.team_stats[winner]['quality_score']
-        r_loser = self.team_stats[loser]['quality_score']
+        # Use current TRUE ratings for Elo calculation
+        r_home = self.team_stats[home_team]['quality_score']
+        r_away = self.team_stats[away_team]['quality_score']
         
-        # V4.7: Aggressive MoV dampening for weak opponents
-        # Blowouts against weak teams shouldn't inflate Elo as much
-        # Use ABSOLUTE opponent Elo threshold - beating a 1200 Elo team by 60 isn't impressive
-        mov_dampening = 1.0
-        if r_loser < 1450:  # Weak opponent (absolute threshold)
-            # Dampen MoV significantly for weak opponents
-            # At 1450 Elo: no dampening
-            # At 1250 Elo: 42.5% dampening
-            # At 1050 Elo: 85% dampening (max)
-            weakness_factor = min((1450 - r_loser) / 400.0, 1.0)
-            mov_dampening = 1.0 - (0.85 * weakness_factor)
+        # V5.3: Home-Field Advantage (HFA)
+        # Adjust EXPECTED score calculation only, not actual ratings
+        # This makes road wins worth more and home wins worth less (as expected)
+        if is_neutral_site:
+            hfa = 0.0  # No HFA for neutral site games
+        elif is_postseason:
+            hfa = self.hfa_postseason  # Reduced HFA for bowl games (~20)
+        else:
+            hfa = self.hfa_elo  # Standard HFA (~65)
         
-        m_mov *= mov_dampening
+        # Effective ratings for expectation calculation only
+        r_home_effective = r_home + hfa
+        r_away_effective = r_away
         
-        exponent = (r_loser - r_winner) / 400.0
-        expected_score = 1.0 / (1.0 + math.pow(10, exponent))
+        # Calculate expected score using effective ratings
+        # Home team's expected win probability
+        exponent = (r_away_effective - r_home_effective) / 400.0
+        home_expected = 1.0 / (1.0 + math.pow(10, exponent))
+        away_expected = 1.0 - home_expected
+        
+        # Winner's expected score
+        if is_home_win:
+            expected_score = home_expected
+        else:
+            expected_score = away_expected
+        
+        # Actual score is 1.0 (Win)
         actual_score = 1.0
         
-        season_type = game.get('season_type', 'regular')
-        notes = str(game.get('notes', '')).lower()
-        k_scale = 1.0
+        # V5.3: Postseason K-factor reduction to prevent Bowl Bias
+        k_factor = self.base_factor
+        if is_postseason:
+            k_factor *= self.postseason_k_mult  # 0.65x for bowl games
         
-        if 'playoff' in notes or ('championship' in notes and season_type == 'postseason'):
-             k_scale = 0.6
-        elif season_type == 'postseason':
-             k_scale = 0.7
-        elif 'championship' in notes:
-             k_scale = 0.7
-             
-        delta = self.base_factor * k_scale * matchup_weight * m_mov * (actual_score - expected_score)
+        # Calculate Delta using TRUE ratings (zero-sum on actual strength)
+        delta = k_factor * matchup_weight * m_mov * (actual_score - expected_score)
         
-        # V4.3: Upset Bonus Multipliers (Capped)
-        upset_mult = 1.0
+        # V5.3: Upset Bonus Multipliers (dampened from V4)
+        r_winner = self.team_stats[winner]['quality_score']
+        r_loser = self.team_stats[loser]['quality_score']
         elo_gap = r_loser - r_winner
+        
         if elo_gap > self.upset_elo_threshold:
-            upset_mult *= self.upset_bonus_mult
+            delta *= self.upset_bonus_mult  # Major upset bonus (×1.18)
         
+        # G5 beating P4 gets additional bonus (stacks with upset bonus)
         if winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4':
-            upset_mult *= self.g5_beats_p4_mult
-            
-        # Cap total multiplier
-        upset_mult = min(upset_mult, self.upset_mult_cap)
-        delta *= upset_mult
+            delta *= self.g5_beats_p4_mult  # G5 > P4 bonus (×1.12)
         
-        self.team_stats[winner]['quality_score'] += delta
-        self.team_stats[loser]['quality_score'] -= delta
+        # Apply updates (Zero-Sum)
+        new_winner_score = self.team_stats[winner]['quality_score'] + delta
+        new_loser_score = self.team_stats[loser]['quality_score'] - delta
         
+        # V5.3: Elo clamp to prevent runaway outliers
+        new_winner_score = min(new_winner_score, self.elo_clamp_max)
+        
+        self.team_stats[winner]['quality_score'] = new_winner_score
+        self.team_stats[loser]['quality_score'] = new_loser_score
+        
+        # Update records
         self.team_stats[winner]['wins'] += 1
         self.team_stats[loser]['losses'] += 1
         self.team_stats[winner]['games_played'] += 1
         self.team_stats[loser]['games_played'] += 1
         
-        if not is_home_win:
+        if is_home_win:
+             pass # No specific home/away counter needed for logic, just stats
+        else:
              self.team_stats[winner]['away_wins'] += 1
         
+        # Update conference records
         if game.get('home_conference') == game.get('away_conference') and game.get('home_conference'):
             self.team_stats[winner]['conf_wins'] += 1
             self.team_stats[loser]['conf_losses'] += 1
         
+        # Update vs records
         loser_type = self.team_stats[loser]['conference_type']
         winner_type = self.team_stats[winner]['conference_type']
         
         self._update_vs_record(winner, loser_type, won=True)
         self._update_vs_record(loser, winner_type, won=False)
 
+        # Track win details for Strength of Victory calculation
+        # We store the opponent name. We'll look up their final Elo later.
         self.team_stats[winner]['wins_details'].append({
             'opponent': loser,
             'is_road': not is_home_win,
-            'mov': score_diff
+            'notes': game.get('notes')
         })
         
+        # V4.0 Phase 3: Track loss details for Quality Loss Bonus
         self.team_stats[loser]['losses_details'].append({
             'opponent': winner,
-            'is_home': not is_home_win,
-            'mov': -score_diff
+            'is_home': not is_home_win,  # Loser was home if winner was away
+            'notes': game.get('notes')
         })
 
+        # Update inter-conference records (for Conference Rankings)
         winner_conf = self.team_stats[winner]['conference']
         loser_conf = self.team_stats[loser]['conference']
         
+        # Only count if conferences are different AND both have a conference (ignore weird data)
         if winner_conf and loser_conf and winner_conf != loser_conf:
             self._update_inter_conf_record(winner, loser_type, won=True)
             self._update_inter_conf_record(loser, winner_type, won=False)
 
+        # Add to schedule for SoS calculation
         self.team_stats[winner]['schedule'].append(loser)
         self.team_stats[loser]['schedule'].append(winner)
 
@@ -359,162 +415,72 @@ class TeamQualityRanker:
             self.team_stats[team]['inter_conf_records'][key]['l'] += 1
 
     def save_weekly_scores(self, week_num: int):
+        """Snapshot current scores for the week."""
         snapshot = {team: data['quality_score'] for team, data in self.team_stats.items()}
         self.weekly_scores[week_num] = snapshot
 
-    def _calculate_bad_loss_penalty(self, team_elo: float, losses: List[LossDetail]) -> tuple[float, int]:
-        """Calculate penalty for losses to WEAK teams (absolute Elo threshold).
-        
-        V4.7: Bad Loss = loss to team with Elo < 1550 (objective threshold).
-        This is NOT relative to your own Elo - a loss to a 1450 Elo team is bad for everyone.
-        1550 Elo roughly corresponds to a .500 P4 team or excellent G5 team.
-        """
-        if not losses:
-            return 0.0, 0
-            
-        total_penalty = 0.0
-        bad_loss_count = 0
-        bad_loss_elo_ceiling = self.config.get('bad_loss_elo_ceiling', 1550.0)
-        
-        for loss in losses:
-            opp_name = loss['opponent']
-            opp_elo = self.team_stats[opp_name]['quality_score']
-            mov = loss.get('mov', -10)
-            is_bad = False
-            
-            # V4.7: Bad Loss = loss to team with Elo < 1550 (ABSOLUTE threshold)
-            # Losing to a weak team is bad regardless of your own rating
-            if opp_elo < bad_loss_elo_ceiling:
-                # Base penalty scales with how weak the opponent is
-                elo_below_threshold = bad_loss_elo_ceiling - opp_elo
-                base_penalty = 20.0 + (elo_below_threshold * 0.15)
-                
-                # MoV multiplier - getting blown out by a weak team is worse
-                if mov < -14:
-                    mov_mult = 1.0 + math.log(abs(mov) - 13) * 0.3
-                else:
-                    mov_mult = 1.0
-                    
-                penalty = min(base_penalty * mov_mult, self.bl_max_per_loss)
-                total_penalty += penalty
-                is_bad = True
-            
-            if is_bad:
-                bad_loss_count += 1
-                
-        return total_penalty, bad_loss_count
-
-    def _calculate_quality_win_bonus(self, team_elo: float, wins: List[WinDetail]) -> tuple[float, int]:
-        """Calculate bonus for beating TOP teams (absolute Elo threshold).
-        
-        V4.7: Quality Win = Beat a top-15 caliber team (Elo >= 1600).
-        Raised from 1550 to ensure only truly elite wins count.
-        Bonus scales with opponent strength and margin of victory.
-        """
-        total_bonus = 0.0
-        quality_win_count = 0
-        
-        for win in wins:
-            opp_name = win['opponent']
-            opp_elo = self.team_stats[opp_name]['quality_score']
-            opp_wins = self.team_stats[opp_name]['wins']
-            mov = win.get('mov', 10)
-            
-            # Quality Win: Beat a TOP team (absolute threshold)
-            # 1625+ Elo = roughly top 20 caliber
-            is_quality = False
-            base_bonus = 0.0
-            
-            if opp_elo >= self.qw_elo_floor:
-                elo_above_floor = opp_elo - self.qw_elo_floor
-                base_bonus = 25.0 + (elo_above_floor * self.qw_mult)
-                is_quality = True
-                
-            if is_quality:
-                # MoV multiplier: bonus for dominant wins over top teams
-                mov_mult = 1.0
-                if mov >= 14:
-                    mov_mult = 1.0 + math.log(mov - 12) * 0.15  # Up to ~1.4x for blowouts
-                elif mov >= 7:
-                    mov_mult = 1.0  # Solid win
-                else:
-                    mov_mult = 0.8  # Close game - still quality but less impressive
-                
-                bonus = min(base_bonus * mov_mult, self.qw_max_per_win)
-                total_bonus += bonus
-                quality_win_count += 1
-                
-        return min(total_bonus, self.qw_max_total), quality_win_count
-
-    def _calculate_bad_win_penalty(self, team_elo: float, wins: List[WinDetail]) -> tuple[float, int]:
-        """Calculate penalty for struggling against WEAK teams (absolute Elo threshold).
-        
-        Bad Win = Close win (7 pts or less) against a truly weak team (Elo < 1300).
-        This is an absolute threshold - we don't punish good teams for beating average teams.
-        """
-        total_penalty = 0.0
-        bad_win_count = 0
-        
-        for win in wins:
-            opp_name = win['opponent']
-            opp_elo = self.team_stats[opp_name]['quality_score']
-            mov = win['mov']
-            
-            # Bad win: Close win (7 pts or less) against a WEAK team (absolute threshold)
-            # 1300 Elo = bottom tier FBS / weak G5 teams
-            if opp_elo < self.bw_elo_ceiling and mov <= 7:
-                penalty = 10.0 + (7 - mov) * 1.5
-                total_penalty += min(penalty, self.bw_max_penalty)
-                bad_win_count += 1
-                
-        return total_penalty, bad_win_count
-
-    def calculate_conference_quality(self, bad_loss_map: Optional[Dict[str, float]] = None) -> Dict[str, float]:
+    def set_conference_stddevs(self, stddevs: Dict[str, float]):
+        """Set conference StdDevs from previous iteration for chaos tax calculation."""
+        self.conference_stddevs = stddevs
+    
+    def compute_conference_stddevs(self) -> Dict[str, float]:
+        """Compute StdDev of Elos for each conference (for chaos tax in next iteration)."""
         conf_scores = defaultdict(list)
-        conf_bl_totals = defaultdict(list)
-        
         for team, data in self.team_stats.items():
             if data['conference'] and data['conference'] != 'FBS Independents':
                 conf_scores[data['conference']].append(data['quality_score'])
-                if bad_loss_map:
-                    conf_bl_totals[data['conference']].append(bad_loss_map.get(team, 0.0))
+        
+        stddevs = {}
+        for conf, scores in conf_scores.items():
+            if len(scores) >= 2:
+                stddevs[conf] = statistics.stdev(scores)
+            else:
+                stddevs[conf] = 0.0
+        return stddevs
+
+    def calculate_conference_quality(self) -> Dict[str, float]:
+        """
+        Calculate Conference Quality (CQ) with OOC adjustment and Chaos Tax.
+        
+        V5.3 Features:
+        - Hybrid CQ = 0.7 * top50%_avg + 0.3 * full_avg
+        - OOC Multiplier based on inter-conference performance
+        - Chaos Tax: 10% penalty for conferences with StdDev > 160
+        - Synthetic CQ for FBS Independents (schedule-weighted average)
+        """
+        conf_scores = defaultdict(list)
+        
+        # 1. Calculate Raw CQ using Hybrid formula (rewards depth)
+        for team, data in self.team_stats.items():
+            if data['conference'] and data['conference'] != 'FBS Independents':
+                conf_scores[data['conference']].append(data['quality_score'])
         
         raw_cq = {}
         for conf, scores in conf_scores.items():
             if not scores:
                 raw_cq[conf] = 0
                 continue
+            # Sort descending
             scores.sort(reverse=True)
+            # Hybrid CQ - blend top half with full average
             top_n = max(1, len(scores) // 2 + len(scores) % 2)
             top_scores = scores[:top_n]
             top_half_avg = sum(top_scores) / len(top_scores)
             full_avg = sum(scores) / len(scores)
-            base_cq = (self.cq_top_half_weight * top_half_avg) + (self.cq_full_avg_weight * full_avg)
+            # Hybrid: 70% top half + 30% full (rewards depth, prevents bottom drag)
+            raw_cq[conf] = (self.cq_top_half_weight * top_half_avg) + (self.cq_full_avg_weight * full_avg)
             
-            if len(scores) > 1:
-                std_dev = statistics.stdev(scores)
-            else:
-                std_dev = 0.0
-            
-            # V4.3: Depth Penalty for high variance
-            # adj = - (std_dev / 200) * 20 (max -20)
-            depth_adj = - (std_dev / 200.0) * self.conf_depth_weight
-            depth_adj = max(depth_adj, -self.conf_depth_weight)
-            
-            bl_penalty = 0.0
-            if conf in conf_bl_totals and conf_bl_totals[conf]:
-                avg_bl = sum(conf_bl_totals[conf]) / len(conf_bl_totals[conf])
-                bl_penalty = avg_bl * self.conf_bl_weight
-            
-            raw_cq[conf] = base_cq + depth_adj - bl_penalty
-            
+        # 2. Calculate OOC Multiplier
         final_cq = {}
+        
+        # Group teams by conference
         teams_by_conf = defaultdict(list)
         for team, data in self.team_stats.items():
             if data['conference']:
                 teams_by_conf[data['conference']].append(team)
 
         for conf, raw in raw_cq.items():
+            # Aggregate inter-conference records for this conference
             p4_wins = 0
             p4_losses = 0
             g5_wins = 0
@@ -532,85 +498,86 @@ class TeamQualityRanker:
                 fcs_wins += recs['fcs']['w']
                 fcs_losses += recs['fcs']['l']
             
-            weighted_wins = (p4_wins * 1.2) + (g5_wins * 0.5) + (fcs_wins * 0.1)
-            weighted_losses = (p4_losses * 1.2) + (g5_losses * 0.5) + (fcs_losses * 0.1)
+            # Calculate weighted score
+            # Weights: P4=1.0, G5=0.5, FCS=0.1
+            weighted_wins = (p4_wins * 1.0) + (g5_wins * 0.5) + (fcs_wins * 0.1)
+            weighted_losses = (p4_losses * 1.0) + (g5_losses * 0.5) + (fcs_losses * 0.1)
             total_weighted_games = weighted_wins + weighted_losses
             
             if total_weighted_games > 0:
                 performance_ratio = weighted_wins / total_weighted_games
+                # Map ratio (0.0 to 1.0) to multiplier (e.g., 0.8 to 1.2)
                 multiplier = 0.8 + (0.4 * performance_ratio)
-                # V4.3: Cap OOC multiplier
-                multiplier = max(0.9, min(multiplier, 1.1))
             else:
                 multiplier = 1.0
+            
+            # V5.3: Apply Chaos Tax for high-variance conferences
+            # If StdDev > threshold, apply penalty (conferences that cannibalize themselves)
+            conf_stddev = self.conference_stddevs.get(conf, 0.0)
+            if conf_stddev > self.chaos_stddev_threshold:
+                multiplier *= self.chaos_tax_multiplier  # 10% penalty
                 
             final_cq[conf] = raw * multiplier
-            
-        p4_cqs = [cq for conf, cq in final_cq.items() if conf in ['SEC', 'Big Ten', 'ACC', 'Big 12', 'Pac-12']]
-        if p4_cqs:
-            final_cq['FBS Independents'] = sum(p4_cqs) / len(p4_cqs)
-        else:
-            final_cq['FBS Independents'] = 0.0
+        
+        # V5.3: Synthetic CQ for FBS Independents (schedule-weighted average)
+        # Instead of CQ=0, use average CQ of opponents' conferences
+        # This rewards independents who play tough schedules (Notre Dame vs Army)
+        indie_teams = teams_by_conf.get('FBS Independents', [])
+        for indie_team in indie_teams:
+            schedule = self.team_stats[indie_team]['schedule']
+            if schedule:
+                opp_cqs = []
+                for opp in schedule:
+                    opp_conf = self.team_stats[opp]['conference']
+                    if opp_conf and opp_conf != 'FBS Independents':
+                        opp_cq = final_cq.get(opp_conf, 0)
+                        opp_cqs.append(opp_cq)
+                if opp_cqs:
+                    # Store synthetic CQ for this specific indie team
+                    synthetic_cq = sum(opp_cqs) / len(opp_cqs)
+                    final_cq[f'_indie_{indie_team}'] = synthetic_cq
+        
+        # Placeholder for teams without synthetic CQ
+        final_cq['FBS Independents'] = 0.0
             
         return final_cq
 
     def calculate_final_rankings(self) -> Dict[str, Any]:
-        bad_loss_map = {}
-        quality_win_map = {}
-        bad_win_map = {}
+        """Compute final rankings using FRS formula."""
         
-        bad_loss_counts = {}
-        quality_win_counts = {}
-        bad_win_counts = {}
+        # Calculate Conference Quality
+        conf_quality = self.calculate_conference_quality()
         
-        for team, data in self.team_stats.items():
-            team_elo = data['quality_score']
-            
-            bl_penalty, bl_count = self._calculate_bad_loss_penalty(team_elo, data['losses_details'])
-            bad_loss_map[team] = bl_penalty
-            bad_loss_counts[team] = bl_count
-            
-            qw_bonus, qw_count = self._calculate_quality_win_bonus(team_elo, data['wins_details'])
-            quality_win_map[team] = qw_bonus
-            quality_win_counts[team] = qw_count
-            
-            bw_penalty, bw_count = self._calculate_bad_win_penalty(team_elo, data['wins_details'])
-            bad_win_map[team] = bw_penalty
-            bad_win_counts[team] = bw_count
-        
-        conf_quality = self.calculate_conference_quality(bad_loss_map)
-        
+        # V4.0+: Calculate Percentiles for Relative QW
+        all_elos = [data['quality_score'] for data in self.team_stats.values()]
+        if all_elos:
+            p75 = np.percentile(all_elos, 75)  # Top 25% threshold for quality wins
+            p80 = np.percentile(all_elos, 80)  # Top 20% threshold for quality losses
+            p25 = np.percentile(all_elos, 25)  # Bottom 25% threshold for bad losses
+        else:
+            p75 = 1600.0
+            p80 = 1650.0
+            p25 = 1100.0
+
+        # Calculate final scores
         team_rankings = []
         rankings_dict = {}
-        indie_cqs = []
-        
-        # First pass: Calculate raw record scores for normalization
-        raw_record_scores = {}
         
         for team, data in self.team_stats.items():
+            # V5.3: Use synthetic CQ for independents
             if data['conference'] == 'FBS Independents':
-                opp_cqs = []
-                opp_elos = []
-                for opp in data['schedule']:
-                    opp_conf = self.team_stats[opp]['conference']
-                    if opp_conf:
-                        opp_cqs.append(conf_quality.get(opp_conf, 0))
-                    opp_elos.append(self.team_stats[opp]['quality_score'])
-                
-                if opp_cqs:
-                    avg_sched_cq = sum(opp_cqs) / len(opp_cqs)
-                    avg_opp_elo = sum(opp_elos) / len(opp_elos) if opp_elos else 1500
-                    # V4.3: Indie CQ = 0.6 * sched + 0.4 * opp_elo
-                    cq = (0.6 * avg_sched_cq) + (0.4 * avg_opp_elo)
-                else:
-                    cq = conf_quality.get('FBS Independents', 0)
-                indie_cqs.append(cq)
+                cq = conf_quality.get(f'_indie_{team}', 0)
             else:
                 cq = conf_quality.get(data['conference'], 0) if data['conference'] else 0
             
+            # Calculate Record Score (0-1000 scale mapped to 1000-2000)
+            # New V3.6: Weighted Wins (Road Wins count more)
+            
+            # Weights
             w_home = 1.0
             w_road = 1.1
             
+            # Calculate weighted wins
             total_wins = data['wins']
             away_wins = data['away_wins']
             home_wins = total_wins - away_wins
@@ -623,225 +590,176 @@ class TeamQualityRanker:
             else:
                 weighted_win_pct = 0.0
             
+            # Strength of Victory (SoV) - Average Elo of Wins
             win_elos = []
-            cross_tier_wins = 0
+            cross_tier_wins = 0  # V4.0 Phase 2: Count G5 beating P4
             team_conf_type = data['conference_type']
             
+            # V4.0+: Champ Anchor Logic
+            champ_bonus = 0.0
+            is_champ = False
+            is_finalist = False
+
             for win_info in data['wins_details']:
                 opp = win_info['opponent']
                 opp_elo = self.team_stats[opp]['quality_score']
                 opp_conf_type = self.team_stats[opp]['conference_type']
                 win_elos.append(opp_elo)
                 
+                # V4.0 Phase 2: Count cross-tier wins (G5 beating P4)
                 if team_conf_type == 'Group of 5' and opp_conf_type == 'Power 4':
                     cross_tier_wins += 1
+                
+                if 'championship' in str(win_info.get('notes', '')).lower():
+                    is_champ = True
+
+            for loss_info in data['losses_details']:
+                if 'championship' in str(loss_info.get('notes', '')).lower():
+                    is_finalist = True
+            
+            if is_champ:
+                champ_bonus = 100.0
+            elif is_finalist:
+                champ_bonus = 50.0
             
             sov_bonus = 0.0
-            avg_win_elo = 0.0
+            avg_win_elo = 0.0  # Initialize to avoid unbound variable
             if win_elos:
                 avg_win_elo = sum(win_elos) / len(win_elos)
+                # V4.0 Phase 2: Tier-specific SoV thresholds
                 if team_conf_type == 'Power 4':
                     sov_threshold = self.sov_threshold_p4
                     sov_mult = self.sov_mult_p4
-                else:
+                else:  # G5 or other
                     sov_threshold = self.sov_threshold_g5
                     sov_mult = self.sov_mult_g5
                 
                 if avg_win_elo > sov_threshold:
                     sov_bonus = (avg_win_elo - sov_threshold) * sov_mult
             
-            # V4.3: Cap Cross Tier Bonus
-            cross_tier_bonus = min(cross_tier_wins * self.cross_tier_bonus, self.cross_tier_cap)
+            # V4.0 Phase 2: Cross-tier win bonus (+80 per G5 > P4 win)
+            cross_tier_bonus = cross_tier_wins * self.cross_tier_bonus
             
+            # V3.9: Strength of Schedule (SoS) Component with Logarithmic Scaling
             opponents = data['schedule']
             if opponents:
                 opp_elos = [self.team_stats[opp]['quality_score'] for opp in opponents]
                 avg_opp_elo = sum(opp_elos) / len(opp_elos)
             else:
-                avg_opp_elo = 1500.0
+                avg_opp_elo = 1500.0 # Default average
             
+            # V4.0 Phase 2: Tier-specific SoS baselines
             if team_conf_type == 'Power 4':
                 sos_baseline = self.sos_baseline_p4
-            else:
+            else:  # G5 or other
                 sos_baseline = self.sos_baseline_g5
             
-            # V4.4.1: Linear SOS to avoid cliff at baseline
-            sos_score = (avg_opp_elo - sos_baseline) * 2.0
+            # V4.0: Logarithmic SoS scaling for smoother differentiation
+            if avg_opp_elo > sos_baseline:
+                sos_score = math.log(max(avg_opp_elo - sos_baseline, 1)) * 80
+            else:
+                # Penalty for weak schedules (below baseline)
+                sos_score = (avg_opp_elo - sos_baseline) * 0.5
             
-            h2h_bonus = 0.0
-            top10_wins = 0
-            top25_wins = 0
+            # V5.3: Relative Quality Win Bonus (UNCAPPED)
+            # Bonus for beating Top 25% teams (Elo > P75)
+            # Formula: 0.35 * (OppElo - P75) - no cap to reward elite schedules
+            qw_bonus = 0.0
             for win_info in data['wins_details']:
                 opp = win_info['opponent']
                 opp_elo = self.team_stats[opp]['quality_score']
-                if opp_elo > 1650:
-                    top10_wins += 1
-                elif opp_elo > self.h2h_top25_elo_floor:
-                    top25_wins += 1
-            h2h_bonus = (top10_wins * self.h2h_top10_bonus) + (top25_wins * self.h2h_top25_bonus)
-            h2h_bonus = min(h2h_bonus, self.h2h_max_bonus)
+                if opp_elo > p75:
+                    bonus = (opp_elo - p75) * 0.35
+                    qw_bonus += bonus
+            # V5.3: No cap - elite schedules deserve full credit
             
-            ql_bonus = 0.0
-            quality_loss_count = 0
+            # V5.3: Quality Loss Bonus - credit for losing to elite teams
+            # Conservative multiplier to avoid V4-style imbalance
+            quality_loss_bonus = 0.0
+            for loss_info in data['losses_details']:
+                opp = loss_info['opponent']
+                opp_elo = self.team_stats[opp]['quality_score']
+                if opp_elo > p80:  # Top 20% teams
+                    bonus = (opp_elo - p80) * self.quality_loss_mult
+                    quality_loss_bonus += bonus
+            
+            # V5.3: Bad Loss Penalty - penalize losses to weak teams
+            bad_loss_penalty = 0.0
+            for loss_info in data['losses_details']:
+                opp = loss_info['opponent']
+                opp_elo = self.team_stats[opp]['quality_score']
+                if opp_elo < p25:  # Bottom 25% teams
+                    penalty = (p25 - opp_elo) * self.bad_loss_mult
+                    bad_loss_penalty += penalty
+            
+            # V4.0+: Explicit Loss Penalty - penalizes multi-loss teams progressively
+            # Formula: -150 * (losses ^ 1.1)
             num_losses = data['losses']
-            if num_losses > 0 and data['losses_details']:
-                quality_loss_points = 0.0
-                for loss_info in data['losses_details']:
-                    opp = loss_info['opponent']
-                    opp_elo = self.team_stats[opp]['quality_score']
-                    if opp_elo > self.ql_threshold:
-                        loss_credit = (opp_elo - self.ql_threshold) * self.ql_multiplier
-                        loss_credit = min(loss_credit, self.ql_max_per_loss)
-                        quality_loss_points += loss_credit
-                        quality_loss_count += 1
-                ql_bonus = quality_loss_points / num_losses
+            loss_penalty = 0.0
+            if num_losses > 0:
+                loss_penalty = self.loss_penalty_base * (num_losses ** self.loss_penalty_exp)
             
-            bl_penalty = bad_loss_map.get(team, 0.0)
-            qw_bonus = quality_win_map.get(team, 0.0)
-            bw_penalty = bad_win_map.get(team, 0.0)
+            record_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + qw_bonus + champ_bonus + quality_loss_bonus - loss_penalty - bad_loss_penalty
             
-            # V4.4.1: Increased base loss penalty
-            loss_penalty = 200.0 * (data['losses'] ** 1.1)
+            # V5.3: Perfection Bonus (multiplicative)
+            # Undefeated teams with 12+ games get 5% boost
+            # One-loss teams with 12+ games get 2% boost
+            games_played = data['wins'] + data['losses']
+            if num_losses == 0 and games_played >= 12:
+                record_score *= self.undefeated_mult  # 1.05x
+            elif num_losses == 1 and games_played >= 12:
+                record_score *= self.one_loss_mult  # 1.02x
             
-            # V4.4.1: Increased undefeated bonus
-            undefeated_bonus = 0.0
-            if data['losses'] == 0:
-                undefeated_bonus = 250.0
-            
-            # Raw Record Score Calculation
-            raw_score = 1000.0 + (weighted_win_pct * 1000.0) + sov_bonus + sos_score + cross_tier_bonus + h2h_bonus + ql_bonus + qw_bonus - bl_penalty - bw_penalty - loss_penalty + undefeated_bonus
-            
-            raw_record_scores[team] = {
-                'raw_score': raw_score,
-                'components': {
-                    'weighted_win_pct': weighted_win_pct,
-                    'sov_bonus': sov_bonus,
-                    'sos_score': sos_score,
-                    'cross_tier_bonus': cross_tier_bonus,
-                    'h2h_bonus': h2h_bonus,
-                    'ql_bonus': ql_bonus,
-                    'qw_bonus': qw_bonus,
-                    'bl_penalty': bl_penalty,
-                    'bw_penalty': bw_penalty,
-                    'loss_penalty': loss_penalty,
-                    'undefeated_bonus': undefeated_bonus,
-                    'avg_opp_elo': avg_opp_elo,
-                    'avg_win_elo': avg_win_elo,
-                    'cq': cq,
-                    'top10_wins': top10_wins,
-                    'top25_wins': top25_wins,
-                    'cross_tier_wins': cross_tier_wins,
-                    'quality_loss_count': quality_loss_count
-                }
-            }
-
-        # V4.3: Normalize Record Scores
-        # Record = 1500 + zscore(raw) * 200
-        all_raw_scores = [d['raw_score'] for d in raw_record_scores.values()]
-        if all_raw_scores:
-            mean_raw = statistics.mean(all_raw_scores)
-            stdev_raw = statistics.stdev(all_raw_scores) if len(all_raw_scores) > 1 else 1.0
-        else:
-            mean_raw = 0
-            stdev_raw = 1
-            
-        for team, data in raw_record_scores.items():
-            raw = data['raw_score']
-            comps = data['components']
-            
-            # Z-score normalization
-            z_score = (raw - mean_raw) / stdev_raw if stdev_raw > 0 else 0
-            record_score = 1500.0 + (z_score * 200.0)
-            
+            # FRS = (W_Team * TQ) + (W_Conf * CQ) + (W_Rec * RS)
             tq_weight = self.team_quality_weight
             conf_weight = self.conference_weight
             rec_weight = self.record_weight
             
-            final_score = (tq_weight * self.team_stats[team]['quality_score']) + \
-                          (conf_weight * comps['cq']) + \
+            final_score = (tq_weight * data['quality_score']) + \
+                          (conf_weight * cq) + \
                           (rec_weight * record_score)
-            
-            # V4.3: Damping for multi-loss P4 teams
-            # if num_losses > 2 and tier == 'P4': frs *= 0.95
-            if self.team_stats[team]['losses'] > 2 and self.team_stats[team]['conference_type'] == 'Power 4':
-                final_score *= 0.95
             
             team_entry = {
                 'team_name': team,
-                'conference': self.team_stats[team]['conference'],
-                'conference_type': self.team_stats[team]['conference_type'],
-                'team_quality_score': self.team_stats[team]['quality_score'],
-                'conference_quality_score': comps['cq'],
+                'conference': data['conference'],
+                'conference_type': data['conference_type'],
+                'team_quality_score': data['quality_score'],
+                'conference_quality_score': cq,
                 'record_score': record_score,
                 'final_ranking_score': final_score,
-                'sos': comps['avg_opp_elo'],
-                'sov': comps['avg_win_elo'],
+                'sos': avg_opp_elo,
+                'sov': avg_win_elo,
                 'records': {
-                    'total_wins': self.team_stats[team]['wins'],
-                    'total_losses': self.team_stats[team]['losses'],
-                    'conf_wins': self.team_stats[team]['conf_wins'],
-                    'conf_losses': self.team_stats[team]['conf_losses'],
-                    'away_wins': self.team_stats[team]['away_wins'],
-                    'power_wins': self.team_stats[team]['record_vs_p4']['wins'],
-                    'power_losses': self.team_stats[team]['record_vs_p4']['losses'],
-                    'group_five_wins': self.team_stats[team]['record_vs_g5']['wins'],
-                    'group_five_losses': self.team_stats[team]['record_vs_g5']['losses'],
-                    'fcs_wins': self.team_stats[team]['record_vs_fcs']['wins'],
-                    'fcs_losses': self.team_stats[team]['record_vs_fcs']['losses']
-                },
-                'quality_losses': comps['quality_loss_count'],
-                'quality_wins': quality_win_counts.get(team, 0),
-                'bad_losses': bad_loss_counts.get(team, 0),
-                'bad_wins': bad_win_counts.get(team, 0),
-                'top_10_wins': comps['top10_wins'],
-                'top_25_wins': comps['top25_wins'],
-                'cross_tier_wins': comps['cross_tier_wins'],
-                'h2h_bonus': comps['h2h_bonus'],
-                'quality_loss_bonus': comps['ql_bonus'],
-                'bad_loss_penalty': comps['bl_penalty'],
-                'quality_win_bonus': comps['qw_bonus'],
-                'bad_win_penalty': comps['bw_penalty'],
-                'loss_penalty': comps['loss_penalty'],
-                'undefeated_bonus': comps['undefeated_bonus'],
-                'wins_details': self.team_stats[team]['wins_details'],
-                'losses_details': self.team_stats[team]['losses_details']
+                    'total_wins': data['wins'],
+                    'total_losses': data['losses'],
+                    'conf_wins': data['conf_wins'],
+                    'conf_losses': data['conf_losses'],
+                    'away_wins': data['away_wins'],
+                    'power_wins': data['record_vs_p4']['wins'],
+                    'power_losses': data['record_vs_p4']['losses'],
+                    'group_five_wins': data['record_vs_g5']['wins'],
+                    'group_five_losses': data['record_vs_g5']['losses'],
+                    'fcs_wins': data['record_vs_fcs']['wins'],
+                    'fcs_losses': data['record_vs_fcs']['losses']
+                }
             }
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
-        
-        if indie_cqs:
-            conf_quality['FBS Independents'] = sum(indie_cqs) / len(indie_cqs)
             
+        # Sort teams
         team_rankings.sort(key=lambda x: x['final_ranking_score'], reverse=True)
         
-        # Enrich game details with opponent rank and Elo
-        team_rank_map = {t['team_name']: i + 1 for i, t in enumerate(team_rankings)}
-        team_elo_map = {t['team_name']: t['team_quality_score'] for t in team_rankings}
-        
-        for team in team_rankings:
-            # Enrich wins
-            for win in team['wins_details']:
-                opp = win['opponent']
-                win['opponent_rank'] = team_rank_map.get(opp, 999) # 999 for unranked/FCS
-                win['opponent_elo'] = team_elo_map.get(opp, self.team_stats[opp]['quality_score'])
-                
-            # Enrich losses
-            for loss in team['losses_details']:
-                opp = loss['opponent']
-                loss['opponent_rank'] = team_rank_map.get(opp, 999)
-                loss['opponent_elo'] = team_elo_map.get(opp, self.team_stats[opp]['quality_score'])
-
+        # Conference rankings
         conf_rankings = []
+        # Re-calculate aggregate records for display
         conf_records = defaultdict(lambda: {'p4': {'w':0,'l':0}, 'g5': {'w':0,'l':0}, 'fcs': {'w':0,'l':0}})
         conf_team_counts = defaultdict(int)
-        conf_types = {}
         
         for team, data in self.team_stats.items():
             if data['conference']:
                 conf_team_counts[data['conference']] += 1
-                if data['conference'] not in conf_types:
-                    conf_types[data['conference']] = data['conference_type']
                 for k in ['p4', 'g5', 'fcs']:
+                    # Use inter_conf_records instead of total records
                     conf_records[data['conference']][k]['w'] += data['inter_conf_records'][k]['w']
                     conf_records[data['conference']][k]['l'] += data['inter_conf_records'][k]['l']
 
@@ -849,7 +767,6 @@ class TeamQualityRanker:
             recs = conf_records[conf]
             conf_rankings.append({
                 'conference_name': conf,
-                'conference_type': conf_types.get(conf, 'FCS'),
                 'average_team_quality': avg_q,
                 'number_of_teams': conf_team_counts[conf],
                 'record_vs_p4': f"{recs['p4']['w']}-{recs['p4']['l']}",
@@ -870,6 +787,8 @@ class TeamQualityRanker:
         if not teams:
             return rankings_data
             
+        # For Elo, we want to map 1500+ to high scores.
+        # Let's find min/max but handle outliers.
         scores = [t['final_ranking_score'] for t in teams]
         min_s = min(scores)
         max_s = max(scores)
@@ -878,28 +797,45 @@ class TeamQualityRanker:
         for team in teams:
             norm = 100 * (team['final_ranking_score'] - min_s) / range_s
             team['normalized_score'] = norm
+            # Update the dict version too
             rankings_data['rankings'][team['team_name']]['normalized_score'] = norm
             
         return rankings_data
 
     @staticmethod
     def calculate_priors(history_data: List[Dict[str, Any]]) -> Dict[str, float]:
+        """
+        Calculate prior scores based on historical data.
+        Expected history_data: List of ranking results (dicts) from previous years,
+        ordered from most recent to oldest.
+        
+        V4.0 Formula: T_prior = 0.70(T_Y-1) + 0.30(T_Y-2)
+        - Dropped Y-3 to reduce legacy drag
+        - These priors are then blended with tier_initial using prior_strength config
+        - Default prior_strength=0.15 means final = 0.85*tier + 0.15*prior
+        - Net effect: ~10.5% Y-1 + ~4.5% Y-2 influence (significantly reduced legacy echo)
+        """
         priors = defaultdict(float)
-        weights = [0.70, 0.30]
+        weights = [0.70, 0.30]  # V4.0: 70% Y-1, 30% Y-2 (slight adjustment from 0.67/0.33)
         
         for i, year_data in enumerate(history_data):
             if i >= len(weights):
                 break
             
             weight = weights[i]
+            # year_data is the result of calculate_final_rankings()
+            # It contains 'rankings' dict mapping team names to data
             rankings = year_data.get('rankings', {})
             
             for team, data in rankings.items():
+                # Use final_ranking_score (Elo scale) to maintain consistency
+                # Do NOT use normalized_score as it would reset teams to ~50-100 range
                 score = data.get('final_ranking_score', 1200.0)
                 priors[team] += score * weight
                 
         return dict(priors)
 
+# Legacy wrapper for backward compatibility
 def calculate_rankings(processed_games, initial_scores, alpha, alpha_away_win_home_loss, k_conf_weight, use_ats_bonus, ats_bonus):
     config = {
         'power_conf_initial': initial_scores.get('Power 4', 100),
@@ -914,4 +850,3 @@ def calculate_rankings(processed_games, initial_scores, alpha, alpha_away_win_ho
     for game in processed_games:
         ranker.update_quality_scores(game)
     return ranker.calculate_final_rankings()
-

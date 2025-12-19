@@ -26,10 +26,10 @@ DEFAULT_CONFIG = {
     'group5_initial': 1200.0,
     'fcs_initial': 900.0,
     'base_factor': 40.0,
-    'team_quality_weight': 0.60,  # V4.1: FRS Team Quality weight
-    'conference_weight': 0.10,
-    'record_weight': 0.30,  # V4.1: 30% resume weight
-    'prior_strength': 0.15,  # V4.0: 15% historical, 85% fresh
+    'team_quality_weight': 0.65,  # V5.1: 65% TQ
+    'conference_weight': 0.08,    # V5.1: 8% CQ
+    'record_weight': 0.27,        # V5.1: 27% Resume
+    'prior_strength': 0.15,       # V4.0: 15% historical, 85% fresh
     'use_ats': False,
     'ats_bonus': 10.0
 }
@@ -142,20 +142,28 @@ def calculate_rankings_logic(year, week, request_args):
         config['prior_strength'] = max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
     
     # --- Calculate Rankings ---
-    print("Calculating rankings (Iterative V4.0)...")
+    print("Calculating rankings (Iterative V5.1)...")
     reference_ranks = None
+    conf_stddevs = {}  # V4.8: Conference StdDevs for chaos tax
     ranker = TeamQualityRanker(config, priors)
-    num_iterations = ranker.num_iterations  # V4.0: Use config (default 4)
+    num_iterations = ranker.num_iterations  # V5.1: Use config (default 2)
     
     for i in range(num_iterations):
         print(f"  Iteration {i+1}/{num_iterations}...")
         ranker = TeamQualityRanker(config, priors)
+        
+        # V4.8: Set conference StdDevs from previous iteration for chaos tax
+        if conf_stddevs:
+            ranker.set_conference_stddevs(conf_stddevs)
+        
         for week_num in sorted(games_by_week.keys()):
             for game in games_by_week[week_num]:
                 ranker.update_quality_scores(game, reference_ranks)
         if i < num_iterations - 1:
             temp_results = ranker.calculate_final_rankings()
             reference_ranks = {t['team_name']: t['team_quality_score'] for t in temp_results['team_rankings']}
+            # V4.8: Compute conference StdDevs for next iteration's chaos tax
+            conf_stddevs = ranker.compute_conference_stddevs()
         
     rankings_data = ranker.calculate_final_rankings()
     rankings_data = ranker.normalize_scores(rankings_data)
@@ -323,8 +331,8 @@ def get_team_breakdown(team_name):
             # Determine key factors
             factors = []
             
-            # Team Quality contribution (55%)
-            tq_contrib = diff_tq * 0.55
+            # Team Quality contribution (65%)
+            tq_contrib = diff_tq * 0.65
             if abs(tq_contrib) > 5:
                 factors.append({
                     'factor': 'Team Quality (Elo)',
@@ -334,8 +342,8 @@ def get_team_breakdown(team_name):
                     'explanation': f"{'Higher' if diff_tq > 0 else 'Lower'} Elo rating ({target['team_quality_score']:.0f} vs {other['team_quality_score']:.0f})"
                 })
             
-            # Record Score contribution (35%)
-            rec_contrib = diff_rec * 0.35
+            # Record Score contribution (27%)
+            rec_contrib = diff_rec * 0.27
             if abs(rec_contrib) > 5:
                 factors.append({
                     'factor': 'Record Score (Resume)',
@@ -345,8 +353,8 @@ def get_team_breakdown(team_name):
                     'explanation': f"{'Stronger' if diff_rec > 0 else 'Weaker'} resume ({target['record_score']:.0f} vs {other['record_score']:.0f})"
                 })
             
-            # Conference Quality contribution (10%)
-            cq_contrib = diff_cq * 0.10
+            # Conference Quality contribution (8%)
+            cq_contrib = diff_cq * 0.08
             if abs(cq_contrib) > 2:
                 factors.append({
                     'factor': 'Conference Quality',
@@ -419,9 +427,9 @@ def get_team_breakdown(team_name):
                 'g5_record': f"{team_data['records']['group_five_wins']}-{team_data['records']['group_five_losses']}",
             },
             'formula_breakdown': {
-                'tq_contribution': team_data['team_quality_score'] * 0.55,
-                'rec_contribution': team_data['record_score'] * 0.35,
-                'cq_contribution': team_data['conference_quality_score'] * 0.10,
+                'tq_contribution': team_data['team_quality_score'] * 0.65,
+                'rec_contribution': team_data['record_score'] * 0.27,
+                'cq_contribution': team_data['conference_quality_score'] * 0.08,
                 'total': team_data['final_ranking_score']
             },
             'comparisons_ahead': comparisons_ahead,
