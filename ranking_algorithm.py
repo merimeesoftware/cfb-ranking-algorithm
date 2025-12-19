@@ -22,11 +22,13 @@ class WinDetail(TypedDict):
     opponent: str
     is_road: bool
     notes: Optional[str]
+    mov: int
 
 class LossDetail(TypedDict):
     opponent: str
     is_home: bool
     notes: Optional[str]
+    mov: int
 
 class TeamStat(TypedDict):
     quality_score: float
@@ -743,7 +745,7 @@ class TeamQualityRanker:
                     'is_road': win_info.get('is_road', False),
                     'mov': win_info.get('mov', 0),
                     'notes': win_info.get('notes'),
-                    'is_quality_win': opp_elo > p75  # True quality win marker
+                    'is_quality_win': bool(opp_elo > p75)  # True quality win marker
                 })
             
             # V5.0: Enrich losses_details with opponent data for frontend
@@ -759,8 +761,8 @@ class TeamQualityRanker:
                     'is_home': loss_info.get('is_home', False),
                     'mov': loss_info.get('mov', 0),
                     'notes': loss_info.get('notes'),
-                    'is_quality_loss': opp_elo > p80,  # Loss to elite team
-                    'is_bad_loss': opp_elo < p25  # Loss to weak team
+                    'is_quality_loss': bool(opp_elo > p80),  # Loss to elite team
+                    'is_bad_loss': bool(opp_elo < p25)  # Loss to weak team
                 })
             
             team_entry = {
@@ -809,6 +811,7 @@ class TeamQualityRanker:
         
         for team_entry in team_rankings:
             for win in team_entry['wins_details']:
+                old_rank = win['opponent_rank']
                 win['opponent_rank'] = team_rank_lookup.get(win['opponent'], 999)
             for loss in team_entry['losses_details']:
                 loss['opponent_rank'] = team_rank_lookup.get(loss['opponent'], 999)
