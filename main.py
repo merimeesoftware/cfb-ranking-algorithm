@@ -155,7 +155,7 @@ class CFBRankingApp:
         
         # 3. Iterative Solver
         # We run the season multiple times to allow scores to converge
-        iterations = 4 # V4.0: 4 iterations
+        iterations = 2 # V5.0: Reduced from 4 to 2 for efficiency
         
         final_ranks_ref = None # Reference ranks for opponent strength
         

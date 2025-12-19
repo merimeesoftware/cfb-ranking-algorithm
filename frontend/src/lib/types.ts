@@ -19,6 +19,7 @@ export interface WinDetail {
 	opponent_elo: number;
 	is_road: boolean;
 	mov: number;
+	is_quality_win?: boolean;
 }
 
 export interface LossDetail {
@@ -27,6 +28,8 @@ export interface LossDetail {
 	opponent_elo: number;
 	is_home: boolean;
 	mov: number;
+	is_quality_loss?: boolean;
+	is_bad_loss?: boolean;
 }
 
 export interface Team {

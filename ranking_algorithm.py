@@ -368,17 +368,20 @@ class TeamQualityRanker:
         self._update_vs_record(loser, winner_type, won=False)
 
         # Track win details for Strength of Victory calculation
-        # We store the opponent name. We'll look up their final Elo later.
+        # V5.0: Include margin of victory (score_diff) for frontend display
         self.team_stats[winner]['wins_details'].append({
             'opponent': loser,
             'is_road': not is_home_win,
+            'mov': score_diff,  # Margin of Victory
             'notes': game.get('notes')
         })
         
         # V4.0 Phase 3: Track loss details for Quality Loss Bonus
+        # V5.0: Include margin for frontend display
         self.team_stats[loser]['losses_details'].append({
             'opponent': winner,
             'is_home': not is_home_win,  # Loser was home if winner was away
+            'mov': score_diff,  # Margin of defeat
             'notes': game.get('notes')
         })
 
@@ -719,6 +722,47 @@ class TeamQualityRanker:
                           (conf_weight * cq) + \
                           (rec_weight * record_score)
             
+            # V5.0: Count quality wins and bad losses for frontend display
+            quality_wins_count = sum(1 for w in data['wins_details'] 
+                                     if self.team_stats[w['opponent']]['quality_score'] > p75)
+            bad_losses_count = sum(1 for l in data['losses_details'] 
+                                   if self.team_stats[l['opponent']]['quality_score'] < p25)
+            quality_losses_count = sum(1 for l in data['losses_details'] 
+                                        if self.team_stats[l['opponent']]['quality_score'] > p80)
+            
+            # V5.0: Enrich wins_details with opponent data for frontend
+            # Mark each win as quality win or not based on P75 threshold
+            enriched_wins = []
+            for win_info in data['wins_details']:
+                opp = win_info['opponent']
+                opp_elo = self.team_stats[opp]['quality_score']
+                enriched_wins.append({
+                    'opponent': opp,
+                    'opponent_elo': opp_elo,
+                    'opponent_rank': 0,  # Will be populated after sorting
+                    'is_road': win_info.get('is_road', False),
+                    'mov': win_info.get('mov', 0),
+                    'notes': win_info.get('notes'),
+                    'is_quality_win': opp_elo > p75  # True quality win marker
+                })
+            
+            # V5.0: Enrich losses_details with opponent data for frontend
+            # Mark each loss as quality loss or bad loss based on P80/P25 thresholds
+            enriched_losses = []
+            for loss_info in data['losses_details']:
+                opp = loss_info['opponent']
+                opp_elo = self.team_stats[opp]['quality_score']
+                enriched_losses.append({
+                    'opponent': opp,
+                    'opponent_elo': opp_elo,
+                    'opponent_rank': 0,  # Will be populated after sorting
+                    'is_home': loss_info.get('is_home', False),
+                    'mov': loss_info.get('mov', 0),
+                    'notes': loss_info.get('notes'),
+                    'is_quality_loss': opp_elo > p80,  # Loss to elite team
+                    'is_bad_loss': opp_elo < p25  # Loss to weak team
+                })
+            
             team_entry = {
                 'team_name': team,
                 'conference': data['conference'],
@@ -741,13 +785,36 @@ class TeamQualityRanker:
                     'group_five_losses': data['record_vs_g5']['losses'],
                     'fcs_wins': data['record_vs_fcs']['wins'],
                     'fcs_losses': data['record_vs_fcs']['losses']
-                }
+                },
+                # V5.0: Resume metrics for frontend
+                'quality_wins': quality_wins_count,
+                'quality_losses': quality_losses_count,
+                'bad_losses': bad_losses_count,
+                'cross_tier_wins': cross_tier_wins,
+                'quality_win_bonus': qw_bonus,
+                'quality_loss_bonus': quality_loss_bonus,
+                'bad_loss_penalty': bad_loss_penalty,
+                'wins_details': enriched_wins,
+                'losses_details': enriched_losses
             }
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
             
         # Sort teams
         team_rankings.sort(key=lambda x: x['final_ranking_score'], reverse=True)
+        
+        # V5.0: Populate opponent_rank in wins_details and losses_details
+        # Create a rank lookup from sorted team_rankings
+        team_rank_lookup = {t['team_name']: rank + 1 for rank, t in enumerate(team_rankings)}
+        
+        for team_entry in team_rankings:
+            for win in team_entry['wins_details']:
+                win['opponent_rank'] = team_rank_lookup.get(win['opponent'], 999)
+            for loss in team_entry['losses_details']:
+                loss['opponent_rank'] = team_rank_lookup.get(loss['opponent'], 999)
+            # Also update the rankings_dict
+            rankings_dict[team_entry['team_name']]['wins_details'] = team_entry['wins_details']
+            rankings_dict[team_entry['team_name']]['losses_details'] = team_entry['losses_details']
         
         # Conference rankings
         conf_rankings = []
@@ -763,10 +830,25 @@ class TeamQualityRanker:
                     conf_records[data['conference']][k]['w'] += data['inter_conf_records'][k]['w']
                     conf_records[data['conference']][k]['l'] += data['inter_conf_records'][k]['l']
 
+        # V5.0: Import conference type classifier
+        from data_processor import POWER_4_CONFERENCES, GROUP_OF_5_CONFERENCES
+        
+        def get_conf_type(conf_name: str) -> str:
+            if conf_name in POWER_4_CONFERENCES or conf_name == 'FBS Independents':
+                return 'Power 4'
+            elif conf_name in GROUP_OF_5_CONFERENCES:
+                return 'Group of 5'
+            else:
+                return 'FCS'
+        
         for conf, avg_q in conf_quality.items():
+            # Skip synthetic indie CQ entries (start with _indie_)
+            if conf.startswith('_indie_'):
+                continue
             recs = conf_records[conf]
             conf_rankings.append({
                 'conference_name': conf,
+                'conference_type': get_conf_type(conf),
                 'average_team_quality': avg_q,
                 'number_of_teams': conf_team_counts[conf],
                 'record_vs_p4': f"{recs['p4']['w']}-{recs['p4']['l']}",
