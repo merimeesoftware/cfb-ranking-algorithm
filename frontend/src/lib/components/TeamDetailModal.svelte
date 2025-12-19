@@ -19,10 +19,10 @@
 		}
 	}
 
-	// Score breakdown calculations
-	$: tqContrib = team.team_quality_score * 0.55;
-	$: recContrib = team.record_score * 0.35;
-	$: confContrib = team.conference_quality_score * 0.10;
+	// Score breakdown calculations (V5.0 weights: 65/27/8)
+	$: tqContrib = team.team_quality_score * 0.65;
+	$: recContrib = team.record_score * 0.27;
+	$: confContrib = team.conference_quality_score * 0.08;
 
 	// Get teams ahead and behind for comparison
 	$: teamsAhead = allTeams
@@ -34,12 +34,12 @@
 		.filter((_, i) => i > rank - 1 && i <= rank + 2)
 		.map((t, i) => ({ team: t, rank: rank + 1 + i }));
 
-	// Calculate component contributions for any team
+	// Calculate component contributions for any team (V5.0 weights)
 	function getContribs(t: Team) {
 		return {
-			tq: t.team_quality_score * 0.55,
-			rec: t.record_score * 0.35,
-			conf: t.conference_quality_score * 0.10
+			tq: t.team_quality_score * 0.65,
+			rec: t.record_score * 0.27,
+			conf: t.conference_quality_score * 0.08
 		};
 	}
 
@@ -120,9 +120,9 @@
 	// Wait, the backend `wins_details` and `losses_details` are just lists.
 	// Let's just show "Key Games" instead of a timeline for now, or list them by category.
 
-	// Filter for "Key Games"
-	$: keyWins = (team.wins_details || []).filter(w => w.opponent_rank <= 25 || w.opponent_elo > 1600);
-	$: badLosses = (team.losses_details || []).filter(l => l.opponent_elo < (team.team_quality_score - 180)); // Approx check
+	// Filter for "Key Games" - use is_quality_win and is_bad_loss flags from backend
+	$: keyWins = (team.wins_details || []).filter(w => w.is_quality_win);
+	$: badLosses = (team.losses_details || []).filter(l => l.is_bad_loss);
 	
 </script>
 
@@ -188,7 +188,7 @@
 							<div class="flex justify-between text-sm mb-1">
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-gray-700 dark:text-gray-300">Team Quality</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">55%</span>
+								<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">65%</span>
 								</div>
 								<span class="font-mono text-gray-900 dark:text-white">
 									{team.team_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {tqContrib.toFixed(1)}
@@ -208,7 +208,7 @@
 							<div class="flex justify-between text-sm mb-1">
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-gray-700 dark:text-gray-300">Resume</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">35%</span>
+								<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">27%</span>
 								</div>
 								<span class="font-mono text-gray-900 dark:text-white">
 									{team.record_score.toFixed(1)} <span class="text-gray-400">→</span> {recContrib.toFixed(1)}
@@ -228,7 +228,7 @@
 							<div class="flex justify-between text-sm mb-1">
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-gray-700 dark:text-gray-300">Conference</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">10%</span>
+								<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">8%</span>
 								</div>
 								<span class="font-mono text-gray-900 dark:text-white">
 									{team.conference_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {confContrib.toFixed(1)}
@@ -274,9 +274,9 @@
 					
 					{#if expandedSection === 'wins'}
 						<div transition:slide class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-							{#if (team.wins_details || []).filter(w => w.opponent_rank <= 25 || w.opponent_elo > 1600).length > 0}
+							{#if (team.wins_details || []).filter(w => w.is_quality_win).length > 0}
 								<div class="space-y-2">
-									{#each (team.wins_details || []).filter(w => w.opponent_rank <= 25 || w.opponent_elo > 1600).sort((a,b) => b.opponent_elo - a.opponent_elo) as win}
+									{#each (team.wins_details || []).filter(w => w.is_quality_win).sort((a,b) => b.opponent_elo - a.opponent_elo) as win}
 										<div class="flex items-center justify-between text-sm p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50">
 											<div class="flex items-center gap-2">
 												<span class="font-bold text-gray-900 dark:text-white">
@@ -320,13 +320,13 @@
 
 					{#if expandedSection === 'losses'}
 						<div transition:slide class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-							{#if (team.losses_details || []).length > 0}
+							{#if (team.losses_details || []).filter(l => l.is_bad_loss).length > 0}
 								<div class="space-y-2">
-									{#each (team.losses_details || []).sort((a,b) => a.opponent_elo - b.opponent_elo) as loss}
+									{#each (team.losses_details || []).filter(l => l.is_bad_loss).sort((a,b) => a.opponent_elo - b.opponent_elo) as loss}
 										<div class="flex items-center justify-between text-sm p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50">
 											<div class="flex items-center gap-2">
 												<span class="font-bold text-gray-900 dark:text-white">
-													{loss.opponent_rank <= 25 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
+													{loss.opponent_rank <= 136 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
 												</span>
 												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} Elo)</span>
 											</div>
@@ -340,7 +340,7 @@
 									{/each}
 								</div>
 							{:else}
-								<p class="text-sm text-gray-500 italic text-center py-2">No losses recorded.</p>
+								<p class="text-sm text-gray-500 italic text-center py-2">No bad losses recorded.</p>
 							{/if}
 						</div>
 					{/if}
