@@ -569,11 +569,11 @@ class TeamQualityRanker:
         
         if fbs_elos:
             p75 = np.percentile(fbs_elos, 75)  # Top 25% of FBS
-            p95 = np.percentile(fbs_elos, 95)  # Top 5% of FBS (Elite Quality Loss)
+            p90 = np.percentile(fbs_elos, 90)  # Top 10% of FBS (Quality Loss)
             p25 = np.percentile(fbs_elos, 25)  # Bottom 25% of FBS
         else:
             p75 = 1600.0
-            p95 = 1750.0
+            p90 = 1700.0
             p25 = 1100.0
             
         if p4_elos:
@@ -709,8 +709,8 @@ class TeamQualityRanker:
             for loss_info in data['losses_details']:
                 opp = loss_info['opponent']
                 opp_elo = self.team_stats[opp]['quality_score']
-                if opp_elo > p95:  # Top 5% teams (Elite)
-                    bonus = (opp_elo - p95) * self.quality_loss_mult
+                if opp_elo > p90:  # Top 10% teams (Quality Loss)
+                    bonus = (opp_elo - p90) * self.quality_loss_mult
                     quality_loss_bonus += bonus
             
             # V5.3: Bad Loss Penalty - penalize losses to weak teams
@@ -790,7 +790,7 @@ class TeamQualityRanker:
                     'is_home': loss_info.get('is_home', False),
                     'mov': loss_info.get('mov', 0),
                     'notes': loss_info.get('notes'),
-                    'is_quality_loss': bool(opp_elo > p95),  # Loss to elite team
+                    'is_quality_loss': bool(opp_elo > p90),  # Loss to quality team
                     'is_bad_loss': bool(is_fcs or opp_elo < cupcake_threshold)  # Loss to weak team
                 })
 

@@ -661,7 +661,7 @@
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Quality Loss Bonus:</strong> Credit for losses to Top 5% teams</span>
+					<span><strong>Quality Loss Bonus:</strong> Credit for losses to Top 10% teams</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
