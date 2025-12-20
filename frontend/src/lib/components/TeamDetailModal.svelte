@@ -345,6 +345,52 @@
 						</div>
 					{/if}
 
+					<!-- Quality Losses Header -->
+					<button 
+						class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-700"
+						on:click={() => toggleSection('qlosses')}
+					>
+						<div class="flex items-center gap-3">
+							<div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold">
+								{team.quality_losses ?? 0}
+							</div>
+							<div class="text-left">
+								<div class="font-semibold text-gray-900 dark:text-white">Quality Losses</div>
+								<div class="text-xs text-gray-500">vs Top 5% Opponents</div>
+							</div>
+						</div>
+						<svg class="w-5 h-5 text-gray-400 transform transition-transform {expandedSection === 'qlosses' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+						</svg>
+					</button>
+
+					{#if expandedSection === 'qlosses'}
+						<div transition:slide class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+							{#if (team.losses_details || []).filter(l => l.is_quality_loss).length > 0}
+								<div class="space-y-2">
+									{#each (team.losses_details || []).filter(l => l.is_quality_loss).sort((a,b) => b.opponent_elo - a.opponent_elo) as loss}
+										<div class="flex items-center justify-between text-sm p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50">
+											<div class="flex items-center gap-2">
+												<span class="font-bold text-gray-900 dark:text-white">
+													{loss.opponent_rank <= 25 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
+												</span>
+												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} Elo)</span>
+											</div>
+											<div class="flex items-center gap-3">
+												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+													{loss.is_home ? 'Home' : 'Away'}
+												</span>
+												<span class="font-mono font-medium text-gray-600 dark:text-gray-400">-{Math.abs(loss.mov)}</span>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-sm text-gray-500 italic text-center py-2">No quality losses recorded.</p>
+							{/if}
+						</div>
+					{/if}
+
 					<!-- Bad Losses Header -->
 					<button 
 						class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-700"

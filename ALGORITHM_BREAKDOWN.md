@@ -102,7 +102,7 @@ RecordScore = (BaseScore + Bonuses - Penalties) × PerfectionMultiplier
 | **SoS Score** | `log(max(AvgOppElo - Baseline, 1)) × 80` | P4 baseline: 1420, G5 baseline: 1300 |
 | **Cross-Tier Bonus** | `60 × num_G5_beats_P4` | Reduced from 80 |
 | **Quality Win Bonus** | `0.35 × (OppElo - P75)` per win | UNCAPPED (was 250) |
-| **Quality Loss Bonus** | `0.10 × (OppElo - P95)` per loss | Credit for Top 5% losses |
+| **Quality Loss Bonus** | `0.10 × (OppElo - P90)` per loss | Credit for Top 10% losses |
 | **Bad Loss Penalty** | `0.25 × (P25 - OppElo)` per loss | Penalty for Bottom 25% losses |
 | **Loss Penalty** | `150 × (losses ^ 1.1)` | Progressive penalty |
 | **Champ Anchors** | +100 (champ), +50 (finalist) | Conference success bonus |
@@ -191,7 +191,7 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
     - Elo clamp (1850 max)
     - Chaos Tax for high-variance conferences
     - Synthetic CQ for independents
-    - Quality Loss Bonus (P95 threshold)
+    - Quality Loss Bonus (P90 threshold)
     - Bad Loss Penalty (P25 threshold)
     - Perfection Bonus (1.05×/1.02×)
   - **Removed:** Winstreak bonus (G5-exclusive advantage)
@@ -215,5 +215,5 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 | $HFA$ | Home-field advantage (65 regular, 20 postseason) |
 | $FRS$ | Final Ranking Score |
 | $P_{75}$ | 75th percentile Elo (quality win threshold) |
-| $P_{95}$ | 95th percentile Elo (quality loss threshold) |
+| $P_{90}$ | 90th percentile Elo (quality loss threshold) |
 | $P_{25}$ | 25th percentile Elo (bad loss threshold) |
