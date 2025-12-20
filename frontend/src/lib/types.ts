@@ -20,6 +20,7 @@ export interface WinDetail {
 	is_road: boolean;
 	mov: number;
 	is_quality_win?: boolean;
+	is_cupcake_win?: boolean;
 }
 
 export interface LossDetail {
@@ -42,6 +43,8 @@ export interface Team {
 	conference_quality_score: number;
 	sos: number | null;
 	sov: number | null;
+	sos_rank?: number;
+	sov_rank?: number;
 	records: TeamRecords;
 	logo?: string | null;
 	logo_dark?: string | null;
