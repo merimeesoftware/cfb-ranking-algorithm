@@ -39,8 +39,25 @@ The system processes games sequentially through the season week-by-week, allowin
    - Create a `.env` file in the project root
    - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here
 
-4. Start up the app
-    - run command `python app.py` for web app.
+4. Run the Application
+
+   The application consists of a Python Flask backend and a SvelteKit frontend. You need to run both in separate terminals.
+
+   **Backend (API):**
+   ```bash
+   # In the root directory
+   python app.py
+   ```
+   The API will start on `http://localhost:5001`.
+
+   **Frontend (Web UI):**
+   ```bash
+   # Open a new terminal
+   cd frontend
+   npm install  # Install dependencies (first time only)
+   npm run dev
+   ```
+   The web app will start on `http://localhost:5173`.
 
 ## Usage
 

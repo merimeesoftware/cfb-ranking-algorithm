@@ -554,21 +554,46 @@ class TeamQualityRanker:
         conf_quality = self.calculate_conference_quality()
         
         # V4.0+: Calculate Percentiles for Relative QW
-        all_elos = [data['quality_score'] for data in self.team_stats.values()]
-        if all_elos:
-            p75 = np.percentile(all_elos, 75)  # Top 25% threshold for quality wins
-            p80 = np.percentile(all_elos, 80)  # Top 20% threshold for quality losses
-            p25 = np.percentile(all_elos, 25)  # Bottom 25% threshold for bad losses
+        # V5.4: Filter to FBS only for thresholds to avoid skewing by FCS teams
+        fbs_elos = [
+            data['quality_score'] 
+            for data in self.team_stats.values() 
+            if data['conference_type'] in ['Power 4', 'Group of 5']
+        ]
+        
+        p4_elos = [
+            data['quality_score']
+            for data in self.team_stats.values()
+            if data['conference_type'] == 'Power 4'
+        ]
+        
+        if fbs_elos:
+            p75 = np.percentile(fbs_elos, 75)  # Top 25% of FBS
+            p95 = np.percentile(fbs_elos, 95)  # Top 5% of FBS (Elite Quality Loss)
+            p25 = np.percentile(fbs_elos, 25)  # Bottom 25% of FBS
         else:
             p75 = 1600.0
-            p80 = 1650.0
+            p95 = 1750.0
             p25 = 1100.0
+            
+        if p4_elos:
+            p4_p25 = np.percentile(p4_elos, 25) # Bottom 25% of P4
+        else:
+            p4_p25 = 1300.0
 
         # Calculate final scores
         team_rankings = []
         rankings_dict = {}
         
         for team, data in self.team_stats.items():
+            # Determine Cupcake/Bad Loss Threshold based on team tier
+            # P4 teams have a higher standard (Bottom 25% of P4 OR Bottom 25% of FBS)
+            # G5 teams use the standard FBS Bottom 25%
+            if data['conference_type'] == 'Power 4':
+                cupcake_threshold = max(p4_p25, p25)
+            else:
+                cupcake_threshold = p25
+
             # V5.3: Use synthetic CQ for independents
             if data['conference'] == 'FBS Independents':
                 cq = conf_quality.get(f'_indie_{team}', 0)
@@ -684,17 +709,22 @@ class TeamQualityRanker:
             for loss_info in data['losses_details']:
                 opp = loss_info['opponent']
                 opp_elo = self.team_stats[opp]['quality_score']
-                if opp_elo > p80:  # Top 20% teams
-                    bonus = (opp_elo - p80) * self.quality_loss_mult
+                if opp_elo > p95:  # Top 5% teams (Elite)
+                    bonus = (opp_elo - p95) * self.quality_loss_mult
                     quality_loss_bonus += bonus
             
             # V5.3: Bad Loss Penalty - penalize losses to weak teams
             bad_loss_penalty = 0.0
             for loss_info in data['losses_details']:
                 opp = loss_info['opponent']
-                opp_elo = self.team_stats[opp]['quality_score']
-                if opp_elo < p25:  # Bottom 25% teams
-                    penalty = (p25 - opp_elo) * self.bad_loss_mult
+                opp_data = self.team_stats[opp]
+                opp_elo = opp_data['quality_score']
+                is_fcs = opp_data['conference_type'] == 'FCS'
+                
+                if is_fcs or opp_elo < cupcake_threshold:  # Bottom 25% teams (Relative to tier) or FCS
+                    # Ensure positive penalty
+                    diff = max(0, cupcake_threshold - opp_elo)
+                    penalty = diff * self.bad_loss_mult
                     bad_loss_penalty += penalty
             
             # V4.0+: Explicit Loss Penalty - penalizes multi-loss teams progressively
@@ -724,20 +754,15 @@ class TeamQualityRanker:
                           (conf_weight * cq) + \
                           (rec_weight * record_score)
             
-            # V5.0: Count quality wins and bad losses for frontend display
-            quality_wins_count = sum(1 for w in data['wins_details'] 
-                                     if self.team_stats[w['opponent']]['quality_score'] > p75)
-            bad_losses_count = sum(1 for l in data['losses_details'] 
-                                   if self.team_stats[l['opponent']]['quality_score'] < p25)
-            quality_losses_count = sum(1 for l in data['losses_details'] 
-                                        if self.team_stats[l['opponent']]['quality_score'] > p80)
-            
             # V5.0: Enrich wins_details with opponent data for frontend
             # Mark each win as quality win or not based on P75 threshold
             enriched_wins = []
             for win_info in data['wins_details']:
                 opp = win_info['opponent']
-                opp_elo = self.team_stats[opp]['quality_score']
+                opp_data = self.team_stats[opp]
+                opp_elo = opp_data['quality_score']
+                is_fcs = opp_data['conference_type'] == 'FCS'
+                
                 enriched_wins.append({
                     'opponent': opp,
                     'opponent_elo': opp_elo,
@@ -745,15 +770,19 @@ class TeamQualityRanker:
                     'is_road': win_info.get('is_road', False),
                     'mov': win_info.get('mov', 0),
                     'notes': win_info.get('notes'),
-                    'is_quality_win': bool(opp_elo > p75)  # True quality win marker
+                    'is_quality_win': bool(opp_elo > p75),  # True quality win marker
+                    'is_cupcake_win': bool(is_fcs or opp_elo < cupcake_threshold) # FCS or Bottom 25% FBS
                 })
             
             # V5.0: Enrich losses_details with opponent data for frontend
-            # Mark each loss as quality loss or bad loss based on P80/P25 thresholds
+            # Mark each loss as quality loss or bad loss based on P95/P25 thresholds
             enriched_losses = []
             for loss_info in data['losses_details']:
                 opp = loss_info['opponent']
-                opp_elo = self.team_stats[opp]['quality_score']
+                opp_data = self.team_stats[opp]
+                opp_elo = opp_data['quality_score']
+                is_fcs = opp_data['conference_type'] == 'FCS'
+                
                 enriched_losses.append({
                     'opponent': opp,
                     'opponent_elo': opp_elo,
@@ -761,9 +790,14 @@ class TeamQualityRanker:
                     'is_home': loss_info.get('is_home', False),
                     'mov': loss_info.get('mov', 0),
                     'notes': loss_info.get('notes'),
-                    'is_quality_loss': bool(opp_elo > p80),  # Loss to elite team
-                    'is_bad_loss': bool(opp_elo < p25)  # Loss to weak team
+                    'is_quality_loss': bool(opp_elo > p95),  # Loss to elite team
+                    'is_bad_loss': bool(is_fcs or opp_elo < cupcake_threshold)  # Loss to weak team
                 })
+
+            # V5.0: Count quality wins and bad losses for frontend display
+            quality_wins_count = sum(1 for w in enriched_wins if w['is_quality_win'])
+            bad_losses_count = sum(1 for l in enriched_losses if l['is_bad_loss'])
+            quality_losses_count = sum(1 for l in enriched_losses if l['is_quality_loss'])
             
             team_entry = {
                 'team_name': team,
@@ -805,11 +839,31 @@ class TeamQualityRanker:
         # Sort teams
         team_rankings.sort(key=lambda x: x['final_ranking_score'], reverse=True)
         
+        # Calculate SoS and SoV ranks
+        sos_values = [(t['team_name'], t['sos']) for t in team_rankings]
+        sov_values = [(t['team_name'], t['sov']) for t in team_rankings]
+        
+        # Sort descending (higher is better/harder)
+        sos_values.sort(key=lambda x: x[1], reverse=True)
+        sov_values.sort(key=lambda x: x[1], reverse=True)
+        
+        # Create rank lookups
+        sos_ranks = {team: rank + 1 for rank, (team, _) in enumerate(sos_values)}
+        sov_ranks = {team: rank + 1 for rank, (team, _) in enumerate(sov_values)}
+        
         # V5.0: Populate opponent_rank in wins_details and losses_details
         # Create a rank lookup from sorted team_rankings
         team_rank_lookup = {t['team_name']: rank + 1 for rank, t in enumerate(team_rankings)}
         
         for team_entry in team_rankings:
+            # Add SoS/SoV ranks
+            team_entry['sos_rank'] = sos_ranks.get(team_entry['team_name'], 999)
+            team_entry['sov_rank'] = sov_ranks.get(team_entry['team_name'], 999)
+            
+            # Update dict version
+            rankings_dict[team_entry['team_name']]['sos_rank'] = team_entry['sos_rank']
+            rankings_dict[team_entry['team_name']]['sov_rank'] = team_entry['sov_rank']
+
             for win in team_entry['wins_details']:
                 old_rank = win['opponent_rank']
                 win['opponent_rank'] = team_rank_lookup.get(win['opponent'], 999)

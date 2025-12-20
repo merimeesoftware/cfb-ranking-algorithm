@@ -163,6 +163,8 @@ export async function fetchRankings(year: number, week: number): Promise<void> {
 			conference_quality_score: t.conference_quality_score || 0,
 			sos: t.sos ?? null,
 			sov: t.sov ?? null,
+			sos_rank: t.sos_rank ?? null,
+			sov_rank: t.sov_rank ?? null,
 			records: {
 				total_wins: t.records?.total_wins ?? 0,
 				total_losses: t.records?.total_losses ?? 0,

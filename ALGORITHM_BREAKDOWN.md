@@ -102,7 +102,7 @@ RecordScore = (BaseScore + Bonuses - Penalties) × PerfectionMultiplier
 | **SoS Score** | `log(max(AvgOppElo - Baseline, 1)) × 80` | P4 baseline: 1420, G5 baseline: 1300 |
 | **Cross-Tier Bonus** | `60 × num_G5_beats_P4` | Reduced from 80 |
 | **Quality Win Bonus** | `0.35 × (OppElo - P75)` per win | UNCAPPED (was 250) |
-| **Quality Loss Bonus** | `0.10 × (OppElo - P80)` per loss | Credit for Top 20% losses |
+| **Quality Loss Bonus** | `0.10 × (OppElo - P95)` per loss | Credit for Top 5% losses |
 | **Bad Loss Penalty** | `0.25 × (P25 - OppElo)` per loss | Penalty for Bottom 25% losses |
 | **Loss Penalty** | `150 × (losses ^ 1.1)` | Progressive penalty |
 | **Champ Anchors** | +100 (champ), +50 (finalist) | Conference success bonus |
@@ -172,7 +172,7 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 | **Chaos Tax (-10%)** | Penalty for high-variance conferences | ACC/Big 12 penalty if chaotic |
 | **Synthetic Indie CQ** | Schedule-weighted CQ for independents | Notre Dame +80-120 FRS |
 | **G5 Dampening** | Reduced upset/cross-tier bonuses | JMU/Tulane drop 3-5 spots |
-| **Quality Loss Bonus** | Credit for losses to Top 20% | +5-25 FRS for quality losses |
+| **Quality Loss Bonus** | Credit for losses to Top 5% | +5-25 FRS for quality losses |
 | **Bad Loss Penalty** | Penalty for Bottom 25% losses | -10-50 FRS per bad loss |
 | **Perfection Bonus** | 5%/2% multiplier for 0/1 losses | Guarantees undefeated > 1-loss |
 | **QW Uncapped** | No 250pt cap on quality win bonus | Elite schedules fully rewarded |
@@ -191,7 +191,7 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
     - Elo clamp (1850 max)
     - Chaos Tax for high-variance conferences
     - Synthetic CQ for independents
-    - Quality Loss Bonus (P80 threshold)
+    - Quality Loss Bonus (P95 threshold)
     - Bad Loss Penalty (P25 threshold)
     - Perfection Bonus (1.05×/1.02×)
   - **Removed:** Winstreak bonus (G5-exclusive advantage)
@@ -215,5 +215,5 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 | $HFA$ | Home-field advantage (65 regular, 20 postseason) |
 | $FRS$ | Final Ranking Score |
 | $P_{75}$ | 75th percentile Elo (quality win threshold) |
-| $P_{80}$ | 80th percentile Elo (quality loss threshold) |
+| $P_{95}$ | 95th percentile Elo (quality loss threshold) |
 | $P_{25}$ | 25th percentile Elo (bad loss threshold) |

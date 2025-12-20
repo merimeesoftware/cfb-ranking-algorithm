@@ -299,6 +299,52 @@
 						</div>
 					{/if}
 
+					<!-- Cupcake Wins Header -->
+					<button 
+						class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-700"
+						on:click={() => toggleSection('cupcakes')}
+					>
+						<div class="flex items-center gap-3">
+							<div class="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-bold">
+								{(team.wins_details || []).filter(w => w.is_cupcake_win).length}
+							</div>
+							<div class="text-left">
+								<div class="font-semibold text-gray-900 dark:text-white">Cupcake Wins</div>
+								<div class="text-xs text-gray-500">vs FCS or Bottom 25%</div>
+							</div>
+						</div>
+						<svg class="w-5 h-5 text-gray-400 transform transition-transform {expandedSection === 'cupcakes' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+						</svg>
+					</button>
+					
+					{#if expandedSection === 'cupcakes'}
+						<div transition:slide class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+							{#if (team.wins_details || []).filter(w => w.is_cupcake_win).length > 0}
+								<div class="space-y-2">
+									{#each (team.wins_details || []).filter(w => w.is_cupcake_win).sort((a,b) => a.opponent_elo - b.opponent_elo) as win}
+										<div class="flex items-center justify-between text-sm p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50">
+											<div class="flex items-center gap-2">
+												<span class="font-bold text-gray-900 dark:text-white">
+													{win.opponent}
+												</span>
+												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} Elo)</span>
+											</div>
+											<div class="flex items-center gap-3">
+												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+													{win.is_road ? 'Away' : 'Home'}
+												</span>
+												<span class="font-mono font-medium text-green-600">+{win.mov}</span>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-sm text-gray-500 italic text-center py-2">No cupcake wins recorded.</p>
+							{/if}
+						</div>
+					{/if}
+
 					<!-- Bad Losses Header -->
 					<button 
 						class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-700"
@@ -352,6 +398,11 @@
 						<div class="text-3xl font-bold text-gray-900 dark:text-white">
 							{team.sos?.toFixed(0) ?? 'N/A'}
 						</div>
+						{#if team.sos_rank}
+							<div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+								Rank #{team.sos_rank}
+							</div>
+						{/if}
 						<div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
 							Strength of Schedule
 						</div>
@@ -360,6 +411,11 @@
 						<div class="text-3xl font-bold text-gray-900 dark:text-white">
 							{team.sov?.toFixed(0) ?? 'N/A'}
 						</div>
+						{#if team.sov_rank}
+							<div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+								Rank #{team.sov_rank}
+							</div>
+						{/if}
 						<div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
 							Strength of Victory
 						</div>
