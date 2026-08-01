@@ -50,6 +50,7 @@ ranking_results/
 !package.json
 !package-lock.json
 !tsconfig.json
+!.cursor/environment.json
 
 # Security scan reports
 bandit-report.json
