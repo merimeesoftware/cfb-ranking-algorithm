@@ -1,8 +1,9 @@
-# Render Blueprint - Deploy both frontend and backend from one repo
-# Documentation: https://render.com/docs/blueprint-spec
+# Render Blueprint — DEPRECATED
+# This project has migrated to Cloudflare Pages (frontend) + Cloudflare Containers (API).
+# See docs/superpowers/specs/2026-08-01-ops-cloudflare-runbook.md for deployment instructions.
+# Keep this file temporarily as fallback during cutover.
 
 services:
-  # Python Backend API
   - type: web
     name: cfb-rankings-api
     runtime: python
@@ -14,13 +15,12 @@ services:
       - key: PYTHON_VERSION
         value: "3.11"
       - key: CFBD_API_KEY
-        sync: false  # You'll set this manually in Render dashboard
+        sync: false
       - key: FLASK_ENV
         value: production
     healthCheckPath: /
-    autoDeploy: true
+    autoDeploy: false
 
-  # Svelte Frontend Static Site
   - type: web
     name: cfb-rankings-frontend
     runtime: static
@@ -47,4 +47,4 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-    autoDeploy: true
+    autoDeploy: false

@@ -1,273 +1,196 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import type { Team, Conference, FilterState } from '$lib/types';
+import {
+	fetchRankingsFromApi,
+	fetchAvailableWeeks,
+} from '$lib/api';
 
-// Helper function to parse win percentage from various formats
-function parseWinPct(value: any): number {
-	if (typeof value === 'number') return value;
-	if (typeof value === 'string' && value.includes('-')) {
-		const [wins, losses] = value.split('-').map(Number);
-		const total = wins + losses;
-		return total > 0 ? wins / total : 0;
-	}
-	return 0;
-}
-
-/**
- * Calculate the current CFB season and week based on today's date
- * CFB season typically starts late August / early September
- */
 function getCurrentSeasonWeek(): { year: number; week: number } {
 	const now = new Date();
 	let year = now.getFullYear();
-	const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-	
-	// If we're in Jan-July, we're in the offseason of the previous year's season
+	const month = now.getMonth() + 1;
+
 	if (month < 8) {
-		year = year - 1;
-		// Return postseason/final week for completed seasons
-		return { year, week: 15 };
+		return { year: year - 1, week: 15 };
 	}
-	
-	// Season starts around August 24 (Week 0)
-	const seasonStart = new Date(year, 7, 24); // August 24
-	
+
+	const seasonStart = new Date(year, 7, 24);
 	if (now < seasonStart) {
-		// Before season starts, default to week 1
 		return { year, week: 1 };
 	}
-	
-	// Calculate weeks since season start
+
 	const delta = now.getTime() - seasonStart.getTime();
 	const daysSinceStart = Math.floor(delta / (1000 * 60 * 60 * 24));
 	let weekNum = Math.floor(daysSinceStart / 7) + 1;
-	
-	// Cap at 15 (postseason)
-	if (weekNum > 15) {
-		weekNum = 15;
-	}
-	
+	if (weekNum > 15) weekNum = 15;
 	return { year, week: weekNum };
 }
 
-// Get current season/week
 const currentSeasonWeek = getCurrentSeasonWeek();
 
-// State stores
+// Client-side SWR cache keyed by year-week-view
+const rankingsCache = new Map<string, { teams: Team[]; conferences: Conference[]; fetchedAt: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function cacheKey(year: number, week: number, view: FilterState['view']): string {
+	return `${year}-${week}-${view}`;
+}
+
 export const teams = writable<Team[]>([]);
 export const conferences = writable<Conference[]>([]);
 export const loading = writable<boolean>(false);
 export const error = writable<string | null>(null);
 
-// Filter state - defaults to current season and week
 export const filterState = writable<FilterState>({
 	year: currentSeasonWeek.year,
 	week: currentSeasonWeek.week,
 	conferenceFilter: null,
 	searchQuery: '',
-	view: 'fbs'
+	view: 'fbs',
 });
 
-// Available years (last 5 years)
 export const availableYears = writable<number[]>(
 	Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
 );
 
-// Max week for current season
 export const maxWeek = writable<number>(15);
 
-// Derived store for filtered teams
 export const filteredTeams = derived(
 	[teams, filterState],
 	([$teams, $filterState]) => {
 		let result = [...$teams];
-
-		// Filter by View
 		if ($filterState.view === 'p4') {
-			result = result.filter(t => t.conference_type === 'Power 4');
+			result = result.filter((t) => t.conference_type === 'Power 4');
 		} else if ($filterState.view === 'g5') {
-			result = result.filter(t => t.conference_type === 'Group of 5');
+			result = result.filter((t) => t.conference_type === 'Group of 5');
 		} else if ($filterState.view === 'fcs') {
-			result = result.filter(t => t.conference_type === 'FCS');
+			result = result.filter((t) => t.conference_type === 'FCS');
 		}
-
-		// Filter by conference
 		if ($filterState.conferenceFilter) {
-			result = result.filter(t => t.conference === $filterState.conferenceFilter);
+			result = result.filter((t) => t.conference === $filterState.conferenceFilter);
 		}
-
-		// Filter by search query
 		if ($filterState.searchQuery) {
 			const query = $filterState.searchQuery.toLowerCase();
-			result = result.filter(t => 
-				t.team_name.toLowerCase().includes(query) ||
-				t.conference.toLowerCase().includes(query)
+			result = result.filter(
+				(t) =>
+					t.team_name.toLowerCase().includes(query) ||
+					t.conference.toLowerCase().includes(query)
 			);
 		}
-
 		return result;
 	}
 );
 
-// Derived store for filtered conferences
 export const filteredConferences = derived(
 	[conferences, filterState],
 	([$conferences, $filterState]) => {
 		let result = [...$conferences];
-
 		if ($filterState.view === 'p4') {
-			result = result.filter(c => c.conference_type === 'Power 4');
+			result = result.filter((c) => c.conference_type === 'Power 4');
 		} else if ($filterState.view === 'g5') {
-			result = result.filter(c => c.conference_type === 'Group of 5');
+			result = result.filter((c) => c.conference_type === 'Group of 5');
 		} else if ($filterState.view === 'fcs') {
-			result = result.filter(c => c.conference_type === 'FCS');
+			result = result.filter((c) => c.conference_type === 'FCS');
 		}
-
 		return result;
 	}
 );
 
-// API base URL - in production, use the Render backend URL
-const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-	? 'http://localhost:5001'
-	: 'https://cfb-rankings-api.onrender.com';
+export async function loadAvailableWeeks(year: number): Promise<void> {
+	const weeks = await fetchAvailableWeeks(year);
+	maxWeek.set(Math.max(...weeks, 1));
+}
 
-/**
- * Fetch rankings from the API
- */
-export async function fetchRankings(year: number, week: number): Promise<void> {
+export async function fetchRankings(
+	year: number,
+	week: number,
+	options: { force?: boolean; view?: FilterState['view'] } = {}
+): Promise<void> {
+	const view = options.view ?? get(filterState).view;
+	const key = cacheKey(year, week, view);
+	const cached = rankingsCache.get(key);
+
+	if (cached && !options.force && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+		teams.set(cached.teams);
+		conferences.set(cached.conferences);
+		filterState.update((state) => ({ ...state, year, week }));
+		return;
+	}
+
 	loading.set(true);
 	error.set(null);
 
 	try {
-		const url = `${API_BASE}/rankings?year=${year}&week=${week}`;
-		
-		const response = await fetch(url);
-		
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.message || errorData.error || `HTTP error: ${response.status}`);
-		}
-
-		const data = await response.json();
-		
-		// Map API response to frontend types
-		// API returns: team_rankings, conference_rankings
-		// Frontend expects: teams, conferences
-		const teamData: Team[] = (data.team_rankings || data.teams || []).map((t: any) => ({
-			team_name: t.team_name || t.team || '',
-			conference: t.conference || '',
-			conference_type: t.conference_type || '',
-			final_ranking_score: t.final_ranking_score || t.score || 0,
-			team_quality_score: t.team_quality_score || 0,
-			record_score: t.record_score || 0,
-			conference_quality_score: t.conference_quality_score || 0,
-			sos: t.sos ?? null,
-			sov: t.sov ?? null,
-			sos_rank: t.sos_rank ?? null,
-			sov_rank: t.sov_rank ?? null,
-			records: {
-				total_wins: t.records?.total_wins ?? 0,
-				total_losses: t.records?.total_losses ?? 0,
-				conf_wins: t.records?.conf_wins ?? 0,
-				conf_losses: t.records?.conf_losses ?? 0,
-				power_wins: t.records?.power_wins ?? 0,
-				power_losses: t.records?.power_losses ?? 0,
-				group_five_wins: t.records?.group_five_wins ?? 0,
-				group_five_losses: t.records?.group_five_losses ?? 0
-			},
-			// V4.2 Resume Breakdown Metrics
-			quality_wins: t.quality_wins ?? 0,
-			quality_losses: t.quality_losses ?? 0,
-			bad_losses: t.bad_losses ?? 0,
-			bad_wins: t.bad_wins ?? 0,
-			top_10_wins: t.top_10_wins ?? 0,
-			top_25_wins: t.top_25_wins ?? 0,
-			cross_tier_wins: t.cross_tier_wins ?? 0,
-			h2h_bonus: t.h2h_bonus ?? 0,
-			quality_loss_bonus: t.quality_loss_bonus ?? 0,
-			bad_loss_penalty: t.bad_loss_penalty ?? 0,
-			quality_win_bonus: t.quality_win_bonus ?? 0,
-			bad_win_penalty: t.bad_win_penalty ?? 0,
-
-			// V4.5 Game Details
-			wins_details: t.wins_details || [],
-			losses_details: t.losses_details || []
-		}));
-
-		const conferenceData: Conference[] = (data.conference_rankings || data.conferences || []).map((c: any) => ({
-			conference: c.conference_name || c.conference || '',
-			conference_type: c.conference_type || '',
-			avg_ranking: c.average_team_quality || c.avg_ranking || 0,
-			team_count: c.number_of_teams || c.team_count || 0,
-			ranked_teams: c.ranked_teams ?? 0,
-			power_win_pct: parseWinPct(c.record_vs_p4 || c.power_win_pct),
-			g5_win_pct: parseWinPct(c.record_vs_g5 || c.g5_win_pct),
-			fcs_wins: c.fcs_wins ?? c.record_vs_fcs?.split('-')[0] ?? undefined,
-			fcs_losses: c.fcs_losses ?? c.record_vs_fcs?.split('-')[1] ?? undefined
-		}));
-		
-		teams.set(teamData);
-		conferences.set(conferenceData);
-		
-		// Update filter state with actual values
-		filterState.update(state => ({
-			...state,
-			year: data.year || year,
-			week: data.week || week
-		}));
-
+		const data = await fetchRankingsFromApi(year, week, view);
+		teams.set(data.teams);
+		conferences.set(data.conferences);
+		rankingsCache.set(key, {
+			teams: data.teams,
+			conferences: data.conferences,
+			fetchedAt: Date.now(),
+		});
+		filterState.update((state) => ({ ...state, year: data.year, week: data.week ?? week }));
 	} catch (e) {
 		const message = e instanceof Error ? e.message : 'Failed to fetch rankings';
 		error.set(message);
-		teams.set([]);
-		conferences.set([]);
+		if (cached) {
+			teams.set(cached.teams);
+			conferences.set(cached.conferences);
+		} else {
+			teams.set([]);
+			conferences.set([]);
+		}
 	} finally {
 		loading.set(false);
 	}
 }
 
-/**view filter
- */
 export function setView(view: 'fbs' | 'p4' | 'g5' | 'fcs'): void {
-	filterState.update(state => ({ ...state, view, conferenceFilter: null }));
+	filterState.update((state) => ({ ...state, view, conferenceFilter: null }));
 }
 
-/**
- * Set 
- * Set year filter
- */
 export function setYear(year: number): void {
-	filterState.update(state => ({ ...state, year }));
+	filterState.update((state) => ({ ...state, year }));
+	loadAvailableWeeks(year);
 }
 
-/**
- * Set week filter
- */
 export function setWeek(week: number): void {
-	filterState.update(state => ({ ...state, week }));
+	filterState.update((state) => ({ ...state, week }));
 }
 
-/**
- * Set conference filter
- */
 export function setConferenceFilter(conference: string | null): void {
-	filterState.update(state => ({ ...state, conferenceFilter: conference }));
+	filterState.update((state) => ({ ...state, conferenceFilter: conference }));
 }
 
-/**
- * Set search query
- */
 export function setSearchQuery(query: string): void {
-	filterState.update(state => ({ ...state, searchQuery: query }));
+	filterState.update((state) => ({ ...state, searchQuery: query }));
 }
 
-/**
- * Clear all filters
- */
 export function clearFilters(): void {
-	filterState.update(state => ({
-		...state,
-		conferenceFilter: null,
-		searchQuery: ''
-	}));
+	filterState.update((state) => ({ ...state, conferenceFilter: null, searchQuery: '' }));
+}
+
+export function parseUrlParams(search: string): Partial<FilterState> & { tab?: 'teams' | 'conferences' } {
+	const params = new URLSearchParams(search);
+	const result: Partial<FilterState> & { tab?: 'teams' | 'conferences' } = {};
+	const year = params.get('year');
+	const week = params.get('week');
+	const view = params.get('view');
+	const tab = params.get('tab');
+	if (year) result.year = parseInt(year, 10);
+	if (week) result.week = parseInt(week, 10);
+	if (view && ['fbs', 'p4', 'g5', 'fcs'].includes(view)) {
+		result.view = view as FilterState['view'];
+	}
+	if (tab === 'teams' || tab === 'conferences') result.tab = tab;
+	return result;
+}
+
+export function buildUrlParams(state: FilterState, tab: 'teams' | 'conferences'): string {
+	const params = new URLSearchParams();
+	params.set('year', String(state.year));
+	params.set('week', String(state.week));
+	params.set('view', state.view);
+	params.set('tab', tab);
+	return params.toString();
 }

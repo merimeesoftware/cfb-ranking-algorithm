@@ -72,7 +72,7 @@ class CFBDApiClient:
         # Cache with appropriate TTL
         if result:
             ttl = get_games_ttl(year)
-            self._cache.set(cache_key, result, ttl)
+            self._cache.set(cache_key, result, ttl, prefix='games')
         
         return result
 
@@ -90,7 +90,7 @@ class CFBDApiClient:
         result = {team['school']: team['conference'] for team in teams}
         
         if result:
-            self._cache.set(cache_key, result, TTL_TEAMS)
+            self._cache.set(cache_key, result, TTL_TEAMS, prefix='teams')
         
         return result
 
@@ -119,7 +119,7 @@ class CFBDApiClient:
             }
         
         if result:
-            self._cache.set(cache_key, result, TTL_TEAMS)
+            self._cache.set(cache_key, result, TTL_TEAMS, prefix='teams')
         
         return result
 
@@ -140,8 +140,8 @@ class CFBDApiClient:
         result = self._make_request('/rankings', params)
         
         if result:
-            ttl = get_games_ttl(year)  # Use same TTL logic as games
-            self._cache.set(cache_key, result, ttl)
+            ttl = get_games_ttl(year)
+            self._cache.set(cache_key, result, ttl, prefix='rankings_api')
         
         return result
             
@@ -166,7 +166,7 @@ class CFBDApiClient:
         
         if result:
             ttl = get_games_ttl(year)
-            self._cache.set(cache_key, result, ttl)
+            self._cache.set(cache_key, result, ttl, prefix='betting_lines')
         
         return result
 

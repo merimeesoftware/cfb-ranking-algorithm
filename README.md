@@ -36,8 +36,47 @@ The system processes games sequentially through the season week-by-week, allowin
    ```
 
 3. Set up your API key:
-   - Create a `.env` file in the project root
-   - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here
+   - Copy `.env.example` to `.env`
+   - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here`
+   - Optional: `MINIMAX_API_KEY` for agent features
+
+## Deployment
+
+Production deployment uses **Cloudflare Pages** (frontend) and **Cloudflare Containers** (API). See [docs/superpowers/specs/2026-08-01-ops-cloudflare-runbook.md](docs/superpowers/specs/2026-08-01-ops-cloudflare-runbook.md).
+
+### Required GitHub Secrets
+
+| Secret | Purpose |
+|--------|---------|
+| `CFBD_API_KEY` | College Football Data API |
+| `MINIMAX_API_KEY` | OpenCode/gh-aw agent workflows |
+| `CLOUDFLARE_API_TOKEN` | Pages + Containers deploy |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account |
+| `VITE_API_URL` | Frontend build-time API URL |
+| `CACHE_CLEAR_SECRET` | Protect POST /cache/clear |
+
+### Cloudflare Pages (Frontend)
+
+- Build command: `cd frontend && npm ci && npm run build`
+- Output directory: `frontend/build`
+- Set `VITE_API_URL` to your API origin (include `https://`)
+
+### Cloudflare Containers (API)
+
+- Build from repo `Dockerfile`
+- Set secrets: `CFBD_API_KEY`, optional `MINIMAX_API_KEY`, `CACHE_BACKEND=r2`
+- Configure R2 bucket for shared cache (see `wrangler.toml`)
+
+### CI/CD
+
+- `.github/workflows/ci-cd.yml` — lint, test, build (blocking)
+- `.github/workflows/deploy-cloudflare.yml` — deploy on main after CI passes
+- `.github/workflows/codeql.yml` — SAST scanning
+- Agentic workflows in `.github/workflows/*.md` (compile with `gh aw compile`)
+
+### Render (Deprecated Fallback)
+
+`render.yaml` is retained with `autoDeploy: false` during Cloudflare cutover.
 
 4. Run the Application
 
