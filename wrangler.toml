@@ -2,9 +2,12 @@ name = "cfb-rankings-api"
 main = "app.py"
 compatibility_date = "2024-08-01"
 
-# Cloudflare Containers deployment
-# Enable with: wrangler deploy (requires Containers beta access)
-# Set secrets: wrangler secret put CFBD_API_KEY
+# Cloudflare Containers / Workers API service.
+# Production secrets live HERE (Cloudflare), not in GitHub or Cursor:
+#   wrangler secret put CFBD_API_KEY
+#   wrangler secret put MINIMAX_API_KEY    # optional
+# Or: Dashboard → this service → Settings → Variables and Secrets
+# See docs/SECRETS.md
 
 [vars]
 FLASK_ENV = "production"

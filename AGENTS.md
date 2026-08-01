@@ -14,9 +14,10 @@ Standard commands live in `README.md`, `frontend/package.json`, and `.github/wor
 - Python deps are installed into a repo-local virtualenv at `venv/` (created by the update script). Run backend/lint/test tools via `./venv/bin/...` (e.g. `./venv/bin/python app.py`, `./venv/bin/flake8`, `./venv/bin/pytest`). There is no global project install.
 - Dev/lint/test tools (`flake8`, `bandit`, `pytest`, `pytest-cov`) are installed on top of `requirements.txt`; they are NOT in `requirements.txt`. Do not use `requirements-dev.txt` — it pins older/conflicting versions (e.g. `pydantic<2`) and is not what CI uses.
 
-### Secrets (Cursor Cloud)
+### Secrets
 
-Add API keys in the **Cursor Cloud Secrets tab** for this environment — not in repo files. See [.cursor/SECRETS.md](.cursor/SECRETS.md) for the direct link and which keys to add (`CFBD_API_KEY`, optional `MINIMAX_API_KEY`).
+- **Production (deployed app):** store `CFBD_API_KEY` / `MINIMAX_API_KEY` in **Cloudflare** (API service secrets). See [docs/SECRETS.md](docs/SECRETS.md).
+- **This Cloud Agent VM only:** Cursor Secrets tab — [.cursor/SECRETS.md](.cursor/SECRETS.md). Cursor secrets do not sync to Cloudflare.
 
 ### CFBD_API_KEY is required for real data
 - Both `app.py` and the CLI instantiate the CFBD API client **at import/startup time**. Import/startup succeeds even with a missing/invalid key, but every data request then returns empty results, so `GET /rankings` responds `404 {"error": "No game data found ..."}` instead of rankings.

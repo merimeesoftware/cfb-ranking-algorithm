@@ -42,27 +42,24 @@ The system processes games sequentially through the season week-by-week, allowin
 
 ## Deployment
 
-Production uses **Cloudflare Pages Git integration** (no per-repo Cloudflare API tokens). See [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md).
+Production uses **Cloudflare Pages Git integration**. Production secrets live **in Cloudflare**, not GitHub. See:
 
-### Secrets you actually need
+- [docs/SECRETS.md](docs/SECRETS.md) — secrets architecture (Cloudflare = prod source of truth)
+- [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) — connect repo + deploy steps
 
-| Where | Secret | Required? |
-|-------|--------|-----------|
-| **Cursor Cloud** → Secrets tab | `CFBD_API_KEY` | Yes (rankings) |
-| **Cursor Cloud** → Secrets tab | `MINIMAX_API_KEY` | Optional (agent features) |
-| **GitHub** repo secret | `CFBD_API_KEY` | Yes (CI only) |
-| **Cloudflare Pages** dashboard | Edit `_redirects` API host | One line when API moves |
-| **Backend host** (Render/Containers) | `CFBD_API_KEY` | Yes |
+### Where secrets go
 
-**Not required:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_API_URL`, `CACHE_CLEAR_SECRET` (all optional or replaced by simpler defaults).
+| Where | Role |
+|-------|------|
+| **Cloudflare** → API service → Variables and Secrets | **Production** — `CFBD_API_KEY`, optional `MINIMAX_API_KEY` |
+| **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
+| **`.env` locally** | Your laptop |
 
-### Cursor Cloud: enter MiniMax / CFBD keys
-
-Open [.cursor/SECRETS.md](.cursor/SECRETS.md) for the direct link to your environment Secrets tab.
+Frontend (Pages) needs **no** API keys — it proxies `/api/*` via `frontend/static/_redirects`.
 
 ### Cloudflare Pages (frontend)
 
-Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`. Frontend calls `/api/*`; proxy target is in `frontend/static/_redirects`.
+Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`.
 
 ### CI/CD
 

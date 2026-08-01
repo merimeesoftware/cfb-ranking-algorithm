@@ -1,10 +1,12 @@
 # Deploy to Cloudflare (simple pattern)
 
-**Goal:** One Cloudflare account + GitHub connected once. No per-project Cloudflare API tokens in GitHub.
+**Goal:** One Cloudflare account + GitHub connected once. Production secrets live **in Cloudflare**, not in GitHub or Cursor.
+
+See also: [SECRETS.md](./SECRETS.md) for the full secrets architecture.
 
 ## Recommended: Cloudflare Pages Git integration
 
-This is the standard pattern — Cloudflare builds and deploys when you push to `main`. GitHub Actions only validates (lint/test/build); it does not deploy.
+Cloudflare builds and deploys when you push to `main`. GitHub Actions only validates (lint/test/build); it does not deploy.
 
 ### One-time account setup
 
@@ -12,7 +14,7 @@ This is the standard pattern — Cloudflare builds and deploys when you push to 
 2. Authorize the **Cloudflare GitHub App** for your org/user (one-time).
 3. Select this repository.
 
-### Per-project settings (in Cloudflare UI, not GitHub secrets)
+### Per-project settings (in Cloudflare UI)
 
 | Setting | Value |
 |---------|-------|
@@ -24,32 +26,54 @@ This is the standard pattern — Cloudflare builds and deploys when you push to 
 
 No `CLOUDFLARE_API_TOKEN` or `CLOUDFLARE_ACCOUNT_ID` in GitHub.
 
-### API routing (no `VITE_API_URL` secret)
+### API routing (frontend → backend)
 
-The frontend calls **`/api/*`** (same origin). Cloudflare proxies to your backend via `frontend/static/_redirects`:
+The frontend calls **`/api/*`** (same origin). Cloudflare proxies via `frontend/static/_redirects`:
 
 ```
 /api/*  https://YOUR-API-HOST/:splat  200
 ```
 
-Edit that one line when your API host changes (Render during cutover, Cloudflare Containers after).
+Update that host when the API moves (Render → Cloudflare Containers, etc.).
 
-Alternatively, set a **Bulk Redirect / Transform Rule** in the Cloudflare dashboard instead of editing the file.
+---
 
-### Backend secrets (Cloudflare Containers or Render)
+## Production secrets (Cloudflare — do this after deploy)
 
-Set **`CFBD_API_KEY`** in the backend host's environment (Cloudflare Container secrets or Render dashboard) — not in the frontend build.
+**This is the primary place for production keys.**
 
-Optional: **`MINIMAX_API_KEY`** for `/agent/explain` on the API service only.
+1. Deploy / create the API service (Cloudflare Containers, or Render during hybrid cutover).
+2. In Cloudflare Dashboard → that service → **Settings → Variables and Secrets**.
+3. Add:
 
-## What GitHub still needs
+| Secret | Required |
+|--------|----------|
+| `CFBD_API_KEY` | Yes |
+| `MINIMAX_API_KEY` | Optional (agent explain) |
 
-| Secret | Scope | Notes |
-|--------|-------|-------|
-| `CFBD_API_KEY` | Repo | CI validation + backend deploy target |
+Or from a machine where you have run `wrangler login` once:
 
-That's it for a minimal setup. Org-level secrets can reuse the same `CFBD_API_KEY` across repos if desired.
+```bash
+wrangler secret put CFBD_API_KEY
+wrangler secret put MINIMAX_API_KEY
+```
 
-## Advanced: wrangler in CI (not recommended for most projects)
+Pages (frontend) needs **no** secrets — only the `_redirects` proxy target.
 
-Only use `cloudflare/wrangler-action` + `CLOUDFLARE_API_TOKEN` if you need programmatic deploy from GitHub Actions instead of Cloudflare's Git integration. Prefer the Git integration above.
+---
+
+## Cursor Cloud vs Cloudflare
+
+| Place | Role |
+|-------|------|
+| **Cloudflare secrets** | Live production app |
+| **Cursor Secrets tab** | Only so Cloud Agents can run the API while coding ([.cursor/SECRETS.md](../.cursor/SECRETS.md)) |
+| **GitHub secrets** | Prefer none for production; CI can mock CFBD |
+
+Setting a key in Cursor does **not** put it in Cloudflare. After first deploy, set production secrets in Cloudflare.
+
+---
+
+## Hybrid cutover (optional)
+
+Until the API runs on Cloudflare Containers, you can keep the Flask API on Render and point `_redirects` at it. Set `CFBD_API_KEY` in Render's dashboard for that interim. When Containers are ready, move the secret to Cloudflare and update `_redirects`.
