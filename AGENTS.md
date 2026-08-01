@@ -5,7 +5,7 @@
 Product: **CFB Ranking System** — an algorithmic college football ranking app. It has three entry points that all share the same Python data/algorithm modules:
 
 - **Flask API backend** — `app.py`, serves rankings JSON on port **5001**.
-- **SvelteKit frontend** — `frontend/`, dev server on port **5173** (Vite), calls the backend at `http://localhost:5001` in dev.
+- **SvelteKit frontend** — `frontend/`, dev server on port **5173** (Vite). In dev, calls backend via `/api` proxy → `:5001`.
 - **CLI** — `main.py` (optional; prints/saves rankings, generates charts).
 
 Standard commands live in `README.md`, `frontend/package.json`, and `.github/workflows/ci-cd.yml`. Notes below are the non-obvious caveats.
@@ -13,6 +13,10 @@ Standard commands live in `README.md`, `frontend/package.json`, and `.github/wor
 ### Python environment
 - Python deps are installed into a repo-local virtualenv at `venv/` (created by the update script). Run backend/lint/test tools via `./venv/bin/...` (e.g. `./venv/bin/python app.py`, `./venv/bin/flake8`, `./venv/bin/pytest`). There is no global project install.
 - Dev/lint/test tools (`flake8`, `bandit`, `pytest`, `pytest-cov`) are installed on top of `requirements.txt`; they are NOT in `requirements.txt`. Do not use `requirements-dev.txt` — it pins older/conflicting versions (e.g. `pydantic<2`) and is not what CI uses.
+
+### Secrets (Cursor Cloud)
+
+Add API keys in the **Cursor Cloud Secrets tab** for this environment — not in repo files. See [.cursor/SECRETS.md](.cursor/SECRETS.md) for the direct link and which keys to add (`CFBD_API_KEY`, optional `MINIMAX_API_KEY`).
 
 ### CFBD_API_KEY is required for real data
 - Both `app.py` and the CLI instantiate the CFBD API client **at import/startup time**. Import/startup succeeds even with a missing/invalid key, but every data request then returns empty results, so `GET /rankings` responds `404 {"error": "No game data found ..."}` instead of rankings.
@@ -23,4 +27,4 @@ Standard commands live in `README.md`, `frontend/package.json`, and `.github/wor
 ### Running / testing caveats
 - Run backend and frontend in separate long-lived shells (tmux). Start backend first (`./venv/bin/python app.py` → :5001), then frontend (`cd frontend && npm run dev` → :5173).
 - First `/rankings` request for a season is slow: the backend also pulls 3 prior seasons to compute priors and runs an iterative solver. Results are cached under `.cache/` (file + memory), so repeat requests are fast.
-- There are **no automated tests** in the repo yet; `pytest` currently collects nothing. Lint is the meaningful "test": `flake8` blocking check is `--select=E9,F63,F7,F82`; the full flake8 pass and frontend `npm run lint` (ESLint) report many pre-existing style issues and are **non-blocking** in CI (`--exit-zero` / `continue-on-error`). `frontend/npm run check` (svelte-check) is clean and is enforced.
+- There are **automated tests** in `tests/`; `pytest` is blocking in CI. Lint is the other meaningful gate: `flake8` blocking check is `--select=E9,F63,F7,F82`; the full flake8 pass and frontend `npm run lint` (ESLint) report many pre-existing style issues and are **non-blocking** in CI (`--exit-zero` / `continue-on-error`). `frontend/npm run check` (svelte-check) is clean and is enforced.

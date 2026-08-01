@@ -42,41 +42,37 @@ The system processes games sequentially through the season week-by-week, allowin
 
 ## Deployment
 
-Production deployment uses **Cloudflare Pages** (frontend) and **Cloudflare Containers** (API). See [docs/superpowers/specs/2026-08-01-ops-cloudflare-runbook.md](docs/superpowers/specs/2026-08-01-ops-cloudflare-runbook.md).
+Production uses **Cloudflare Pages Git integration** (no per-repo Cloudflare API tokens). See [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md).
 
-### Required GitHub Secrets
+### Secrets you actually need
 
-| Secret | Purpose |
-|--------|---------|
-| `CFBD_API_KEY` | College Football Data API |
-| `MINIMAX_API_KEY` | OpenCode/gh-aw agent workflows |
-| `CLOUDFLARE_API_TOKEN` | Pages + Containers deploy |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account |
-| `VITE_API_URL` | Frontend build-time API URL |
-| `CACHE_CLEAR_SECRET` | Protect POST /cache/clear |
+| Where | Secret | Required? |
+|-------|--------|-----------|
+| **Cursor Cloud** → Secrets tab | `CFBD_API_KEY` | Yes (rankings) |
+| **Cursor Cloud** → Secrets tab | `MINIMAX_API_KEY` | Optional (agent features) |
+| **GitHub** repo secret | `CFBD_API_KEY` | Yes (CI only) |
+| **Cloudflare Pages** dashboard | Edit `_redirects` API host | One line when API moves |
+| **Backend host** (Render/Containers) | `CFBD_API_KEY` | Yes |
 
-### Cloudflare Pages (Frontend)
+**Not required:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_API_URL`, `CACHE_CLEAR_SECRET` (all optional or replaced by simpler defaults).
 
-- Build command: `cd frontend && npm ci && npm run build`
-- Output directory: `frontend/build`
-- Set `VITE_API_URL` to your API origin (include `https://`)
+### Cursor Cloud: enter MiniMax / CFBD keys
 
-### Cloudflare Containers (API)
+Open [.cursor/SECRETS.md](.cursor/SECRETS.md) for the direct link to your environment Secrets tab.
 
-- Build from repo `Dockerfile`
-- Set secrets: `CFBD_API_KEY`, optional `MINIMAX_API_KEY`, `CACHE_BACKEND=r2`
-- Configure R2 bucket for shared cache (see `wrangler.toml`)
+### Cloudflare Pages (frontend)
+
+Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`. Frontend calls `/api/*`; proxy target is in `frontend/static/_redirects`.
 
 ### CI/CD
 
-- `.github/workflows/ci-cd.yml` — lint, test, build (blocking)
-- `.github/workflows/deploy-cloudflare.yml` — deploy on main after CI passes
-- `.github/workflows/codeql.yml` — SAST scanning
-- Agentic workflows in `.github/workflows/*.md` (compile with `gh aw compile`)
+- `.github/workflows/ci-cd.yml` — lint, test, build
+- `.github/workflows/deploy-cloudflare.yml` — validates Pages build only (deploy is via Cloudflare Git)
+- `.github/workflows/codeql.yml` — SAST
 
-### Render (Deprecated Fallback)
+### Render (deprecated fallback)
 
-`render.yaml` is retained with `autoDeploy: false` during Cloudflare cutover.
+`render.yaml` retained with `autoDeploy: false` during Cloudflare cutover.
 
 4. Run the Application
 

@@ -9,4 +9,4 @@ When creating or editing agentic workflows in `.github/workflows/*.md`:
 4. Compile with `gh aw compile` before committing
 5. Commit both `.md` source and generated `.lock.yml` files
 
-Required secrets: MINIMAX_API_KEY, CFBD_API_KEY, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+Required secrets: `CFBD_API_KEY` (repo + Cursor). Optional: `MINIMAX_API_KEY` (Cursor Secrets tab). Cloudflare deploy uses Git integration — no Cloudflare tokens in GitHub. See `docs/DEPLOY-CLOUDFLARE.md`.
