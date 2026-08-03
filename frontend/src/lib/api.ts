@@ -84,11 +84,48 @@ export function mapConferenceFromApi(c: Record<string, unknown>): Conference {
 	};
 }
 
+export function isLikelyArchivedWeek(year: number, week: number, now = new Date()): boolean {
+	const month = now.getMonth() + 1;
+	const seasonYear = month < 8 ? now.getFullYear() - 1 : now.getFullYear();
+	if (year < seasonYear) return true;
+	if (year > seasonYear) return false;
+	if (month < 8) return true;
+	const seasonStart = new Date(seasonYear, 7, 24);
+	const days = Math.floor((now.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
+	const currentWeek = Math.min(Math.max(Math.floor(days / 7) + 1, 1), 16);
+	return week < currentWeek;
+}
+
+async function fetchStaticRankings(year: number, week: number): Promise<RankingsResponse | null> {
+	try {
+		const response = await fetch(`/rankings/${year}/week-${week}.json`, {
+			signal: AbortSignal.timeout(3000),
+		});
+		if (!response.ok) return null;
+		const data = await response.json();
+		return {
+			teams: (data.team_rankings || data.teams || []).map(mapTeamFromApi),
+			conferences: (data.conference_rankings || data.conferences || []).map(mapConferenceFromApi),
+			year: data.year || year,
+			week: data.week || week,
+			generated_at: data.generated_at || new Date().toISOString(),
+		};
+	} catch {
+		return null;
+	}
+}
+
 export async function fetchRankingsFromApi(
 	year: number,
 	week: number,
 	view: FilterState['view'] = 'fbs'
 ): Promise<RankingsResponse> {
+	// Prefer static JSON for archived weeks when published to Pages/static
+	if (isLikelyArchivedWeek(year, week)) {
+		const staticData = await fetchStaticRankings(year, week);
+		if (staticData) return staticData;
+	}
+
 	const allDivisions = view === 'fcs' ? 'true' : 'false';
 	const url = `${API_BASE}/rankings?year=${year}&week=${week}&all_divisions=${allDivisions}`;
 	const response = await fetch(url);

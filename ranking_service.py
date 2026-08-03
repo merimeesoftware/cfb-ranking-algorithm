@@ -1,11 +1,14 @@
 """Shared ranking calculation logic used by API routes and agent endpoints."""
 import hashlib
 import json
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
+
+ALGO_VERSION = 'v5.1'
 
 DEFAULT_CONFIG = {
     'power_conf_initial': 1500.0,
@@ -19,6 +22,19 @@ DEFAULT_CONFIG = {
     'use_ats': False,
     'ats_bonus': 10.0,
 }
+
+# Fields that affect historical Elo used for priors (not prior_strength blend)
+_PRIORS_CONFIG_KEYS = (
+    'power_conf_initial',
+    'group5_initial',
+    'fcs_initial',
+    'base_factor',
+    'team_quality_weight',
+    'conference_weight',
+    'record_weight',
+    'use_ats',
+    'ats_bonus',
+)
 
 
 def build_config(request_args) -> Dict[str, Any]:
@@ -52,14 +68,18 @@ def rankings_cache_key(year: int, week: Optional[int], request_args) -> str:
         'conference_weight': request_args.get('conference_weight'),
         'record_weight': request_args.get('record_weight'),
         'prior_strength': request_args.get('prior_strength'),
+        'algo': ALGO_VERSION,
     }
     return cache._generate_key('rankings_computed', **cache_params)
 
 
 def priors_cache_key(year: int, config: Dict[str, Any]) -> str:
+    """Key priors by season + algo fingerprint (excludes prior_strength)."""
     cache = get_cache()
+    fingerprint = {k: config.get(k, DEFAULT_CONFIG.get(k)) for k in _PRIORS_CONFIG_KEYS}
+    fingerprint['algo'] = ALGO_VERSION
     config_hash = hashlib.md5(
-        json.dumps(config, sort_keys=True).encode()
+        json.dumps(fingerprint, sort_keys=True).encode()
     ).hexdigest()[:12]
     return cache._generate_key('priors', year, config_hash)
 
@@ -74,7 +94,8 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
 
     print(f"Cache MISS: priors for {year}")
     history_data = []
-    for h_year in range(year - 1, year - 4, -1):
+    # calculate_priors only weights Y-1 and Y-2 — skip Y-3
+    for h_year in range(year - 1, year - 3, -1):
         try:
             h_games = data_processor.get_games_for_season(h_year, use_week_scoped_fetch=False)
             if h_games:
@@ -92,6 +113,56 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
     priors = TeamQualityRanker.calculate_priors(history_data)
     cache.set(key, priors, TTL_PRIORS, prefix='priors')
     return priors
+
+
+_LIST_STRIP_TEAM_KEYS = ('wins_details', 'losses_details')
+
+
+def slim_rankings_for_list(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Drop duplicate map and per-game details for list/table responses."""
+    slim = {
+        'year': rankings_data.get('year'),
+        'week': rankings_data.get('week'),
+        'conference_rankings': rankings_data.get('conference_rankings', []),
+        'detail': False,
+        'algo': ALGO_VERSION,
+    }
+    teams = []
+    for team in rankings_data.get('team_rankings', []):
+        entry = {k: v for k, v in team.items() if k not in _LIST_STRIP_TEAM_KEYS}
+        teams.append(entry)
+    slim['team_rankings'] = teams
+    return slim
+
+
+def is_archived_week(
+    year: int,
+    week: Optional[int],
+    now: Optional[datetime] = None,
+    current_week: Optional[int] = None,
+) -> bool:
+    """True when rankings for this year/week should prefer static/precomputed data."""
+    now = now or datetime.now()
+    if week is None:
+        if now.month < 8:
+            return year < (now.year - 1) or (year == now.year - 1 and now.month >= 2)
+        return year < now.year
+
+    if now.month < 8:
+        season_year = now.year - 1
+        return year <= season_year
+    season_year = now.year
+    if year < season_year:
+        return True
+    if year > season_year:
+        return False
+    if current_week is None:
+        season_start = datetime(season_year, 8, 24)
+        if now < season_start:
+            current_week = 1
+        else:
+            current_week = int((now - season_start).days / 7) + 1
+    return week < current_week
 
 
 def calculate_rankings_logic(
@@ -173,6 +244,7 @@ def calculate_rankings_logic(
 
     rankings_data['year'] = year
     rankings_data['week'] = week
+    rankings_data['algo'] = ALGO_VERSION
     return rankings_data
 
 
@@ -181,7 +253,20 @@ def get_or_calculate_rankings(
     year: int,
     week: Optional[int],
     request_args,
+    *,
+    prefer_static: bool = True,
 ) -> Optional[Dict[str, Any]]:
+    # Archived weeks: try precomputed static file first (no CFBD / no solver)
+    if prefer_static and week is not None and is_archived_week(year, week):
+        try:
+            from static_rankings import read_static_rankings
+            static = read_static_rankings(year, week)
+            if static is not None:
+                print(f"STATIC HIT: rankings {year} week={week}")
+                return static
+        except Exception as e:
+            print(f"Static rankings read error: {e}")
+
     cache = get_cache()
     key = rankings_cache_key(year, week, request_args)
     cached = cache.get(key)
@@ -193,4 +278,10 @@ def get_or_calculate_rankings(
     data = calculate_rankings_logic(data_processor, year, week, request_args)
     if data:
         cache.set(key, data, TTL_RANKINGS, prefix='rankings_computed')
+        if week is not None and is_archived_week(year, week):
+            try:
+                from static_rankings import write_static_rankings
+                write_static_rankings(slim_rankings_for_list(data), year, week)
+            except Exception as e:
+                print(f"Static rankings write error: {e}")
     return data

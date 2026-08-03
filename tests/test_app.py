@@ -33,18 +33,26 @@ def test_weeks_endpoint(client):
         assert data['max_week'] == 5
 
 
-def test_rankings_cached(client):
+def test_rankings_slim_by_default(client):
     mock_data = {
-        'team_rankings': [{'team_name': 'Georgia', 'final_ranking_score': 95}],
+        'team_rankings': [{
+            'team_name': 'Georgia',
+            'final_ranking_score': 95,
+            'wins_details': [{'opponent': 'X'}],
+            'losses_details': [],
+        }],
         'conference_rankings': [],
         'year': 2024,
         'week': 10,
+        'rankings': {'Georgia': {}},
     }
     with patch('app.get_or_calculate_rankings', return_value=mock_data):
         response = client.get('/rankings?year=2024&week=10')
         assert response.status_code == 200
         data = response.get_json()
-        assert data['team_rankings'][0]['team_name'] == 'Georgia'
+        assert 'rankings' not in data
+        assert 'wins_details' not in data['team_rankings'][0]
+        assert data['detail'] is False
 
 
 def test_agent_health(client):

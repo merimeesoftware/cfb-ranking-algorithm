@@ -8,7 +8,12 @@ from dotenv import load_dotenv
 
 from data_processor import CFBDataProcessor
 from cache import get_cache
-from ranking_service import get_or_calculate_rankings, build_config, DEFAULT_CONFIG
+from ranking_service import (
+    get_or_calculate_rankings,
+    slim_rankings_for_list,
+    build_config,
+    DEFAULT_CONFIG,
+)
 from agent_service import agent_bp, set_data_processor
 
 load_dotenv()
@@ -64,7 +69,16 @@ def index():
 @app.route('/weeks', methods=['GET'])
 def get_weeks():
     year = request.args.get('year', default=datetime.now().year, type=int)
-    weeks = data_processor.get_available_weeks(year)
+    cache_key = cache._generate_key('available_weeks', year)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        weeks = cached
+    else:
+        weeks = data_processor.get_available_weeks(year)
+        # Historical seasons change rarely; current season refreshes hourly
+        from cache import TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, is_historical_season
+        ttl = TTL_GAMES_HISTORICAL if is_historical_season(year) else TTL_GAMES_CURRENT
+        cache.set(cache_key, weeks, ttl, prefix='weeks')
     return jsonify({"year": year, "weeks": weeks, "max_week": max(weeks) if weeks else 15})
 
 
@@ -90,9 +104,13 @@ def get_rankings():
     try:
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
+        detail = request.args.get('detail', 'false').lower() == 'true'
         data = get_or_calculate_rankings(data_processor, year, week, request.args)
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
+        if not detail and data.get('detail') is not False:
+            # Full computed payloads get slimmed for list views
+            data = slim_rankings_for_list(data)
         return jsonify(data)
     except Exception as e:
         print(f"Error during ranking calculation: {e}")
