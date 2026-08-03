@@ -5,14 +5,16 @@
 | Field | Value |
 |-------|-------|
 | Date | 2026-08-01 |
-| Status | Draft |
-| Scope | OpenCode/Minimax CI, CFBD MCP sidecar, ranking explainer API, frontend chat, auth/rate limits, rollout |
+| Status | Historical draft — OpenCode/gh-aw portions **deferred / not shipped** in repo |
+| Scope | Originally: OpenCode CI + product explainer. **Shipped:** product `/agent/explain` only. |
+
+> **Repo note (2026-08):** Vendor OpenCode configs, gh-aw `.md` workflows, and Impeccable skills were removed from git. They are local/plugin tooling, not runtime. Keep this doc for the product-agent design (`agent_service.py`); ignore OpenCode/gh-aw file paths as current inventory.
 
 ---
 
 ## Executive Summary
 
-The CFB Ranking System today has three entry points (Flask API, SvelteKit frontend, CLI) and an emerging **agentic dev layer** (OpenCode + MiniMax + gh-aw). This spec defines how to extend that foundation into a **product-facing agent experience** without compromising the ranking hot path.
+The CFB Ranking System today has three entry points (Flask API, SvelteKit frontend, CLI) and an optional **product agent path** (MiniMax via `/agent/explain`). Early drafts also proposed an OpenCode + gh-aw **dev/CI agent layer**; that layer is **not committed** and is not required for production.
 
 **Core principle:** Rankings computation stays synchronous, cached, and REST-first. Agent capabilities run on a **sidecar path** that reads precomputed rankings and optionally enriches answers via CFBD MCP — never blocking or replacing `GET /rankings`.
 

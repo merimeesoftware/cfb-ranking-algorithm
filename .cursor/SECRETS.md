@@ -17,7 +17,7 @@ Cloudflare      →  deployed API (production)   ← source of truth for live tr
 | Secret name | Required for agent VM? | Purpose |
 |-------------|------------------------|---------|
 | `CFBD_API_KEY` | Yes (to exercise rankings) | [collegefootballdata.com/key](https://collegefootballdata.com/key) |
-| `MINIMAX_API_KEY` | Optional | Agent `/agent/explain` + OpenCode workflows |
+| `MINIMAX_API_KEY` | Optional | Product `/agent/explain` endpoint (optional feature) |
 
 3. Restart the Cloud Agent after saving.
 

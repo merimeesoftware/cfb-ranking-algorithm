@@ -4,31 +4,28 @@ Date: 2026-08-01
 
 ## Goal
 
-Optimize the CFB Ranking System for performance, SDLC maturity, Cloudflare deployment, and agentic workflows (OpenCode + MiniMax + CFBD MCP).
+Optimize the CFB Ranking System for performance, SDLC maturity, Cloudflare deployment, and optional product agent features (`/agent/explain` via MiniMax).
 
 ## Architecture
 
-- **Hot path:** Direct CFBD REST API with multi-layer caching (memory, file/R2, computed rankings, priors)
-- **Agent path:** CFBD MCP sidecar + MiniMax via `/agent/explain` (not on ranking hot path)
+- **Hot path:** Direct CFBD REST API with multi-layer caching (memory, file, computed rankings, priors) + static JSON for archived weeks
+- **Agent path (optional product):** MiniMax via `/agent/explain` — not on the ranking hot path; not OpenCode CI
 - **Frontend:** SvelteKit static SPA on Cloudflare Pages
-- **Backend:** Flask/gunicorn on Cloudflare Containers (hybrid Render fallback during cutover)
-- **CI/CD:** GitHub Actions + gh-aw agentic workflows + OpenCode local workflows
+- **Backend:** Flask/gunicorn on Cloudflare Containers
+- **CI/CD:** Real GitHub Actions only (`*.yml`) — ci-cd, CodeQL, Pages build validate, precompute
 
 ## Key Decisions
 
-1. Keep REST for batch ranking; MCP for agent queries only
+1. Keep REST for batch ranking; optional MCP only for agent queries
 2. Hybrid Cloudflare migration: Pages first, then Containers
-3. OpenCode for CI/dev tooling first; product agent chat in Phase 3
-4. Retire Render after 1 week stable Cloudflare ops
+3. Do **not** commit vendor AI skills (Impeccable) or unused OpenCode/gh-aw sources — local/plugin only
+4. Product MiniMax (`agent_service.py`) is independent of OpenCode tooling
 
-## Deliverables
+## Repo hygiene (what ships)
 
-See individual audit specs in this directory and implementation plan at `docs/superpowers/plans/2026-08-01-cfb-optimization.md`.
-
-## Audit Reports
-
-- [CFBD API Audit](./2026-08-01-cfbd-api-audit.md)
-- [Frontend Audit](./2026-08-01-frontend-audit.md)
-- [Data/Memory Audit](./2026-08-01-data-memory-audit.md)
-- [Ops/Cloudflare Runbook](./2026-08-01-ops-cloudflare-runbook.md)
-- [Agentic Product Audit](./2026-08-01-agentic-product-audit.md)
+| Commit | Do not commit |
+|--------|----------------|
+| App code, `frontend/`, tests, real `.github/workflows/*.yml` | `.cursor/skills/` (Impeccable etc.) |
+| `docs/`, `AGENTS.md`, `.cursor/environment.json`, `.cursor/SECRETS.md` | `opencode.jsonc`, `.opencode/`, `.github/skills/` |
+| Precomputed `frontend/static/rankings/**/*.json` | gh-aw `*.md` / `*.lock.yml` workflows |
+| | Secrets, `venv/`, `.cache/`, `static_rankings/` |

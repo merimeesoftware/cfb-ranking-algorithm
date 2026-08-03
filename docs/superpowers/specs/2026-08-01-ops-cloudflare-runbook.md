@@ -111,9 +111,10 @@ Triggered on every **push** and **pull_request**.
 
 | Workflow | Trigger | Role |
 |----------|---------|------|
-| `deploy-cloudflare.yml` | CI success on `main` | Pages deploy; optional Containers deploy |
+| `deploy-cloudflare.yml` | CI success on `main` | Validate Pages build (deploy via Cloudflare Git integration) |
 | `codeql.yml` | push/PR to main, weekly cron | SAST for Python + JS/TS |
-| Agentic `.md` workflows | Scheduled | Security audit, cache warm, ranking regression (require compilation via gh-aw) |
+| `precompute-rankings.yml` | schedule / manual | Generate static rankings JSON for archived weeks |
+| ~~Agentic `.md` workflows~~ | — | **Removed from repo** (gh-aw/OpenCode not in use) |
 
 ### 1.4 Application runtime (`app.py`)
 
