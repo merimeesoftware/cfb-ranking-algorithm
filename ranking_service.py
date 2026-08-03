@@ -245,6 +245,8 @@ def calculate_rankings_logic(
     rankings_data['year'] = year
     rankings_data['week'] = week
     rankings_data['algo'] = ALGO_VERSION
+    # team_rankings is canonical; drop name-keyed duplicate before cache/API
+    rankings_data.pop('rankings', None)
     return rankings_data
 
 

@@ -55,6 +55,61 @@ def test_rankings_slim_by_default(client):
         assert data['detail'] is False
 
 
+def test_rankings_detail_preserves_wins_details(client):
+    mock_data = {
+        'team_rankings': [{
+            'team_name': 'Georgia',
+            'final_ranking_score': 95,
+            'wins_details': [{'opponent': 'X', 'is_quality_win': True}],
+            'losses_details': [],
+        }],
+        'conference_rankings': [],
+        'year': 2024,
+        'week': 10,
+        'rankings': {'Georgia': {}},
+    }
+    with patch('app.get_or_calculate_rankings', return_value=mock_data):
+        response = client.get('/rankings?year=2024&week=10&detail=true')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['team_rankings'][0]['wins_details'][0]['opponent'] == 'X'
+        assert 'rankings' not in data
+
+
+def test_team_breakdown_includes_game_details(client):
+    mock_data = {
+        'team_rankings': [{
+            'team_name': 'Georgia',
+            'conference': 'SEC',
+            'conference_type': 'Power 4',
+            'final_ranking_score': 100,
+            'team_quality_score': 1500,
+            'record_score': 100,
+            'conference_quality_score': 50,
+            'sos': 1400,
+            'sov': 1450,
+            'records': {
+                'total_wins': 10, 'total_losses': 1,
+                'conf_wins': 7, 'conf_losses': 1,
+                'power_wins': 5, 'power_losses': 1,
+                'group_five_wins': 2, 'group_five_losses': 0,
+            },
+            'wins_details': [{'opponent': 'Florida', 'is_quality_win': True}],
+            'losses_details': [{'opponent': 'Alabama', 'is_bad_loss': False}],
+        }],
+        'conference_rankings': [],
+        'year': 2024,
+        'week': 10,
+    }
+    with patch('app.get_or_calculate_rankings', return_value=mock_data):
+        response = client.get('/rankings/team/Georgia?year=2024&week=10')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['team']['name'] == 'Georgia'
+        assert data['wins_details'][0]['opponent'] == 'Florida'
+        assert data['losses_details'][0]['opponent'] == 'Alabama'
+
+
 def test_agent_health(client):
     response = client.get('/agent/health')
     assert response.status_code == 200

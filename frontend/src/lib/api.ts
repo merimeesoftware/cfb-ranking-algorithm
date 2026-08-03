@@ -170,6 +170,31 @@ export async function checkApiHealth(): Promise<boolean> {
 	}
 }
 
+export async function fetchTeamDetail(
+	teamName: string,
+	year: number,
+	week: number
+): Promise<Partial<Team> & { wins_details?: Team['wins_details']; losses_details?: Team['losses_details'] }> {
+	const url = `${API_BASE}/rankings/team/${encodeURIComponent(teamName)}?year=${year}&week=${week}`;
+	const response = await fetch(url);
+	if (!response.ok) {
+		const error = await response.json().catch(() => ({}));
+		throw new Error((error as { error?: string }).error || `HTTP ${response.status}`);
+	}
+	const data = await response.json();
+	const t = data.team || {};
+	return {
+		team_name: t.name || teamName,
+		wins_details: data.wins_details || [],
+		losses_details: data.losses_details || [],
+		quality_wins: data.quality_wins,
+		quality_losses: data.quality_losses,
+		bad_losses: data.bad_losses,
+		top_10_wins: data.top_10_wins,
+		top_25_wins: data.top_25_wins,
+	};
+}
+
 export async function explainRanking(
 	teamName: string,
 	year: number,

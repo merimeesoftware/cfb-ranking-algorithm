@@ -105,12 +105,17 @@ def get_rankings():
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
         detail = request.args.get('detail', 'false').lower() == 'true'
-        data = get_or_calculate_rankings(data_processor, year, week, request.args)
+        # Detail views need full payloads (skip slim static files)
+        data = get_or_calculate_rankings(
+            data_processor, year, week, request.args, prefer_static=not detail
+        )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
         if not detail and data.get('detail') is not False:
-            # Full computed payloads get slimmed for list views
             data = slim_rankings_for_list(data)
+        elif detail and 'rankings' in data:
+            # Avoid shipping the duplicate name-keyed map on the wire
+            data = {k: v for k, v in data.items() if k != 'rankings'}
         return jsonify(data)
     except Exception as e:
         print(f"Error during ranking calculation: {e}")
@@ -122,7 +127,10 @@ def get_team_breakdown(team_name):
     try:
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
-        data = get_or_calculate_rankings(data_processor, year, week, request.args)
+        # Prefer full cached/computed payload so wins_details are available
+        data = get_or_calculate_rankings(
+            data_processor, year, week, request.args, prefer_static=False
+        )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
 
@@ -248,6 +256,8 @@ def get_team_breakdown(team_name):
                 'sov': team_data['sov'],
                 'power_record': f"{team_data['records']['power_wins']}-{team_data['records']['power_losses']}",
                 'g5_record': f"{team_data['records']['group_five_wins']}-{team_data['records']['group_five_losses']}",
+                'logo': team_data.get('logo'),
+                'color': team_data.get('color'),
             },
             'formula_breakdown': {
                 'tq_contribution': team_data['team_quality_score'] * 0.65,
@@ -255,6 +265,13 @@ def get_team_breakdown(team_name):
                 'cq_contribution': team_data['conference_quality_score'] * 0.08,
                 'total': team_data['final_ranking_score'],
             },
+            'wins_details': team_data.get('wins_details') or [],
+            'losses_details': team_data.get('losses_details') or [],
+            'quality_wins': team_data.get('quality_wins'),
+            'quality_losses': team_data.get('quality_losses'),
+            'bad_losses': team_data.get('bad_losses'),
+            'top_10_wins': team_data.get('top_10_wins'),
+            'top_25_wins': team_data.get('top_25_wins'),
             'comparisons_ahead': comparisons_ahead,
             'comparisons_behind': comparisons_behind,
         }
