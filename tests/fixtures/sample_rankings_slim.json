@@ -1,0 +1,96 @@
+{
+  "year": 2024,
+  "week": 10,
+  "detail": false,
+  "team_rankings": [
+    {
+      "team_name": "Oregon",
+      "conference": "Big Ten",
+      "conference_type": "Power 4",
+      "final_ranking_score": 100,
+      "team_quality_score": 1900,
+      "record_score": 95,
+      "conference_quality_score": 90,
+      "sos": 0.6,
+      "sov": 0.65,
+      "records": {
+        "total_wins": 9,
+        "total_losses": 0,
+        "conf_wins": 6,
+        "conf_losses": 0,
+        "power_wins": 7,
+        "power_losses": 0,
+        "group_five_wins": 2,
+        "group_five_losses": 0
+      },
+      "quality_wins": 3,
+      "quality_losses": 0,
+      "bad_losses": 0,
+      "wins_details": [
+        {"opponent": "Ohio State", "is_quality_win": true, "opponent_rank": 2},
+        {"opponent": "Michigan", "is_quality_win": true, "opponent_rank": 6},
+        {"opponent": "Idaho", "is_quality_win": false, "opponent_rank": 110}
+      ]
+    },
+    {
+      "team_name": "Ohio State",
+      "conference": "Big Ten",
+      "conference_type": "Power 4",
+      "final_ranking_score": 95,
+      "team_quality_score": 1850,
+      "record_score": 90,
+      "conference_quality_score": 90,
+      "sos": 0.58,
+      "sov": 0.6,
+      "records": {
+        "total_wins": 8,
+        "total_losses": 1,
+        "conf_wins": 5,
+        "conf_losses": 1,
+        "power_wins": 6,
+        "power_losses": 1,
+        "group_five_wins": 2,
+        "group_five_losses": 0
+      },
+      "quality_wins": 2,
+      "quality_losses": 1,
+      "bad_losses": 0,
+      "wins_details": [
+        {"opponent": "Oregon", "is_quality_win": true, "opponent_rank": 1},
+        {"opponent": "Penn State", "is_quality_win": true, "opponent_rank": 5},
+        {"opponent": "Akron", "is_quality_win": false, "opponent_rank": 120}
+      ]
+    },
+    {
+      "team_name": "Georgia",
+      "conference": "SEC",
+      "conference_type": "Power 4",
+      "final_ranking_score": 90,
+      "team_quality_score": 1800,
+      "record_score": 85,
+      "conference_quality_score": 92,
+      "sos": 0.57,
+      "sov": 0.55,
+      "records": {
+        "total_wins": 7,
+        "total_losses": 1,
+        "conf_wins": 5,
+        "conf_losses": 1,
+        "power_wins": 6,
+        "power_losses": 1,
+        "group_five_wins": 1,
+        "group_five_losses": 0
+      },
+      "quality_wins": 2,
+      "quality_losses": 0,
+      "bad_losses": 0,
+      "wins_details": [
+        {"opponent": "Texas", "is_quality_win": true, "opponent_rank": 4},
+        {"opponent": "Alabama", "is_quality_win": true, "opponent_rank": 8},
+        {"opponent": "Tennessee", "is_quality_win": true, "opponent_rank": 12},
+        {"opponent": "UMass", "is_quality_win": false, "opponent_rank": 130}
+      ]
+    }
+  ],
+  "conference_rankings": []
+}

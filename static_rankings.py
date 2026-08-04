@@ -53,3 +53,77 @@ def read_static_rankings(
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return None
+
+
+def story_path_for(
+    year: int,
+    week: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
+    return base / str(year) / f"week-{week}.story.json"
+
+
+def why_path_for(
+    year: int,
+    week: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
+    return base / str(year) / f"week-{week}.why.json"
+
+
+def _read_json(path: Path) -> Optional[Dict[str, Any]]:
+    if not path.exists():
+        return None
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def read_week_story(
+    year: int,
+    week: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Load precomputed week-{n}.story.json if present."""
+    return _read_json(story_path_for(year, week, root=root))
+
+
+def read_why_blurbs(
+    year: int,
+    week: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Load precomputed week-{n}.why.json if present."""
+    return _read_json(why_path_for(year, week, root=root))
+
+
+def write_week_story(
+    payload: Dict[str, Any],
+    year: int,
+    week: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    path = story_path_for(year, week, root=root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2)
+        f.write('\n')
+    return path
+
+
+def write_why_blurbs(
+    payload: Dict[str, Any],
+    year: int,
+    week: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    path = why_path_for(year, week, root=root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2)
+        f.write('\n')
+    return path

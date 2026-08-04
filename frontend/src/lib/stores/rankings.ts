@@ -170,27 +170,40 @@ export function clearFilters(): void {
 	filterState.update((state) => ({ ...state, conferenceFilter: null, searchQuery: '' }));
 }
 
-export function parseUrlParams(search: string): Partial<FilterState> & { tab?: 'teams' | 'conferences' } {
+export function parseUrlParams(search: string): Partial<FilterState> & { tab?: 'teams' | 'conferences'; team?: string } {
 	const params = new URLSearchParams(search);
-	const result: Partial<FilterState> & { tab?: 'teams' | 'conferences' } = {};
+	const result: Partial<FilterState> & { tab?: 'teams' | 'conferences'; team?: string } = {};
 	const year = params.get('year');
 	const week = params.get('week');
 	const view = params.get('view');
 	const tab = params.get('tab');
+	const team = params.get('team');
+	const q = params.get('q');
+	const conf = params.get('conference');
 	if (year) result.year = parseInt(year, 10);
 	if (week) result.week = parseInt(week, 10);
 	if (view && ['fbs', 'p4', 'g5', 'fcs'].includes(view)) {
 		result.view = view as FilterState['view'];
 	}
 	if (tab === 'teams' || tab === 'conferences') result.tab = tab;
+	if (team) result.team = team;
+	if (q) result.searchQuery = q;
+	if (conf) result.conferenceFilter = conf;
 	return result;
 }
 
-export function buildUrlParams(state: FilterState, tab: 'teams' | 'conferences'): string {
+export function buildUrlParams(
+	state: FilterState,
+	tab: 'teams' | 'conferences',
+	teamName?: string | null
+): string {
 	const params = new URLSearchParams();
 	params.set('year', String(state.year));
 	params.set('week', String(state.week));
 	params.set('view', state.view);
 	params.set('tab', tab);
+	if (state.searchQuery) params.set('q', state.searchQuery);
+	if (state.conferenceFilter) params.set('conference', state.conferenceFilter);
+	if (teamName) params.set('team', teamName);
 	return params.toString();
 }

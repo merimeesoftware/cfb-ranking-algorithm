@@ -174,7 +174,15 @@ export async function fetchTeamDetail(
 	teamName: string,
 	year: number,
 	week: number
-): Promise<Partial<Team> & { wins_details?: Team['wins_details']; losses_details?: Team['losses_details'] }> {
+): Promise<
+	Partial<Team> & {
+		wins_details?: Team['wins_details'];
+		losses_details?: Team['losses_details'];
+		path_to_climb?: Team['path_to_climb'];
+		comparisons_ahead?: Team['comparisons_ahead'];
+		comparisons_behind?: Team['comparisons_behind'];
+	}
+> {
 	const url = `${API_BASE}/rankings/team/${encodeURIComponent(teamName)}?year=${year}&week=${week}`;
 	const response = await fetch(url);
 	if (!response.ok) {
@@ -192,7 +200,43 @@ export async function fetchTeamDetail(
 		bad_losses: data.bad_losses,
 		top_10_wins: data.top_10_wins,
 		top_25_wins: data.top_25_wins,
+		path_to_climb: data.path_to_climb,
+		comparisons_ahead: data.comparisons_ahead || [],
+		comparisons_behind: data.comparisons_behind || [],
 	};
+}
+
+export async function fetchWeekStory(
+	year: number,
+	week: number
+): Promise<{ headline?: string; paragraphs?: string[]; facts?: Record<string, unknown> } | null> {
+	try {
+		const response = await fetch(`/rankings/${year}/week-${week}.story.json`, {
+			signal: AbortSignal.timeout(3000),
+		});
+		if (!response.ok) return null;
+		return response.json();
+	} catch {
+		return null;
+	}
+}
+
+export async function fetchWhyBlurb(
+	year: number,
+	week: number,
+	teamName: string
+): Promise<string | null> {
+	try {
+		const response = await fetch(`/rankings/${year}/week-${week}.why.json`, {
+			signal: AbortSignal.timeout(3000),
+		});
+		if (!response.ok) return null;
+		const data = await response.json();
+		const blurbs = data.blurbs || data;
+		return blurbs[teamName] || null;
+	} catch {
+		return null;
+	}
 }
 
 export async function explainRanking(
