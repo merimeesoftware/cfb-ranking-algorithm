@@ -48,7 +48,8 @@ jobs:
 
       - name: Check dependencies for vulnerabilities
         run: |
-          pip-audit -r requirements.txt --desc on --severity high
+          # --severity was removed in pip-audit 2.x; fail on any known vuln in requirements
+          pip-audit -r requirements.txt --desc on
 
       - name: Upload security reports
         uses: actions/upload-artifact@v7

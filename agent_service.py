@@ -28,6 +28,7 @@ def set_data_processor(processor) -> None:
     global _data_processor
     _data_processor = processor
 
+
 CFBD_MCP_URL = os.environ.get('CFBD_MCP_URL', '')
 MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
 MINIMAX_BASE_URL = os.environ.get('MINIMAX_BASE_URL', 'https://api.minimax.io/anthropic')
