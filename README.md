@@ -63,7 +63,7 @@ Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`.
 
 ### CI/CD
 
-- `.github/workflows/ci-cd.yml` — lint, test, build
+- `.github/workflows/ci.yml` — lint, test, build
 - `.github/workflows/deploy-cloudflare.yml` — validates Pages build only (deploy is via Cloudflare Git)
 - `.github/workflows/codeql.yml` — SAST
 
