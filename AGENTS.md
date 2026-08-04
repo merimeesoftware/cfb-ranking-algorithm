@@ -8,7 +8,7 @@ Product: **CFB Ranking System** — an algorithmic college football ranking app.
 - **SvelteKit frontend** — `frontend/`, dev server on port **5173** (Vite). In dev, calls backend via `/api` proxy → `:5001`.
 - **CLI** — `main.py` (optional; prints/saves rankings, generates charts).
 
-Standard commands live in `README.md`, `frontend/package.json`, and `.github/workflows/ci-cd.yml`. Notes below are the non-obvious caveats.
+Standard commands live in `README.md`, `frontend/package.json`, and `.github/workflows/ci.yml`. Notes below are the non-obvious caveats.
 
 ### What belongs in git vs local-only
 
