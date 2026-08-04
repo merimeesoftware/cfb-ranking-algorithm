@@ -1,0 +1,6 @@
+name = "cfb-rankings-frontend"
+compatibility_date = "2024-08-01"
+pages_build_output_dir = "build"
+
+[vars]
+# Set VITE_API_URL in Cloudflare Pages dashboard or GitHub Actions

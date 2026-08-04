@@ -20,6 +20,16 @@ __pycache__/
 *.swo
 *~
 
+# Vendor / local-only AI tooling (install via Cursor plugins or locally; do not ship)
+.cursor/skills/
+.impeccable/
+.opencode/
+opencode.jsonc
+.github/skills/
+# gh-aw agentic sources (not compiled / not used — real Actions are *.yml only)
+.github/workflows/*.md
+.github/workflows/*.lock.yml
+
 # Testing & Coverage
 .pytest_cache/
 .coverage
@@ -50,12 +60,18 @@ ranking_results/
 !package.json
 !package-lock.json
 !tsconfig.json
+!.cursor/environment.json
+!frontend/static/rankings/.gitkeep
+!frontend/static/rankings/**/*.json
 
 # Security scan reports
 bandit-report.json
 
 # Cache directory
 .cache/
+
+# Precomputed rankings on API host (generated locally / by Actions)
+static_rankings/
 
 # AI Instructions (project-specific, not shared)
 .github/copilot-instructions.md

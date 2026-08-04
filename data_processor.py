@@ -63,30 +63,44 @@ class CFBDataProcessor:
         else: 
             return "FCS"
 
-    def get_games_for_season(self, year: int, through_week: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_games_for_season(
+        self,
+        year: int,
+        through_week: Optional[int] = None,
+        use_week_scoped_fetch: bool = True,
+    ) -> List[Dict[str, Any]]:
         """
-        Fetch all games for a season, optionally filtering by week.
-        
-        Args:
-            year: Season year
-            through_week: If provided, only return games up to this week
-            
-        Returns:
-            List of processed game dictionaries
+        Fetch games for a season, optionally limiting to through_week.
+
+        When through_week is set and use_week_scoped_fetch is True, fetches
+        week-by-week via CFBD week param instead of downloading the full season.
         """
-        # Fetch all regular season games
-        raw_games = self.api_client.get_games(year=year)
-        
-        # Also fetch postseason games to ensure complete data for priors
-        postseason_games = self.api_client.get_games(year=year, season_type='postseason')
-        if postseason_games:
-            raw_games.extend(postseason_games)
-        
-        # Filter by week if requested
-        if through_week:
-            raw_games = [g for g in raw_games if g['week'] <= through_week]
-            
+        raw_games: List[Dict[str, Any]] = []
+
+        if through_week and use_week_scoped_fetch:
+            for week_num in range(1, through_week + 1):
+                week_games = self.api_client.get_games(year=year, week=week_num)
+                raw_games.extend(week_games)
+        else:
+            raw_games = self.api_client.get_games(year=year)
+            if through_week:
+                raw_games = [g for g in raw_games if g['week'] <= through_week]
+
+        # Postseason only needed when requesting full season or week 15+
+        if not through_week or through_week >= 15:
+            postseason_games = self.api_client.get_games(year=year, season_type='postseason')
+            if postseason_games:
+                if through_week:
+                    postseason_games = [g for g in postseason_games if g['week'] <= through_week]
+                raw_games.extend(postseason_games)
+
         return self._process_raw_games(raw_games)
+
+    def get_available_weeks(self, year: int) -> List[int]:
+        """Return sorted week numbers with completed games for a season."""
+        games = self.api_client.get_games(year=year)
+        weeks = sorted({g['week'] for g in games if g.get('week') is not None})
+        return weeks if weeks else list(range(1, 16))
 
     def _process_raw_games(self, games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """

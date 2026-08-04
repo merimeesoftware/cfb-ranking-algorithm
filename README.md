@@ -36,8 +36,40 @@ The system processes games sequentially through the season week-by-week, allowin
    ```
 
 3. Set up your API key:
-   - Create a `.env` file in the project root
-   - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here
+   - Copy `.env.example` to `.env`
+   - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here`
+   - Optional: `MINIMAX_API_KEY` for agent features
+
+## Deployment
+
+Production uses **Cloudflare Pages Git integration**. Production secrets live **in Cloudflare**, not GitHub. See:
+
+- [docs/SECRETS.md](docs/SECRETS.md) — secrets architecture (Cloudflare = prod source of truth)
+- [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) — connect repo + deploy steps
+
+### Where secrets go
+
+| Where | Role |
+|-------|------|
+| **Cloudflare** → API service → Variables and Secrets | **Production** — `CFBD_API_KEY`, optional `MINIMAX_API_KEY` |
+| **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
+| **`.env` locally** | Your laptop |
+
+Frontend (Pages) needs **no** API keys — it proxies `/api/*` via `frontend/static/_redirects`.
+
+### Cloudflare Pages (frontend)
+
+Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`.
+
+### CI/CD
+
+- `.github/workflows/ci-cd.yml` — lint, test, build
+- `.github/workflows/deploy-cloudflare.yml` — validates Pages build only (deploy is via Cloudflare Git)
+- `.github/workflows/codeql.yml` — SAST
+
+### Render (deprecated fallback)
+
+`render.yaml` retained with `autoDeploy: false` during Cloudflare cutover.
 
 4. Run the Application
 

@@ -1,0 +1,21 @@
+{
+  "name": "cfb-ranking-algorithm",
+  "install": "python3 -m venv venv && ./venv/bin/pip install -r requirements.txt && cd frontend && npm ci",
+  "start": "echo 'Secrets (MINIMAX_API_KEY, CFBD_API_KEY) are injected from the Cursor Cloud Secrets tab — see .cursor/SECRETS.md'",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "./venv/bin/python app.py",
+      "description": "Flask API on port 5001"
+    },
+    {
+      "name": "frontend",
+      "command": "cd frontend && npm run dev",
+      "description": "SvelteKit dev server on port 5173"
+    }
+  ],
+  "ports": [
+    { "name": "api", "port": 5001 },
+    { "name": "web", "port": 5173 }
+  ]
+}

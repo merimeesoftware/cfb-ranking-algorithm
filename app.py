@@ -1,337 +1,167 @@
 # filepath: c:\Users\micha\DevProjects\CFB-Ranking-System\app.py
 import os
 from datetime import datetime
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from data_processor import CFBDataProcessor
-from ranking_algorithm import TeamQualityRanker
-from cache import get_cache, TTL_RANKINGS
 
-# Load environment variables (especially CFBD_API_KEY)
+from data_processor import CFBDataProcessor
+from cache import get_cache
+from ranking_service import (
+    get_or_calculate_rankings,
+    slim_rankings_for_list,
+    build_config,
+    DEFAULT_CONFIG,
+)
+from agent_service import agent_bp, set_data_processor
+
 load_dotenv()
 
 app = Flask(__name__)
 
-# Enable CORS for all routes - allows frontend to call API from different domain
-CORS(app, origins=["*"], supports_credentials=True)
+# CORS: allow configured origins or wildcard in dev
+_cors_origins = os.environ.get('CORS_ORIGINS', '*')
+if _cors_origins == '*':
+    CORS(app, origins=['*'], supports_credentials=True)
+else:
+    CORS(app, origins=[o.strip() for o in _cors_origins.split(',')], supports_credentials=True)
 
-# Global cache instance
 cache = get_cache()
-
-# --- Configuration ---
-# Default parameters
-DEFAULT_CONFIG = {
-    'power_conf_initial': 1500.0,
-    'group5_initial': 1200.0,
-    'fcs_initial': 900.0,
-    'base_factor': 40.0,
-    'team_quality_weight': 0.65,  # V5.1: 65% TQ
-    'conference_weight': 0.08,    # V5.1: 8% CQ
-    'record_weight': 0.27,        # V5.1: 27% Resume
-    'prior_strength': 0.15,       # V4.0: 15% historical, 85% fresh
-    'use_ats': False,
-    'ats_bonus': 10.0
-}
-
-# Initialize Data Processor
-# We initialize it once. If API key rotates, this might need to be inside request, 
-# but for standard app it's fine here.
 api_key = os.getenv('CFBD_API_KEY')
 data_processor = CFBDataProcessor(api_key=api_key)
+set_data_processor(data_processor)
+
+app.register_blueprint(agent_bp)
+
 
 def get_current_season_week():
-    """Determine the current season and week based on today's date."""
     now = datetime.now()
     year = now.year
-    
-    # CFB season typically starts late August / early September
-    # If we are in Jan-July, we are likely in the 'offseason' of the previous year's season
-    # or just before the new season.
-    # Let's assume if month < 8, we default to previous year final.
     if now.month < 8:
-        return year - 1, None # None means 'All' / Postseason
-        
-    # If we are in season (Aug-Dec), we need to estimate the week.
-    # Week 1 is usually around Labor Day (first Monday of Sept).
-    # This is a rough heuristic. For precise week, we'd need to query the API.
-    # But for default UI values, a heuristic or API call is fine.
-    
-    # Let's try to use the data_processor to get the current week if possible,
-    # or just default to a safe bet.
-    # Since we want to be "smart", let's just return the year and let the frontend
-    # or the user select the week, OR default to 'All' which is safe.
-    # The user specifically asked for "current year and current week".
-    
-    # Simple heuristic for week number:
-    # Week 1 starts approx Sept 1st.
-    # Each week is 7 days.
-    # Calculate weeks since Sept 1.
-    
-    season_start = datetime(year, 8, 24) # Approx Week 0 start
+        return year - 1, None
+    season_start = datetime(year, 8, 24)
     if now < season_start:
         return year, 1
-        
     delta = now - season_start
     week_num = int(delta.days / 7) + 1
-    
-    # Cap at 15/16
     if week_num > 16:
-        week_num = None # Postseason / All
-        
+        week_num = None
     return year, week_num
 
-def calculate_rankings_logic(year, week, request_args):
-    """Shared logic to fetch data and calculate rankings."""
-    # --- Fetch Data ---
-    print(f"Fetching games for {year}, week: {week if week else 'all'}...")
-    games = data_processor.get_games_for_season(year, through_week=week)
-    print(f"Fetched {len(games)} games.")
-    
-    if not games:
-        return None
-
-    # Organize games by week
-    games_by_week = data_processor.organize_games_by_week(games)
-
-    # --- Calculate Priors ---
-    history_data = []
-    print("Fetching historical data for priors...")
-    for h_year in range(year - 1, year - 4, -1):
-        try:
-            h_games = data_processor.get_games_for_season(h_year)
-            if h_games:
-                h_config = DEFAULT_CONFIG.copy()
-                h_ranker = TeamQualityRanker(h_config) 
-                h_games_by_week = data_processor.organize_games_by_week(h_games)
-                for w in sorted(h_games_by_week.keys()):
-                    for g in h_games_by_week[w]:
-                        h_ranker.update_quality_scores(g)
-                h_results = h_ranker.calculate_final_rankings()
-                h_results = h_ranker.normalize_scores(h_results)
-                history_data.append(h_results)
-        except Exception as e:
-            print(f"Could not process history for {h_year}: {e}")
-            continue
-            
-    priors = TeamQualityRanker.calculate_priors(history_data)
-    print(f"Calculated priors for {len(priors)} teams.")
-
-    # --- Configure Ranker ---
-    config = DEFAULT_CONFIG.copy()
-    def get_float_arg(key, default):
-        val = request_args.get(key)
-        return float(val) if val is not None else default
-
-    config['power_conf_initial'] = get_float_arg('power_conf_initial', config['power_conf_initial'])
-    config['group5_initial'] = get_float_arg('group5_initial', config['group5_initial'])
-    config['fcs_initial'] = get_float_arg('fcs_initial', config['fcs_initial'])
-    config['base_factor'] = get_float_arg('base_factor', config['base_factor'])
-    config['team_quality_weight'] = get_float_arg('team_quality_weight', config['team_quality_weight'])
-    config['conference_weight'] = get_float_arg('conference_weight', config['conference_weight'])
-    config['record_weight'] = get_float_arg('record_weight', config['record_weight'])
-    
-    # V4.1: Dynamic Prior Strength
-    # If prior_strength is provided in request, use it. Otherwise calculate dynamically.
-    # Formula: max(0.0, 0.7 * (12.0 - calc_week) / 11.0) -> 70% at Week 1, 0% at Week 12
-    if request_args.get('prior_strength') is not None:
-        config['prior_strength'] = float(request_args.get('prior_strength'))
-    else:
-        # If week is None (postseason/all), treat as week 15+ (strength 0)
-        calc_week = week if week is not None else 15
-        config['prior_strength'] = max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
-    
-    # --- Calculate Rankings ---
-    print("Calculating rankings (Iterative V5.1)...")
-    reference_ranks = None
-    conf_stddevs = {}  # V4.8: Conference StdDevs for chaos tax
-    ranker = TeamQualityRanker(config, priors)
-    num_iterations = ranker.num_iterations  # V5.1: Use config (default 2)
-    
-    for i in range(num_iterations):
-        print(f"  Iteration {i+1}/{num_iterations}...")
-        ranker = TeamQualityRanker(config, priors)
-        
-        # V4.8: Set conference StdDevs from previous iteration for chaos tax
-        if conf_stddevs:
-            ranker.set_conference_stddevs(conf_stddevs)
-        
-        for week_num in sorted(games_by_week.keys()):
-            for game in games_by_week[week_num]:
-                ranker.update_quality_scores(game, reference_ranks)
-        if i < num_iterations - 1:
-            temp_results = ranker.calculate_final_rankings()
-            reference_ranks = {t['team_name']: t['team_quality_score'] for t in temp_results['team_rankings']}
-            # V4.8: Compute conference StdDevs for next iteration's chaos tax
-            conf_stddevs = ranker.compute_conference_stddevs()
-        
-    rankings_data = ranker.calculate_final_rankings()
-    rankings_data = ranker.normalize_scores(rankings_data)
-    
-    # Add team logos and colors to rankings
-    for team in rankings_data['team_rankings']:
-        team_name = team['team_name']
-        team_info = data_processor.team_info_map.get(team_name, {})
-        logos = team_info.get('logos') or []  # Handle None case
-        team['logo'] = logos[0] if len(logos) > 0 else None
-        team['logo_dark'] = logos[1] if len(logos) > 1 else team['logo']
-        team['color'] = team_info.get('color')
-        team['alt_color'] = team_info.get('alt_color')
-    
-    # Add FCS record to conference rankings
-    for conf in rankings_data['conference_rankings']:
-        conf_name = conf['conference_name']
-        # Calculate FCS record from teams in conference
-        fcs_wins = 0
-        fcs_losses = 0
-        for team_name, stats in ranker.team_stats.items():
-            if stats['conference'] == conf_name:
-                fcs_wins += stats['record_vs_fcs']['wins']
-                fcs_losses += stats['record_vs_fcs']['losses']
-        conf['fcs_wins'] = fcs_wins
-        conf['fcs_losses'] = fcs_losses
-        conf['record_vs_fcs'] = f"{fcs_wins}-{fcs_losses}"
-    
-    # Filter Results
-    show_all = request_args.get('all_divisions') == 'true'
-    if not show_all:
-        fbs_types = ['Power 4', 'Group of 5', 'FBS Independents']
-        rankings_data['team_rankings'] = [
-            t for t in rankings_data['team_rankings'] 
-            if t.get('conference_type') in fbs_types
-        ]
-        
-    return rankings_data
-
-# --- Routes ---
 
 @app.route('/')
 def index():
-    """Root endpoint."""
     return jsonify({
-        "message": "CFB Ranking API is running", 
-        "endpoints": ["/rankings", "/rankings/team/<team_name>", "/cache/stats", "/cache/clear"]
+        "message": "CFB Ranking API is running",
+        "endpoints": [
+            "/rankings",
+            "/rankings/team/<team_name>",
+            "/weeks",
+            "/cache/stats",
+            "/cache/clear",
+            "/agent/explain",
+            "/agent/health",
+        ],
     })
+
+
+@app.route('/weeks', methods=['GET'])
+def get_weeks():
+    year = request.args.get('year', default=datetime.now().year, type=int)
+    cache_key = cache._generate_key('available_weeks', year)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        weeks = cached
+    else:
+        weeks = data_processor.get_available_weeks(year)
+        # Historical seasons change rarely; current season refreshes hourly
+        from cache import TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, is_historical_season
+        ttl = TTL_GAMES_HISTORICAL if is_historical_season(year) else TTL_GAMES_CURRENT
+        cache.set(cache_key, weeks, ttl, prefix='weeks')
+    return jsonify({"year": year, "weeks": weeks, "max_week": max(weeks) if weeks else 15})
+
 
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
-    """Get cache statistics."""
-    stats = cache.get_stats()
-    return jsonify(stats)
+    return jsonify(cache.get_stats())
+
 
 @app.route('/cache/clear', methods=['POST'])
 def clear_cache():
-    """Clear all cached data (requires secret key in production)."""
-    # In production, you might want to require an API key
     secret = request.headers.get('X-Cache-Secret') or request.args.get('secret')
     expected_secret = os.environ.get('CACHE_CLEAR_SECRET')
-    
-    if expected_secret and secret != expected_secret:
+    if not expected_secret:
+        return jsonify({"error": "Cache clear disabled; set CACHE_CLEAR_SECRET"}), 403
+    if secret != expected_secret:
         return jsonify({"error": "Unauthorized"}), 401
-    
     cache.clear_all()
     return jsonify({"message": "Cache cleared successfully"})
 
+
 @app.route('/rankings', methods=['GET'])
 def get_rankings():
-    """API endpoint for fetching rankings JSON."""
     try:
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
-        
-        # Generate cache key based on all parameters that affect rankings
-        cache_params = {
-            'year': year,
-            'week': week,
-            'all_divisions': request.args.get('all_divisions', 'false'),
-            'power_conf_initial': request.args.get('power_conf_initial'),
-            'group5_initial': request.args.get('group5_initial'),
-            'fcs_initial': request.args.get('fcs_initial'),
-            'base_factor': request.args.get('base_factor'),
-            'team_quality_weight': request.args.get('team_quality_weight'),
-            'conference_weight': request.args.get('conference_weight'),
-            'record_weight': request.args.get('record_weight'),
-            'prior_strength': request.args.get('prior_strength'),
-        }
-        cache_key = cache._generate_key('rankings_computed', **cache_params)
-        
-        # Try cache first
-        cached_data = cache.get(cache_key)
-        if cached_data is not None:
-            print(f"Cache HIT: computed rankings {year} week={week}")
-            return jsonify(cached_data)
-        
-        print(f"Cache MISS: computed rankings {year} week={week}")
-        data = calculate_rankings_logic(year, week, request.args)
-        
+        detail = request.args.get('detail', 'false').lower() == 'true'
+        # Detail views need full payloads (skip slim static files)
+        data = get_or_calculate_rankings(
+            data_processor, year, week, request.args, prefer_static=not detail
+        )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
-        
-        # Cache the computed rankings
-        cache.set(cache_key, data, TTL_RANKINGS)
-            
+        if not detail and data.get('detail') is not False:
+            data = slim_rankings_for_list(data)
+        elif detail and 'rankings' in data:
+            # Avoid shipping the duplicate name-keyed map on the wire
+            data = {k: v for k, v in data.items() if k != 'rankings'}
         return jsonify(data)
-
     except Exception as e:
         print(f"Error during ranking calculation: {e}")
-        return jsonify({"error": f"An internal error occurred: {e}"}), 500
+        return jsonify({"error": "An internal error occurred during ranking calculation."}), 500
+
 
 @app.route('/rankings/team/<team_name>', methods=['GET'])
 def get_team_breakdown(team_name):
-    """API endpoint for team ranking breakdown with comparison to nearby teams."""
     try:
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
-        
-        data = calculate_rankings_logic(year, week, request.args)
-        
+        # Prefer full cached/computed payload so wins_details are available
+        data = get_or_calculate_rankings(
+            data_processor, year, week, request.args, prefer_static=False
+        )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
-        
-        # Find the requested team
+
         team_rankings = data.get('team_rankings', [])
         team_index = None
         team_data = None
-        
         for i, team in enumerate(team_rankings):
             if team['team_name'].lower() == team_name.lower():
                 team_index = i
                 team_data = team
                 break
-        
         if team_data is None:
             return jsonify({"error": f"Team '{team_name}' not found in rankings."}), 404
-        
-        # Get teams ahead (up to 3)
-        teams_ahead = []
-        for i in range(max(0, team_index - 3), team_index):
-            teams_ahead.append({
-                'rank': i + 1,
-                **team_rankings[i]
-            })
-        
-        # Get teams behind (up to 3)
-        teams_behind = []
-        for i in range(team_index + 1, min(len(team_rankings), team_index + 4)):
-            teams_behind.append({
-                'rank': i + 1,
-                **team_rankings[i]
-            })
-        
-        # Build comparison breakdown
+
+        teams_ahead = [
+            {'rank': i + 1, **team_rankings[i]}
+            for i in range(max(0, team_index - 3), team_index)
+        ]
+        teams_behind = [
+            {'rank': i + 1, **team_rankings[i]}
+            for i in range(team_index + 1, min(len(team_rankings), team_index + 4))
+        ]
+
         def build_comparison(target, other, target_rank, other_rank):
-            """Build a detailed comparison between two teams."""
             diff_final = target['final_ranking_score'] - other['final_ranking_score']
             diff_tq = target['team_quality_score'] - other['team_quality_score']
             diff_rec = target['record_score'] - other['record_score']
             diff_cq = target['conference_quality_score'] - other['conference_quality_score']
             diff_sos = target['sos'] - other['sos']
             diff_sov = target['sov'] - other['sov']
-            
-            # Determine key factors
             factors = []
-            
-            # Team Quality contribution (65%)
             tq_contrib = diff_tq * 0.65
             if abs(tq_contrib) > 5:
                 factors.append({
@@ -339,10 +169,11 @@ def get_team_breakdown(team_name):
                     'advantage': 'target' if tq_contrib > 0 else 'other',
                     'diff': abs(diff_tq),
                     'contribution': abs(tq_contrib),
-                    'explanation': f"{'Higher' if diff_tq > 0 else 'Lower'} Elo rating ({target['team_quality_score']:.0f} vs {other['team_quality_score']:.0f})"
+                    'explanation': (
+                        f"{'Higher' if diff_tq > 0 else 'Lower'} Elo rating "
+                        f"({target['team_quality_score']:.0f} vs {other['team_quality_score']:.0f})"
+                    ),
                 })
-            
-            # Record Score contribution (27%)
             rec_contrib = diff_rec * 0.27
             if abs(rec_contrib) > 5:
                 factors.append({
@@ -350,10 +181,11 @@ def get_team_breakdown(team_name):
                     'advantage': 'target' if rec_contrib > 0 else 'other',
                     'diff': abs(diff_rec),
                     'contribution': abs(rec_contrib),
-                    'explanation': f"{'Stronger' if diff_rec > 0 else 'Weaker'} resume ({target['record_score']:.0f} vs {other['record_score']:.0f})"
+                    'explanation': (
+                        f"{'Stronger' if diff_rec > 0 else 'Weaker'} resume "
+                        f"({target['record_score']:.0f} vs {other['record_score']:.0f})"
+                    ),
                 })
-            
-            # Conference Quality contribution (8%)
             cq_contrib = diff_cq * 0.08
             if abs(cq_contrib) > 2:
                 factors.append({
@@ -361,55 +193,54 @@ def get_team_breakdown(team_name):
                     'advantage': 'target' if cq_contrib > 0 else 'other',
                     'diff': abs(diff_cq),
                     'contribution': abs(cq_contrib),
-                    'explanation': f"{'Stronger' if diff_cq > 0 else 'Weaker'} conference ({target['conference']} vs {other['conference']})"
+                    'explanation': (
+                        f"{'Stronger' if diff_cq > 0 else 'Weaker'} conference "
+                        f"({target['conference']} vs {other['conference']})"
+                    ),
                 })
-            
-            # SoS breakdown
             if abs(diff_sos) > 20:
                 factors.append({
                     'factor': 'Strength of Schedule',
                     'advantage': 'target' if diff_sos > 0 else 'other',
                     'diff': abs(diff_sos),
-                    'contribution': 0,  # Already included in record score
-                    'explanation': f"{'Tougher' if diff_sos > 0 else 'Easier'} schedule (avg opp: {target['sos']:.0f} vs {other['sos']:.0f})"
+                    'contribution': 0,
+                    'explanation': (
+                        f"{'Tougher' if diff_sos > 0 else 'Easier'} schedule "
+                        f"(avg opp: {target['sos']:.0f} vs {other['sos']:.0f})"
+                    ),
                 })
-            
-            # SoV breakdown
             if abs(diff_sov) > 20:
                 factors.append({
                     'factor': 'Strength of Victory',
                     'advantage': 'target' if diff_sov > 0 else 'other',
                     'diff': abs(diff_sov),
-                    'contribution': 0,  # Already included in record score
-                    'explanation': f"{'Better' if diff_sov > 0 else 'Weaker'} quality wins (avg win opp: {target['sov']:.0f} vs {other['sov']:.0f})"
+                    'contribution': 0,
+                    'explanation': (
+                        f"{'Better' if diff_sov > 0 else 'Weaker'} quality wins "
+                        f"(avg win opp: {target['sov']:.0f} vs {other['sov']:.0f})"
+                    ),
                 })
-            
-            # Sort factors by contribution magnitude
             factors.sort(key=lambda x: x['contribution'], reverse=True)
-            
             return {
                 'other_team': other['team_name'],
                 'other_rank': other_rank,
                 'other_conference': other['conference'],
                 'other_record': f"{other['records']['total_wins']}-{other['records']['total_losses']}",
                 'score_diff': diff_final,
-                'factors': factors
+                'factors': factors,
             }
-        
-        # Build comparisons
+
         comparisons_ahead = []
         for t in teams_ahead:
             comp = build_comparison(team_data, t, team_index + 1, t['rank'])
             comp['direction'] = 'ahead'
             comparisons_ahead.append(comp)
-        
         comparisons_behind = []
         for t in teams_behind:
             comp = build_comparison(team_data, t, team_index + 1, t['rank'])
             comp['direction'] = 'behind'
             comparisons_behind.append(comp)
-        
-        # Build response
+
         response = {
             'team': {
                 'rank': team_index + 1,
@@ -425,29 +256,31 @@ def get_team_breakdown(team_name):
                 'sov': team_data['sov'],
                 'power_record': f"{team_data['records']['power_wins']}-{team_data['records']['power_losses']}",
                 'g5_record': f"{team_data['records']['group_five_wins']}-{team_data['records']['group_five_losses']}",
+                'logo': team_data.get('logo'),
+                'color': team_data.get('color'),
             },
             'formula_breakdown': {
                 'tq_contribution': team_data['team_quality_score'] * 0.65,
                 'rec_contribution': team_data['record_score'] * 0.27,
                 'cq_contribution': team_data['conference_quality_score'] * 0.08,
-                'total': team_data['final_ranking_score']
+                'total': team_data['final_ranking_score'],
             },
+            'wins_details': team_data.get('wins_details') or [],
+            'losses_details': team_data.get('losses_details') or [],
+            'quality_wins': team_data.get('quality_wins'),
+            'quality_losses': team_data.get('quality_losses'),
+            'bad_losses': team_data.get('bad_losses'),
+            'top_10_wins': team_data.get('top_10_wins'),
+            'top_25_wins': team_data.get('top_25_wins'),
             'comparisons_ahead': comparisons_ahead,
-            'comparisons_behind': comparisons_behind
+            'comparisons_behind': comparisons_behind,
         }
-        
         return jsonify(response)
-
     except Exception as e:
         print(f"Error during team breakdown: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": f"An internal error occurred: {e}"}), 500
+        return jsonify({"error": "An internal error occurred during team breakdown."}), 500
 
-# Legacy route for backward compatibility if needed
-# @app.route('/rankings_legacy')
 
-# --- Main Execution ---
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'

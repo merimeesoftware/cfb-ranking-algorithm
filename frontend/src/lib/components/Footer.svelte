@@ -11,8 +11,7 @@
 					class="text-primary-600 dark:text-primary-400 hover:underline">College Football Data API</a></p>
 			</div>
 			<div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-				<a href="/about" class="hover:text-gray-700 dark:hover:text-gray-300">About</a>
-				<a href="/methodology" class="hover:text-gray-700 dark:hover:text-gray-300">Methodology</a>
+				<a href="/methodology" class="hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus-visible:underline">Methodology</a>
 				<a href="https://github.com" target="_blank" rel="noopener noreferrer" 
 					class="hover:text-gray-700 dark:hover:text-gray-300">GitHub</a>
 			</div>

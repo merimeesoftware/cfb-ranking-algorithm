@@ -2,27 +2,55 @@
 	import type { Team } from '$lib/types';
 	import TeamRow from './TeamRow.svelte';
 	import TeamDetailModal from './TeamDetailModal.svelte';
+	import { fetchTeamDetail } from '$lib/api';
+	import { filterState } from '$lib/stores/rankings';
 
 	export let teams: Team[] = [];
 
 	let selectedTeam: Team | null = null;
+	let selectedRank = 0;
 	let showModal = false;
 	let showAllTeams = false;
+	let detailLoading = false;
+	let detailError: string | null = null;
+	let detailRequestId = 0;
 
-	// Display top 25 by default, or all if expanded
 	$: displayedTeams = showAllTeams ? teams : teams.slice(0, 25);
 	
-	// CFP playoff spots (first 12 get highlighted)
 	const CFP_CUTOFF = 12;
 
-	function handleTeamClick(team: Team) {
+	async function handleTeamClick(team: Team) {
+		const requestId = ++detailRequestId;
+		selectedRank = teams.findIndex((t) => t.team_name === team.team_name) + 1;
 		selectedTeam = team;
 		showModal = true;
+		detailError = null;
+		if (!team.wins_details?.length && !team.losses_details?.length) {
+			detailLoading = true;
+			try {
+				const detail = await fetchTeamDetail(
+					team.team_name,
+					$filterState.year,
+					$filterState.week
+				);
+				if (requestId !== detailRequestId) return;
+				selectedTeam = { ...team, ...detail };
+			} catch (e) {
+				if (requestId !== detailRequestId) return;
+				detailError = e instanceof Error ? e.message : 'Failed to load team details';
+			} finally {
+				if (requestId === detailRequestId) {
+					detailLoading = false;
+				}
+			}
+		}
 	}
 
 	function closeModal() {
 		showModal = false;
 		selectedTeam = null;
+		selectedRank = 0;
+		detailError = null;
 	}
 	
 	function getCfpClass(rank: number): string {
@@ -170,5 +198,12 @@
 
 <!-- Team Detail Modal -->
 {#if showModal && selectedTeam}
-	<TeamDetailModal team={selectedTeam} rank={teams.indexOf(selectedTeam) + 1} allTeams={teams} on:close={closeModal} />
+	<TeamDetailModal
+		team={selectedTeam}
+		rank={selectedRank || 1}
+		allTeams={teams}
+		loading={detailLoading}
+		error={detailError}
+		on:close={closeModal}
+	/>
 {/if}
