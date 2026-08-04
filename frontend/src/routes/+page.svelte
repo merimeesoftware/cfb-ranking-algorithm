@@ -5,9 +5,11 @@
 	import ConferenceTable from '$lib/components/ConferenceTable.svelte';
 	import ConferenceDetailModal from '$lib/components/ConferenceDetailModal.svelte';
 	import FilterControls from '$lib/components/FilterControls.svelte';
+	import WeekStoryStrip from '$lib/components/WeekStoryStrip.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import type { Conference } from '$lib/types';
 	import {
+		teams,
 		filteredTeams,
 		filteredConferences,
 		loading,
@@ -19,6 +21,8 @@
 		setYear,
 		setWeek,
 		setView,
+		setSearchQuery,
+		setConferenceFilter,
 		loadAvailableWeeks,
 		parseUrlParams,
 		buildUrlParams,
@@ -28,9 +32,15 @@
 	let selectedConference: Conference | null = null;
 	let selectedConferenceRank = 0;
 	let showConferenceModal = false;
+	let selectedTeamName: string | null = null;
+	let initialTeamName: string | null = null;
+
+	$: conferenceOptions = [
+		...new Set($teams.map((t) => t.conference).filter(Boolean)),
+	].sort((a, b) => a.localeCompare(b));
 
 	function syncUrl() {
-		const params = buildUrlParams($filterState, activeTab);
+		const params = buildUrlParams($filterState, activeTab, selectedTeamName);
 		goto(`?${params}`, { replaceState: true, keepFocus: true, noScroll: true });
 	}
 
@@ -40,8 +50,15 @@
 		if (urlState.week) setWeek(urlState.week);
 		if (urlState.view) setView(urlState.view);
 		if (urlState.tab) activeTab = urlState.tab;
+		if (urlState.searchQuery) setSearchQuery(urlState.searchQuery);
+		if (urlState.conferenceFilter) setConferenceFilter(urlState.conferenceFilter);
+		if (urlState.team) {
+			initialTeamName = urlState.team;
+			selectedTeamName = urlState.team;
+		}
 		await loadAvailableWeeks($filterState.year);
 		await fetchRankings($filterState.year, $filterState.week);
+		syncUrl();
 	});
 
 	function handleYearChange(event: CustomEvent<number>) {
@@ -57,6 +74,16 @@
 	function handleViewChange(event: CustomEvent<'fbs' | 'p4' | 'g5' | 'fcs'>) {
 		setView(event.detail);
 		fetchRankings($filterState.year, $filterState.week, { view: event.detail, force: true }).then(syncUrl);
+	}
+
+	function handleSearchChange(event: CustomEvent<string>) {
+		setSearchQuery(event.detail);
+		syncUrl();
+	}
+
+	function handleConferenceFilterChange(event: CustomEvent<string | null>) {
+		setConferenceFilter(event.detail);
+		syncUrl();
 	}
 
 	function handleUpdateRankings(event: CustomEvent<{ year: number; week: number }>) {
@@ -75,6 +102,17 @@
 	function closeConferenceModal() {
 		showConferenceModal = false;
 		selectedConference = null;
+	}
+
+	function handleTeamSelect(event: CustomEvent<string>) {
+		selectedTeamName = event.detail;
+		syncUrl();
+	}
+
+	function handleTeamClear() {
+		selectedTeamName = null;
+		initialTeamName = null;
+		syncUrl();
 	}
 
 	function setTab(tab: 'teams' | 'conferences') {
@@ -103,11 +141,18 @@
 		selectedWeek={$filterState.week}
 		selectedView={$filterState.view}
 		maxWeek={$maxWeek}
+		searchQuery={$filterState.searchQuery}
+		conferenceFilter={$filterState.conferenceFilter}
+		{conferenceOptions}
 		on:yearChange={handleYearChange}
 		on:weekChange={handleWeekChange}
 		on:viewChange={handleViewChange}
 		on:updateRankings={handleUpdateRankings}
+		on:searchChange={handleSearchChange}
+		on:conferenceChange={handleConferenceFilterChange}
 	/>
+
+	<WeekStoryStrip year={$filterState.year} week={$filterState.week} />
 
 	<div class="flex border-b border-gray-200 dark:border-gray-700 mb-4 mt-6" role="tablist">
 		<button
@@ -148,7 +193,13 @@
 		</div>
 	{:else}
 		{#if activeTab === 'teams'}
-			<RankingsTable teams={$filteredTeams} />
+			<RankingsTable
+				teams={$filteredTeams}
+				allTeams={$teams}
+				{initialTeamName}
+				on:teamSelect={handleTeamSelect}
+				on:teamClear={handleTeamClear}
+			/>
 		{:else}
 			<ConferenceTable conferences={$filteredConferences} on:click={handleConferenceClick} />
 		{/if}

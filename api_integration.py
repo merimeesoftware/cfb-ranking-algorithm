@@ -5,6 +5,12 @@ import os
 from dotenv import load_dotenv
 import requests
 from cache import get_cache, TTL_TEAMS, TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, get_games_ttl
+from spend_guards import (
+    CFBDOfflineError,
+    is_cfbd_offline,
+    register_live_cfbd_call,
+)
+
 
 class CFBDApiClient:
     """Centralized API client for CFBD data using direct HTTP requests"""
@@ -16,9 +22,11 @@ class CFBDApiClient:
             load_dotenv()
             api_key = os.getenv('CFBD_API_KEY')
             if not api_key:
-                raise ValueError("API key not found in environment variables")
+                # Offline / fixture workflows may construct the client with a dummy key
+                api_key = os.getenv('CFBD_API_KEY', 'offline-placeholder')
+                if not os.getenv('CFBD_API_KEY') and not is_cfbd_offline():
+                    raise ValueError("API key not found in environment variables")
         
-        # print(f"DEBUG: Using API Key: {api_key[:5]}...") 
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'accept': 'application/json'
@@ -26,17 +34,30 @@ class CFBDApiClient:
         self._cache = get_cache()
 
     def _make_request(self, endpoint: str, params: Dict[str, Any] = None) -> Any:
-        """Helper to make API requests with error handling"""
+        """Helper to make API requests with error handling and spend guards."""
         url = f"{self.BASE_URL}{endpoint}"
-        # print(f"DEBUG: Requesting {url} with params {params}")
+        if is_cfbd_offline():
+            print(
+                f"CFBD OFFLINE: blocked live request {endpoint} params={params}. "
+                "Use cache/static or set CFBD_OFFLINE=0."
+            )
+            raise CFBDOfflineError(
+                f'CFBD offline: refused live call to {endpoint}. '
+                'Serve static rankings or warm .cache/ first.'
+            )
+
         try:
+            call_n = register_live_cfbd_call()
             response = requests.get(url, headers=self.headers, params=params, timeout=30)
+            remaining = response.headers.get('X-CallLimit-Remaining')
+            print(
+                f"CFBD LIVE #{call_n}: {endpoint} params={params} "
+                f"status={response.status_code} remaining={remaining}"
+            )
             response.raise_for_status()
-            data = response.json()
-            # print(f"DEBUG: Response type: {type(data)}, Length: {len(data) if isinstance(data, list) else 'N/A'}")
-            # if isinstance(data, list) and len(data) > 0:
-            #     print(f"DEBUG: First item keys: {data[0].keys()}")
-            return data
+            return response.json()
+        except CFBDOfflineError:
+            raise
         except requests.exceptions.RequestException as e:
             print(f"API Request Error to {endpoint}: {e}")
             if hasattr(e, 'response') and e.response is not None:
@@ -66,7 +87,11 @@ class CFBDApiClient:
         if week is not None:
             params['week'] = week
 
-        games = self._make_request('/games', params)
+        try:
+            games = self._make_request('/games', params)
+        except CFBDOfflineError as e:
+            print(f"CFBD offline on games miss: {e}")
+            return []
         result = [self._transform_game(game) for game in games if self._is_valid_game(game)]
         
         # Cache with appropriate TTL
@@ -86,7 +111,11 @@ class CFBDApiClient:
             return cached
         
         print("Cache MISS: team_info")
-        teams = self._make_request('/teams/fbs')
+        try:
+            teams = self._make_request('/teams/fbs')
+        except CFBDOfflineError as e:
+            print(f"CFBD offline on team_info miss: {e}")
+            return {}
         result = {team['school']: team['conference'] for team in teams}
         
         if result:
@@ -104,7 +133,11 @@ class CFBDApiClient:
             return cached
         
         print("Cache MISS: teams_with_logos")
-        teams = self._make_request('/teams')
+        try:
+            teams = self._make_request('/teams')
+        except CFBDOfflineError as e:
+            print(f"CFBD offline on teams_with_logos miss: {e}")
+            return {}
         result = {}
         for team in teams:
             result[team['school']] = {
@@ -136,8 +169,12 @@ class CFBDApiClient:
         params = {'year': year}
         if week is not None:
             params['week'] = week
-            
-        result = self._make_request('/rankings', params)
+
+        try:
+            result = self._make_request('/rankings', params)
+        except CFBDOfflineError as e:
+            print(f"CFBD offline on rankings miss: {e}")
+            return []
         
         if result:
             ttl = get_games_ttl(year)
@@ -161,8 +198,12 @@ class CFBDApiClient:
         }
         if week is not None:
             params['week'] = week
-            
-        result = self._make_request('/lines', params)
+
+        try:
+            result = self._make_request('/lines', params)
+        except CFBDOfflineError as e:
+            print(f"CFBD offline on betting_lines miss: {e}")
+            return []
         
         if result:
             ttl = get_games_ttl(year)

@@ -1,11 +1,20 @@
 <script lang="ts">
 	import type { Team } from '$lib/types';
+	import { createEventDispatcher } from 'svelte';
 	import TeamRow from './TeamRow.svelte';
 	import TeamDetailModal from './TeamDetailModal.svelte';
-	import { fetchTeamDetail } from '$lib/api';
+	import { fetchTeamDetail, fetchWhyBlurb } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
 
 	export let teams: Team[] = [];
+	/** Full unfiltered list for deep-link ?team= lookup and accurate ranks */
+	export let allTeams: Team[] = [];
+	export let initialTeamName: string | null = null;
+
+	const dispatch = createEventDispatcher<{
+		teamSelect: string;
+		teamClear: void;
+	}>();
 
 	let selectedTeam: Team | null = null;
 	let selectedRank = 0;
@@ -14,34 +23,48 @@
 	let detailLoading = false;
 	let detailError: string | null = null;
 	let detailRequestId = 0;
+	let openedInitial = false;
 
+	$: lookupTeams = allTeams.length > 0 ? allTeams : teams;
 	$: displayedTeams = showAllTeams ? teams : teams.slice(0, 25);
-	
+
 	const CFP_CUTOFF = 12;
+
+	$: if (lookupTeams.length > 0 && initialTeamName && !openedInitial && !showModal) {
+		const needle = initialTeamName.toLowerCase();
+		const match = lookupTeams.find((t) => t.team_name.toLowerCase() === needle);
+		if (match) {
+			openedInitial = true;
+			handleTeamClick(match);
+		}
+	}
 
 	async function handleTeamClick(team: Team) {
 		const requestId = ++detailRequestId;
-		selectedRank = teams.findIndex((t) => t.team_name === team.team_name) + 1;
+		selectedRank = lookupTeams.findIndex((t) => t.team_name === team.team_name) + 1;
 		selectedTeam = team;
 		showModal = true;
 		detailError = null;
-		if (!team.wins_details?.length && !team.losses_details?.length) {
-			detailLoading = true;
-			try {
-				const detail = await fetchTeamDetail(
-					team.team_name,
-					$filterState.year,
-					$filterState.week
-				);
-				if (requestId !== detailRequestId) return;
-				selectedTeam = { ...team, ...detail };
-			} catch (e) {
-				if (requestId !== detailRequestId) return;
-				detailError = e instanceof Error ? e.message : 'Failed to load team details';
-			} finally {
-				if (requestId === detailRequestId) {
-					detailLoading = false;
-				}
+		detailLoading = true;
+		dispatch('teamSelect', team.team_name);
+
+		try {
+			const [detail, whyBlurb] = await Promise.all([
+				fetchTeamDetail(team.team_name, $filterState.year, $filterState.week),
+				fetchWhyBlurb($filterState.year, $filterState.week, team.team_name),
+			]);
+			if (requestId !== detailRequestId) return;
+			selectedTeam = {
+				...team,
+				...detail,
+				...(whyBlurb ? { why_blurb: whyBlurb } : {}),
+			};
+		} catch (e) {
+			if (requestId !== detailRequestId) return;
+			detailError = e instanceof Error ? e.message : 'Failed to load team details';
+		} finally {
+			if (requestId === detailRequestId) {
+				detailLoading = false;
 			}
 		}
 	}
@@ -51,13 +74,23 @@
 		selectedTeam = null;
 		selectedRank = 0;
 		detailError = null;
+		dispatch('teamClear');
 	}
-	
+
 	function getCfpClass(rank: number): string {
 		if (rank <= CFP_CUTOFF) return 'cfp-in';
 		if (rank <= 25) return 'cfp-bubble';
 		return '';
 	}
+
+	$: modalShareUrl =
+		selectedTeam && typeof window !== 'undefined'
+			? (() => {
+					const url = new URL(window.location.href);
+					url.searchParams.set('team', selectedTeam.team_name);
+					return url.toString();
+				})()
+			: null;
 </script>
 
 <div class="card overflow-hidden">
@@ -204,6 +237,7 @@
 		allTeams={teams}
 		loading={detailLoading}
 		error={detailError}
+		shareUrl={modalShareUrl}
 		on:close={closeModal}
 	/>
 {/if}

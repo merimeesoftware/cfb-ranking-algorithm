@@ -68,6 +68,37 @@ export interface Team {
 	// V4.5 Game Details
 	wins_details?: WinDetail[];
 	losses_details?: LossDetail[];
+
+	/** Populated from /rankings/team detail fetch */
+	path_to_climb?: PathToClimb;
+	comparisons_ahead?: TeamComparison[];
+	comparisons_behind?: TeamComparison[];
+	why_blurb?: string;
+}
+
+export interface PathToClimb {
+	at_top: boolean;
+	team_above: string | null;
+	score_gap: number;
+	gaps: { tq: number; resume: number; cq: number };
+	primary_lever: string | null;
+	summary: string;
+}
+
+export interface TeamComparison {
+	other_team: string;
+	other_rank: number;
+	other_conference?: string;
+	other_record?: string;
+	score_diff: number;
+	direction?: 'ahead' | 'behind';
+	factors?: Array<{
+		factor: string;
+		advantage: string;
+		diff: number;
+		contribution: number;
+		explanation: string;
+	}>;
 }
 
 export interface Conference {

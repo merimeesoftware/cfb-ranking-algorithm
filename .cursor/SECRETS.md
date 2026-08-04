@@ -16,8 +16,12 @@ Cloudflare      →  deployed API (production)   ← source of truth for live tr
 
 | Secret name | Required for agent VM? | Purpose |
 |-------------|------------------------|---------|
-| `CFBD_API_KEY` | Yes (to exercise rankings) | [collegefootballdata.com/key](https://collegefootballdata.com/key) |
-| `MINIMAX_API_KEY` | Optional | Product `/agent/explain` endpoint (optional feature) |
+| `CFBD_API_KEY` | Only if you set `CFBD_OFFLINE=0` | Live CFBD pulls (free tier = 1k/mo). Prefer static rankings offline. |
+| `MINIMAX_API_KEY` | No for local stub | Paygo key for `AI_MODE=live` only — not Coding Plan |
+
+## Local spend defaults
+
+Use `.env.example`: `CFBD_OFFLINE=1`, `AI_MODE=stub`. Browse committed `frontend/static/rankings/2024/` without burning CFBD or MiniMax.
 
 3. Restart the Cloud Agent after saving.
 

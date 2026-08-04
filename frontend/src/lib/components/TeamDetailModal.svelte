@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Team, WinDetail, LossDetail } from '$lib/types';
+	import type { Team, TeamComparison } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
 
@@ -8,8 +8,11 @@
 	export let allTeams: Team[] = [];
 	export let loading = false;
 	export let error: string | null = null;
+	export let shareUrl: string | null = null;
 
 	const dispatch = createEventDispatcher();
+
+	let copyFeedback = false;
 
 	function close() {
 		dispatch('close');
@@ -21,18 +24,40 @@
 		}
 	}
 
+	async function copyLink() {
+		const url = shareUrl || (typeof window !== 'undefined' ? window.location.href : '');
+		if (!url) return;
+		try {
+			await navigator.clipboard.writeText(url);
+			copyFeedback = true;
+			setTimeout(() => {
+				copyFeedback = false;
+			}, 1500);
+		} catch {
+			// ignore clipboard failures
+		}
+	}
+
 	// Score breakdown calculations (V5.0 weights: 65/27/8)
 	$: tqContrib = team.team_quality_score * 0.65;
 	$: recContrib = team.record_score * 0.27;
 	$: confContrib = team.conference_quality_score * 0.08;
 
-	// Get teams ahead and behind for comparison
-	$: teamsAhead = allTeams
+	// Prefer API comparison payloads; fall back to neighbors from the rankings list
+	$: comparisonsAhead = (team.comparisons_ahead && team.comparisons_ahead.length > 0
+		? team.comparisons_ahead
+		: null) as TeamComparison[] | null;
+
+	$: comparisonsBehind = (team.comparisons_behind && team.comparisons_behind.length > 0
+		? team.comparisons_behind
+		: null) as TeamComparison[] | null;
+
+	$: fallbackAhead = allTeams
 		.filter((_, i) => i < rank - 1 && i >= Math.max(0, rank - 4))
 		.map((t, i) => ({ team: t, rank: rank - (rank - 1 - Math.max(0, rank - 4) - i) }))
 		.reverse();
-	
-	$: teamsBehind = allTeams
+
+	$: fallbackBehind = allTeams
 		.filter((_, i) => i > rank - 1 && i <= rank + 2)
 		.map((t, i) => ({ team: t, rank: rank + 1 + i }));
 
@@ -49,7 +74,7 @@
 	function getDiff(compTeam: Team, isAhead: boolean) {
 		const myContribs = getContribs(team);
 		const theirContribs = getContribs(compTeam);
-		
+
 		// If they're ahead, show what they have MORE of
 		// If they're behind, show what we have MORE of
 		if (isAhead) {
@@ -147,12 +172,12 @@
 	>
 		<!-- Header -->
 		<div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-			<div class="flex items-center gap-4">
-				<span class="rank-badge text-xl w-12 h-12 flex items-center justify-center {rank <= 4 ? 'rank-top5' : rank <= 10 ? 'rank-top10' : 'rank-top25'}">
+			<div class="flex items-center gap-4 min-w-0">
+				<span class="rank-badge text-xl w-12 h-12 flex items-center justify-center shrink-0 {rank <= 4 ? 'rank-top5' : rank <= 10 ? 'rank-top10' : 'rank-top25'}">
 					{rank}
 				</span>
-				<div>
-					<h2 class="font-bold text-2xl text-gray-900 dark:text-white leading-tight">{team.team_name}</h2>
+				<div class="min-w-0">
+					<h2 class="font-bold text-2xl text-gray-900 dark:text-white leading-tight truncate">{team.team_name}</h2>
 					<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
 						<span>{team.conference}</span>
 						<span>•</span>
@@ -160,14 +185,25 @@
 					</div>
 				</div>
 			</div>
-			<button
-				on:click={close}
-				class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-			>
-				<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-				</svg>
-			</button>
+			<div class="flex items-center gap-1 shrink-0">
+				<button
+					type="button"
+					on:click={copyLink}
+					class="px-3 py-1.5 text-sm font-medium rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+					aria-label="Copy link to this team"
+				>
+					{copyFeedback ? 'Copied!' : 'Copy link'}
+				</button>
+				<button
+					on:click={close}
+					class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+					aria-label="Close"
+				>
+					<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
 		</div>
 
 		{#if loading}
@@ -186,9 +222,15 @@
 			
 			<!-- Narrative Summary -->
 			<div class="p-6 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
-				<p class="text-gray-700 dark:text-gray-300 italic text-lg leading-relaxed">
-					"{generateNarrative(team)}"
-				</p>
+				{#if team.why_blurb}
+					<p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
+						{team.why_blurb}
+					</p>
+				{:else}
+					<p class="text-gray-700 dark:text-gray-300 italic text-lg leading-relaxed">
+						"{generateNarrative(team)}"
+					</p>
+				{/if}
 			</div>
 
 			<div class="p-6 space-y-6">
@@ -263,6 +305,26 @@
 						</span>
 					</div>
 				</div>
+
+				{#if team.path_to_climb?.summary}
+					<div>
+						<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-2">
+							Path to climb
+						</h3>
+						<p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+							{team.path_to_climb.summary}
+						</p>
+						{#if team.path_to_climb.team_above && !team.path_to_climb.at_top}
+							<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+								Gap to #{rank - 1} {team.path_to_climb.team_above}:
+								{team.path_to_climb.score_gap.toFixed(2)} pts
+								{#if team.path_to_climb.primary_lever}
+									· Primary lever: {team.path_to_climb.primary_lever}
+								{/if}
+							</p>
+						{/if}
+					</div>
+				{/if}
 
 				<!-- Resume Deep Dive (Accordion) -->
 				<div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -482,18 +544,49 @@
 				</div>
 
 				<!-- Ranking Comparison Section -->
-				{#if teamsAhead.length > 0 || teamsBehind.length > 0}
+				{#if (comparisonsAhead && comparisonsAhead.length > 0) || (comparisonsBehind && comparisonsBehind.length > 0) || fallbackAhead.length > 0 || fallbackBehind.length > 0}
 					<div>
 						<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Context</h3>
-						
+
 						<!-- Teams Ahead -->
-						{#if teamsAhead.length > 0}
+						{#if comparisonsAhead && comparisonsAhead.length > 0}
 							<div class="mb-4">
 								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
 									Chasing
 								</h4>
 								<div class="space-y-2">
-									{#each teamsAhead as { team: compTeam, rank: compRank }}
+									{#each comparisonsAhead as comp}
+										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+											<div class="flex items-center justify-between mb-1">
+												<div class="flex items-center gap-2">
+													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{comp.other_rank}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
+												</div>
+												<span class="text-xs font-mono text-gray-500">
+													{formatDiff(Math.abs(comp.score_diff))} pts ahead
+												</span>
+											</div>
+											{#if comp.factors && comp.factors.length > 0}
+												<div class="grid grid-cols-3 gap-2 text-xs mt-2">
+													{#each comp.factors.slice(0, 3) as factor}
+														<div class="text-center">
+															<div class="text-gray-400 mb-0.5 capitalize">{factor.factor}</div>
+															<div class={getDiffClass(factor.diff, false)}>{formatDiff(factor.diff)}</div>
+														</div>
+													{/each}
+												</div>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{:else if fallbackAhead.length > 0}
+							<div class="mb-4">
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
+									Chasing
+								</h4>
+								<div class="space-y-2">
+									{#each fallbackAhead as { team: compTeam, rank: compRank }}
 										{@const diff = getDiff(compTeam, true)}
 										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
 											<div class="flex items-center justify-between mb-2">
@@ -517,6 +610,76 @@
 												<div class="text-center">
 													<div class="text-gray-400 mb-0.5">Conf</div>
 													<div class={getDiffClass(diff.conf, false)}>{formatDiff(diff.conf)}</div>
+												</div>
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<!-- Teams Behind -->
+						{#if comparisonsBehind && comparisonsBehind.length > 0}
+							<div>
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
+									Teams behind
+								</h4>
+								<div class="space-y-2">
+									{#each comparisonsBehind as comp}
+										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+											<div class="flex items-center justify-between mb-1">
+												<div class="flex items-center gap-2">
+													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{comp.other_rank}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
+												</div>
+												<span class="text-xs font-mono text-gray-500">
+													{formatDiff(Math.abs(comp.score_diff))} pts behind
+												</span>
+											</div>
+											{#if comp.factors && comp.factors.length > 0}
+												<div class="grid grid-cols-3 gap-2 text-xs mt-2">
+													{#each comp.factors.slice(0, 3) as factor}
+														<div class="text-center">
+															<div class="text-gray-400 mb-0.5 capitalize">{factor.factor}</div>
+															<div class={getDiffClass(factor.diff, true)}>{formatDiff(factor.diff)}</div>
+														</div>
+													{/each}
+												</div>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{:else if fallbackBehind.length > 0}
+							<div>
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
+									Teams behind
+								</h4>
+								<div class="space-y-2">
+									{#each fallbackBehind as { team: compTeam, rank: compRank }}
+										{@const diff = getDiff(compTeam, false)}
+										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+											<div class="flex items-center justify-between mb-2">
+												<div class="flex items-center gap-2">
+													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{compRank}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
+												</div>
+												<span class="text-xs font-mono text-gray-500">
+													{formatDiff(diff.total)} pts behind
+												</span>
+											</div>
+											<div class="grid grid-cols-3 gap-2 text-xs">
+												<div class="text-center">
+													<div class="text-gray-400 mb-0.5">Quality</div>
+													<div class={getDiffClass(diff.tq, true)}>{formatDiff(diff.tq)}</div>
+												</div>
+												<div class="text-center">
+													<div class="text-gray-400 mb-0.5">Resume</div>
+													<div class={getDiffClass(diff.rec, true)}>{formatDiff(diff.rec)}</div>
+												</div>
+												<div class="text-center">
+													<div class="text-gray-400 mb-0.5">Conf</div>
+													<div class={getDiffClass(diff.conf, true)}>{formatDiff(diff.conf)}</div>
 												</div>
 											</div>
 										</div>

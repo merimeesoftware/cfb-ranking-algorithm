@@ -15,6 +15,8 @@ from ranking_service import (
     DEFAULT_CONFIG,
 )
 from agent_service import agent_bp, set_data_processor
+from path_to_climb import compute_path_to_climb
+from spend_guards import is_cfbd_offline
 
 load_dotenv()
 
@@ -127,9 +129,13 @@ def get_team_breakdown(team_name):
     try:
         year = request.args.get('year', default=2023, type=int)
         week = request.args.get('week', default=None, type=int)
-        # Prefer full cached/computed payload so wins_details are available
+        # Offline: serve static/slim. Online: prefer full payload for wins_details.
         data = get_or_calculate_rankings(
-            data_processor, year, week, request.args, prefer_static=False
+            data_processor,
+            year,
+            week,
+            request.args,
+            prefer_static=is_cfbd_offline(),
         )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
@@ -274,6 +280,10 @@ def get_team_breakdown(team_name):
             'top_25_wins': team_data.get('top_25_wins'),
             'comparisons_ahead': comparisons_ahead,
             'comparisons_behind': comparisons_behind,
+            'path_to_climb': compute_path_to_climb(
+                team_data,
+                team_rankings[team_index - 1] if team_index > 0 else None,
+            ),
         }
         return jsonify(response)
     except Exception as e:

@@ -74,6 +74,20 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 
 ---
 
+## Local spend guards
+
+| Variable | Local default | Purpose |
+|----------|---------------|---------|
+| `CFBD_OFFLINE=1` | Yes in development | Block live CFBD HTTP; use `.cache/` + `frontend/static/rankings/` |
+| `AI_MODE=stub` | Yes in development | Template explanations; no MiniMax |
+| `AI_MODE=off` | Production default | `explanation: null` + structured context only |
+| `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode |
+| `CFBD_MAX_CALLS` | Optional | Cap live CFBD calls per process |
+
+Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
+
+---
+
 ## What about GitHub secrets?
 
 | Secret in GitHub | Needed? |
