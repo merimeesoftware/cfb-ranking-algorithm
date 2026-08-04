@@ -34,7 +34,9 @@ Impeccable / OpenCode are fine to install **locally or via Cursor plugins** for 
 
 - Free CFBD tier is **1,000 calls/month**. Local default: `CFBD_OFFLINE=1` (also default when `FLASK_ENV=development` if unset) — no live CFBD; use `.cache/` and `frontend/static/rankings/`.
 - `AI_MODE=stub` (dev default) returns template explanations with **no MiniMax** call. `off` returns `explanation: null`. `live` needs a paygo MiniMax key (not Coding Plan).
-- Optional `CFBD_MAX_CALLS=N` caps live CFBD calls per process.
+- **Hard caps in development** (even if you enable live): `CFBD_MAX_CALLS` defaults to **10**, `AI_MAX_CALLS` defaults to **3**. Override in `.env`.
+- `AGENT_RATE_LIMIT` caps `/agent/explain` per IP (default 20/hour in dev).
+- Check live counters: `GET /agent/health` → `cfbd_calls`, `ai_live_calls`, budgets.
 - See `.env.example`.
 
 ### CFBD_API_KEY for live data
