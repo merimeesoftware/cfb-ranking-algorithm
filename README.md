@@ -64,6 +64,8 @@ Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`.
 ### CI/CD
 
 - `.github/workflows/ci.yml` — lint, test, build
+- `.github/workflows/dependabot-automerge.yml` — queues Dependabot PR merge when CI is green
+- `docs/AUTO-MERGE.md` — one-time GitHub + Bugbot setup for auto-merge
 - `.github/workflows/deploy-cloudflare.yml` — validates Pages build only (deploy is via Cloudflare Git)
 - `.github/workflows/codeql.yml` — SAST
 
