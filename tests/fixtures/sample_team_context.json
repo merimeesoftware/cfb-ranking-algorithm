@@ -1,0 +1,37 @@
+{
+  "team_name": "Oregon",
+  "rank": 1,
+  "conference": "Big Ten",
+  "final_ranking_score": 98.5,
+  "team_quality_score": 1850,
+  "record_score": 92,
+  "conference_quality_score": 88,
+  "formula_breakdown": {
+    "tq_contribution": 1202.5,
+    "rec_contribution": 24.84,
+    "cq_contribution": 7.04,
+    "total": 98.5
+  },
+  "records": {
+    "total_wins": 10,
+    "total_losses": 0,
+    "conf_wins": 7,
+    "conf_losses": 0,
+    "power_wins": 8,
+    "power_losses": 0,
+    "group_five_wins": 2,
+    "group_five_losses": 0
+  },
+  "sos": 0.55,
+  "sov": 0.62,
+  "quality_wins": 4,
+  "quality_losses": 0,
+  "bad_losses": 0,
+  "top_quality_wins": ["Ohio State", "Michigan", "Penn State"],
+  "neighbor_ahead": null,
+  "neighbor_behind": "Ohio State",
+  "path_to_climb": {
+    "at_top": true,
+    "summary": "They are currently #1 — no team above to chase."
+  }
+}
