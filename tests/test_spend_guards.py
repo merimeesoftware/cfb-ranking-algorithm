@@ -53,7 +53,7 @@ def test_cfbd_max_calls_budget(monkeypatch):
 def test_cfbd_max_defaults_in_development(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
-    assert cfbd_max_calls() == 10
+    assert cfbd_max_calls() == 25
 
 
 def test_ai_max_calls_budget(monkeypatch):
@@ -70,7 +70,7 @@ def test_ai_max_calls_budget(monkeypatch):
 def test_ai_max_defaults_in_development(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('AI_MAX_CALLS', raising=False)
-    assert ai_max_calls() == 3
+    assert ai_max_calls() == 25
 
 
 def test_spend_status_shape(monkeypatch):
@@ -82,8 +82,8 @@ def test_spend_status_shape(monkeypatch):
     status = spend_status()
     assert status['cfbd_offline'] is True
     assert status['ai_mode'] == 'stub'
-    assert status['cfbd_max_calls'] == 10
-    assert status['ai_max_calls'] == 3
+    assert status['cfbd_max_calls'] == 25
+    assert status['ai_max_calls'] == 25
 
 
 def test_make_request_blocked_when_offline(monkeypatch):

@@ -50,7 +50,7 @@ def cfbd_max_calls() -> Optional[int]:
     """
     Max live CFBD HTTP calls this process.
 
-    In development, defaults to 10 when unset (safety net if CFBD_OFFLINE=0).
+    In development, defaults to 25 when unset (safety net if CFBD_OFFLINE=0).
     In production, unlimited unless CFBD_MAX_CALLS is set.
     """
     raw = os.environ.get('CFBD_MAX_CALLS', '').strip()
@@ -60,7 +60,7 @@ def cfbd_max_calls() -> Optional[int]:
         except ValueError:
             return None
     if _is_development():
-        return 10
+        return 25
     return None
 
 
@@ -68,7 +68,7 @@ def ai_max_calls() -> Optional[int]:
     """
     Max live MiniMax prompts this process.
 
-    In development, defaults to 3 when unset.
+    In development, defaults to 25 when unset.
     Stub/off modes never consume this budget.
     """
     raw = os.environ.get('AI_MAX_CALLS', '').strip()
@@ -78,19 +78,19 @@ def ai_max_calls() -> Optional[int]:
         except ValueError:
             return None
     if _is_development():
-        return 3
+        return 25
     return None
 
 
 def agent_rate_limit_per_hour() -> int:
-    """Per-IP /agent/explain rate limit (all AI modes). Default 20/hour in dev, 30 in prod."""
+    """Per-IP /agent/explain rate limit (all AI modes). Default 50/hour in dev, 30 in prod."""
     raw = os.environ.get('AGENT_RATE_LIMIT', '').strip()
     if raw:
         try:
             return max(0, int(raw))
         except ValueError:
             pass
-    return 20 if _is_development() else 30
+    return 50 if _is_development() else 30
 
 
 def reset_cfbd_call_count() -> None:

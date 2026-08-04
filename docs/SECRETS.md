@@ -79,12 +79,12 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | Variable | Local default | Purpose |
 |----------|---------------|---------|
 | `CFBD_OFFLINE=1` | Yes in development | Block live CFBD HTTP; use `.cache/` + `frontend/static/rankings/` |
-| `CFBD_MAX_CALLS` | **10** in development if unset | Hard cap if you turn CFBD on |
+| `CFBD_MAX_CALLS` | **25** in development if unset | Hard cap if you turn CFBD on |
 | `AI_MODE=stub` | Yes in development | Template explanations; **no MiniMax** |
 | `AI_MODE=off` | Production default | `explanation: null` + structured context only |
 | `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode |
-| `AI_MAX_CALLS` | **3** in development if unset | Hard cap on live MiniMax prompts per process |
-| `AGENT_RATE_LIMIT` | 20/hour in development | Per-IP cap on `/agent/explain` |
+| `AI_MAX_CALLS` | **25** in development if unset | Hard cap on live MiniMax prompts per process |
+| `AGENT_RATE_LIMIT` | 50/hour in development | Per-IP cap on `/agent/explain` |
 
 Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
 `GET /agent/health` returns current spend counters.
