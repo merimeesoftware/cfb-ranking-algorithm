@@ -1,8 +1,10 @@
 {
   "name": "cfb-ranking-algorithm",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "postinstall": "npm ci --prefix frontend && npm ci --prefix worker",
     "build": "npm run build --prefix frontend",
     "check": "npm run check --prefix frontend && npm run check --prefix worker",
     "deploy": "npm run build && wrangler deploy",

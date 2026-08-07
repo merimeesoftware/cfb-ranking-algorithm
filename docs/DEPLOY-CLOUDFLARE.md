@@ -70,6 +70,8 @@ For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Work
 
 Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps (fixes `vite: not found`).
 
+Use **Node.js 22+** (`.nvmrc` in repo root). Wrangler 4.119+ requires Node 22; Node 20 will fail at deploy with `Wrangler requires at least Node.js v22.0.0`.
+
 **Runtime secrets** (for the live app): **Settings → Variables and Secrets** (not Build Variables).
 
 | Secret | Required |
