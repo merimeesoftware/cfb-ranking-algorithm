@@ -12,15 +12,7 @@ function parseWinPct(value: unknown): number {
 
 function resolveApiBase(): string {
 	// Dev: Vite proxies /api → localhost:5001 (see vite.config.ts)
-	if (import.meta.env.DEV) {
-		return '/api';
-	}
-	// Prod override only if explicitly set (e.g. cross-origin API during migration)
-	if (import.meta.env.VITE_API_URL) {
-		const envUrl = import.meta.env.VITE_API_URL;
-		return envUrl.startsWith('http') ? envUrl : `https://${envUrl}`;
-	}
-	// Default: same-origin /api proxy via Cloudflare Pages _redirects
+	// Prod: same-origin /api via Cloudflare Worker (run_worker_first)
 	return '/api';
 }
 

@@ -1,3 +1,0 @@
-# Fallback when Pages Functions are not used (e.g. local static preview).
-# Prefer frontend/functions/api/[[path]].ts with API_ORIGIN in Cloudflare Pages.
-/api/*  https://cfb-rankings-api.onrender.com/:splat  200

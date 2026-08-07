@@ -1,13 +1,21 @@
-name = "cfb-rankings-api"
+name = "cfb-rankings"
 main = "worker/src/index.ts"
 compatibility_date = "2026-03-01"
 
-# Cloudflare Containers API — Flask in Docker, routed by this Worker.
+# Unified Workers deploy: SvelteKit static frontend + Flask API container.
+#   npm run build --prefix frontend && npx wrangler deploy
+#
 # Secrets (set once per environment):
 #   wrangler secret put CFBD_API_KEY
 #   wrangler secret put MINIMAX_API_KEY      # optional
 #   wrangler secret put CACHE_CLEAR_SECRET   # optional
 # See docs/DEPLOY-CLOUDFLARE.md
+
+[assets]
+directory = "./frontend/build"
+not_found_handling = "single-page-application"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
 
 [vars]
 AI_MODE = "off"
@@ -26,10 +34,16 @@ class_name = "CfbApiContainer"
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
 
-# --- Dev environment (preview / staging API) ---
-# URL: https://cfb-rankings-api-dev.<account>.workers.dev
+# --- Dev environment ---
+# URL: https://cfb-rankings-dev.<account>.workers.dev
 [env.dev]
-name = "cfb-rankings-api-dev"
+name = "cfb-rankings-dev"
+
+[env.dev.assets]
+directory = "./frontend/build"
+not_found_handling = "single-page-application"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
 
 [env.dev.vars]
 AI_MODE = "stub"

@@ -1,6 +1,6 @@
-# Deploy to Cloudflare
+# Deploy to Cloudflare Workers
 
-**Goal:** Frontend on **Cloudflare Pages**, API on **Cloudflare Containers** (Flask in Docker). Production secrets live **in Cloudflare**, not GitHub or Cursor.
+**Goal:** One Worker deploy for the whole app — static SvelteKit frontend + Flask API container. Production secrets live **in Cloudflare**, not GitHub or Cursor.
 
 See also: [SECRETS.md](./SECRETS.md)
 
@@ -10,205 +10,139 @@ See also: [SECRETS.md](./SECRETS.md)
 
 ```mermaid
 flowchart LR
-  subgraph users [Users]
-    Browser
-  end
-
-  subgraph cf [Cloudflare]
-  Pages["Pages (SvelteKit static)"]
-  Fn["Pages Function /api proxy"]
-  Worker["Worker + Container"]
-  Flask["Flask API (Docker)"]
-  Pages --> Fn --> Worker --> Flask
-  end
-
-  subgraph external [External]
-    CFBD["collegefootballdata.com"]
-  end
-
-  Browser --> Pages
-  Flask --> CFBD
+  Browser --> Worker["Worker (cfb-rankings)"]
+  Worker -->|"/api/*"| Container["Flask Container"]
+  Worker -->|"everything else"| Assets["Static assets (frontend/build)"]
+  Container --> CFBD["collegefootballdata.com"]
 ```
 
-| Component | Service | URL pattern |
-|-----------|---------|-------------|
-| Frontend | Cloudflare Pages | `cfb-rankings.pages.dev` or your custom domain |
-| API (prod) | Worker + Container | `cfb-rankings-api.<account>.workers.dev` |
-| API (dev) | Worker + Container (`--env dev`) | `cfb-rankings-api-dev.<account>.workers.dev` |
+| Path | Handled by |
+|------|------------|
+| `/api/*` | Worker → Cloudflare Container (Flask) |
+| `/`, `/methodology`, etc. | Static assets (SPA fallback to `index.html`) |
+| `/rankings/2024/*.json` | Static precomputed rankings |
+
+One `wrangler deploy` uploads **both** the frontend build and the API container image.
 
 ---
 
 ## Environments (dev + prod)
 
-| Layer | Production | Dev / preview |
-|-------|------------|---------------|
-| **Pages** | `main` branch → Production deployment | Every PR/branch → Preview URL |
-| **Pages `API_ORIGIN`** | `https://cfb-rankings-api.<account>.workers.dev` | `https://cfb-rankings-api-dev.<account>.workers.dev` |
-| **API Worker** | `wrangler deploy` (default) | `wrangler deploy --env dev` |
-| **API secrets** | Cloudflare → `cfb-rankings-api` | Cloudflare → `cfb-rankings-api-dev` |
+| | Production | Dev |
+|---|------------|-----|
+| **Command** | `npm run deploy` | `npm run deploy:dev` |
+| **Worker name** | `cfb-rankings` | `cfb-rankings-dev` |
+| **URL** | `https://cfb-rankings.<account>.workers.dev` | `https://cfb-rankings-dev.<account>.workers.dev` |
+| **Secrets** | `wrangler secret put CFBD_API_KEY` | `wrangler secret put CFBD_API_KEY --env dev` |
 
-Pages preview deployments are built-in — no extra infra. Set **different `API_ORIGIN` values** for Production vs Preview in the Pages dashboard so preview sites hit the dev API.
+No separate Pages project. No `API_ORIGIN` variable — `/api` is same-origin by design.
 
 ---
 
 ## One-time setup
 
-### 1. Cloudflare account
+### 1. Prerequisites
 
-Log in at [dash.cloudflare.com](https://dash.cloudflare.com). Containers require a **Workers Paid** plan.
+- Cloudflare account with **Workers Paid** plan (required for Containers)
+- Docker running locally (for `wrangler deploy` to build the API image)
+- `wrangler login` once on your machine
 
-### 2. Connect GitHub → Pages (frontend)
-
-1. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-2. Authorize the Cloudflare GitHub App
-3. Select this repository
-
-| Setting | Value |
-|---------|-------|
-| Production branch | `main` |
-| Root directory | `frontend` |
-| Build command | `npm ci && npm run build` |
-| Build output | `build` |
-| Node version | `20` |
-
-### 3. Pages environment variables
-
-**Settings → Variables and Secrets** → add `API_ORIGIN` (plain text, not secret):
-
-| Environment | Variable | Example value |
-|-------------|----------|---------------|
-| Production | `API_ORIGIN` | `https://cfb-rankings-api.<account>.workers.dev` |
-| Preview | `API_ORIGIN` | `https://cfb-rankings-api-dev.<account>.workers.dev` |
-
-The Pages Function at `frontend/functions/api/[[path]].ts` proxies `/api/*` to this origin.
-
-### 4. Deploy the API (Containers)
-
-On a machine with Docker and `wrangler login`:
+### 2. Deploy
 
 ```bash
-cd worker && npm ci
+# From repo root
+npm ci --prefix frontend
+npm ci --prefix worker
+npm ci   # root wrangler
 
-# Production API
-npx wrangler deploy --config ../wrangler.toml
-
-# Dev API (optional)
-npx wrangler deploy --config ../wrangler.toml --env dev
+npm run deploy          # production
+npm run deploy:dev      # dev/staging
 ```
 
-First deploy builds the Docker image and can take several minutes. The Worker may not serve traffic until the container is provisioned (~2–5 min).
+First deploy builds the Docker image and can take several minutes. The Worker may not serve traffic until containers are provisioned (~2–5 min).
 
-Set secrets on each API service:
+### 3. Set secrets
 
 ```bash
 npx wrangler secret put CFBD_API_KEY
 npx wrangler secret put MINIMAX_API_KEY      # optional
 npx wrangler secret put CACHE_CLEAR_SECRET   # optional
 
-# Dev environment
+# Dev
 npx wrangler secret put CFBD_API_KEY --env dev
 ```
 
-Or: Dashboard → Worker → **Settings → Variables and Secrets**.
+Or: Dashboard → **Workers & Pages** → `cfb-rankings` → **Settings → Variables and Secrets**.
 
 | Secret | Required |
 |--------|----------|
 | `CFBD_API_KEY` | Yes (live rankings) |
 | `MINIMAX_API_KEY` | Optional (`AI_MODE=live`) |
-| `CACHE_CLEAR_SECRET` | Optional (protects `POST /cache/clear`) |
+| `CACHE_CLEAR_SECRET` | Optional (protects `POST /api/cache/clear`) |
 
-### 5. Verify
+### 4. Verify
 
 ```bash
-API_URL="https://cfb-rankings-api.<account>.workers.dev"
-curl -sf "${API_URL}/"
-curl -sf --max-time 120 "${API_URL}/rankings?year=2024&week=10" | head -c 200
+WORKER_URL="https://cfb-rankings.<account>.workers.dev"
+curl -sf "${WORKER_URL}/"
+curl -sf --max-time 120 "${WORKER_URL}/api/rankings?year=2024&week=10" | head -c 200
 ```
 
-Open your Pages URL, pick year/week 2024 — rankings should load via `/api` proxy.
+Open the Worker URL in a browser — rankings for 2024 should load.
+
+### 5. Connect GitHub (optional CI deploy)
+
+**Workers & Pages** → **Workers** → **Create** → connect this repo, or use GitHub Actions:
+
+Repository variables:
+- `ENABLE_CLOUDFLARE_DEPLOY` = `true`
+- `WORKER_URL` = your production Worker URL (for smoke tests)
+
+Repository secrets:
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
 
 ---
 
 ## Custom domain (Porkbun → Cloudflare)
 
-Porkbun has no official Cloudflare integration; DNS is manual (or via Porkbun API). Recommended path:
+Porkbun has no Cloudflare integration — DNS is manual.
 
-### Option A — Cloudflare DNS (recommended)
+### Recommended: Cloudflare DNS
 
-1. In Cloudflare: **Add site** → enter your domain → follow import/NS instructions
-2. At Porkbun: change nameservers to the two Cloudflare nameservers
-3. In **Pages** → your project → **Custom domains** → add `rankings.yourdomain.com` (or apex)
-4. Cloudflare creates the DNS records automatically when using Cloudflare DNS
+1. Add your domain to Cloudflare; point Porkbun nameservers at Cloudflare
+2. Worker → **Settings → Domains & Routes** → **Add** → **Custom Domain** → e.g. `rankings.yourdomain.com`
+3. Cloudflare creates DNS records automatically
 
-### Option B — Keep DNS at Porkbun
+### Keep DNS at Porkbun
 
-1. Pages → **Custom domains** → add domain → note the CNAME target (e.g. `cfb-rankings.pages.dev`)
-2. Porkbun → DNS → add **CNAME**: `rankings` → `cfb-rankings.pages.dev`
-3. For API subdomain: Worker → **Domains & Routes** → add `api.yourdomain.com`
+Worker → **Domains & Routes** → note the custom domain target, then at Porkbun add a **CNAME** for your subdomain.
 
-| Host | Type | Target |
-|------|------|--------|
-| `rankings` (or `@`) | CNAME | `<pages-project>.pages.dev` |
-| `api` | CNAME | `cfb-rankings-api.<account>.workers.dev` |
-
-After custom domain is live, set `CORS_ORIGINS` secret on the API Worker to your Pages origin(s).
-
----
-
-## CI/CD (GitHub Actions)
-
-| Workflow | Role |
-|----------|------|
-| `ci.yml` | Lint, test, build — **blocks merges** |
-| `deploy-cloudflare.yml` | Validates Pages build; optionally deploys API |
-
-**Pages deploys automatically** when Cloudflare Git integration builds `main`. GitHub Actions does not push to Pages.
-
-### Optional: automated API deploy
-
-Repository **Settings → Secrets and variables → Actions**:
-
-| Secret / variable | Purpose |
-|-------------------|---------|
-| `CLOUDFLARE_API_TOKEN` | `wrangler deploy` from CI |
-| `CLOUDFLARE_ACCOUNT_ID` | Account ID |
-| `ENABLE_CLOUDFLARE_CONTAINERS` = `true` | Enable API deploy job |
-| `DEPLOY_CLOUDFLARE_DEV` = `true` | Also deploy `--env dev` |
-| `API_URL` | Smoke test target after deploy |
-
-Set the same API secrets in Cloudflare (not GitHub) for runtime.
-
-### Future: Playwright + Impeccable in CI
-
-Planned pipeline extension (not yet wired):
-
-1. `ci.yml` — unit tests (current)
-2. Preview deploy — Cloudflare Pages preview per PR
-3. Playwright against preview URL + static 2024 weeks
-4. Impeccable frontend audit (local/Cursor skill; not in repo ship)
-5. Merge → production Pages + API deploy
+After custom domain is live, set the `CORS_ORIGINS` secret to your domain.
 
 ---
 
 ## Local development
 
 ```bash
-# Terminal 1 — API
-CFBD_OFFLINE=1 AI_MODE=stub ./venv/bin/python app.py
-
-# Terminal 2 — frontend (Vite proxies /api → :5001)
-cd frontend && npm run dev
+CFBD_OFFLINE=1 AI_MODE=stub ./venv/bin/python app.py   # :5001
+cd frontend && npm run dev                              # :5173, proxies /api
 ```
 
 ---
 
-## Hybrid cutover (Render fallback)
+## CI/CD
 
-Until the Container API is live, `frontend/static/_redirects` still points at Render as a fallback for static previews without Pages Functions. Once the Cloudflare API is verified:
+| Workflow | Role |
+|----------|------|
+| `ci.yml` | Lint, test, build — blocks merges |
+| `deploy-cloudflare.yml` | Build + deploy when `ENABLE_CLOUDFLARE_DEPLOY=true` |
 
-1. Set `API_ORIGIN` in Pages (Production + Preview)
-2. Remove or update the Render line in `_redirects`
-3. Set `autoDeploy: false` on Render (already in `render.yaml`)
+### Planned
+
+- Playwright E2E against `cfb-rankings-dev.*.workers.dev`
+- Impeccable frontend audit in CI
+- Auto-promote dev → prod after tests pass
 
 ---
 
@@ -216,11 +150,10 @@ Until the Container API is live, `frontend/static/_redirects` still points at Re
 
 | Symptom | Fix |
 |---------|-----|
-| Pages shows "API_ORIGIN is not configured" | Set `API_ORIGIN` in Pages → Variables for that environment |
 | API 503 right after first deploy | Wait 2–5 min for container provisioning |
-| Cold `/rankings` slow | Expected; use static `frontend/static/rankings/2024/` for UI work |
-| CORS errors with custom domain | Set `CORS_ORIGINS` secret on API Worker |
-| `wrangler deploy` fails on Docker | Ensure Docker daemon is running locally or in CI |
+| Cold `/api/rankings` slow | Expected; use static 2024 JSON for UI work |
+| `wrangler deploy` fails | Ensure Docker is running |
+| CORS errors on custom domain | Set `CORS_ORIGINS` secret on the Worker |
 
 ---
 
@@ -228,8 +161,8 @@ Until the Container API is live, `frontend/static/_redirects` still points at Re
 
 | Place | Role |
 |-------|------|
-| **Cloudflare secrets** | Live production (and dev) API |
+| **Cloudflare secrets** | Live production (and dev) Worker |
 | **Cursor Secrets tab** | Cloud Agent VM only — [.cursor/SECRETS.md](../.cursor/SECRETS.md) |
-| **GitHub secrets** | CI deploy tokens only; not app API keys |
+| **GitHub secrets** | CI deploy tokens only |
 
 Setting a key in Cursor does **not** deploy it to Cloudflare.

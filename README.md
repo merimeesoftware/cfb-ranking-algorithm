@@ -42,41 +42,38 @@ The system processes games sequentially through the season week-by-week, allowin
 
 ## Deployment
 
-Production uses **Cloudflare Pages Git integration**. Production secrets live **in Cloudflare**, not GitHub. See:
+Production uses a **single Cloudflare Worker** deploy (static frontend + API container). Secrets live **in Cloudflare**, not GitHub. See:
 
 - [docs/SECRETS.md](docs/SECRETS.md) — secrets architecture (Cloudflare = prod source of truth)
-- [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) — connect repo + deploy steps
+- [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) — deploy steps
 
 ### Where secrets go
 
 | Where | Role |
 |-------|------|
-| **Cloudflare** → API service → Variables and Secrets | **Production** — `CFBD_API_KEY`, optional `MINIMAX_API_KEY` |
+| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`, optional `MINIMAX_API_KEY` |
 | **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
 | **`.env` locally** | Your laptop |
 
-Frontend (Pages) needs **no** API keys — it proxies `/api/*` via a Pages Function (`frontend/functions/api/`) using `API_ORIGIN`.
+The frontend calls `/api/*` on the same origin — no `VITE_API_URL` or `API_ORIGIN` needed in production.
 
-### Cloudflare Pages (frontend)
-
-Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`. Set **`API_ORIGIN`** for Production and Preview environments — see [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md).
-
-### Cloudflare Containers (API)
+### Deploy to Cloudflare Workers
 
 ```bash
-cd worker && npm ci
-npx wrangler deploy --config ../wrangler.toml            # production
-npx wrangler deploy --config ../wrangler.toml --env dev  # dev/staging
+npm ci --prefix frontend && npm ci --prefix worker && npm ci
+npm run deploy          # production → cfb-rankings.<account>.workers.dev
+npm run deploy:dev      # dev → cfb-rankings-dev.<account>.workers.dev
+wrangler secret put CFBD_API_KEY
 ```
 
-Set `CFBD_API_KEY` (and optional secrets) in Cloudflare for each Worker.
+Requires Docker (for the API container image) and a Workers Paid plan.
 
 ### CI/CD
 
 - `.github/workflows/ci.yml` — lint, test, build
 - `.github/workflows/dependabot-automerge.yml` — queues Dependabot PR merge when CI is green
 - `docs/AUTO-MERGE.md` — one-time GitHub + Bugbot setup for auto-merge
-- `.github/workflows/deploy-cloudflare.yml` — validates Pages build; optional API deploy via Containers
+- `.github/workflows/deploy-cloudflare.yml` — build + deploy when `ENABLE_CLOUDFLARE_DEPLOY=true`
 - `.github/workflows/codeql.yml` — SAST
 
 ### Render (deprecated fallback)
