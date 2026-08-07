@@ -68,7 +68,7 @@ For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Work
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
 
-Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps (fixes `vite: not found`).
+Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps. The `build` script also runs `npm ci --prefix frontend` before `vite build` so the build still works if `postinstall` is skipped (e.g. cached install).
 
 Use **Node.js 22+** (`.nvmrc` in repo root). Wrangler 4.119+ requires Node 22; Node 20 will fail at deploy with `Wrangler requires at least Node.js v22.0.0`.
 
