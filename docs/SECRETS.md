@@ -56,11 +56,11 @@ wrangler secret put MINIMAX_API_KEY   # optional
 
 These bind into the container process as environment variables. The Flask app already reads them via `os.getenv` / `load_dotenv()`.
 
-### Frontend (Cloudflare Pages)
+### Frontend (Cloudflare Worker static assets)
 
-**No API keys.** The static SPA never needs `CFBD_API_KEY` or `MINIMAX_API_KEY`. It calls `/api/*` on the same origin; Cloudflare proxies to the API (`frontend/static/_redirects`).
+**No API keys.** The SPA calls `/api/*` on the same origin; the Worker routes API traffic to the Flask container (`wrangler.toml` → `run_worker_first`).
 
-Do **not** put MiniMax or CFBD keys in Pages environment variables — they would be baked into or visible to the browser build.
+Do **not** put MiniMax or CFBD keys in Worker `vars` visible to the client build.
 
 ---
 

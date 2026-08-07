@@ -1,6 +1,7 @@
 import { Container, getRandom } from '@cloudflare/containers';
 
 export interface Env {
+	ASSETS: Fetcher;
 	CFB_API: DurableObjectNamespace<CfbApiContainer>;
 	CFBD_API_KEY?: string;
 	MINIMAX_API_KEY?: string;
@@ -15,7 +16,6 @@ export class CfbApiContainer extends Container<Env> {
 	defaultPort = 8080;
 	sleepAfter = '30m';
 
-	/** Non-secret defaults; secrets are merged in startAndWaitForPorts below. */
 	envVars: Record<string, string> = {
 		PORT: '8080',
 		FLASK_ENV: 'production',
@@ -48,10 +48,24 @@ export class CfbApiContainer extends Container<Env> {
 	}
 }
 
+/** Invoked for /api/* only (see wrangler.toml run_worker_first). */
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
-		// Stateless API — load-balance across up to 3 warm container instances.
+		const incoming = new URL(request.url);
+		const target = new URL(incoming.pathname.replace(/^\/api/, '') || '/', incoming.origin);
+		target.search = incoming.search;
+
+		const headers = new Headers(request.headers);
+		headers.delete('host');
+
+		const apiRequest = new Request(target.toString(), {
+			method: request.method,
+			headers,
+			body: request.body,
+			redirect: 'manual',
+		});
+
 		const container = await getRandom(env.CFB_API, 3);
-		return container.fetch(request);
+		return container.fetch(apiRequest);
 	},
 };
