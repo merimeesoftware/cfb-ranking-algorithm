@@ -124,8 +124,6 @@ After custom domain is live, set the `CORS_ORIGINS` secret to your domain.
 
 ## Local development
 
-Unchanged — Flask + Vite dev servers:
-
 ```bash
 CFBD_OFFLINE=1 AI_MODE=stub ./venv/bin/python app.py   # :5001
 cd frontend && npm run dev                              # :5173, proxies /api
@@ -166,3 +164,5 @@ cd frontend && npm run dev                              # :5173, proxies /api
 | **Cloudflare secrets** | Live production (and dev) Worker |
 | **Cursor Secrets tab** | Cloud Agent VM only — [.cursor/SECRETS.md](../.cursor/SECRETS.md) |
 | **GitHub secrets** | CI deploy tokens only |
+
+Setting a key in Cursor does **not** deploy it to Cloudflare.

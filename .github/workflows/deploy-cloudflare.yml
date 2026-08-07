@@ -97,7 +97,7 @@ jobs:
         if: vars.WORKER_URL != ''
         run: |
           curl -sf --max-time 30 "${{ vars.WORKER_URL }}/"
-          curl -sf --max-time 120 "${{ vars.WORKER_URL }}/api/rankings?year=2024&week=10" \
+          curl -sf --max-time 120 "${{ vars.WORKER_URL}/api/rankings?year=2024&week=10" \
             | python3 -c "import sys,json; d=json.load(sys.stdin); assert len(d.get('team_rankings',[]))>0"
 
       - name: Skip smoke (WORKER_URL not set)

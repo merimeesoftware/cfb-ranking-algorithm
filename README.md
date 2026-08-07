@@ -71,6 +71,8 @@ Requires Docker (for the API container image) and a Workers Paid plan.
 ### CI/CD
 
 - `.github/workflows/ci.yml` — lint, test, build
+- `.github/workflows/dependabot-automerge.yml` — queues Dependabot PR merge when CI is green
+- `docs/AUTO-MERGE.md` — one-time GitHub + Bugbot setup for auto-merge
 - `.github/workflows/deploy-cloudflare.yml` — build + deploy when `ENABLE_CLOUDFLARE_DEPLOY=true`
 - `.github/workflows/codeql.yml` — SAST
 
