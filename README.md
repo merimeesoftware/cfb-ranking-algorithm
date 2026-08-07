@@ -68,6 +68,8 @@ wrangler secret put CFBD_API_KEY
 
 Requires Docker (for the API container image) and a Workers Paid plan.
 
+Set secrets in the Cloudflare dashboard (**Settings → Variables and Secrets → Secret**) — no `wrangler` CLI required.
+
 ### CI/CD
 
 - `.github/workflows/ci.yml` — lint, test, build
