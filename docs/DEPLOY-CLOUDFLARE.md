@@ -28,51 +28,51 @@ One `wrangler deploy` uploads **both** the frontend build and the API container 
 
 ## Environments (dev + prod)
 
-| | Production | Dev |
-|---|------------|-----|
-| **Command** | `npm run deploy` | `npm run deploy:dev` |
+**You only need one production Worker to start.** Dev is optional.
+
+| | Production (required) | Dev (optional) |
+|---|------------------------|----------------|
+| **When** | Live site on `main` | Staging / testing before prod |
 | **Worker name** | `cfb-rankings` | `cfb-rankings-dev` |
 | **URL** | `https://cfb-rankings.<account>.workers.dev` | `https://cfb-rankings-dev.<account>.workers.dev` |
-| **Secrets** | `wrangler secret put CFBD_API_KEY` | `wrangler secret put CFBD_API_KEY --env dev` |
+| **How** | Workers Builds on `main` (automatic) or `npm run deploy` | Manual `npm run deploy:dev` only if you want a second Worker |
 
-No separate Pages project. No `API_ORIGIN` variable — `/api` is same-origin by design.
+**Workers Builds (recommended):**
+- **Production branch** (`main`) → deploys `cfb-rankings` automatically
+- **Other branches** → preview versions (`wrangler versions upload`) on the same Worker — no second Worker required
+
+You do **not** need two Workers unless you want a permanently separate staging URL with its own secrets.
 
 ---
 
-## One-time setup
+## Secrets (dashboard — no CLI required)
 
-### 1. Prerequisites
+`wrangler secret put` is optional. Prefer the dashboard:
 
-- Cloudflare account with **Workers Paid** plan (required for Containers)
-- Docker running locally (for `wrangler deploy` to build the API image)
-- `wrangler login` once on your machine
+1. **Workers & Pages** → `cfb-rankings` → **Settings** → **Variables and Secrets**
+2. **Add** → type **Secret** → name `CFBD_API_KEY` → paste value → **Encrypt** → **Deploy**
 
-### 2. Deploy
+Repeat for `MINIMAX_API_KEY` / `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again.
 
-```bash
-# From repo root
-npm ci --prefix frontend
-npm ci --prefix worker
-npm ci   # root wrangler
+For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Worker, or use `wrangler secret put CFBD_API_KEY --env dev` once.
 
-npm run deploy          # production
-npm run deploy:dev      # dev/staging
-```
+---
 
-First deploy builds the Docker image and can take several minutes. The Worker may not serve traffic until containers are provisioned (~2–5 min).
+## Workers Builds settings (Cloudflare dashboard)
 
-### 3. Set secrets
+**Settings → Build** on your Worker:
 
-```bash
-npx wrangler secret put CFBD_API_KEY
-npx wrangler secret put MINIMAX_API_KEY      # optional
-npx wrangler secret put CACHE_CLEAR_SECRET   # optional
+| Setting | Value |
+|---------|-------|
+| Production branch | `main` |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
 
-# Dev
-npx wrangler secret put CFBD_API_KEY --env dev
-```
+Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps (fixes `vite: not found`).
 
-Or: Dashboard → **Workers & Pages** → `cfb-rankings` → **Settings → Variables and Secrets**.
+Use **Node.js 22+** (`.nvmrc` in repo root). Wrangler 4.119+ requires Node 22; Node 20 will fail at deploy with `Wrangler requires at least Node.js v22.0.0`.
+
+**Runtime secrets** (for the live app): **Settings → Variables and Secrets** (not Build Variables).
 
 | Secret | Required |
 |--------|----------|
@@ -80,7 +80,27 @@ Or: Dashboard → **Workers & Pages** → `cfb-rankings` → **Settings → Vari
 | `MINIMAX_API_KEY` | Optional (`AI_MODE=live`) |
 | `CACHE_CLEAR_SECRET` | Optional (protects `POST /api/cache/clear`) |
 
-### 4. Verify
+---
+
+## One-time setup (local deploy alternative)
+
+### Prerequisites (local deploy only)
+
+- Cloudflare account with **Workers Paid** plan (required for Containers)
+- Docker running locally (for `wrangler deploy` to build the API image)
+- `wrangler login` once on your machine
+
+### Deploy locally
+
+```bash
+npm ci   # installs root, frontend, and worker via postinstall
+npm run deploy          # production
+npm run deploy:dev      # optional second Worker
+```
+
+First deploy builds the Docker image and can take several minutes. The Worker may not serve traffic until containers are provisioned (~2–5 min).
+
+### Verify
 
 ```bash
 WORKER_URL="https://cfb-rankings.<account>.workers.dev"
