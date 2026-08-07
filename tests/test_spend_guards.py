@@ -7,12 +7,19 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from spend_guards import (
+    AIBudgetError,
     CFBDOfflineError,
+    get_ai_call_count,
     get_cfbd_call_count,
     is_cfbd_offline,
+    register_live_ai_call,
     register_live_cfbd_call,
+    reset_ai_call_count,
     reset_cfbd_call_count,
     resolve_ai_mode,
+    spend_status,
+    ai_max_calls,
+    cfbd_max_calls,
 )
 from ai_stub import stub_explain_from_context
 
@@ -41,6 +48,42 @@ def test_cfbd_max_calls_budget(monkeypatch):
         register_live_cfbd_call()
     assert get_cfbd_call_count() == 2
     reset_cfbd_call_count()
+
+
+def test_cfbd_max_defaults_in_development(monkeypatch):
+    monkeypatch.setenv('FLASK_ENV', 'development')
+    monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
+    assert cfbd_max_calls() == 25
+
+
+def test_ai_max_calls_budget(monkeypatch):
+    reset_ai_call_count()
+    monkeypatch.setenv('AI_MAX_CALLS', '2')
+    assert register_live_ai_call() == 1
+    assert register_live_ai_call() == 2
+    with pytest.raises(AIBudgetError):
+        register_live_ai_call()
+    assert get_ai_call_count() == 2
+    reset_ai_call_count()
+
+
+def test_ai_max_defaults_in_development(monkeypatch):
+    monkeypatch.setenv('FLASK_ENV', 'development')
+    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
+    assert ai_max_calls() == 25
+
+
+def test_spend_status_shape(monkeypatch):
+    monkeypatch.setenv('FLASK_ENV', 'development')
+    monkeypatch.setenv('CFBD_OFFLINE', '1')
+    monkeypatch.setenv('AI_MODE', 'stub')
+    monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
+    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
+    status = spend_status()
+    assert status['cfbd_offline'] is True
+    assert status['ai_mode'] == 'stub'
+    assert status['cfbd_max_calls'] == 25
+    assert status['ai_max_calls'] == 25
 
 
 def test_make_request_blocked_when_offline(monkeypatch):

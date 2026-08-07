@@ -79,7 +79,8 @@ def priors_cache_key(year: int, config: Dict[str, Any]) -> str:
     fingerprint = {k: config.get(k, DEFAULT_CONFIG.get(k)) for k in _PRIORS_CONFIG_KEYS}
     fingerprint['algo'] = ALGO_VERSION
     config_hash = hashlib.md5(
-        json.dumps(fingerprint, sort_keys=True).encode()
+        json.dumps(fingerprint, sort_keys=True).encode(),
+        usedforsecurity=False,
     ).hexdigest()[:12]
     return cache._generate_key('priors', year, config_hash)
 

@@ -9,7 +9,15 @@ from flask import Blueprint, jsonify, request
 from ai_stub import stub_explain_from_context
 from path_to_climb import compute_path_to_climb
 from ranking_service import get_or_calculate_rankings, DEFAULT_CONFIG
-from spend_guards import is_cfbd_offline, resolve_ai_mode
+from spend_guards import (
+    AIBudgetError,
+    AIRateLimitError,
+    check_agent_rate_limit,
+    is_cfbd_offline,
+    register_live_ai_call,
+    resolve_ai_mode,
+    spend_status,
+)
 
 agent_bp = Blueprint('agent', __name__, url_prefix='/agent')
 
@@ -20,10 +28,10 @@ def set_data_processor(processor) -> None:
     global _data_processor
     _data_processor = processor
 
+
 CFBD_MCP_URL = os.environ.get('CFBD_MCP_URL', '')
 MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
 MINIMAX_BASE_URL = os.environ.get('MINIMAX_BASE_URL', 'https://api.minimax.io/anthropic')
-AGENT_RATE_LIMIT = int(os.environ.get('AGENT_RATE_LIMIT', '30'))
 
 
 def _require_agent_route(f):
@@ -32,6 +40,13 @@ def _require_agent_route(f):
     def decorated(*args, **kwargs):
         return f(*args, **kwargs)
     return decorated
+
+
+def _client_key() -> str:
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or 'unknown'
 
 
 def _top_quality_wins(team: Dict[str, Any], limit: int = 3) -> List[str]:
@@ -94,6 +109,8 @@ def _call_minimax(prompt: str) -> str:
     if not MINIMAX_API_KEY:
         return 'MiniMax API key not configured. Structured ranking context is available in the response.'
 
+    call_n = register_live_ai_call()
+    print(f'AI LIVE prompt #{call_n} (budget {ai_max_display()})')
     try:
         response = requests.post(
             f"{MINIMAX_BASE_URL}/v1/messages",
@@ -115,8 +132,16 @@ def _call_minimax(prompt: str) -> str:
         if content and isinstance(content, list):
             return content[0].get('text', str(data))
         return str(data)
+    except AIBudgetError:
+        raise
     except Exception as e:
         return f'LLM explanation unavailable: {e}'
+
+
+def ai_max_display() -> str:
+    from spend_guards import ai_max_calls
+    max_c = ai_max_calls()
+    return str(max_c) if max_c is not None else 'unlimited'
 
 
 def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Optional[str], str]:
@@ -126,7 +151,6 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         return None, mode
     if mode == 'stub':
         return stub_explain_from_context(context, question), mode
-    # live — MiniMax only when key set; otherwise fall back to stub
     if not MINIMAX_API_KEY:
         return stub_explain_from_context(context, question), 'stub'
     prompt = (
@@ -135,16 +159,20 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         f"Team context (JSON): {context}\n\n"
         f"Formula: 65% Team Quality + 27% Record Score + 8% Conference Quality."
     )
-    return _call_minimax(prompt), mode
+    try:
+        return _call_minimax(prompt), mode
+    except AIBudgetError as e:
+        stub = stub_explain_from_context(context, question)
+        return f'{stub} [{e}]', 'stub'
 
 
 @agent_bp.route('/health', methods=['GET'])
 def agent_health():
     return jsonify({
         'status': 'ok',
-        'ai_mode': resolve_ai_mode(),
         'minimax_configured': bool(MINIMAX_API_KEY),
         'cfbd_mcp_configured': bool(CFBD_MCP_URL),
+        **spend_status(),
     })
 
 
@@ -155,10 +183,15 @@ def explain_ranking():
     Explain why a team is ranked where it is.
 
     Body: { "team_name": "Georgia", "year": 2024, "week": 10, "question": "optional" }
-    AI_MODE=off → explanation null + context; stub → template; live → MiniMax.
+    AI_MODE=off → explanation null + context; stub → template; live → MiniMax (budgeted).
     """
     if _data_processor is None:
         return jsonify({'error': 'Data processor not initialized'}), 503
+
+    try:
+        check_agent_rate_limit(_client_key())
+    except AIRateLimitError as e:
+        return jsonify({'error': str(e), **spend_status()}), 429
 
     body = request.get_json(silent=True) or {}
     team_name = body.get('team_name') or request.args.get('team_name')
@@ -195,6 +228,7 @@ def explain_ranking():
         'explanation': explanation,
         'ai_mode': mode,
         'formula': DEFAULT_CONFIG,
+        'spend': spend_status(),
     })
 
 

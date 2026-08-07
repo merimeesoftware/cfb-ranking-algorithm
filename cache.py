@@ -91,7 +91,7 @@ class R2CacheBackend(FileCacheBackend):
     """R2-backed cache using S3-compatible API. Falls back to local file if R2 unavailable."""
 
     def __init__(self):
-        super().__init__(cache_dir=os.environ.get('CACHE_DIR', '/tmp/cfb-cache'))
+        super().__init__(cache_dir=CACHE_DIR)
         self._bucket = os.environ.get('R2_BUCKET_NAME')
         self._client = None
         try:
@@ -170,7 +170,7 @@ class Cache:
 
     def _generate_key(self, prefix: str, *args, **kwargs) -> str:
         key_data = f"{prefix}:{args}:{sorted(kwargs.items())}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
     def _register_key(self, prefix: str, key: str) -> None:
         if prefix not in self._prefix_index:
