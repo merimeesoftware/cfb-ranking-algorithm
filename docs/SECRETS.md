@@ -63,11 +63,13 @@ Do **not** put MiniMax or CFBD keys in Worker `vars` visible to the client build
 
 ---
 
-## Dev-only: Cursor Secrets tab
+## Dev-only: Cursor Secrets (not environment.json)
 
 While a Cloud Agent is coding and needs to *run* the API in the VM, add the same keys in Cursor:
 
 → [.cursor/SECRETS.md](../.cursor/SECRETS.md)
+
+**Important:** this repo’s Cloud Agent environment is driven by `.cursor/environment.json` (repo-file). That environment’s dashboard page often has **no Secrets UI**. Add `CFBD_API_KEY` / `MINIMAX_API_KEY` as **Personal or Team Runtime Secrets** on the main [Cloud Agents](https://cursor.com/dashboard/cloud-agents) Secrets page — the same place `CFBD_API_KEY` already comes from. Do not put secrets in `environment.json`.
 
 That does **not** deploy them to Cloudflare. After you deploy, set them again (once) in Cloudflare as above.
 
