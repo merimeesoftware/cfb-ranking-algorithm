@@ -1,0 +1,17 @@
+{
+  "name": "cfb-rankings-api-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --env dev",
+    "check": "wrangler check",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/containers": "^0.2.0",
+    "@cloudflare/workers-types": "^5.20260801.1",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.14.0"
+  }
+}

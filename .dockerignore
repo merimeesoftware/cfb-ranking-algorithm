@@ -1,0 +1,24 @@
+# Keep the API image small — Flask only, no frontend or dev tooling
+.git
+.github
+.cursor
+docs/
+frontend/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+node_modules/
+ranking_results/
+static_rankings/
+*.md
+!README.md
+.env
+.env.*
+tests/
+worker/
+*.egg-info/
+dist/
+build/

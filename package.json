@@ -1,0 +1,9 @@
+{
+  "name": "cfb-ranking-algorithm",
+  "private": true,
+  "scripts": {
+    "deploy:api": "cd worker && npm run deploy",
+    "deploy:api:dev": "cd worker && npm run deploy:dev",
+    "check:api": "cd worker && npm run check"
+  }
+}
