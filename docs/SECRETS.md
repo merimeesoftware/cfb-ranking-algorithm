@@ -5,8 +5,7 @@ Three places, three jobs. **Production secrets live in Cloudflare.**
 ```mermaid
 flowchart LR
     subgraph prod [Production — Cloudflare]
-        CF_API["API Container secrets\nCFBD_API_KEY\nMINIMAX_API_KEY"]
-        CF_PAGES["Pages\nno secrets needed\n/api proxy only"]
+        CF_WORKER["Worker secrets\nCFBD_API_KEY\nMINIMAX_API_KEY"]
     end
 
     subgraph cursor [Dev — Cursor Cloud Agent]
@@ -17,7 +16,7 @@ flowchart LR
         ENV[".env file\nsame keys"]
     end
 
-    CF_API --> Runtime["Deployed Flask API"]
+    CF_WORKER --> Runtime["Deployed Worker + Flask API"]
     CURSOR --> AgentVM["Agent VM for coding"]
     ENV --> Laptop["Local python app.py"]
 ```
@@ -45,7 +44,7 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 | `CFBD_API_KEY` | **Yes** | Fetch game data from College Football Data |
 | `MINIMAX_API_KEY` | Optional | `/agent/explain` ranking explanations |
 | `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
-| `CORS_ORIGINS` | Optional | Restrict CORS to your Pages domain |
+| `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
 
 Or via CLI (after `wrangler login` once on your machine):
 
