@@ -55,18 +55,28 @@ Production uses **Cloudflare Pages Git integration**. Production secrets live **
 | **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
 | **`.env` locally** | Your laptop |
 
-Frontend (Pages) needs **no** API keys — it proxies `/api/*` via `frontend/static/_redirects`.
+Frontend (Pages) needs **no** API keys — it proxies `/api/*` via a Pages Function (`frontend/functions/api/`) using `API_ORIGIN`.
 
 ### Cloudflare Pages (frontend)
 
-Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`.
+Connect repo in Cloudflare dashboard → build `frontend/` → output `build/`. Set **`API_ORIGIN`** for Production and Preview environments — see [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md).
+
+### Cloudflare Containers (API)
+
+```bash
+cd worker && npm ci
+npx wrangler deploy --config ../wrangler.toml            # production
+npx wrangler deploy --config ../wrangler.toml --env dev  # dev/staging
+```
+
+Set `CFBD_API_KEY` (and optional secrets) in Cloudflare for each Worker.
 
 ### CI/CD
 
 - `.github/workflows/ci.yml` — lint, test, build
 - `.github/workflows/dependabot-automerge.yml` — queues Dependabot PR merge when CI is green
 - `docs/AUTO-MERGE.md` — one-time GitHub + Bugbot setup for auto-merge
-- `.github/workflows/deploy-cloudflare.yml` — validates Pages build only (deploy is via Cloudflare Git)
+- `.github/workflows/deploy-cloudflare.yml` — validates Pages build; optional API deploy via Containers
 - `.github/workflows/codeql.yml` — SAST
 
 ### Render (deprecated fallback)
