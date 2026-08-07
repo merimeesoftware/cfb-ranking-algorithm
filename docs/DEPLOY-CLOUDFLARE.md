@@ -10,7 +10,7 @@ See also: [SECRETS.md](./SECRETS.md)
 
 ```mermaid
 flowchart LR
-  Browser --> Worker["Worker (cfb-rankings)"]
+  Browser --> Worker["Worker (true-rankings-cfb)"]
   Worker -->|"/api/*"| Container["Flask Container"]
   Worker -->|"everything else"| Assets["Static assets (frontend/build)"]
   Container --> CFBD["collegefootballdata.com"]
@@ -33,12 +33,12 @@ One `wrangler deploy` uploads **both** the frontend build and the API container 
 | | Production (required) | Dev (optional) |
 |---|------------------------|----------------|
 | **When** | Live site on `main` | Staging / testing before prod |
-| **Worker name** | `cfb-rankings` | `cfb-rankings-dev` |
-| **URL** | `https://cfb-rankings.<account>.workers.dev` | `https://cfb-rankings-dev.<account>.workers.dev` |
+| **Worker name** | `true-rankings-cfb` | `cfb-rankings-dev` |
+| **URL** | `https://true-rankings-cfb.<account>.workers.dev` | `https://cfb-rankings-dev.<account>.workers.dev` |
 | **How** | Workers Builds on `main` (automatic) or `npm run deploy` | Manual `npm run deploy:dev` only if you want a second Worker |
 
 **Workers Builds (recommended):**
-- **Production branch** (`main`) → deploys `cfb-rankings` automatically
+- **Production branch** (`main`) → deploys `true-rankings-cfb` automatically
 - **Other branches** → preview versions (`wrangler versions upload`) on the same Worker — no second Worker required
 
 You do **not** need two Workers unless you want a permanently separate staging URL with its own secrets.
@@ -49,7 +49,7 @@ You do **not** need two Workers unless you want a permanently separate staging U
 
 `wrangler secret put` is optional. Prefer the dashboard:
 
-1. **Workers & Pages** → `cfb-rankings` → **Settings** → **Variables and Secrets**
+1. **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Variables and Secrets**
 2. **Add** → type **Secret** → name `CFBD_API_KEY` → paste value → **Encrypt** → **Deploy**
 
 Repeat for `MINIMAX_API_KEY` / `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again.
@@ -66,9 +66,9 @@ For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Work
 |---------|-------|
 | Production branch | `main` |
 | Build command | `npm run build` |
-| Deploy command | `npx wrangler deploy` |
+| Deploy command | `npx wrangler deploy --env=""` |
 
-Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps (fixes `vite: not found`).
+Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps. The `build` script also runs `npm ci --prefix frontend` before `vite build` so the build still works if `postinstall` is skipped (e.g. cached install).
 
 Use **Node.js 22+** (`.nvmrc` in repo root). Wrangler 4.119+ requires Node 22; Node 20 will fail at deploy with `Wrangler requires at least Node.js v22.0.0`.
 
@@ -103,7 +103,7 @@ First deploy builds the Docker image and can take several minutes. The Worker ma
 ### Verify
 
 ```bash
-WORKER_URL="https://cfb-rankings.<account>.workers.dev"
+WORKER_URL="https://true-rankings-cfb.<account>.workers.dev"
 curl -sf "${WORKER_URL}/"
 curl -sf --max-time 120 "${WORKER_URL}/api/rankings?year=2024&week=10" | head -c 200
 ```
@@ -168,8 +168,12 @@ cd frontend && npm run dev                              # :5173, proxies /api
 
 ## Troubleshooting
 
+For an agent-driven watch/fix loop (parse logs → patch → push → retry), use the **cloudflare-deploy-watch** skill at `docs/skills/cloudflare-deploy-watch/SKILL.md` (copy to `.cursor/skills/` locally if you want Cursor to auto-load it).
+
 | Symptom | Fix |
 |---------|-----|
+| `Invalid _headers configuration` on deploy | Fix `frontend/static/_headers` — use path + indented headers only; no C-style `/* comment */` blocks |
+| `vite: not found` on build | Ensure root `postinstall` and `build` install `frontend/` deps |
 | API 503 right after first deploy | Wait 2–5 min for container provisioning |
 | Cold `/api/rankings` slow | Expected; use static 2024 JSON for UI work |
 | `wrangler deploy` fails | Ensure Docker is running |

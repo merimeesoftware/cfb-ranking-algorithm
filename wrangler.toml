@@ -1,4 +1,4 @@
-name = "cfb-rankings"
+name = "true-rankings-cfb"
 main = "worker/src/index.ts"
 compatibility_date = "2026-03-01"
 
