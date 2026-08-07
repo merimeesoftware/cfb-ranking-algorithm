@@ -41,14 +41,15 @@ def get_current_season_week():
     now = datetime.now()
     year = now.year
     if now.month < 8:
-        return year - 1, None
+        return year - 1, 15
     season_start = datetime(year, 8, 24)
+    # Pre-tip-off August still belongs to the previous completed season
     if now < season_start:
-        return year, 1
+        return year - 1, 15
     delta = now - season_start
     week_num = int(delta.days / 7) + 1
     if week_num > 16:
-        week_num = None
+        week_num = 15
     return year, week_num
 
 
