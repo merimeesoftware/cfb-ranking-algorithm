@@ -74,6 +74,8 @@ export interface Team {
 	comparisons_ahead?: TeamComparison[];
 	comparisons_behind?: TeamComparison[];
 	why_blurb?: string;
+	/** AI/stub StoryBrand path-to-climb blurb (≤280 chars) */
+	climb_blurb?: string;
 }
 
 export interface PathToClimb {
