@@ -64,6 +64,8 @@ def index():
             "/cache/stats",
             "/cache/clear",
             "/agent/explain",
+            "/agent/blurb",
+            "/agent/climb",
             "/agent/health",
         ],
     })
