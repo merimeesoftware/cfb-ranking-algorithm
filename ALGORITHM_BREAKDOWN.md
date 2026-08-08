@@ -217,3 +217,11 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 | $P_{75}$ | 75th percentile Elo (quality win threshold) |
 | $P_{90}$ | 90th percentile Elo (quality loss threshold) |
 | $P_{25}$ | 25th percentile Elo (bad loss threshold) |
+
+---
+
+## Evaluation
+
+Predictive backtesting (week-by-week, leak-free) lives in `algo_lab/` —
+see [docs/ALGORITHM_EVAL.md](docs/ALGORITHM_EVAL.md). Use **Team Quality (Elo)** for
+next-game probabilities; FRS remains the published deservingness ranking.
