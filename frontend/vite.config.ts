@@ -7,6 +7,11 @@ const apiProxyTarget = process.env.API_PROXY_TARGET || 'http://localhost:5001';
 export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
+		// Docker Desktop on Windows often misses bind-mount file events; polling keeps HMR honest.
+		watch: {
+			usePolling: true,
+			interval: 1000
+		},
 		proxy: {
 			'/api': {
 				target: apiProxyTarget,

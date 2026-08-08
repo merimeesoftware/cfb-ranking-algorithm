@@ -14,6 +14,7 @@
 	const dispatch = createEventDispatcher();
 
 	let copyFeedback = false;
+	let blurbCopyFeedback = false;
 	let showAiExplain = false;
 
 	function close() {
@@ -34,6 +35,20 @@
 			copyFeedback = true;
 			setTimeout(() => {
 				copyFeedback = false;
+			}, 1500);
+		} catch {
+			// ignore clipboard failures
+		}
+	}
+
+	async function copyBlurb() {
+		const text = team.why_blurb || generateNarrative(team);
+		if (!text) return;
+		try {
+			await navigator.clipboard.writeText(text);
+			blurbCopyFeedback = true;
+			setTimeout(() => {
+				blurbCopyFeedback = false;
 			}, 1500);
 		} catch {
 			// ignore clipboard failures
@@ -110,25 +125,34 @@
 		}
 	}
 
-	// Narrative Generation
+	// Fallback narrative when shareable blurb API is unavailable
 	function generateNarrative(t: Team): string {
-		const parts = [];
-		
-		// Record Context
-		if (t.records.total_losses === 0) parts.push("Undefeated season");
-		else if (t.records.total_losses === 1) parts.push("One-loss season");
-		
-		// Strength Context
-		if ((t.sos ?? 0) > 1600) parts.push("played a brutal schedule");
-		else if ((t.sos ?? 0) > 1500) parts.push("played a tough schedule");
-		else if ((t.sos ?? 0) < 1350) parts.push("played a relatively weak schedule");
+		const parts: string[] = [];
+		const name = t.team_name;
+		const record = `${t.records.total_wins}-${t.records.total_losses}`;
 
-		// Key Wins/Losses
-		if ((t.top_10_wins ?? 0) > 0) parts.push(`boasts ${t.top_10_wins} top-10 win${t.top_10_wins === 1 ? '' : 's'}`);
-		if ((t.bad_losses ?? 0) > 0) parts.push(`suffered ${t.bad_losses} bad loss${t.bad_losses === 1 ? '' : 'es'}`);
+		if (t.records.total_losses === 0) {
+			parts.push(`${name} is undefeated at ${record}`);
+		} else if (t.records.total_losses === 1) {
+			parts.push(`${name} sits at ${record} with one loss`);
+		} else {
+			parts.push(`${name} is ${record} in the model`);
+		}
 
-		if (parts.length === 0) return "Solid performance throughout the season.";
-		return parts.join(", ") + ".";
+		if ((t.sos ?? 0) > 1600) parts.push('after a brutal schedule');
+		else if ((t.sos ?? 0) > 1500) parts.push('after a tough schedule');
+
+		if ((t.top_10_wins ?? 0) > 0) {
+			parts.push(`with ${t.top_10_wins} top-10 win${t.top_10_wins === 1 ? '' : 's'}`);
+		}
+		if ((t.bad_losses ?? 0) > 0) {
+			parts.push(`and ${t.bad_losses} bad loss${t.bad_losses === 1 ? '' : 'es'} on the ledger`);
+		}
+
+		const why = parts.join(' ');
+		const hook = ' Fair ranking — or still up for debate?';
+		const full = `${why}.${hook}`.replace(/\.\./g, '.');
+		return full.length <= 280 ? full : full.slice(0, 279).trimEnd() + '…';
 	}
 
 	// Accordion State
@@ -230,7 +254,7 @@
 		<!-- Content -->
 		<div class="flex-1 overflow-y-auto p-0">
 			
-			<!-- Narrative Summary -->
+			<!-- Narrative Summary (shareable ≤280 chars) -->
 			<div class="p-6 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
 				{#if team.why_blurb}
 					<p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
@@ -238,9 +262,21 @@
 					</p>
 				{:else}
 					<p class="text-gray-700 dark:text-gray-300 italic text-lg leading-relaxed">
-						"{generateNarrative(team)}"
+						{generateNarrative(team)}
 					</p>
 				{/if}
+				<div class="mt-3 flex items-center justify-between gap-3">
+					<span class="text-xs text-gray-400 dark:text-gray-500">
+						{(team.why_blurb || generateNarrative(team)).length}/280 · shareable
+					</span>
+					<button
+						type="button"
+						on:click={copyBlurb}
+						class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
+					>
+						{blurbCopyFeedback ? 'Copied!' : 'Copy blurb'}
+					</button>
+				</div>
 			</div>
 
 			<div class="p-6 space-y-6">
@@ -316,20 +352,19 @@
 					</div>
 				</div>
 
-				{#if team.path_to_climb?.summary}
+				{#if team.climb_blurb || team.path_to_climb?.summary}
 					<div>
 						<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-2">
 							Path to climb
 						</h3>
 						<p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-							{team.path_to_climb.summary}
+							{team.climb_blurb || team.path_to_climb?.summary}
 						</p>
-						{#if team.path_to_climb.team_above && !team.path_to_climb.at_top}
+						{#if team.path_to_climb?.team_above && !team.path_to_climb.at_top}
 							<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-								Gap to #{rank - 1} {team.path_to_climb.team_above}:
-								{team.path_to_climb.score_gap.toFixed(2)} pts
-								{#if team.path_to_climb.primary_lever}
-									· Primary lever: {team.path_to_climb.primary_lever}
+								Chasing #{rank - 1} {team.path_to_climb.team_above}
+								{#if team.path_to_climb.primary_lever && team.path_to_climb.primary_lever !== 'balanced margins'}
+									· Needs: {team.path_to_climb.primary_lever}
 								{/if}
 							</p>
 						{/if}

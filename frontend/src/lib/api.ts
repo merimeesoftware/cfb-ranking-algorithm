@@ -265,6 +265,58 @@ export async function fetchWhyBlurb(
 	}
 }
 
+/** AI/stub shareable blurb (≤280 chars), cached daily in-season / monthly offseason. */
+export async function fetchShareableBlurb(
+	teamName: string,
+	year: number,
+	week: number
+): Promise<{ blurb: string; ai_mode?: string; cache_period?: string } | null> {
+	try {
+		const response = await fetch(`${API_BASE}/agent/blurb`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ team_name: teamName, year, week }),
+			signal: AbortSignal.timeout(45000),
+		});
+		if (!response.ok) return null;
+		const data = (await response.json()) as {
+			blurb?: string;
+			ai_mode?: string;
+			cache_period?: string;
+		};
+		if (!data.blurb) return null;
+		return {
+			blurb: data.blurb,
+			ai_mode: data.ai_mode,
+			cache_period: data.cache_period,
+		};
+	} catch {
+		return null;
+	}
+}
+
+/** StoryBrand path-to-climb blurb (≤280 chars). */
+export async function fetchClimbBlurb(
+	teamName: string,
+	year: number,
+	week: number
+): Promise<{ blurb: string; ai_mode?: string } | null> {
+	try {
+		const response = await fetch(`${API_BASE}/agent/climb`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ team_name: teamName, year, week }),
+			signal: AbortSignal.timeout(45000),
+		});
+		if (!response.ok) return null;
+		const data = (await response.json()) as { blurb?: string; ai_mode?: string };
+		if (!data.blurb) return null;
+		return { blurb: data.blurb, ai_mode: data.ai_mode };
+	} catch {
+		return null;
+	}
+}
+
 export async function explainRanking(
 	teamName: string,
 	year: number,

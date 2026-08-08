@@ -48,28 +48,38 @@ def compute_path_to_climb(
     # Largest positive gap (where we trail most in contribution space)
     lever_key = max(gaps, key=lambda k: gaps[k])
     lever_labels = {
-        'tq': 'Team Quality (Elo)',
-        'resume': 'Resume (record score)',
-        'cq': 'Conference Quality',
+        'tq': 'how they look week to week',
+        'resume': 'who they beat',
+        'cq': 'conference company',
     }
     primary = lever_labels[lever_key] if gaps[lever_key] > 0.5 else 'balanced margins'
 
     above_name = team_above.get('team_name', 'the team above')
+    team_name = team.get('team_name', 'This team')
     if score_gap <= 0:
         summary = (
-            f"{team.get('team_name', 'This team')} already matches or exceeds "
-            f"{above_name} on final score in this snapshot."
+            f'{team_name} already matches or exceeds {above_name} on this board snapshot.'
         )
     else:
-        summary = (
-            f"To pass {above_name}, close a final-score gap of {score_gap:.1f}. "
-            f"Largest drag vs them: {primary} "
-            f"(TQ contrib Δ {gaps['tq']:+.1f}, Resume Δ {gaps['resume']:+.1f}, CQ Δ {gaps['cq']:+.1f})."
-        )
         if lever_key == 'resume' and gaps['resume'] > 1:
-            summary += ' A quality win over a strong opponent is the usual resume lever.'
+            summary = (
+                f'To catch {above_name}, {team_name} needs a stronger resume — '
+                f'more wins over good teams, not just more wins.'
+            )
         elif lever_key == 'tq' and gaps['tq'] > 1:
-            summary += ' Sustained Elo gains (winning vs quality) close the Team Quality gap.'
+            summary = (
+                f'To catch {above_name}, {team_name} has to look stronger week to week — '
+                f'dominate quality opponents, not just survive them.'
+            )
+        elif lever_key == 'cq' and gaps['cq'] > 1:
+            summary = (
+                f'To catch {above_name}, {team_name} needs to prove it against '
+                f'tougher conference company.'
+            )
+        else:
+            summary = (
+                f'{team_name} is close to {above_name}. Keep winning the games that matter.'
+            )
 
     return {
         'at_top': False,

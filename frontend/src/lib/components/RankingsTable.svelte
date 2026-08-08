@@ -3,7 +3,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import TeamRow from './TeamRow.svelte';
 	import TeamDetailModal from './TeamDetailModal.svelte';
-	import { fetchTeamDetail, fetchWhyBlurb } from '$lib/api';
+	import { fetchTeamDetail, fetchWhyBlurb, fetchShareableBlurb, fetchClimbBlurb } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
 
 	export let teams: Team[] = [];
@@ -49,15 +49,19 @@
 		dispatch('teamSelect', team.team_name);
 
 		try {
-			const [detail, whyBlurb] = await Promise.all([
+			const [detail, whyBlurb, shareable, climb] = await Promise.all([
 				fetchTeamDetail(team.team_name, $filterState.year, $filterState.week),
 				fetchWhyBlurb($filterState.year, $filterState.week, team.team_name),
+				fetchShareableBlurb(team.team_name, $filterState.year, $filterState.week),
+				fetchClimbBlurb(team.team_name, $filterState.year, $filterState.week),
 			]);
 			if (requestId !== detailRequestId) return;
+			const blurb = shareable?.blurb || whyBlurb || undefined;
 			selectedTeam = {
 				...team,
 				...detail,
-				...(whyBlurb ? { why_blurb: whyBlurb } : {}),
+				...(blurb ? { why_blurb: blurb } : {}),
+				...(climb?.blurb ? { climb_blurb: climb.blurb } : {}),
 			};
 		} catch (e) {
 			if (requestId !== detailRequestId) return;
