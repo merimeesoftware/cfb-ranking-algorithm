@@ -10,13 +10,15 @@ function getCurrentSeasonWeek(): { year: number; week: number } {
 	let year = now.getFullYear();
 	const month = now.getMonth() + 1;
 
+	// Jan–Jul: previous season final week
 	if (month < 8) {
 		return { year: year - 1, week: 15 };
 	}
 
+	// Aug before season tip-off: still previous season (avoids empty "week 1" of the new year)
 	const seasonStart = new Date(year, 7, 24);
 	if (now < seasonStart) {
-		return { year, week: 1 };
+		return { year: year - 1, week: 15 };
 	}
 
 	const delta = now.getTime() - seasonStart.getTime();

@@ -78,17 +78,49 @@ export function mapConferenceFromApi(c: Record<string, unknown>): Conference {
 
 export function isLikelyArchivedWeek(year: number, week: number, now = new Date()): boolean {
 	const month = now.getMonth() + 1;
-	const seasonYear = month < 8 ? now.getFullYear() - 1 : now.getFullYear();
+	// Pre-tip-off August still counts as previous season for "current"
+	const seasonStart = new Date(now.getFullYear(), 7, 24);
+	const seasonYear =
+		month < 8 || now < seasonStart ? now.getFullYear() - 1 : now.getFullYear();
 	if (year < seasonYear) return true;
 	if (year > seasonYear) return false;
-	if (month < 8) return true;
-	const seasonStart = new Date(seasonYear, 7, 24);
+	if (month < 8 || now < seasonStart) return true;
 	const days = Math.floor((now.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
 	const currentWeek = Math.min(Math.max(Math.floor(days / 7) + 1, 1), 16);
 	return week < currentWeek;
 }
 
+type StaticManifest = { years: Record<string, number[]> };
+
+let staticManifestPromise: Promise<StaticManifest | null> | null = null;
+
+async function loadStaticManifest(): Promise<StaticManifest | null> {
+	if (!staticManifestPromise) {
+		staticManifestPromise = (async () => {
+			try {
+				const response = await fetch('/rankings/manifest.json', {
+					signal: AbortSignal.timeout(3000),
+				});
+				if (!response.ok) return null;
+				return (await response.json()) as StaticManifest;
+			} catch {
+				return null;
+			}
+		})();
+	}
+	return staticManifestPromise;
+}
+
+/** True when precomputed static JSON exists for this year/week (avoids console 404s). */
+export async function hasStaticRankings(year: number, week: number): Promise<boolean> {
+	const manifest = await loadStaticManifest();
+	if (!manifest?.years) return false;
+	const weeks = manifest.years[String(year)];
+	return Array.isArray(weeks) && weeks.includes(week);
+}
+
 async function fetchStaticRankings(year: number, week: number): Promise<RankingsResponse | null> {
+	if (!(await hasStaticRankings(year, week))) return null;
 	try {
 		const response = await fetch(`/rankings/${year}/week-${week}.json`, {
 			signal: AbortSignal.timeout(3000),
@@ -202,6 +234,7 @@ export async function fetchWeekStory(
 	year: number,
 	week: number
 ): Promise<{ headline?: string; paragraphs?: string[]; facts?: Record<string, unknown> } | null> {
+	if (!(await hasStaticRankings(year, week))) return null;
 	try {
 		const response = await fetch(`/rankings/${year}/week-${week}.story.json`, {
 			signal: AbortSignal.timeout(3000),
@@ -218,6 +251,7 @@ export async function fetchWhyBlurb(
 	week: number,
 	teamName: string
 ): Promise<string | null> {
+	if (!(await hasStaticRankings(year, week))) return null;
 	try {
 		const response = await fetch(`/rankings/${year}/week-${week}.why.json`, {
 			signal: AbortSignal.timeout(3000),

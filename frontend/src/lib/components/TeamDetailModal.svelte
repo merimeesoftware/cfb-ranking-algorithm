@@ -2,6 +2,7 @@
 	import type { Team, TeamComparison } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
+	import AgentChatPanel from './AgentChatPanel.svelte';
 
 	export let team: Team;
 	export let rank: number;
@@ -13,6 +14,7 @@
 	const dispatch = createEventDispatcher();
 
 	let copyFeedback = false;
+	let showAiExplain = false;
 
 	function close() {
 		dispatch('close');
@@ -186,6 +188,14 @@
 				</div>
 			</div>
 			<div class="flex items-center gap-1 shrink-0">
+				<button
+					type="button"
+					on:click={() => (showAiExplain = true)}
+					class="px-3 py-1.5 text-sm font-medium rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+					aria-label="Ask AI about this ranking"
+				>
+					Ask AI
+				</button>
 				<button
 					type="button"
 					on:click={copyLink}
@@ -693,3 +703,9 @@
 		</div>
 	</div>
 </div>
+
+<AgentChatPanel
+	teamName={team.team_name}
+	open={showAiExplain}
+	on:close={() => (showAiExplain = false)}
+/>

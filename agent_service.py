@@ -112,9 +112,12 @@ def _call_minimax(prompt: str) -> str:
     call_n = register_live_ai_call()
     print(f'AI LIVE prompt #{call_n} (budget {ai_max_display()})')
     try:
+        # MiniMax Anthropic-compatible route prefers Authorization: Bearer;
+        # keep x-api-key as a secondary Anthropic-style header.
         response = requests.post(
             f"{MINIMAX_BASE_URL}/v1/messages",
             headers={
+                'Authorization': f'Bearer {MINIMAX_API_KEY}',
                 'x-api-key': MINIMAX_API_KEY,
                 'anthropic-version': '2023-06-01',
                 'content-type': 'application/json',
@@ -129,8 +132,24 @@ def _call_minimax(prompt: str) -> str:
         response.raise_for_status()
         data = response.json()
         content = data.get('content', [])
-        if content and isinstance(content, list):
-            return content[0].get('text', str(data))
+        if isinstance(content, list) and content:
+            texts = [
+                block.get('text', '').strip()
+                for block in content
+                if isinstance(block, dict)
+                and block.get('type', 'text') == 'text'
+                and block.get('text')
+            ]
+            if texts:
+                return '\n'.join(texts)
+            # Fallback: any block with a text field (some MiniMax payloads omit type)
+            texts = [
+                block.get('text', '').strip()
+                for block in content
+                if isinstance(block, dict) and block.get('text')
+            ]
+            if texts:
+                return '\n'.join(texts)
         return str(data)
     except AIBudgetError:
         raise

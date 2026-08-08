@@ -5,18 +5,22 @@
 	import { theme, applyTheme } from '$lib/stores/theme';
 	import { onMount } from 'svelte';
 
+	// SvelteKit injects these; declare so Svelte 4 does not warn about unknown props
+	// svelte-ignore unused-export-let
+	export let params: Record<string, string> = {};
+	// svelte-ignore unused-export-let
+	export let data: Record<string, unknown> = {};
+
 	onMount(() => {
-		// Apply theme on mount
 		applyTheme($theme);
 	});
 
-	// React to theme changes
 	$: applyTheme($theme);
 </script>
 
 <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
 	<Header />
-	
+
 	<main class="flex-1">
 		<slot />
 	</main>

@@ -28,6 +28,12 @@
 		buildUrlParams,
 	} from '$lib/stores/rankings';
 
+	// SvelteKit injects these; declare so Svelte 4 does not warn about unknown props
+	// svelte-ignore unused-export-let
+	export let params: Record<string, string> = {};
+	// svelte-ignore unused-export-let
+	export let data: Record<string, unknown> = {};
+
 	let activeTab: 'teams' | 'conferences' = 'teams';
 	let selectedConference: Conference | null = null;
 	let selectedConferenceRank = 0;
