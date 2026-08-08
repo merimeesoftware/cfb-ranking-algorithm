@@ -112,9 +112,12 @@ def _call_minimax(prompt: str) -> str:
     call_n = register_live_ai_call()
     print(f'AI LIVE prompt #{call_n} (budget {ai_max_display()})')
     try:
+        # MiniMax Anthropic-compatible route prefers Authorization: Bearer;
+        # keep x-api-key as a secondary Anthropic-style header.
         response = requests.post(
             f"{MINIMAX_BASE_URL}/v1/messages",
             headers={
+                'Authorization': f'Bearer {MINIMAX_API_KEY}',
                 'x-api-key': MINIMAX_API_KEY,
                 'anthropic-version': '2023-06-01',
                 'content-type': 'application/json',
