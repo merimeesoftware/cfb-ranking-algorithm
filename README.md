@@ -253,6 +253,17 @@ Key components:
     -   `CQ = Mean_Elo - (0.15 * StdDev)`
     -   Rewards depth and penalizes high variance (cannibalization).
 
+## Algorithm Evaluation Sandbox
+
+To improve the algorithm scientifically (week-by-week predictive backtests, Brier/log-loss,
+hyperparameter sweeps), see **[docs/ALGORITHM_EVAL.md](docs/ALGORITHM_EVAL.md)** and the
+`algo_lab/` package:
+
+```bash
+./venv/bin/pytest tests/test_algo_lab.py -q
+CFBD_OFFLINE=0 ./venv/bin/python scripts/backtest_rankings.py --years 2024 --max-week 10
+```
+
 ## Advanced Customization
 
 The model can be customized with the following parameters:
