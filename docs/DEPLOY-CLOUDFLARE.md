@@ -67,10 +67,36 @@ For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Work
 | Production branch | `main` |
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy --env=""` |
+| API token | Custom token with **Containers** edit (see below) |
 
 Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps. The `build` script also runs `npm ci --prefix frontend` before `vite build` so the build still works if `postinstall` is skipped (e.g. cached install).
 
 Use **Node.js 22+** (`.nvmrc` in repo root). Wrangler 4.119+ requires Node 22; Node 20 will fail at deploy with `Wrangler requires at least Node.js v22.0.0`.
+
+### Builds API token (required for Containers)
+
+The default **Create new token** for Workers Builds only grants Workers Scripts / KV / R2 — **not Containers**. This Worker builds a Docker image and pushes it to Cloudflare’s container registry during `wrangler deploy`. Without Containers permission, deploy ends with a bare:
+
+```text
+✘ [ERROR] Unauthorized
+Failed: error occurred while running deploy command
+```
+
+after the image has already built successfully (assets + Worker script may already be uploaded).
+
+Fix:
+
+1. **My Profile → API Tokens → Create Token** (or edit the Builds token).
+2. Include at least:
+   - Account → **Workers Scripts** → Edit
+   - Account → **Workers Containers** / Containers → Edit (wording varies in the UI)
+   - Account → **Account Settings** → Read (Builds default)
+   - Zone → **Workers Routes** → Edit (if you use custom domains)
+3. On the Worker → **Settings → Builds** → select that token as the Builds **API token**.
+4. Set Deploy command to `npx wrangler deploy --env=""` (avoids the multi-env warning; top-level prod config).
+5. Re-run the failed build (or push an empty commit).
+
+Confirm Workers **Paid** is enabled — Containers are Paid-only.
 
 **Runtime secrets** (for the live app): **Settings → Variables and Secrets** (not Build Variables).
 
@@ -174,9 +200,11 @@ For an agent-driven watch/fix loop (parse logs → patch → push → retry), us
 |---------|-----|
 | `Invalid _headers configuration` on deploy | Fix `frontend/static/_headers` — use path + indented headers only; no C-style `/* comment */` blocks |
 | `vite: not found` on build | Ensure root `postinstall` and `build` install `frontend/` deps |
+| `Unauthorized` after Docker image build in Workers Builds | Builds API token lacks Containers edit — see [Builds API token](#builds-api-token-required-for-containers) |
+| Multi-env warning, wrong Worker updated | Deploy command must be `npx wrangler deploy --env=""` |
 | API 503 right after first deploy | Wait 2–5 min for container provisioning |
 | Cold `/api/rankings` slow | Expected; use static 2024 JSON for UI work |
-| `wrangler deploy` fails | Ensure Docker is running |
+| `wrangler deploy` fails locally | Ensure Docker is running; `wrangler login` or valid `CLOUDFLARE_API_TOKEN` with Containers |
 | CORS errors on custom domain | Set `CORS_ORIGINS` secret on the Worker |
 
 ---

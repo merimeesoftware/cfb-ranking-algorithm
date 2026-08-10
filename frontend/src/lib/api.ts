@@ -265,18 +265,73 @@ export async function fetchWhyBlurb(
 	}
 }
 
+/** Match backend shareable_blurb.blurb_cache_period(): daily in-season, monthly offseason. */
+export function blurbCachePeriod(when: Date = new Date()): string {
+	const y = when.getUTCFullYear();
+	const m = when.getUTCMonth() + 1;
+	const d = when.getUTCDate();
+	const inSeason =
+		(m === 8 && d >= 24) || m === 9 || m === 10 || m === 11 || m === 12 || m === 1;
+	if (inSeason) {
+		return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+	}
+	return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+/** Prefer precomputed static share/climb JSON (scheduled), then live API. */
+async function fetchStaticKindBlurb(
+	kind: 'share' | 'climb',
+	year: number,
+	week: number,
+	teamName: string
+): Promise<string | null> {
+	if (!(await hasStaticRankings(year, week))) return null;
+	const suffix = kind === 'share' ? 'share' : 'climb';
+	try {
+		const response = await fetch(`/rankings/${year}/week-${week}.${suffix}.json`, {
+			signal: AbortSignal.timeout(3000),
+		});
+		if (!response.ok) return null;
+		const data = (await response.json()) as {
+			period?: string;
+			blurbs?: Record<string, string>;
+		};
+		const period = data.period || '';
+		// Lookback artifacts are durable; daily/monthly must match current cache period
+		if (!period.startsWith('lookback-') && period !== blurbCachePeriod()) {
+			return null;
+		}
+		const blurbs = data.blurbs || {};
+		if (blurbs[teamName]) return blurbs[teamName];
+		const lower = teamName.toLowerCase();
+		for (const [name, text] of Object.entries(blurbs)) {
+			if (name.toLowerCase() === lower && text) return text;
+		}
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+/** Client wait budget for live MiniMax+web_search (server up to ~120s × retries). */
+const LIVE_BLURB_TIMEOUT_MS = 200_000;
+
 /** AI/stub shareable blurb (≤280 chars), cached daily in-season / monthly offseason. */
 export async function fetchShareableBlurb(
 	teamName: string,
 	year: number,
 	week: number
 ): Promise<{ blurb: string; ai_mode?: string; cache_period?: string } | null> {
+	const staticBlurb = await fetchStaticKindBlurb('share', year, week, teamName);
+	if (staticBlurb) {
+		return { blurb: staticBlurb, ai_mode: 'static' };
+	}
 	try {
 		const response = await fetch(`${API_BASE}/agent/blurb`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ team_name: teamName, year, week }),
-			signal: AbortSignal.timeout(45000),
+			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
 		if (!response.ok) return null;
 		const data = (await response.json()) as {
@@ -301,12 +356,16 @@ export async function fetchClimbBlurb(
 	year: number,
 	week: number
 ): Promise<{ blurb: string; ai_mode?: string } | null> {
+	const staticBlurb = await fetchStaticKindBlurb('climb', year, week, teamName);
+	if (staticBlurb) {
+		return { blurb: staticBlurb, ai_mode: 'static' };
+	}
 	try {
 		const response = await fetch(`${API_BASE}/agent/climb`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ team_name: teamName, year, week }),
-			signal: AbortSignal.timeout(45000),
+			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
 		if (!response.ok) return null;
 		const data = (await response.json()) as { blurb?: string; ai_mode?: string };

@@ -1,0 +1,178 @@
+# Precompute shareable + climb blurbs as stub/static artifacts (no MiniMax).
+# Live MiniMax + web_search runs only on Cloudflare when AI_MODE=live and cache misses.
+# Daily in-season + quarterly lookback; skip-if-exists unless force=true.
+
+name: Precompute Blurbs
+
+on:
+  schedule:
+    # Daily ~11:00 UTC (script no-ops offseason with --require-in-season)
+    - cron: "0 11 * * *"
+    # Quarterly lookback (1st of Jan/Apr/Jul/Oct 12:00 UTC)
+    - cron: "0 12 1 1,4,7,10 *"
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "Season year"
+        required: true
+        default: "2024"
+      week:
+        description: "Week number"
+        required: true
+        default: "10"
+      top_n:
+        description: "Top-N teams"
+        required: false
+        default: "25"
+      lookback:
+        description: "Use lookback (quarterly) period"
+        type: boolean
+        required: false
+        default: false
+      force:
+        description: "Force regenerate (ignore skip-if-exists)"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  precompute-blurbs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Resolve job parameters
+        id: params
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          # Exact cron string for schedule events (avoids delayed-run hour misclassification)
+          SCHEDULE_CRON: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          event = os.environ["GITHUB_EVENT_NAME"]
+          schedule_cron = (os.environ.get("SCHEDULE_CRON") or "").strip()
+          manifest = Path("frontend/static/rankings/manifest.json")
+          years: dict = {}
+          if manifest.exists():
+              years = (json.loads(manifest.read_text()).get("years") or {})
+
+          def latest_available():
+              if not years:
+                  return None, None
+              y = max(int(k) for k in years)
+              weeks = years.get(str(y)) or []
+              if not weeks:
+                  return y, None
+              return y, max(weeks)
+
+          if event == "workflow_dispatch":
+              inputs = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["inputs"]
+              print(f"year={inputs.get('year')}")
+              print(f"week={inputs.get('week')}")
+              print(f"top_n={inputs.get('top_n') or 25}")
+              print(f"lookback={str(inputs.get('lookback', 'false')).lower()}")
+              print(f"force={str(inputs.get('force', 'false')).lower()}")
+              print("require_in_season=false")
+              print("skip=false")
+          else:
+              # Key off the triggering cron, not wall-clock hour
+              lookback = schedule_cron.startswith("0 12 ")
+              year, week = latest_available()
+              if year is None or week is None:
+                  print("skip=true")
+                  print("skip_reason=no_static_rankings_in_manifest")
+                  print("year=0")
+                  print("week=0")
+                  print("top_n=25")
+                  print(f"lookback={'true' if lookback else 'false'}")
+                  print("force=false")
+                  print("require_in_season=false")
+                  sys.exit(0)
+
+              # Daily: only run when manifest has the calendar year (live season files).
+              # If only prior seasons exist (e.g. 2024 while clock is 2026), skip daily.
+              from datetime import datetime, timezone
+              now_year = datetime.now(timezone.utc).year
+              if not lookback and str(now_year) not in years:
+                  print("skip=true")
+                  print(
+                      f"skip_reason=no_manifest_weeks_for_{now_year}_daily_uses_lookback_or_dispatch"
+                  )
+                  print(f"year={year}")
+                  print(f"week={week}")
+                  print("top_n=25")
+                  print("lookback=false")
+                  print("force=false")
+                  print("require_in_season=false")
+                  sys.exit(0)
+
+              if not lookback:
+                  # Prefer current calendar year weeks when present
+                  weeks = years.get(str(now_year)) or []
+                  year = now_year
+                  week = max(weeks)
+
+              print("skip=false")
+              print(f"year={year}")
+              print(f"week={week}")
+              print("top_n=25")
+              print(f"lookback={'true' if lookback else 'false'}")
+              print("force=false")
+              print(f"require_in_season={'false' if lookback else 'true'}")
+          PY
+
+      - name: Precompute stub blurbs (no MiniMax)
+        if: steps.params.outputs.skip != 'true'
+        env:
+          CFBD_OFFLINE: "1"
+          AI_MODE: stub
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [ "${{ steps.params.outputs.lookback }}" = "true" ]; then
+            EXTRA+=(--lookback)
+          fi
+          if [ "${{ steps.params.outputs.force }}" = "true" ]; then
+            EXTRA+=(--force)
+          fi
+          if [ "${{ steps.params.outputs.require_in_season }}" = "true" ]; then
+            EXTRA+=(--require-in-season)
+          fi
+          python scripts/precompute_blurbs.py \
+            --year "${{ steps.params.outputs.year }}" \
+            --week "${{ steps.params.outputs.week }}" \
+            --top-n "${{ steps.params.outputs.top_n }}" \
+            --kind both \
+            "${EXTRA[@]}"
+
+      - name: Skip notice
+        if: steps.params.outputs.skip == 'true'
+        run: echo "Skipped: ${{ steps.params.outputs.skip_reason }}"
+
+      - name: Upload artifacts
+        if: steps.params.outputs.skip != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: static-blurbs
+          path: |
+            static_rankings/
+            frontend/static/rankings/
+          retention-days: 14

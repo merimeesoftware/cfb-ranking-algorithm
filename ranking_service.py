@@ -276,8 +276,8 @@ def get_or_calculate_rankings(
     # Archived weeks: try precomputed static file first (no CFBD / no solver)
     if prefer_static and week is not None and is_archived_week(year, week):
         try:
-            from static_rankings import read_static_rankings
-            static = read_static_rankings(year, week)
+            from static_rankings import read_static_rankings_any
+            static = read_static_rankings_any(year, week)
             if static is not None:
                 print(f"STATIC HIT: rankings {year} week={week}")
                 return static

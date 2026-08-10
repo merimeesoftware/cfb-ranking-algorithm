@@ -21,7 +21,7 @@ export class CfbApiContainer extends Container<Env> {
 		FLASK_ENV: 'production',
 		CACHE_BACKEND: 'file',
 		CACHE_DIR: '/tmp/cfb-cache',
-		AI_MODE: 'off',
+		AI_MODE: 'live',
 		CFBD_OFFLINE: '0',
 	};
 
