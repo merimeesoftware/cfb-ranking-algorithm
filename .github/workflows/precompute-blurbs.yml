@@ -1,0 +1,134 @@
+# Precompute shareable + climb blurbs as stub/static artifacts (no MiniMax).
+# Live MiniMax + web_search runs only on Cloudflare when AI_MODE=live and cache misses.
+# Daily in-season + quarterly lookback; skip-if-exists unless force=true.
+
+name: Precompute Blurbs
+
+on:
+  schedule:
+    # Daily ~11:00 UTC (script no-ops offseason with --require-in-season)
+    - cron: "0 11 * * *"
+    # Quarterly lookback (1st of Jan/Apr/Jul/Oct 12:00 UTC)
+    - cron: "0 12 1 1,4,7,10 *"
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "Season year"
+        required: true
+        default: "2024"
+      week:
+        description: "Week number"
+        required: true
+        default: "10"
+      top_n:
+        description: "Top-N teams"
+        required: false
+        default: "25"
+      lookback:
+        description: "Use lookback (quarterly) period"
+        type: boolean
+        required: false
+        default: false
+      force:
+        description: "Force regenerate (ignore skip-if-exists)"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  precompute-blurbs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Resolve job parameters
+        id: params
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          event = os.environ["GITHUB_EVENT_NAME"]
+          now = datetime.now(timezone.utc)
+          manifest = Path("frontend/static/rankings/manifest.json")
+          year = now.year
+          week = 10
+          if manifest.exists():
+              data = json.loads(manifest.read_text())
+              years = data.get("years") or {}
+              weeks = years.get(str(year)) or []
+              if not weeks:
+                  keys = sorted((int(k) for k in years), reverse=True)
+                  if keys:
+                      year = keys[0]
+                      weeks = years.get(str(year)) or []
+              if weeks:
+                  week = max(weeks)
+
+          if event == "workflow_dispatch":
+              inputs = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["inputs"]
+              print(f"year={inputs.get('year') or year}")
+              print(f"week={inputs.get('week') or week}")
+              print(f"top_n={inputs.get('top_n') or 25}")
+              print(f"lookback={str(inputs.get('lookback', 'false')).lower()}")
+              print(f"force={str(inputs.get('force', 'false')).lower()}")
+              print("require_in_season=false")
+          else:
+              # cron hour 12 => quarterly lookback; hour 11 => daily in-season
+              lookback = now.hour == 12
+              print(f"year={year}")
+              print(f"week={week}")
+              print("top_n=25")
+              print(f"lookback={'true' if lookback else 'false'}")
+              print("force=false")
+              print(f"require_in_season={'false' if lookback else 'true'}")
+          PY
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+
+      - name: Precompute stub blurbs (no MiniMax)
+        env:
+          CFBD_OFFLINE: "1"
+          AI_MODE: stub
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [ "${{ steps.params.outputs.lookback }}" = "true" ]; then
+            EXTRA+=(--lookback)
+          fi
+          if [ "${{ steps.params.outputs.force }}" = "true" ]; then
+            EXTRA+=(--force)
+          fi
+          if [ "${{ steps.params.outputs.require_in_season }}" = "true" ]; then
+            EXTRA+=(--require-in-season)
+          fi
+          python scripts/precompute_blurbs.py \
+            --year "${{ steps.params.outputs.year }}" \
+            --week "${{ steps.params.outputs.week }}" \
+            --top-n "${{ steps.params.outputs.top_n }}" \
+            --kind both \
+            "${EXTRA[@]}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: static-blurbs
+          path: |
+            static_rankings/
+            frontend/static/rankings/
+          retention-days: 14

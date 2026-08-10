@@ -265,12 +265,43 @@ export async function fetchWhyBlurb(
 	}
 }
 
+/** Prefer precomputed static share/climb JSON (scheduled), then live API. */
+async function fetchStaticKindBlurb(
+	kind: 'share' | 'climb',
+	year: number,
+	week: number,
+	teamName: string
+): Promise<string | null> {
+	if (!(await hasStaticRankings(year, week))) return null;
+	const suffix = kind === 'share' ? 'share' : 'climb';
+	try {
+		const response = await fetch(`/rankings/${year}/week-${week}.${suffix}.json`, {
+			signal: AbortSignal.timeout(3000),
+		});
+		if (!response.ok) return null;
+		const data = await response.json();
+		const blurbs = (data.blurbs || {}) as Record<string, string>;
+		if (blurbs[teamName]) return blurbs[teamName];
+		const lower = teamName.toLowerCase();
+		for (const [name, text] of Object.entries(blurbs)) {
+			if (name.toLowerCase() === lower && text) return text;
+		}
+		return null;
+	} catch {
+		return null;
+	}
+}
+
 /** AI/stub shareable blurb (≤280 chars), cached daily in-season / monthly offseason. */
 export async function fetchShareableBlurb(
 	teamName: string,
 	year: number,
 	week: number
 ): Promise<{ blurb: string; ai_mode?: string; cache_period?: string } | null> {
+	const staticBlurb = await fetchStaticKindBlurb('share', year, week, teamName);
+	if (staticBlurb) {
+		return { blurb: staticBlurb, ai_mode: 'static' };
+	}
 	try {
 		const response = await fetch(`${API_BASE}/agent/blurb`, {
 			method: 'POST',
@@ -301,6 +332,10 @@ export async function fetchClimbBlurb(
 	year: number,
 	week: number
 ): Promise<{ blurb: string; ai_mode?: string } | null> {
+	const staticBlurb = await fetchStaticKindBlurb('climb', year, week, teamName);
+	if (staticBlurb) {
+		return { blurb: staticBlurb, ai_mode: 'static' };
+	}
 	try {
 		const response = await fetch(`${API_BASE}/agent/climb`, {
 			method: 'POST',

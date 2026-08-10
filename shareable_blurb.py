@@ -30,6 +30,24 @@ def blurb_cache_period(when: Optional[date] = None) -> str:
     return f'{d.year:04d}-{d.month:02d}'
 
 
+def lookback_cache_period(when: Optional[date] = None) -> str:
+    """
+    Stable quarterly key for archived lookbacks (rare regenerate).
+
+    Example: lookback-2026-Q3. Precompute skips teams already present unless --force.
+    """
+    d = when or date.today()
+    quarter = (d.month - 1) // 3 + 1
+    return f'lookback-{d.year:04d}-Q{quarter}'
+
+
+def minimax_web_search_enabled() -> bool:
+    """Live social/media cues via MiniMax server web_search (default on when live)."""
+    import os
+    raw = os.environ.get('MINIMAX_WEB_SEARCH', '1').strip().lower()
+    return raw not in ('0', 'false', 'no', 'off')
+
+
 def truncate_blurb(text: str, limit: int = BLURB_MAX_CHARS) -> str:
     """
     Legacy helper for tests / defensive stub authoring only.
@@ -197,6 +215,14 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
     )
 
 
+_SEARCH_RULES = (
+    'You may use web_search for brief street/media consensus about this team.\n'
+    'Rankings JSON is ground truth for scores, records, and games — never invent those.\n'
+    'If search results conflict with the ranking facts, the ranking facts win.\n'
+    'At most one short clause of social/media color; do not invent buzz without search hits.\n'
+)
+
+
 def build_blurb_prompt(context: Dict[str, Any]) -> str:
     """Prompt for MiniMax: why + debate hook, hard 280-char cap."""
     return (
@@ -205,10 +231,11 @@ def build_blurb_prompt(context: Dict[str, Any]) -> str:
         'Count every character before you reply. If it would exceed the limit, rewrite shorter.\n'
         'Target 180–250 characters. Never return text longer than the hard rule.\n'
         'Requirements:\n'
-        '- Explain WHY this team is ranked here using ONLY the JSON facts.\n'
+        '- Explain WHY this team is ranked here using the JSON facts.\n'
+        f'{_SEARCH_RULES}'
         '- End with a short complete debate question (must finish with ?).\n'
         '- No hashtags, no emojis, no quotes around the whole blurb.\n'
-        '- Plain prose only. Do not invent games not in the data.\n'
+        '- Plain prose only.\n'
         '- Reply with ONLY the blurb text — no preamble, no JSON, no character count.\n\n'
         f'Team context JSON: {context}\n'
     )
@@ -228,8 +255,9 @@ def build_climb_prompt(context: Dict[str, Any]) -> str:
         '3) One clear thing that would move them up.\n'
         '4) End with a complete debate question (?).\n'
         'Voice: confident that an impartial model (wins + strength + full resume) beats hot takes.\n'
+        f'{_SEARCH_RULES}'
         'Do NOT use: TQ, CQ, Elo, delta, Δ, contrib, lever, point gaps, decimals, formulas.\n'
-        'Do NOT invent games. No hashtags, emojis, or quotes around the whole blurb.\n'
+        'No hashtags, emojis, or quotes around the whole blurb.\n'
         'Reply with ONLY the blurb text.\n\n'
         f'Team context JSON: {context}\n'
     )

@@ -20,6 +20,7 @@ from shareable_blurb import (
     clean_blurb_candidate,
     extract_blurb_text,
     is_in_season,
+    minimax_web_search_enabled,
     stub_climb_blurb,
     stub_shareable_blurb,
 )
@@ -27,15 +28,23 @@ from spend_guards import (
     AIBudgetError,
     AIRateLimitError,
     check_agent_rate_limit,
-    is_cfbd_offline,
     register_live_ai_call,
     resolve_ai_mode,
     spend_status,
+)
+from static_rankings import (
+    DEFAULT_ROOT,
+    read_climb_blurbs,
+    read_share_blurbs,
+    team_blurb_from_static,
 )
 
 # In-season daily / offseason monthly — keep TTL past the period boundary
 TTL_BLURB_IN_SEASON = 36 * 60 * 60
 TTL_BLURB_OFFSEASON = 40 * 24 * 60 * 60
+
+# Frontend static rankings (deployed with SPA) then repo static_rankings/
+_FRONTEND_STATIC = os.path.join(os.path.dirname(__file__), 'frontend', 'static', 'rankings')
 
 agent_bp = Blueprint('agent', __name__, url_prefix='/agent')
 
@@ -50,9 +59,12 @@ def set_data_processor(processor) -> None:
 CFBD_MCP_URL = os.environ.get('CFBD_MCP_URL', '')
 MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
 MINIMAX_BASE_URL = os.environ.get('MINIMAX_BASE_URL', 'https://api.minimax.io/anthropic')
-MINIMAX_MODEL = os.environ.get('MINIMAX_MODEL', 'MiniMax-M2.7')
-# Blurbs are short; prefer M3 with thinking off so output isn't eaten by reasoning tokens
-MINIMAX_BLURB_MODEL = os.environ.get('MINIMAX_BLURB_MODEL', 'MiniMax-M3')
+MINIMAX_MODEL = os.environ.get('MINIMAX_MODEL', 'MiniMax-M3')
+# Blurbs default to the same M3 model (override separately if needed)
+MINIMAX_BLURB_MODEL = os.environ.get('MINIMAX_BLURB_MODEL', MINIMAX_MODEL)
+MINIMAX_WEB_SEARCH_TIMEOUT = int(os.environ.get('MINIMAX_WEB_SEARCH_TIMEOUT', '120'))
+MINIMAX_PLAIN_TIMEOUT = int(os.environ.get('MINIMAX_PLAIN_TIMEOUT', '60'))
+WEB_SEARCH_TOOL = {'type': 'web_search_20250305', 'name': 'web_search'}
 
 
 def _require_agent_route(f):
@@ -131,13 +143,18 @@ def _call_minimax(
     max_tokens: int = 1024,
     model: Optional[str] = None,
     disable_thinking: bool = False,
+    use_web_search: Optional[bool] = None,
 ) -> str:
     """Call MiniMax via Anthropic-compatible API (paygo key — not Coding Plan)."""
     if not MINIMAX_API_KEY:
         return 'MiniMax API key not configured. Structured ranking context is available in the response.'
 
+    search_on = minimax_web_search_enabled() if use_web_search is None else use_web_search
     call_n = register_live_ai_call()
-    print(f'AI LIVE prompt #{call_n} (budget {ai_max_display()})')
+    print(
+        f'AI LIVE prompt #{call_n} model={model or MINIMAX_MODEL} '
+        f'web_search={search_on} (budget {ai_max_display()})'
+    )
     try:
         payload: Dict[str, Any] = {
             'model': model or MINIMAX_MODEL,
@@ -146,6 +163,9 @@ def _call_minimax(
         }
         if disable_thinking:
             payload['thinking'] = {'type': 'disabled'}
+        if search_on:
+            payload['tools'] = [WEB_SEARCH_TOOL]
+        timeout = MINIMAX_WEB_SEARCH_TIMEOUT if search_on else MINIMAX_PLAIN_TIMEOUT
         # MiniMax Anthropic-compatible route prefers Authorization: Bearer;
         # keep x-api-key as a secondary Anthropic-style header.
         response = requests.post(
@@ -157,7 +177,7 @@ def _call_minimax(
                 'content-type': 'application/json',
             },
             json=payload,
-            timeout=60,
+            timeout=timeout,
         )
         response.raise_for_status()
         data = response.json()
@@ -202,14 +222,21 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         return stub_explain_from_context(context, question), mode
     if not MINIMAX_API_KEY:
         return stub_explain_from_context(context, question), 'stub'
+    search_note = (
+        'You may use web_search for brief media/street context; ranking JSON is ground truth.\n'
+        if minimax_web_search_enabled()
+        else 'Do not invent social buzz; use only the ranking JSON.\n'
+    )
+    w_tq, w_rec, w_cq = FRS_WEIGHTS
     prompt = (
-        f"You are a college football ranking analyst. Answer concisely using ONLY the data provided.\n\n"
+        f"You are a college football ranking analyst. Answer concisely.\n"
+        f"{search_note}"
         f"Question: {question}\n\n"
         f"Team context (JSON): {context}\n\n"
-        f"Formula: 65% Team Quality + 27% Record Score + 8% Conference Quality."
+        f"Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality."
     )
     try:
-        return _call_minimax(prompt), mode
+        return _call_minimax(prompt, model=MINIMAX_MODEL), mode
     except AIBudgetError as e:
         stub = stub_explain_from_context(context, question)
         return f'{stub} [{e}]', 'stub'
@@ -220,6 +247,9 @@ def agent_health():
     return jsonify({
         'status': 'ok',
         'minimax_configured': bool(MINIMAX_API_KEY),
+        'minimax_model': MINIMAX_MODEL,
+        'minimax_blurb_model': MINIMAX_BLURB_MODEL,
+        'minimax_web_search': minimax_web_search_enabled(),
         'cfbd_mcp_configured': bool(CFBD_MCP_URL),
         **spend_status(),
     })
@@ -252,13 +282,13 @@ def explain_ranking():
     if not team_name:
         return jsonify({'error': 'team_name is required'}), 400
 
-    # Offline: serve static/slim. Online: prefer full payload for wins_details.
+    # Prefer static/slim for agent reads — never force a cold solver when files exist.
     rankings = get_or_calculate_rankings(
         _data_processor,
         year,
         week,
         request.args,
-        prefer_static=is_cfbd_offline(),
+        prefer_static=True,
     )
     if not rankings:
         return jsonify({'error': f'No rankings data for {year}'}), 404
@@ -326,6 +356,36 @@ def _resolve_blurb(context: Dict[str, Any], kind: str = 'share') -> tuple[str, s
         return stub_fn(context), 'stub'
 
 
+def _static_blurb_for_team(
+    kind: str,
+    year: int,
+    week: Optional[int],
+    team_name: str,
+    period: str,
+) -> Optional[str]:
+    """Prefer frontend static share/climb JSON for the current period."""
+    if week is None:
+        return None
+    readers = {
+        'share': read_share_blurbs,
+        'climb': read_climb_blurbs,
+    }
+    reader = readers.get(kind)
+    if not reader:
+        return None
+    for root in (_FRONTEND_STATIC, DEFAULT_ROOT):
+        payload = reader(year, week, root=root)
+        text = team_blurb_from_static(payload, team_name, require_period=period)
+        if text:
+            return text
+        # Lookback durability: accept any period if labeled lookback-*
+        if payload and str(payload.get('period', '')).startswith('lookback-'):
+            text = team_blurb_from_static(payload, team_name, require_period=None)
+            if text:
+                return text
+    return None
+
+
 def _blurb_http(kind: str):
     """Shared handler for /agent/blurb and /agent/climb."""
     if _data_processor is None:
@@ -346,6 +406,23 @@ def _blurb_http(kind: str):
         return jsonify({'error': 'team_name is required'}), 400
 
     period = blurb_cache_period()
+    static_text = _static_blurb_for_team(kind, year, week, team_name, period)
+    if static_text:
+        return jsonify({
+            'team_name': team_name,
+            'year': year,
+            'week': week,
+            'kind': kind,
+            'blurb': static_text,
+            'max_chars': BLURB_MAX_CHARS,
+            'ai_mode': 'static',
+            'cache_period': period,
+            'refresh': 'daily' if is_in_season() else 'monthly',
+            'cached': True,
+            'source': 'static',
+            'spend': spend_status(),
+        })
+
     cache = get_cache()
     prefix = f'{kind}_blurb'
     cache_key = cache._generate_key(
@@ -357,6 +434,7 @@ def _blurb_http(kind: str):
         return jsonify({
             **cached,
             'cached': True,
+            'source': cached.get('source', 'cache'),
             'spend': spend_status(),
         })
 
@@ -365,7 +443,7 @@ def _blurb_http(kind: str):
         year,
         week,
         request.args,
-        prefer_static=is_cfbd_offline(),
+        prefer_static=True,
     )
     if not rankings:
         return jsonify({'error': f'No rankings data for {year}'}), 404
@@ -390,6 +468,9 @@ def _blurb_http(kind: str):
         'cache_period': period,
         'refresh': 'daily' if is_in_season() else 'monthly',
         'cached': False,
+        'source': 'live' if mode == 'live' else 'stub',
+        'model': MINIMAX_BLURB_MODEL if mode == 'live' else None,
+        'web_search': minimax_web_search_enabled() if mode == 'live' else False,
     }
     ttl = TTL_BLURB_IN_SEASON if is_in_season() else TTL_BLURB_OFFSEASON
     cache.set(

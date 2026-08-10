@@ -238,6 +238,7 @@ def test_agent_explain_off_mode(client, monkeypatch):
 
 
 def test_agent_explain_prefer_static_online(client, monkeypatch):
+    """Agent path always prefers static/slim rankings (no cold solver on explain)."""
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.setenv('CFBD_OFFLINE', '0')
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
@@ -248,7 +249,7 @@ def test_agent_explain_prefer_static_online(client, monkeypatch):
             'week': 10,
         })
         assert response.status_code == 200
-        assert mock_get.call_args.kwargs.get('prefer_static') is False
+        assert mock_get.call_args.kwargs.get('prefer_static') is True
 
 
 def test_agent_explain_live_falls_back_without_key(client, monkeypatch):

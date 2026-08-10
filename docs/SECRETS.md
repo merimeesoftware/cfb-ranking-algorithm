@@ -85,11 +85,15 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `AI_MODE=stub` | Yes in development | Template explanations; **no MiniMax** |
 | `AI_MODE=off` | Production default | `explanation: null` + structured context only |
 | `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode |
+| `MINIMAX_MODEL` / `MINIMAX_BLURB_MODEL` | `MiniMax-M3` | Product default for explain + blurbs |
+| `MINIMAX_WEB_SEARCH` | `1` when live | MiniMax server `web_search` for media/street cues (not X API / Grok) |
 | `AI_MAX_CALLS` | **25** in development if unset | Hard cap on live MiniMax prompts per process |
-| `AGENT_RATE_LIMIT` | 50/hour in development | Per-IP cap on `/agent/explain` |
+| `AGENT_RATE_LIMIT` | 50/hour in development | Per-IP cap on `/agent/*` |
 
 Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
-`GET /agent/health` returns current spend counters.
+`GET /agent/health` returns current spend counters (`minimax_model`, `minimax_web_search`, …).
+
+Scheduled blurbs: `.github/workflows/precompute-blurbs.yml` runs **stub/offline only** (no MiniMax key in GitHub). Live MiniMax + `web_search` happens on **Cloudflare** when `AI_MODE=live` and static/cache miss. Artifacts are uploaded; commit-to-main remains optional.
 
 ---
 
@@ -98,9 +102,10 @@ Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
 | Secret in GitHub | Needed? |
 |------------------|---------|
 | `CFBD_API_KEY` | Only if CI must hit the live CFBD API (optional for unit tests — tests mock the API) |
-| Production MiniMax / Cloudflare tokens | **No** — keep those in Cloudflare |
+| `MINIMAX_API_KEY` | **No** — keep paygo MiniMax in Cloudflare only |
+| Production MiniMax / Cloudflare tokens | **No** for deploy — keep those in Cloudflare |
 
-Prefer: GitHub CI uses mocks / no live keys. Production keys only in Cloudflare.
+Prefer: GitHub CI uses stubs / mocks / no live keys. Production keys only in Cloudflare.
 
 ---
 
