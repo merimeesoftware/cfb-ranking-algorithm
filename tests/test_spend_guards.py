@@ -17,6 +17,8 @@ from spend_guards import (
     reset_ai_call_count,
     reset_cfbd_call_count,
     resolve_ai_mode,
+    resolve_cfbd_api_key,
+    cfbd_key_slot_status,
     spend_status,
     ai_max_calls,
     cfbd_max_calls,
@@ -25,6 +27,46 @@ from ai_stub import stub_explain_from_context
 
 
 FIXTURES = Path(__file__).parent / 'fixtures'
+
+
+def test_resolve_cfbd_api_key_slot_a(monkeypatch):
+    monkeypatch.setenv('CFBD_API_KEY', 'key-aaaa')
+    monkeypatch.setenv('CFBD_API_KEY_B', 'key-bbbb')
+    monkeypatch.setenv('CFBD_API_KEY_SLOT', 'A')
+    assert resolve_cfbd_api_key() == 'key-aaaa'
+
+
+def test_resolve_cfbd_api_key_slot_b(monkeypatch):
+    monkeypatch.setenv('CFBD_API_KEY', 'key-aaaa')
+    monkeypatch.setenv('CFBD_API_KEY_B', 'key-bbbb')
+    monkeypatch.setenv('CFBD_API_KEY_SLOT', 'B')
+    assert resolve_cfbd_api_key() == 'key-bbbb'
+
+
+def test_resolve_cfbd_api_key_slot_b_falls_back_to_a(monkeypatch):
+    monkeypatch.setenv('CFBD_API_KEY', 'key-aaaa')
+    monkeypatch.delenv('CFBD_API_KEY_B', raising=False)
+    monkeypatch.setenv('CFBD_API_KEY_SLOT', 'B')
+    assert resolve_cfbd_api_key() == 'key-aaaa'
+
+
+def test_cfbd_key_slot_status(monkeypatch):
+    monkeypatch.setenv('CFBD_API_KEY', 'key-aaaa')
+    monkeypatch.delenv('CFBD_API_KEY_B', raising=False)
+    monkeypatch.setenv('CFBD_API_KEY_SLOT', 'A')
+    status = cfbd_key_slot_status()
+    assert status['slot'] == 'A'
+    assert status['has_key_a'] is True
+    assert status['has_key_b'] is False
+    assert status['active_configured'] is True
+
+
+def test_spend_status_includes_cfbd_key(monkeypatch):
+    monkeypatch.setenv('CFBD_API_KEY', 'key-aaaa')
+    monkeypatch.setenv('FLASK_ENV', 'development')
+    status = spend_status()
+    assert 'cfbd_key' in status
+    assert status['cfbd_key']['slot'] == 'A'
 
 
 def test_cfbd_offline_defaults_in_development(monkeypatch):
@@ -152,8 +194,8 @@ def test_agent_explain_stub_expanded_context(client, monkeypatch):
         assert ctx['rank'] == 2
         assert 'formula_breakdown' in ctx
         fb = ctx['formula_breakdown']
-        assert fb['tq_contribution'] == round(1850 * 0.75, 2)
-        assert fb['rec_contribution'] == round(90 * 0.20, 2)
+        assert fb['tq_contribution'] == round(1850 * 0.80, 2)
+        assert fb['rec_contribution'] == round(90 * 0.15, 2)
         assert fb['cq_contribution'] == round(90 * 0.05, 2)
         assert ctx['quality_wins'] == 2
         assert ctx['quality_losses'] == 1

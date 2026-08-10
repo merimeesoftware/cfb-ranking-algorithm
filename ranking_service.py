@@ -8,20 +8,22 @@ from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 
-ALGO_VERSION = 'v5.2'
+ALGO_VERSION = 'v5.3'
 
 DEFAULT_CONFIG = {
     'power_conf_initial': 1500.0,
     'group5_initial': 1200.0,
     'fcs_initial': 900.0,
-    'base_factor': 40.0,
-    'team_quality_weight': 0.75,
+    'base_factor': 50.0,
+    'hfa_elo': 50.0,
+    'upset_bonus_mult': 1.18,
+    'team_quality_weight': 0.80,
     'conference_weight': 0.05,
-    'record_weight': 0.20,
+    'record_weight': 0.15,
     'prior_strength': 0.15,
     'use_ats': False,
     'ats_bonus': 10.0,
-    # A/B on 2023–2024: reference ranks hurt pooled Brier; keep off by default.
+    # A/B on 2019–2024: reference ranks hurt pooled Brier; keep off by default.
     'use_reference_ranks': False,
 }
 
@@ -38,6 +40,8 @@ _PRIORS_CONFIG_KEYS = (
     'group5_initial',
     'fcs_initial',
     'base_factor',
+    'hfa_elo',
+    'upset_bonus_mult',
     'team_quality_weight',
     'conference_weight',
     'record_weight',
@@ -200,7 +204,7 @@ def calculate_rankings_logic(
     priors = compute_priors(data_processor, year, config)
     print(f"Calculated priors for {len(priors)} teams.")
 
-    print("Calculating rankings (Iterative V5.2)...")
+    print("Calculating rankings (Iterative V5.3)...")
     reference_ranks = None
     conf_stddevs = {}
     num_iterations = TeamQualityRanker(config, priors).num_iterations

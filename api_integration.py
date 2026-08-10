@@ -9,6 +9,7 @@ from spend_guards import (
     CFBDOfflineError,
     is_cfbd_offline,
     register_live_cfbd_call,
+    resolve_cfbd_api_key,
 )
 
 
@@ -20,19 +21,22 @@ class CFBDApiClient:
     def __init__(self, api_key: Optional[str] = None):
         if api_key is None:
             load_dotenv()
-            api_key = os.getenv('CFBD_API_KEY')
+            api_key = resolve_cfbd_api_key()
             if not api_key:
                 # Offline / fixture workflows may construct the client with a dummy key
-                api_key = os.getenv('CFBD_API_KEY', 'offline-placeholder')
-                if not os.getenv('CFBD_API_KEY') and not is_cfbd_offline():
-                    raise ValueError("API key not found in environment variables")
+                api_key = 'offline-placeholder'
+                if not is_cfbd_offline():
+                    raise ValueError(
+                        "API key not found. Set CFBD_API_KEY (slot A) and/or "
+                        "CFBD_API_KEY_B (slot B); choose with CFBD_API_KEY_SLOT=A|B."
+                    )
         
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'accept': 'application/json'
         }
         self._cache = get_cache()
-
+        self._key_suffix = (api_key[-4:] if api_key and api_key != 'offline-placeholder' else 'none')
     def _make_request(self, endpoint: str, params: Dict[str, Any] = None) -> Any:
         """Helper to make API requests with error handling and spend guards."""
         url = f"{self.BASE_URL}{endpoint}"
@@ -52,7 +56,8 @@ class CFBDApiClient:
             remaining = response.headers.get('X-CallLimit-Remaining')
             print(
                 f"CFBD LIVE #{call_n}: {endpoint} params={params} "
-                f"status={response.status_code} remaining={remaining}"
+                f"status={response.status_code} remaining={remaining} "
+                f"key=…{self._key_suffix}"
             )
             response.raise_for_status()
             return response.json()

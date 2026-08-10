@@ -231,18 +231,18 @@ The conference rankings include:
 - **Win%** - Win percentages against each tier
 - **Quality Score** - Mean of member teams' quality scores
 
-## Math Behind the Rankings (Version 5.2)
+## Math Behind the Rankings (Version 5.3)
 
 See the [ALGORITHM_BREAKDOWN.md](ALGORITHM_BREAKDOWN.md) file for detailed explanation of the mathematical model.
 
 Key components:
 
 1.  **Master Formula**
-    -   `FRS = (0.75 * TeamQuality) + (0.20 * RecordScore) + (0.05 * ConferenceQuality)`
+    -   `FRS = (0.80 * TeamQuality) + (0.15 * RecordScore) + (0.05 * ConferenceQuality)`
 
 2.  **Team Quality (Elo)**
     -   **Expectation:** $E_A = 1 / (1 + 10 ^ ((R_B - R_A) / 400))$
-    -   **Update:** $\Delta = K \times MatchupWeight \times MoV \times (Actual - Expected)$
+    -   **Update:** $\Delta = K \times MatchupWeight \times MoV \times (Actual - Expected)$ with K=50, HFA=50 (V5.3)
     -   **Iterative Solver:** Season is simulated 2 times (chaos tax); reference-rank Elo expectation is available but off by default after A/B.
 
 3.  **Resume (Record Score)**
@@ -269,8 +269,8 @@ The model can be customized with the following parameters:
 - `--power-conf-initial`: Initial quality score for Power 4 conferences (default: 1500)
 - `--group5-initial`: Initial quality score for Group of 5 conferences (default: 1200)
 - `--fcs-initial`: Initial quality score for FCS conferences (default: 900)
-- `--base-factor`: Base K-factor for Elo updates (default: 40.0)
-- `--conference-weight`: Weight of conference quality in final score (default: 0.08)
+- `--base-factor`: Base K-factor for Elo updates (default: 50.0)
+- `--conference-weight`: Weight of conference quality in final score (default: 0.05)
 
 ## License
 

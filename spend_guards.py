@@ -93,6 +93,45 @@ def agent_rate_limit_per_hour() -> int:
     return 50 if _is_development() else 30
 
 
+def resolve_cfbd_api_key(explicit: Optional[str] = None) -> str:
+    """Pick active CFBD key from dual-account slots.
+
+    Env:
+      CFBD_API_KEY      — account A (default)
+      CFBD_API_KEY_B    — account B (optional second 1k/mo quota)
+      CFBD_API_KEY_SLOT — ``A`` (default) or ``B``
+
+    Each collegefootballdata.com account has its own monthly call budget.
+    Flip ``CFBD_API_KEY_SLOT=B`` (with ``CFBD_API_KEY_B`` set) to burn the
+    second quota without rotating secrets.
+    """
+    if explicit:
+        return explicit
+    slot = os.environ.get('CFBD_API_KEY_SLOT', 'A').strip().upper() or 'A'
+    if slot == 'B':
+        key = os.environ.get('CFBD_API_KEY_B') or os.environ.get('CFBD_API_KEY')
+    else:
+        key = os.environ.get('CFBD_API_KEY')
+        if not key:
+            key = os.environ.get('CFBD_API_KEY_B')
+    return key or ''
+
+
+def cfbd_key_slot_status() -> Dict[str, Any]:
+    """Non-secret status for /agent/health and warm scripts."""
+    slot = os.environ.get('CFBD_API_KEY_SLOT', 'A').strip().upper() or 'A'
+    if slot not in ('A', 'B'):
+        slot = 'A'
+    has_a = bool(os.environ.get('CFBD_API_KEY'))
+    has_b = bool(os.environ.get('CFBD_API_KEY_B'))
+    return {
+        'slot': slot,
+        'has_key_a': has_a,
+        'has_key_b': has_b,
+        'active_configured': bool(resolve_cfbd_api_key()),
+    }
+
+
 def reset_cfbd_call_count() -> None:
     global _live_call_count
     with _call_lock:
@@ -181,6 +220,7 @@ def spend_status() -> Dict[str, Any]:
         'cfbd_offline': is_cfbd_offline(),
         'cfbd_calls': get_cfbd_call_count(),
         'cfbd_max_calls': cfbd_max_calls(),
+        'cfbd_key': cfbd_key_slot_status(),
         'ai_mode': resolve_ai_mode(),
         'ai_live_calls': get_ai_call_count(),
         'ai_max_calls': ai_max_calls(),

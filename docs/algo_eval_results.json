@@ -1,9 +1,19 @@
 {
-  "algo_version_at_run": "v5.1",
+  "algo_version_at_run": "v5.2",
   "max_week": 12,
   "priors": false,
   "protocol": "week_by_week_leak_free",
   "rating_field": "team_quality_score",
+  "split": {
+    "tune": [
+      2019,
+      2020,
+      2021,
+      2022
+    ],
+    "validate": 2023,
+    "holdout": 2024
+  },
   "baseline_ref_on": {
     "per_season": [
       {
@@ -200,10 +210,11 @@
   },
   "reference_ranks_decision": {
     "keep_use_reference_ranks": false,
-    "brier_on": 0.19264102908895195,
-    "brier_off": 0.18487681586455504,
-    "delta": -0.007764,
-    "rationale": "Revert to False \u2014 reference ranks hurt pooled Brier"
+    "tune_brier_on": 0.19551456039143586,
+    "tune_brier_off": 0.18986176881653197,
+    "validate_brier_on": 0.1966682473717462,
+    "validate_brier_off": 0.18840283243531802,
+    "rationale": "Keep False \u2014 better without reference ranks"
   },
   "elo_sweep": {
     "grid": {
@@ -222,13 +233,13 @@
         1.18
       ]
     },
-    "best_on_2023": {
+    "best_on_tune": {
       "config": {
         "base_factor": 50.0,
         "hfa_elo": 50.0,
         "upset_bonus_mult": 1.18
       },
-      "score": 0.18659844250758167
+      "score": 0.18876539450190713
     },
     "top5": [
       {
@@ -237,23 +248,7 @@
           "hfa_elo": 50.0,
           "upset_bonus_mult": 1.18
         },
-        "score": 0.18659844250758167
-      },
-      {
-        "config": {
-          "base_factor": 50.0,
-          "hfa_elo": 65.0,
-          "upset_bonus_mult": 1.18
-        },
-        "score": 0.18671354492470857
-      },
-      {
-        "config": {
-          "base_factor": 50.0,
-          "hfa_elo": 80.0,
-          "upset_bonus_mult": 1.18
-        },
-        "score": 0.18681376967609697
+        "score": 0.18876539450190713
       },
       {
         "config": {
@@ -261,7 +256,15 @@
           "hfa_elo": 50.0,
           "upset_bonus_mult": 1.0
         },
-        "score": 0.18697853755173197
+        "score": 0.18887667655874912
+      },
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 65.0,
+          "upset_bonus_mult": 1.18
+        },
+        "score": 0.18899329307608995
       },
       {
         "config": {
@@ -269,46 +272,103 @@
           "hfa_elo": 65.0,
           "upset_bonus_mult": 1.0
         },
-        "score": 0.18711592637474522
+        "score": 0.18910162375887904
+      },
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 80.0,
+          "upset_bonus_mult": 1.18
+        },
+        "score": 0.1891870809548321
       }
     ],
-    "holdout_2024": {
+    "gate": {
       "default": {
-        "year": 2024,
-        "n_games": 815,
-        "accuracy": 0.7178,
-        "brier": 0.18107,
-        "log_loss": 0.53187,
-        "home_brier": 0.2387,
-        "brier_lift_vs_home": 0.05763,
-        "accuracy_lift_vs_home": 0.07975
+        "validate": {
+          "year": 2023,
+          "n_games": 881,
+          "accuracy": 0.7196,
+          "brier": 0.1884,
+          "log_loss": 0.55466,
+          "home_brier": 0.23803,
+          "brier_lift_vs_home": 0.04962,
+          "accuracy_lift_vs_home": 0.07491
+        },
+        "holdout": {
+          "year": 2024,
+          "n_games": 815,
+          "accuracy": 0.7178,
+          "brier": 0.18107,
+          "log_loss": 0.53187,
+          "home_brier": 0.2387,
+          "brier_lift_vs_home": 0.05763,
+          "accuracy_lift_vs_home": 0.07975
+        }
       },
       "swept": {
-        "year": 2024,
-        "n_games": 815,
-        "accuracy": 0.7178,
-        "brier": 0.18079,
-        "log_loss": 0.53114,
-        "home_brier": 0.2387,
-        "brier_lift_vs_home": 0.05791,
-        "accuracy_lift_vs_home": 0.07975
+        "validate": {
+          "year": 2023,
+          "n_games": 881,
+          "accuracy": 0.7219,
+          "brier": 0.1866,
+          "log_loss": 0.55069,
+          "home_brier": 0.23803,
+          "brier_lift_vs_home": 0.05143,
+          "accuracy_lift_vs_home": 0.07719
+        },
+        "holdout": {
+          "year": 2024,
+          "n_games": 815,
+          "accuracy": 0.7178,
+          "brier": 0.18079,
+          "log_loss": 0.53114,
+          "home_brier": 0.2387,
+          "brier_lift_vs_home": 0.05791,
+          "accuracy_lift_vs_home": 0.07975
+        }
       }
     },
-    "promote": false,
-    "elapsed_s": 2.6
+    "promote": true,
+    "elapsed_s": 8.4
   },
   "frs_weights": {
     "rows": [
+      {
+        "weights": {
+          "team_quality_weight": 0.8,
+          "record_weight": 0.15,
+          "conference_weight": 0.05
+        },
+        "brier_by_year": {
+          "2019": 0.18366,
+          "2020": 0.19268,
+          "2021": 0.18423,
+          "2022": 0.20125,
+          "2023": 0.1887,
+          "2024": 0.18805
+        },
+        "tune_brier": 0.19025,
+        "validate_brier": 0.1887,
+        "holdout_brier": 0.18805
+      },
       {
         "weights": {
           "team_quality_weight": 0.75,
           "record_weight": 0.2,
           "conference_weight": 0.05
         },
-        "brier_2023": 0.19068,
-        "brier_2024": 0.19052,
-        "pooled_brier": 0.1906,
-        "pooled_accuracy": 0.7129
+        "brier_by_year": {
+          "2019": 0.18567,
+          "2020": 0.19526,
+          "2021": 0.18606,
+          "2022": 0.20461,
+          "2023": 0.19099,
+          "2024": 0.19196
+        },
+        "tune_brier": 0.19268,
+        "validate_brier": 0.19099,
+        "holdout_brier": 0.19196
       },
       {
         "weights": {
@@ -316,10 +376,17 @@
           "record_weight": 0.22,
           "conference_weight": 0.08
         },
-        "brier_2023": 0.19191,
-        "brier_2024": 0.19205,
-        "pooled_brier": 0.19198,
-        "pooled_accuracy": 0.7129
+        "brier_by_year": {
+          "2019": 0.18698,
+          "2020": 0.1965,
+          "2021": 0.18696,
+          "2022": 0.20615,
+          "2023": 0.19221,
+          "2024": 0.19345
+        },
+        "tune_brier": 0.19392,
+        "validate_brier": 0.19221,
+        "holdout_brier": 0.19345
       },
       {
         "weights": {
@@ -327,10 +394,17 @@
           "record_weight": 0.27,
           "conference_weight": 0.08
         },
-        "brier_2023": 0.19484,
-        "brier_2024": 0.19654,
-        "pooled_brier": 0.19566,
-        "pooled_accuracy": 0.7117
+        "brier_by_year": {
+          "2019": 0.1901,
+          "2020": 0.19995,
+          "2021": 0.18985,
+          "2022": 0.21027,
+          "2023": 0.19524,
+          "2024": 0.19798
+        },
+        "tune_brier": 0.19732,
+        "validate_brier": 0.19524,
+        "holdout_brier": 0.19798
       },
       {
         "weights": {
@@ -338,10 +412,17 @@
           "record_weight": 0.32,
           "conference_weight": 0.08
         },
-        "brier_2023": 0.19825,
-        "brier_2024": 0.20145,
-        "pooled_brier": 0.19979,
-        "pooled_accuracy": 0.7011
+        "brier_by_year": {
+          "2019": 0.19389,
+          "2020": 0.20381,
+          "2021": 0.19335,
+          "2022": 0.21478,
+          "2023": 0.19867,
+          "2024": 0.20287
+        },
+        "tune_brier": 0.20124,
+        "validate_brier": 0.19867,
+        "holdout_brier": 0.20287
       },
       {
         "weights": {
@@ -349,47 +430,70 @@
           "record_weight": 0.35,
           "conference_weight": 0.1
         },
-        "brier_2023": 0.2005,
-        "brier_2024": 0.20439,
-        "pooled_brier": 0.20237,
-        "pooled_accuracy": 0.6987
+        "brier_by_year": {
+          "2019": 0.19648,
+          "2020": 0.20621,
+          "2021": 0.19551,
+          "2022": 0.21751,
+          "2023": 0.20086,
+          "2024": 0.20572
+        },
+        "tune_brier": 0.20372,
+        "validate_brier": 0.20086,
+        "holdout_brier": 0.20572
       }
     ],
     "best": {
+      "weights": {
+        "team_quality_weight": 0.8,
+        "record_weight": 0.15,
+        "conference_weight": 0.05
+      },
+      "brier_by_year": {
+        "2019": 0.18366,
+        "2020": 0.19268,
+        "2021": 0.18423,
+        "2022": 0.20125,
+        "2023": 0.1887,
+        "2024": 0.18805
+      },
+      "tune_brier": 0.19025,
+      "validate_brier": 0.1887,
+      "holdout_brier": 0.18805
+    },
+    "current": {
       "weights": {
         "team_quality_weight": 0.75,
         "record_weight": 0.2,
         "conference_weight": 0.05
       },
-      "brier_2023": 0.19068,
-      "brier_2024": 0.19052,
-      "pooled_brier": 0.1906,
-      "pooled_accuracy": 0.7129
-    },
-    "default": {
-      "weights": {
-        "team_quality_weight": 0.65,
-        "record_weight": 0.27,
-        "conference_weight": 0.08
+      "brier_by_year": {
+        "2019": 0.18567,
+        "2020": 0.19526,
+        "2021": 0.18606,
+        "2022": 0.20461,
+        "2023": 0.19099,
+        "2024": 0.19196
       },
-      "brier_2023": 0.19484,
-      "brier_2024": 0.19654,
-      "pooled_brier": 0.19566,
-      "pooled_accuracy": 0.7117
+      "tune_brier": 0.19268,
+      "validate_brier": 0.19099,
+      "holdout_brier": 0.19196
     },
     "promote": true,
-    "elapsed_s": 1.3
+    "elapsed_s": 4.2
   },
   "promoted_config": {
-    "base_factor": 40.0,
+    "base_factor": 50.0,
+    "hfa_elo": 50.0,
+    "upset_bonus_mult": 1.18,
     "use_reference_ranks": false,
-    "team_quality_weight": 0.75,
-    "record_weight": 0.2,
+    "team_quality_weight": 0.8,
+    "record_weight": 0.15,
     "conference_weight": 0.05
   },
   "promotions": {
     "use_reference_ranks": false,
-    "elo_hparams": false,
+    "elo_hparams": true,
     "frs_weights": true
   }
 }

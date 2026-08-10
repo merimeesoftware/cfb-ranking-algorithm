@@ -4,70 +4,77 @@ Recorded results from the leak-free week-by-week predictive sandbox
 (`algo_lab/` + `scripts/run_algo_eval_suite.py`). Protocol: ratings through
 week W−1 predict week W; primary metric is **Brier** (lower is better).
 
-**Run settings:** seasons 2023–2024, max week 12, FBS-involved games only,
-no historical priors, `rating_field=team_quality_score` unless noted.
+## Season split (expanded)
+
+| Role | Years |
+|------|-------|
+| **Tune** | 2019–2022 |
+| **Validate** | 2023 |
+| **Holdout** | 2024 (never used to pick params) |
+
+Max week 12, FBS-involved games, no historical priors,
+`rating_field=team_quality_score` unless noted.
 Raw JSON: [`algo_eval_results.json`](algo_eval_results.json).
 
-## Baseline vs always-home
+### CFBD call budget
 
-| Config | Season | N | Accuracy | Brier | Brier lift vs home |
-|--------|--------|---|----------|-------|--------------------|
-| `use_reference_ranks=True` | 2023 | 881 | 0.692 | 0.1967 | +0.0414 |
-| `use_reference_ranks=True` | 2024 | 815 | 0.704 | 0.1883 | +0.0504 |
-| `use_reference_ranks=False` | 2023 | 881 | 0.720 | 0.1884 | +0.0496 |
-| `use_reference_ranks=False` | 2024 | 815 | 0.718 | 0.1811 | +0.0576 |
+Warmed 2019–2022 with full-season fetches: **6 live calls** on slot A
+(`CFBD_API_KEY`; remaining ≈818/1000). Teams + 2022–2024 were already cached.
+Dual-key support: set `CFBD_API_KEY_B` + `CFBD_API_KEY_SLOT=B` for a second
+1k/mo quota (see [`.cursor/SECRETS.md`](../.cursor/SECRETS.md)).
 
-Pooled Brier: **0.1926** (ref on) vs **0.1849** (ref off).
+## Reference ranks A/B
 
-### Decision: `use_reference_ranks=False` (default)
+| Window | ref ON Brier | ref OFF Brier |
+|--------|--------------|---------------|
+| Tune 2019–2022 | 0.19551 | **0.18986** |
+| Validate 2023 | 0.19667 | **0.18840** |
+| Holdout 2024 | 0.18829 | **0.18107** |
 
-Feeding prior-iteration Elos into expectation **hurt** calibration. The feature
-remains implemented and toggleable for future experiments; chaos-tax iterations
-still run.
+### Decision: `use_reference_ranks=False`
 
-## Elo hyperparameter sweep (validate 2023 → holdout 2024)
+Confirmed on the longer tune window.
+
+## Elo hyperparameter sweep
 
 Grid: `base_factor ∈ {30,40,50}`, `hfa_elo ∈ {50,65,80}`, `upset_bonus_mult ∈ {1.0,1.18}`.
 
-- Best on 2023: `{base_factor: 50, hfa_elo: 50, upset_bonus_mult: 1.18}` (Brier 0.1866)
-- 2024 holdout default (K=40, HFA=65): Brier **0.18107**
-- 2024 holdout swept: Brier **0.18079** (Δ = 0.00028)
+- Best on **tune**: `{base_factor: 50, hfa_elo: 50, upset_bonus_mult: 1.18}` (Brier 0.18877)
+- Validate default → swept: **0.18840 → 0.18660** (Δ = +0.00180)
+- Holdout default → swept: **0.18107 → 0.18079** (no regression)
 
-### Decision: keep default K=40 / HFA=65
+### Decision: promote **K=50, HFA=50**
 
-Holdout gain below the ~0.0005 promotion threshold; always-home lift essentially
-unchanged.
+(Previously held at 40/65 when only 2023 was used for sweeping — longer history
+changed the gate.)
 
 ## FRS weight triples (predict with `final_ranking_score`)
 
-| TQ / Resume / CQ | Pooled Brier | Pooled Acc |
-|------------------|--------------|------------|
-| 0.65 / 0.27 / 0.08 (old) | 0.19566 | — |
-| 0.70 / 0.22 / 0.08 | 0.19198 | — |
-| 0.60 / 0.32 / 0.08 | 0.19979 | — |
-| **0.75 / 0.20 / 0.05** | **0.19060** | — |
-| 0.55 / 0.35 / 0.10 | 0.20237 | — |
+| TQ / Resume / CQ | Tune Brier | Val 2023 | Hold 2024 |
+|------------------|------------|----------|-----------|
+| 0.75 / 0.20 / 0.05 (V5.2) | 0.19268 | 0.19099 | 0.19196 |
+| 0.65 / 0.27 / 0.08 (V5.1) | 0.19732 | 0.19524 | 0.19798 |
+| **0.80 / 0.15 / 0.05** | **0.19025** | **0.18870** | **0.18805** |
+| 0.70 / 0.22 / 0.08 | 0.19392 | 0.19221 | 0.19345 |
 
-### Decision: promote **75 / 20 / 05**
+### Decision: promote **80 / 15 / 05**
 
-Higher Team Quality weight moves the published FRS closer to the Elo signal that
-already beats always-home on Brier. Resume/CQ remain for deservingness, at lower
-weight.
-
-## Promoted V5.2 config
+## Promoted V5.3 config
 
 | Key | Value |
 |-----|-------|
-| `ALGO_VERSION` | `v5.2` |
-| `team_quality_weight` | 0.75 |
-| `record_weight` | 0.20 |
+| `ALGO_VERSION` | `v5.3` |
+| `team_quality_weight` | 0.80 |
+| `record_weight` | 0.15 |
 | `conference_weight` | 0.05 |
-| `base_factor` | 40.0 |
-| `hfa_elo` | 65.0 |
+| `base_factor` (K) | 50.0 |
+| `hfa_elo` | 50.0 |
+| `upset_bonus_mult` | 1.18 |
 | `use_reference_ranks` | false |
 
-## Integrity fixes shipped with this eval
+## Version changelog
 
-- CFBD `_transform_game` preserves `notes`, `season_type`, `neutral_site`
-- Cloud Agent `environment.json` installs `python3-venv` before `python3 -m venv`
-- Eval sandbox + warm-cache scripts under `scripts/`
+| Version | Change |
+|---------|--------|
+| V5.2 | First eval (2023–2024 only): FRS 75/20/05; ref ranks off; keep K=40/HFA=65 |
+| **V5.3** | Expanded tune 2019–2022: FRS 80/15/05; K=50; HFA=50 |

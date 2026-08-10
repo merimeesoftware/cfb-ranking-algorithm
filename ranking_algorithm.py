@@ -70,7 +70,7 @@ class TeamQualityRanker:
     - Bad Loss Penalty for losses to Bottom 25% teams
     - Perfection bonus (1.05x undefeated, 1.02x one-loss)
     - Champ Anchors (+100/+50)
-    - Resume-weighted FRS formula (0.75/0.20/0.05)
+    - Resume-weighted FRS formula (0.80/0.15/0.05)
     """
     
     def _create_default_team_stat(self) -> TeamStat:
@@ -103,10 +103,10 @@ class TeamQualityRanker:
         self.group_five_initial = self.config.get('group5_initial', 1200.0)
         self.fcs_initial = self.config.get('fcs_initial', 900.0)
         
-        self.base_factor = self.config.get('base_factor', 40.0) # K-factor
-        self.conference_weight = self.config.get('conference_weight', 0.05)   # V5.2: 5% CQ
-        self.record_weight = self.config.get('record_weight', 0.20)           # V5.2: 20% Resume
-        self.team_quality_weight = self.config.get('team_quality_weight', 0.75) # V5.2: 75% TQ
+        self.base_factor = self.config.get('base_factor', 50.0) # K-factor (V5.3)
+        self.conference_weight = self.config.get('conference_weight', 0.05)   # V5.3: 5% CQ
+        self.record_weight = self.config.get('record_weight', 0.15)           # V5.3: 15% Resume
+        self.team_quality_weight = self.config.get('team_quality_weight', 0.80) # V5.3: 80% TQ
         
         # V4.0: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
         # Default 0.15 means 85% tier initial + 15% prior (reduced legacy bias)
@@ -116,7 +116,7 @@ class TeamQualityRanker:
         self.num_iterations = self.config.get('num_iterations', 2)
         
         # V5.3: Home-Field Advantage (HFA) configuration
-        self.hfa_elo = self.config.get('hfa_elo', 65.0)  # Standard CFB HFA ~65 Elo points
+        self.hfa_elo = self.config.get('hfa_elo', 50.0)  # Tuned on 2019–2022
         self.hfa_postseason = self.config.get('hfa_postseason', 20.0)  # Reduced HFA for bowls
         self.postseason_k_mult = self.config.get('postseason_k_mult', 0.65)  # Bowl K-factor reduction
         
