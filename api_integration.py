@@ -75,7 +75,8 @@ class CFBDApiClient:
 
     def get_games(self, year: int, week: Optional[int] = None, season_type: str = 'regular') -> List[Dict]:
         """Fetch games with caching, error handling and data transformation"""
-        cache_key = self._get_cache_key('games', year, week, season_type)
+        # v2: includes notes / season_type / neutral_site for HFA handling
+        cache_key = self._get_cache_key('games', year, week, season_type, 'v2')
         
         # Try cache first
         cached = self._cache.get(cache_key)

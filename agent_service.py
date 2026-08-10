@@ -206,7 +206,9 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         f"You are a college football ranking analyst. Answer concisely using ONLY the data provided.\n\n"
         f"Question: {question}\n\n"
         f"Team context (JSON): {context}\n\n"
-        f"Formula: 65% Team Quality + 27% Record Score + 8% Conference Quality."
+        f"Formula: {int(round(FRS_WEIGHTS[0] * 100))}% Team Quality + "
+        f"{int(round(FRS_WEIGHTS[1] * 100))}% Record Score + "
+        f"{int(round(FRS_WEIGHTS[2] * 100))}% Conference Quality."
     )
     try:
         return _call_minimax(prompt), mode

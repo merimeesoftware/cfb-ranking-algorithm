@@ -112,6 +112,8 @@ def backtest_season(
     ratings_cache: Dict[int, Dict[str, float]] = {}
     team_meta = _team_meta_from_games(games)
     cfg = config or {}
+    hfa_regular = float(cfg.get('hfa_elo', 50.0))
+    hfa_postseason = float(cfg.get('hfa_postseason', 20.0))
 
     for outcome_week in outcome_weeks:
         rating_week = outcome_week - 1  # ratings as of end of prior week
@@ -137,7 +139,12 @@ def backtest_season(
             ratings_cache[rating_week] = ratings
 
         for game in games_in_week(games, outcome_week):
-            pred = predict_game(game, ratings)
+            pred = predict_game(
+                game,
+                ratings,
+                hfa_regular=hfa_regular,
+                hfa_postseason=hfa_postseason,
+            )
             if pred is not None:
                 pred['rating_week'] = max(rating_week, 0)
                 pred['rating_field'] = rating_field

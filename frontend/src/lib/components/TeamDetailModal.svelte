@@ -55,10 +55,10 @@
 		}
 	}
 
-	// Score breakdown calculations (V5.0 weights: 65/27/8)
-	$: tqContrib = team.team_quality_score * 0.65;
-	$: recContrib = team.record_score * 0.27;
-	$: confContrib = team.conference_quality_score * 0.08;
+	// Score breakdown calculations (V5.3 weights: 80/15/5)
+	$: tqContrib = team.team_quality_score * 0.80;
+	$: recContrib = team.record_score * 0.15;
+	$: confContrib = team.conference_quality_score * 0.05;
 
 	// Prefer API comparison payloads; fall back to neighbors from the rankings list
 	$: comparisonsAhead = (team.comparisons_ahead && team.comparisons_ahead.length > 0
@@ -78,12 +78,12 @@
 		.filter((_, i) => i > rank - 1 && i <= rank + 2)
 		.map((t, i) => ({ team: t, rank: rank + 1 + i }));
 
-	// Calculate component contributions for any team (V5.0 weights)
+	// Calculate component contributions for any team (V5.3 weights)
 	function getContribs(t: Team) {
 		return {
-			tq: t.team_quality_score * 0.65,
-			rec: t.record_score * 0.27,
-			conf: t.conference_quality_score * 0.08
+			tq: t.team_quality_score * 0.80,
+			rec: t.record_score * 0.15,
+			conf: t.conference_quality_score * 0.05
 		};
 	}
 

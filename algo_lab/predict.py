@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 
 ELO_SCALE = 400.0
-DEFAULT_HFA = 65.0
+DEFAULT_HFA = 50.0  # Matches TeamQualityRanker / DEFAULT_CONFIG hfa_elo (V5.3)
 DEFAULT_HFA_POSTSEASON = 20.0
 
 
