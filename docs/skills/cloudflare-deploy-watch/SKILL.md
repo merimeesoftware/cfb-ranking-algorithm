@@ -102,6 +102,7 @@ Stop the loop and report clearly when:
 
 - Cloudflare account/plan blocker (Containers require Workers Paid; user must upgrade)
 - Missing secrets only the user can set (`CFBD_API_KEY`, `CLOUDFLARE_API_TOKEN`)
+- Builds API token missing **Containers** edit — bare `Unauthorized` after Docker image build (dashboard-only; see DEPLOY-CLOUDFLARE.md)
 - Dashboard-only misconfiguration (wrong production branch, wrong build/deploy commands) — give exact settings table
 - Repeated failure after 2–3 fix attempts with no new signal in logs
 - MCP/API auth unavailable and user cannot paste logs
@@ -121,6 +122,7 @@ Handoff template:
 | Production branch | `main` |
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy --env=""` |
+| API token | Custom token with Workers Scripts **and** Containers edit |
 | Node | 22 |
 
 ## Related files
