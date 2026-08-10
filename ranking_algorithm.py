@@ -255,8 +255,17 @@ class TeamQualityRanker:
         game_notes = str(game.get('notes', '')).lower()
         season_type = str(game.get('season_type', 'regular')).lower()
         
-        is_neutral_site = 'neutral' in game_notes or 'kickoff' in game_notes
-        is_postseason = season_type == 'postseason' or 'bowl' in game_notes or 'playoff' in game_notes or 'championship' in game_notes
+        is_neutral_site = (
+            bool(game.get('neutral_site'))
+            or 'neutral' in game_notes
+            or 'kickoff' in game_notes
+        )
+        is_postseason = (
+            season_type == 'postseason'
+            or 'bowl' in game_notes
+            or 'playoff' in game_notes
+            or 'championship' in game_notes
+        )
 
         # Calculate Margin of Victory Multiplier (M_mov)
         score_diff = abs(home_score - away_score)
@@ -283,9 +292,21 @@ class TeamQualityRanker:
             # FCS vs FCS (or lower) - drastically reduce point exchange
             matchup_weight = 0.1
 
-        # Use current TRUE ratings for Elo calculation
-        r_home = self.team_stats[home_team]['quality_score']
-        r_away = self.team_stats[away_team]['quality_score']
+        # Live ratings (always what we update)
+        r_home_live = self.team_stats[home_team]['quality_score']
+        r_away_live = self.team_stats[away_team]['quality_score']
+
+        # Optional prior-iteration reference ranks for expectation / upset sizing
+        use_ref = (
+            self.config.get('use_reference_ranks', True)
+            and reference_ranks is not None
+        )
+        if use_ref:
+            r_home = reference_ranks.get(home_team, r_home_live)
+            r_away = reference_ranks.get(away_team, r_away_live)
+        else:
+            r_home = r_home_live
+            r_away = r_away_live
         
         # V5.3: Home-Field Advantage (HFA)
         # Adjust EXPECTED score calculation only, not actual ratings
@@ -321,12 +342,12 @@ class TeamQualityRanker:
         if is_postseason:
             k_factor *= self.postseason_k_mult  # 0.65x for bowl games
         
-        # Calculate Delta using TRUE ratings (zero-sum on actual strength)
+        # Calculate Delta using reference-aware expectation (zero-sum on live strength)
         delta = k_factor * matchup_weight * m_mov * (actual_score - expected_score)
         
         # V5.3: Upset Bonus Multipliers (dampened from V4)
-        r_winner = self.team_stats[winner]['quality_score']
-        r_loser = self.team_stats[loser]['quality_score']
+        r_winner = reference_ranks.get(winner, self.team_stats[winner]['quality_score']) if use_ref else self.team_stats[winner]['quality_score']
+        r_loser = reference_ranks.get(loser, self.team_stats[loser]['quality_score']) if use_ref else self.team_stats[loser]['quality_score']
         elo_gap = r_loser - r_winner
         
         if elo_gap > self.upset_elo_threshold:
@@ -336,7 +357,7 @@ class TeamQualityRanker:
         if winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4':
             delta *= self.g5_beats_p4_mult  # G5 > P4 bonus (×1.12)
         
-        # Apply updates (Zero-Sum)
+        # Apply updates (Zero-Sum) to LIVE ratings
         new_winner_score = self.team_stats[winner]['quality_score'] + delta
         new_loser_score = self.team_stats[loser]['quality_score'] - delta
         

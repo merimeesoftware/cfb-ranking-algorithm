@@ -36,7 +36,11 @@ def game_hfa(
     """Match TeamQualityRanker HFA rules (neutral / postseason / regular)."""
     notes = str(game.get('notes', '')).lower()
     season_type = str(game.get('season_type', 'regular')).lower()
-    is_neutral = 'neutral' in notes or 'kickoff' in notes
+    is_neutral = (
+        bool(game.get('neutral_site'))
+        or 'neutral' in notes
+        or 'kickoff' in notes
+    )
     is_postseason = (
         season_type == 'postseason'
         or 'bowl' in notes

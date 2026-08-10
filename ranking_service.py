@@ -21,6 +21,7 @@ DEFAULT_CONFIG = {
     'prior_strength': 0.15,
     'use_ats': False,
     'ats_bonus': 10.0,
+    'use_reference_ranks': True,
 }
 
 # Fields that affect historical Elo used for priors (not prior_strength blend)

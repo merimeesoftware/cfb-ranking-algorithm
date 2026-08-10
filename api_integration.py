@@ -224,7 +224,11 @@ class CFBDApiClient:
             'away_conference': game.get('awayConference'),
             'is_interconference': game.get('homeConference') != game.get('awayConference'),
             'venue': game.get('venue'),
-            'date': game.get('startDate')
+            'date': game.get('startDate'),
+            # Required for HFA / postseason K / champ anchors in TeamQualityRanker
+            'notes': game.get('notes') or '',
+            'season_type': game.get('seasonType') or 'regular',
+            'neutral_site': bool(game.get('neutralSite')),
         }
 
     @staticmethod

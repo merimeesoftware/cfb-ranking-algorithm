@@ -163,3 +163,36 @@ class TestSweep:
         )
         assert len(rows) == 2
         assert rows[0]['score'] <= rows[1]['score']
+
+
+class TestReferenceRanks:
+    def test_reference_ranks_change_live_updates(self):
+        """With reference_ranks, expectation uses prior-iteration strength."""
+        from ranking_algorithm import TeamQualityRanker
+
+        game = _game(1, 'Alpha', 'Delta', 35, 7)
+        live = TeamQualityRanker({'use_reference_ranks': True, 'prior_strength': 0.0})
+        live.update_quality_scores(game)
+        live_alpha = live.team_stats['Alpha']['quality_score']
+
+        ref = TeamQualityRanker({'use_reference_ranks': True, 'prior_strength': 0.0})
+        # Pretend prior iteration already knows Alpha is elite and Delta is weak
+        ref.update_quality_scores(
+            game,
+            reference_ranks={'Alpha': 1800.0, 'Delta': 1000.0},
+        )
+        ref_alpha = ref.team_stats['Alpha']['quality_score']
+        # Expected win for Alpha is higher under reference ranks → smaller Elo gain
+        assert ref_alpha < live_alpha
+
+    def test_use_reference_ranks_false_ignores_refs(self):
+        from ranking_algorithm import TeamQualityRanker
+
+        game = _game(1, 'Alpha', 'Delta', 35, 7)
+        a = TeamQualityRanker({'use_reference_ranks': False, 'prior_strength': 0.0})
+        a.update_quality_scores(game)
+        b = TeamQualityRanker({'use_reference_ranks': False, 'prior_strength': 0.0})
+        b.update_quality_scores(game, reference_ranks={'Alpha': 1800.0, 'Delta': 1000.0})
+        assert a.team_stats['Alpha']['quality_score'] == pytest.approx(
+            b.team_stats['Alpha']['quality_score']
+        )

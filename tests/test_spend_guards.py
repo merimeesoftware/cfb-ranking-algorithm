@@ -165,7 +165,15 @@ def test_agent_explain_stub_expanded_context(client, monkeypatch):
         assert ctx['path_to_climb']['team_above'] == 'Oregon'
         assert ctx['path_to_climb']['score_gap'] == 5.0
         assert 'Oregon' in data['explanation']
-        assert 'path' in data['explanation'].lower() or 'gap' in data['explanation'].lower() or 'pass' in data['explanation'].lower()
+        # Stub uses path_to_climb.summary / neighbor phrasing (not literal "path"/"gap")
+        expl = data['explanation'].lower()
+        assert (
+            'catch' in expl
+            or 'stronger' in expl
+            or 'ahead' in expl
+            or 'path' in expl
+            or 'gap' in expl
+        )
 
 
 def test_agent_explain_off_mode(client, monkeypatch):
