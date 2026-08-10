@@ -3,10 +3,11 @@
 ## Master Formula
 
 ```
-FRS = (0.65 × TeamQuality) + (0.27 × RecordScore) + (0.08 × ConferenceQuality)
+FRS = (0.80 × TeamQuality) + (0.15 × RecordScore) + (0.05 × ConferenceQuality)
 ```
 
 **Final Ranking Score (FRS)** combines three weighted components to produce the final rankings.
+(V5.3 blend — tuned on 2019–2022, validated 2023, holdout 2024; see `docs/ALGORITHM_EVAL_RESULTS.md`.)
 
 ---
 
@@ -39,7 +40,7 @@ Loser:   New_Elo = Current_Elo - Δ
 
 | Component | Formula / Value | Description |
 |-----------|-----------------|-------------|
-| **K-factor (Base)** | 40 (×0.65 postseason) | Controls rating volatility. Reduced in bowls to prevent "Bowl Bias". |
+| **K-factor (Base)** | 50 (×0.65 postseason) | Controls rating volatility. Tuned V5.3 (was 40). |
 | **Expected Score** | `1 / (1 + 10^((R_opp_eff - R_team_eff) / 400))` | Standard logistic Elo formula with HFA adjustment. |
 | **Actual Score** | 1.0 | Win = 1.0, Loss = 0.0. |
 | **Margin of Victory (MoV)** | `log(score_diff + 1)` | Logarithmic scaling prevents exploitation of blowout wins. |
@@ -54,9 +55,9 @@ Home_Effective_Elo = Home_Elo + HFA
 Away_Effective_Elo = Away_Elo
 
 HFA Values:
-  Regular Season: 65 Elo points
+  Regular Season: 50 Elo points (V5.3; was 65)
   Postseason: 20 Elo points
-  Neutral Site: 0 (detected via "neutral" or "kickoff" in game notes)
+  Neutral Site: 0 (detected via neutralSite flag or "neutral"/"kickoff" in notes)
 ```
 
 **Result:** Road wins yield larger positive deltas; home wins yield smaller deltas.
@@ -181,7 +182,20 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 
 ## Version History
 
-- **V5 (Current):**
+- **V5.3 (Current):**
+  - **Weights:** 80/15/05 (TQ/RS/CQ) — promoted after expanding tune window to 2019–2022
+  - **Elo knobs:** K=`base_factor` 50, HFA 50 (was 40/65)
+  - **Eval:** tune 2019–2022 / validate 2023 / holdout 2024
+  - **reference_ranks:** still off by default (confirmed on longer history)
+  - Dual CFBD key slots (`CFBD_API_KEY` / `CFBD_API_KEY_B`) for separate 1k/mo quotas
+
+- **V5.2:**
+  - **Weights:** 75/20/05 (TQ/RS/CQ)
+  - **Integrity:** CFBD transform preserves `notes` / `season_type` / `neutral_site`
+  - **reference_ranks:** implemented but disabled by default after A/B
+  - **Eval lab:** `algo_lab/` week-by-week Brier/log-loss sandbox
+
+- **V5 (Previous):**
   - **Weights:** 65/27/08 (TQ/RS/CQ)
   - **Iterations:** 2 (reduced from 4)
   - **New Features:**
@@ -217,3 +231,11 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 | $P_{75}$ | 75th percentile Elo (quality win threshold) |
 | $P_{90}$ | 90th percentile Elo (quality loss threshold) |
 | $P_{25}$ | 25th percentile Elo (bad loss threshold) |
+
+---
+
+## Evaluation
+
+Predictive backtesting (week-by-week, leak-free) lives in `algo_lab/` —
+see [docs/ALGORITHM_EVAL.md](docs/ALGORITHM_EVAL.md). Use **Team Quality (Elo)** for
+next-game probabilities; FRS remains the published deservingness ranking.

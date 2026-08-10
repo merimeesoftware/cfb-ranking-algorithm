@@ -81,6 +81,11 @@ class CFBDataProcessor:
             for week_num in range(1, through_week + 1):
                 week_games = self.api_client.get_games(year=year, week=week_num)
                 raw_games.extend(week_games)
+            # Offline / partial cache: fall back to full-season cache and filter
+            if not raw_games:
+                raw_games = self.api_client.get_games(year=year)
+                if through_week and raw_games:
+                    raw_games = [g for g in raw_games if g.get('week') is not None and g['week'] <= through_week]
         else:
             raw_games = self.api_client.get_games(year=year)
             if through_week:

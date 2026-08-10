@@ -46,3 +46,17 @@ def test_get_available_weeks(mock_client):
     processor = CFBDataProcessor(api_client=mock_client)
     weeks = processor.get_available_weeks(2024)
     assert weeks == [1, 2]
+
+
+def test_week_scoped_empty_falls_back_to_full_season(mock_client):
+    """When per-week cache/API returns empty, use full-season fetch + filter."""
+    def _games(year, week=None, season_type='regular'):
+        if week is not None:
+            return []
+        return [_make_game(1), _make_game(2), _make_game(3)]
+
+    mock_client.get_games.side_effect = _games
+    processor = CFBDataProcessor(api_client=mock_client)
+    games = processor.get_games_for_season(2024, through_week=2, use_week_scoped_fetch=True)
+    assert len(games) == 2
+    assert {g['week'] for g in games} == {1, 2}

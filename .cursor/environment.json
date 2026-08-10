@@ -1,6 +1,6 @@
 {
   "name": "cfb-ranking-algorithm",
-  "install": "python3 -m venv venv && ./venv/bin/pip install -r requirements.txt && cd frontend && npm ci",
+  "install": "sudo apt-get update -qq\nsudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv python3-pip\npython3 -m venv venv\n./venv/bin/pip install -U pip\n./venv/bin/pip install -r requirements.txt\n./venv/bin/pip install flake8 bandit pytest pytest-cov\n(cd frontend && npm ci)",
   "start": "echo 'Secrets (MINIMAX_API_KEY, CFBD_API_KEY) are injected from the Cursor Cloud Secrets tab — see .cursor/SECRETS.md'",
   "terminals": [
     {

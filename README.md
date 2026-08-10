@@ -231,27 +231,36 @@ The conference rankings include:
 - **Win%** - Win percentages against each tier
 - **Quality Score** - Mean of member teams' quality scores
 
-## Math Behind the Rankings (Version 5.1 Lean Pure)
+## Math Behind the Rankings (Version 5.3)
 
 See the [ALGORITHM_BREAKDOWN.md](ALGORITHM_BREAKDOWN.md) file for detailed explanation of the mathematical model.
 
 Key components:
 
 1.  **Master Formula**
-    -   `FRS = (0.65 * TeamQuality) + (0.27 * RecordScore) + (0.08 * ConferenceQuality)`
+    -   `FRS = (0.80 * TeamQuality) + (0.15 * RecordScore) + (0.05 * ConferenceQuality)`
 
 2.  **Team Quality (Elo)**
     -   **Expectation:** $E_A = 1 / (1 + 10 ^ ((R_B - R_A) / 400))$
-    -   **Update:** $\Delta = K \times MatchupWeight \times MoV \times (Actual - Expected)$
-    -   **Iterative Solver:** Season is simulated 2 times to ensure convergence.
+    -   **Update:** $\Delta = K \times MatchupWeight \times MoV \times (Actual - Expected)$ with K=50, HFA=50 (V5.3)
+    -   **Iterative Solver:** Season is simulated 2 times (chaos tax); reference-rank Elo expectation is available but off by default after A/B.
 
 3.  **Resume (Record Score)**
     -   Rewards winning percentage, strength of schedule, and quality wins.
     -   **Milestone Multipliers:** Boosts for Undefeated seasons (1.05x) and Conference Championships.
 
 4.  **Conference Quality**
-    -   `CQ = Mean_Elo - (0.15 * StdDev)`
-    -   Rewards depth and penalizes high variance (cannibalization).
+    -   Hybrid top-half / full average with OOC multiplier and chaos tax.
+## Algorithm Evaluation Sandbox
+
+To improve the algorithm scientifically (week-by-week predictive backtests, Brier/log-loss,
+hyperparameter sweeps), see **[docs/ALGORITHM_EVAL.md](docs/ALGORITHM_EVAL.md)** and the
+`algo_lab/` package:
+
+```bash
+./venv/bin/pytest tests/test_algo_lab.py -q
+CFBD_OFFLINE=0 ./venv/bin/python scripts/backtest_rankings.py --years 2024 --max-week 10
+```
 
 ## Advanced Customization
 
@@ -260,8 +269,8 @@ The model can be customized with the following parameters:
 - `--power-conf-initial`: Initial quality score for Power 4 conferences (default: 1500)
 - `--group5-initial`: Initial quality score for Group of 5 conferences (default: 1200)
 - `--fcs-initial`: Initial quality score for FCS conferences (default: 900)
-- `--base-factor`: Base K-factor for Elo updates (default: 40.0)
-- `--conference-weight`: Weight of conference quality in final score (default: 0.08)
+- `--base-factor`: Base K-factor for Elo updates (default: 50.0)
+- `--conference-weight`: Weight of conference quality in final score (default: 0.05)
 
 ## License
 

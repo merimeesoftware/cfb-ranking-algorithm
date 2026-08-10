@@ -41,8 +41,9 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 
 | Secret | Required? | Purpose |
 |--------|-----------|---------|
-| `CFBD_API_KEY` | **Yes** | Fetch game data from College Football Data |
-| `MINIMAX_API_KEY` | Optional | `/agent/explain` ranking explanations |
+| `CFBD_API_KEY` | **Yes** | Fetch game data from College Football Data (slot A) |
+| `CFBD_API_KEY_B` | No | Optional second CFBD account (slot B); select with `CFBD_API_KEY_SLOT=B` |
+| `MINIMAX_API_KEY` | Optional | `/agent/explain` when `AI_MODE=live` (paygo MiniMax — not Coding Plan) |
 | `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
 | `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
 

@@ -63,6 +63,7 @@ ranking_results/
 !package-lock.json
 !tsconfig.json
 !.cursor/environment.json
+!docs/algo_eval_results.json
 !frontend/static/rankings/.gitkeep
 !frontend/static/rankings/**/*.json
 !tests/fixtures/**/*.json

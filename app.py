@@ -13,6 +13,7 @@ from ranking_service import (
     slim_rankings_for_list,
     build_config,
     DEFAULT_CONFIG,
+    FRS_WEIGHTS,
 )
 from agent_service import agent_bp, set_data_processor
 from path_to_climb import compute_path_to_climb
@@ -171,7 +172,7 @@ def get_team_breakdown(team_name):
             diff_sos = target['sos'] - other['sos']
             diff_sov = target['sov'] - other['sov']
             factors = []
-            tq_contrib = diff_tq * 0.65
+            tq_contrib = diff_tq * FRS_WEIGHTS[0]
             if abs(tq_contrib) > 5:
                 factors.append({
                     'factor': 'Team Quality (Elo)',
@@ -183,7 +184,7 @@ def get_team_breakdown(team_name):
                         f"({target['team_quality_score']:.0f} vs {other['team_quality_score']:.0f})"
                     ),
                 })
-            rec_contrib = diff_rec * 0.27
+            rec_contrib = diff_rec * FRS_WEIGHTS[1]
             if abs(rec_contrib) > 5:
                 factors.append({
                     'factor': 'Record Score (Resume)',
@@ -195,7 +196,7 @@ def get_team_breakdown(team_name):
                         f"({target['record_score']:.0f} vs {other['record_score']:.0f})"
                     ),
                 })
-            cq_contrib = diff_cq * 0.08
+            cq_contrib = diff_cq * FRS_WEIGHTS[2]
             if abs(cq_contrib) > 2:
                 factors.append({
                     'factor': 'Conference Quality',
@@ -269,9 +270,9 @@ def get_team_breakdown(team_name):
                 'color': team_data.get('color'),
             },
             'formula_breakdown': {
-                'tq_contribution': team_data['team_quality_score'] * 0.65,
-                'rec_contribution': team_data['record_score'] * 0.27,
-                'cq_contribution': team_data['conference_quality_score'] * 0.08,
+                'tq_contribution': team_data['team_quality_score'] * FRS_WEIGHTS[0],
+                'rec_contribution': team_data['record_score'] * FRS_WEIGHTS[1],
+                'cq_contribution': team_data['conference_quality_score'] * FRS_WEIGHTS[2],
                 'total': team_data['final_ranking_score'],
             },
             'wins_details': team_data.get('wins_details') or [],
