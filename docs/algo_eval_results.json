@@ -1,0 +1,395 @@
+{
+  "algo_version_at_run": "v5.1",
+  "max_week": 12,
+  "priors": false,
+  "protocol": "week_by_week_leak_free",
+  "rating_field": "team_quality_score",
+  "baseline_ref_on": {
+    "per_season": [
+      {
+        "year": 2023,
+        "n_games": 881,
+        "accuracy": 0.6924,
+        "brier": 0.19667,
+        "log_loss": 0.57315,
+        "home_brier": 0.23803,
+        "brier_lift_vs_home": 0.04136,
+        "accuracy_lift_vs_home": 0.04767
+      },
+      {
+        "year": 2024,
+        "n_games": 815,
+        "accuracy": 0.7043,
+        "brier": 0.18829,
+        "log_loss": 0.55019,
+        "home_brier": 0.2387,
+        "brier_lift_vs_home": 0.05041,
+        "accuracy_lift_vs_home": 0.06626
+      }
+    ],
+    "pooled": {
+      "n_games": 1696,
+      "accuracy": 0.6981132075471698,
+      "brier": 0.19264102908895195,
+      "log_loss": 0.5621122341615232,
+      "mean_p_home": 0.6397239664426017,
+      "home_win_rate": 0.6415094339622641,
+      "upset_rate": 0.3018867924528302,
+      "favorite_confidence": 0.6987615275792753,
+      "by_week": {
+        "1": {
+          "n": 289.0,
+          "accuracy": 0.7716262975778547,
+          "brier": 0.1427346286618016
+        },
+        "2": {
+          "n": 168.0,
+          "accuracy": 0.7440476190476191,
+          "brier": 0.15812071566383096
+        },
+        "3": {
+          "n": 144.0,
+          "accuracy": 0.6944444444444444,
+          "brier": 0.17240192337183144
+        },
+        "4": {
+          "n": 138.0,
+          "accuracy": 0.7028985507246377,
+          "brier": 0.18356291267239508
+        },
+        "5": {
+          "n": 122.0,
+          "accuracy": 0.7131147540983607,
+          "brier": 0.2256466993417447
+        },
+        "6": {
+          "n": 105.0,
+          "accuracy": 0.6666666666666666,
+          "brier": 0.20986954111872524
+        },
+        "7": {
+          "n": 115.0,
+          "accuracy": 0.6695652173913044,
+          "brier": 0.21436586867885038
+        },
+        "8": {
+          "n": 121.0,
+          "accuracy": 0.628099173553719,
+          "brier": 0.22728367615336997
+        },
+        "9": {
+          "n": 120.0,
+          "accuracy": 0.7583333333333333,
+          "brier": 0.1847823170234217
+        },
+        "10": {
+          "n": 121.0,
+          "accuracy": 0.5950413223140496,
+          "brier": 0.24046529277244003
+        },
+        "11": {
+          "n": 123.0,
+          "accuracy": 0.6422764227642277,
+          "brier": 0.2224362832888681
+        },
+        "12": {
+          "n": 130.0,
+          "accuracy": 0.6692307692307692,
+          "brier": 0.21845075648579343
+        }
+      }
+    },
+    "elapsed_s": 0.3
+  },
+  "ab_ref_off": {
+    "per_season": [
+      {
+        "year": 2023,
+        "n_games": 881,
+        "accuracy": 0.7196,
+        "brier": 0.1884,
+        "log_loss": 0.55466,
+        "home_brier": 0.23803,
+        "brier_lift_vs_home": 0.04962,
+        "accuracy_lift_vs_home": 0.07491
+      },
+      {
+        "year": 2024,
+        "n_games": 815,
+        "accuracy": 0.7178,
+        "brier": 0.18107,
+        "log_loss": 0.53187,
+        "home_brier": 0.2387,
+        "brier_lift_vs_home": 0.05763,
+        "accuracy_lift_vs_home": 0.07975
+      }
+    ],
+    "pooled": {
+      "n_games": 1696,
+      "accuracy": 0.71875,
+      "brier": 0.18487681586455504,
+      "log_loss": 0.5437051434084443,
+      "mean_p_home": 0.6383479065485171,
+      "home_win_rate": 0.6415094339622641,
+      "upset_rate": 0.28125,
+      "favorite_confidence": 0.719329274540816,
+      "by_week": {
+        "1": {
+          "n": 289.0,
+          "accuracy": 0.7716262975778547,
+          "brier": 0.1427346286618016
+        },
+        "2": {
+          "n": 168.0,
+          "accuracy": 0.75,
+          "brier": 0.15697909701067733
+        },
+        "3": {
+          "n": 144.0,
+          "accuracy": 0.7222222222222222,
+          "brier": 0.16905750504809872
+        },
+        "4": {
+          "n": 138.0,
+          "accuracy": 0.7246376811594203,
+          "brier": 0.18140455344965908
+        },
+        "5": {
+          "n": 122.0,
+          "accuracy": 0.7459016393442623,
+          "brier": 0.21165069792283803
+        },
+        "6": {
+          "n": 105.0,
+          "accuracy": 0.6761904761904762,
+          "brier": 0.2067554264798614
+        },
+        "7": {
+          "n": 115.0,
+          "accuracy": 0.6782608695652174,
+          "brier": 0.20774431828404116
+        },
+        "8": {
+          "n": 121.0,
+          "accuracy": 0.6528925619834711,
+          "brier": 0.2187371966255197
+        },
+        "9": {
+          "n": 120.0,
+          "accuracy": 0.7583333333333333,
+          "brier": 0.17454200586069382
+        },
+        "10": {
+          "n": 121.0,
+          "accuracy": 0.6363636363636364,
+          "brier": 0.23990339660850798
+        },
+        "11": {
+          "n": 123.0,
+          "accuracy": 0.6991869918699187,
+          "brier": 0.20186474603623386
+        },
+        "12": {
+          "n": 130.0,
+          "accuracy": 0.7153846153846154,
+          "brier": 0.18353043727352406
+        }
+      }
+    },
+    "elapsed_s": 0.3
+  },
+  "reference_ranks_decision": {
+    "keep_use_reference_ranks": false,
+    "brier_on": 0.19264102908895195,
+    "brier_off": 0.18487681586455504,
+    "delta": -0.007764,
+    "rationale": "Revert to False \u2014 reference ranks hurt pooled Brier"
+  },
+  "elo_sweep": {
+    "grid": {
+      "base_factor": [
+        30.0,
+        40.0,
+        50.0
+      ],
+      "hfa_elo": [
+        50.0,
+        65.0,
+        80.0
+      ],
+      "upset_bonus_mult": [
+        1.0,
+        1.18
+      ]
+    },
+    "best_on_2023": {
+      "config": {
+        "base_factor": 50.0,
+        "hfa_elo": 50.0,
+        "upset_bonus_mult": 1.18
+      },
+      "score": 0.18659844250758167
+    },
+    "top5": [
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 50.0,
+          "upset_bonus_mult": 1.18
+        },
+        "score": 0.18659844250758167
+      },
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 65.0,
+          "upset_bonus_mult": 1.18
+        },
+        "score": 0.18671354492470857
+      },
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 80.0,
+          "upset_bonus_mult": 1.18
+        },
+        "score": 0.18681376967609697
+      },
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 50.0,
+          "upset_bonus_mult": 1.0
+        },
+        "score": 0.18697853755173197
+      },
+      {
+        "config": {
+          "base_factor": 50.0,
+          "hfa_elo": 65.0,
+          "upset_bonus_mult": 1.0
+        },
+        "score": 0.18711592637474522
+      }
+    ],
+    "holdout_2024": {
+      "default": {
+        "year": 2024,
+        "n_games": 815,
+        "accuracy": 0.7178,
+        "brier": 0.18107,
+        "log_loss": 0.53187,
+        "home_brier": 0.2387,
+        "brier_lift_vs_home": 0.05763,
+        "accuracy_lift_vs_home": 0.07975
+      },
+      "swept": {
+        "year": 2024,
+        "n_games": 815,
+        "accuracy": 0.7178,
+        "brier": 0.18079,
+        "log_loss": 0.53114,
+        "home_brier": 0.2387,
+        "brier_lift_vs_home": 0.05791,
+        "accuracy_lift_vs_home": 0.07975
+      }
+    },
+    "promote": false,
+    "elapsed_s": 2.6
+  },
+  "frs_weights": {
+    "rows": [
+      {
+        "weights": {
+          "team_quality_weight": 0.75,
+          "record_weight": 0.2,
+          "conference_weight": 0.05
+        },
+        "brier_2023": 0.19068,
+        "brier_2024": 0.19052,
+        "pooled_brier": 0.1906,
+        "pooled_accuracy": 0.7129
+      },
+      {
+        "weights": {
+          "team_quality_weight": 0.7,
+          "record_weight": 0.22,
+          "conference_weight": 0.08
+        },
+        "brier_2023": 0.19191,
+        "brier_2024": 0.19205,
+        "pooled_brier": 0.19198,
+        "pooled_accuracy": 0.7129
+      },
+      {
+        "weights": {
+          "team_quality_weight": 0.65,
+          "record_weight": 0.27,
+          "conference_weight": 0.08
+        },
+        "brier_2023": 0.19484,
+        "brier_2024": 0.19654,
+        "pooled_brier": 0.19566,
+        "pooled_accuracy": 0.7117
+      },
+      {
+        "weights": {
+          "team_quality_weight": 0.6,
+          "record_weight": 0.32,
+          "conference_weight": 0.08
+        },
+        "brier_2023": 0.19825,
+        "brier_2024": 0.20145,
+        "pooled_brier": 0.19979,
+        "pooled_accuracy": 0.7011
+      },
+      {
+        "weights": {
+          "team_quality_weight": 0.55,
+          "record_weight": 0.35,
+          "conference_weight": 0.1
+        },
+        "brier_2023": 0.2005,
+        "brier_2024": 0.20439,
+        "pooled_brier": 0.20237,
+        "pooled_accuracy": 0.6987
+      }
+    ],
+    "best": {
+      "weights": {
+        "team_quality_weight": 0.75,
+        "record_weight": 0.2,
+        "conference_weight": 0.05
+      },
+      "brier_2023": 0.19068,
+      "brier_2024": 0.19052,
+      "pooled_brier": 0.1906,
+      "pooled_accuracy": 0.7129
+    },
+    "default": {
+      "weights": {
+        "team_quality_weight": 0.65,
+        "record_weight": 0.27,
+        "conference_weight": 0.08
+      },
+      "brier_2023": 0.19484,
+      "brier_2024": 0.19654,
+      "pooled_brier": 0.19566,
+      "pooled_accuracy": 0.7117
+    },
+    "promote": true,
+    "elapsed_s": 1.3
+  },
+  "promoted_config": {
+    "base_factor": 40.0,
+    "use_reference_ranks": false,
+    "team_quality_weight": 0.75,
+    "record_weight": 0.2,
+    "conference_weight": 0.05
+  },
+  "promotions": {
+    "use_reference_ranks": false,
+    "elo_hparams": false,
+    "frs_weights": true
+  }
+}
