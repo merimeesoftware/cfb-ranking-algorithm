@@ -128,8 +128,8 @@ This is **model selection**, not neural net training:
    (not necessarily beat) the market on Brier.
 5. Keep a changelog of config fingerprints + pooled metrics in
    [`docs/ALGORITHM_EVAL_RESULTS.md`](ALGORITHM_EVAL_RESULTS.md) when you land a winner.
-   Latest promoted config: **V5.3** (80/15/05 FRS; K=50; HFA=50; `use_reference_ranks=false`;
-   tune 2019–2022 / validate 2023 / holdout 2024).
+   Latest: **V5.3 confirmed** by full priors + week-15 + 32-config sweep
+   (tune 2019–2022 / validate 2023 / holdout 2024) — no further promotions.
 
 ## Relationship to published rankings
 
