@@ -54,42 +54,83 @@ jobs:
 
       - name: Resolve job parameters
         id: params
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          # Exact cron string for schedule events (avoids delayed-run hour misclassification)
+          SCHEDULE_CRON: ${{ github.event.schedule }}
         run: |
           set -euo pipefail
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           import os
-          from datetime import datetime, timezone
+          import sys
           from pathlib import Path
 
           event = os.environ["GITHUB_EVENT_NAME"]
-          now = datetime.now(timezone.utc)
+          schedule_cron = (os.environ.get("SCHEDULE_CRON") or "").strip()
           manifest = Path("frontend/static/rankings/manifest.json")
-          year = now.year
-          week = 10
+          years: dict = {}
           if manifest.exists():
-              data = json.loads(manifest.read_text())
-              years = data.get("years") or {}
-              weeks = years.get(str(year)) or []
+              years = (json.loads(manifest.read_text()).get("years") or {})
+
+          def latest_available():
+              if not years:
+                  return None, None
+              y = max(int(k) for k in years)
+              weeks = years.get(str(y)) or []
               if not weeks:
-                  keys = sorted((int(k) for k in years), reverse=True)
-                  if keys:
-                      year = keys[0]
-                      weeks = years.get(str(year)) or []
-              if weeks:
-                  week = max(weeks)
+                  return y, None
+              return y, max(weeks)
 
           if event == "workflow_dispatch":
               inputs = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["inputs"]
-              print(f"year={inputs.get('year') or year}")
-              print(f"week={inputs.get('week') or week}")
+              print(f"year={inputs.get('year')}")
+              print(f"week={inputs.get('week')}")
               print(f"top_n={inputs.get('top_n') or 25}")
               print(f"lookback={str(inputs.get('lookback', 'false')).lower()}")
               print(f"force={str(inputs.get('force', 'false')).lower()}")
               print("require_in_season=false")
+              print("skip=false")
           else:
-              # cron hour 12 => quarterly lookback; hour 11 => daily in-season
-              lookback = now.hour == 12
+              # Key off the triggering cron, not wall-clock hour
+              lookback = schedule_cron.startswith("0 12 ")
+              year, week = latest_available()
+              if year is None or week is None:
+                  print("skip=true")
+                  print("skip_reason=no_static_rankings_in_manifest")
+                  print("year=0")
+                  print("week=0")
+                  print("top_n=25")
+                  print(f"lookback={'true' if lookback else 'false'}")
+                  print("force=false")
+                  print("require_in_season=false")
+                  sys.exit(0)
+
+              # Daily: only run when manifest has the calendar year (live season files).
+              # If only prior seasons exist (e.g. 2024 while clock is 2026), skip daily.
+              from datetime import datetime, timezone
+              now_year = datetime.now(timezone.utc).year
+              if not lookback and str(now_year) not in years:
+                  print("skip=true")
+                  print(
+                      f"skip_reason=no_manifest_weeks_for_{now_year}_daily_uses_lookback_or_dispatch"
+                  )
+                  print(f"year={year}")
+                  print(f"week={week}")
+                  print("top_n=25")
+                  print("lookback=false")
+                  print("force=false")
+                  print("require_in_season=false")
+                  sys.exit(0)
+
+              if not lookback:
+                  # Prefer current calendar year weeks when present
+                  weeks = years.get(str(now_year)) or []
+                  year = now_year
+                  week = max(weeks)
+
+              print("skip=false")
               print(f"year={year}")
               print(f"week={week}")
               print("top_n=25")
@@ -97,11 +138,9 @@ jobs:
               print("force=false")
               print(f"require_in_season={'false' if lookback else 'true'}")
           PY
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
 
       - name: Precompute stub blurbs (no MiniMax)
+        if: steps.params.outputs.skip != 'true'
         env:
           CFBD_OFFLINE: "1"
           AI_MODE: stub
@@ -124,7 +163,12 @@ jobs:
             --kind both \
             "${EXTRA[@]}"
 
+      - name: Skip notice
+        if: steps.params.outputs.skip == 'true'
+        run: echo "Skipped: ${{ steps.params.outputs.skip_reason }}"
+
       - name: Upload artifacts
+        if: steps.params.outputs.skip != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: static-blurbs

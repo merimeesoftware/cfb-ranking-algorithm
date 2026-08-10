@@ -265,6 +265,19 @@ export async function fetchWhyBlurb(
 	}
 }
 
+/** Match backend shareable_blurb.blurb_cache_period(): daily in-season, monthly offseason. */
+export function blurbCachePeriod(when: Date = new Date()): string {
+	const y = when.getUTCFullYear();
+	const m = when.getUTCMonth() + 1;
+	const d = when.getUTCDate();
+	const inSeason =
+		(m === 8 && d >= 24) || m === 9 || m === 10 || m === 11 || m === 12 || m === 1;
+	if (inSeason) {
+		return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+	}
+	return `${y}-${String(m).padStart(2, '0')}`;
+}
+
 /** Prefer precomputed static share/climb JSON (scheduled), then live API. */
 async function fetchStaticKindBlurb(
 	kind: 'share' | 'climb',
@@ -279,8 +292,16 @@ async function fetchStaticKindBlurb(
 			signal: AbortSignal.timeout(3000),
 		});
 		if (!response.ok) return null;
-		const data = await response.json();
-		const blurbs = (data.blurbs || {}) as Record<string, string>;
+		const data = (await response.json()) as {
+			period?: string;
+			blurbs?: Record<string, string>;
+		};
+		const period = data.period || '';
+		// Lookback artifacts are durable; daily/monthly must match current cache period
+		if (!period.startsWith('lookback-') && period !== blurbCachePeriod()) {
+			return null;
+		}
+		const blurbs = data.blurbs || {};
 		if (blurbs[teamName]) return blurbs[teamName];
 		const lower = teamName.toLowerCase();
 		for (const [name, text] of Object.entries(blurbs)) {
@@ -291,6 +312,9 @@ async function fetchStaticKindBlurb(
 		return null;
 	}
 }
+
+/** Client wait budget for live MiniMax+web_search (server up to ~120s × retries). */
+const LIVE_BLURB_TIMEOUT_MS = 200_000;
 
 /** AI/stub shareable blurb (≤280 chars), cached daily in-season / monthly offseason. */
 export async function fetchShareableBlurb(
@@ -307,7 +331,7 @@ export async function fetchShareableBlurb(
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ team_name: teamName, year, week }),
-			signal: AbortSignal.timeout(45000),
+			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
 		if (!response.ok) return null;
 		const data = (await response.json()) as {
@@ -341,7 +365,7 @@ export async function fetchClimbBlurb(
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ team_name: teamName, year, week }),
-			signal: AbortSignal.timeout(45000),
+			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
 		if (!response.ok) return null;
 		const data = (await response.json()) as { blurb?: string; ai_mode?: string };

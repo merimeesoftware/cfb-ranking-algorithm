@@ -42,10 +42,26 @@ def lookback_cache_period(when: Optional[date] = None) -> str:
 
 
 def minimax_web_search_enabled() -> bool:
-    """Live social/media cues via MiniMax server web_search (default on when live)."""
+    """True when MINIMAX_WEB_SEARCH is unset/truthy (env flag only; ignores AI_MODE)."""
     import os
     raw = os.environ.get('MINIMAX_WEB_SEARCH', '1').strip().lower()
     return raw not in ('0', 'false', 'no', 'off')
+
+
+def search_prompt_rules(*, web_search: Optional[bool] = None) -> str:
+    """Prompt addendum: allow web_search only when the tool will actually be attached."""
+    enabled = minimax_web_search_enabled() if web_search is None else web_search
+    if enabled:
+        return (
+            'You may use web_search for brief street/media consensus about this team.\n'
+            'Rankings JSON is ground truth for scores, records, and games — never invent those.\n'
+            'If search results conflict with the ranking facts, the ranking facts win.\n'
+            'At most one short clause of social/media color; do not invent buzz without search hits.\n'
+        )
+    return (
+        'Do not invent street/media buzz. Use ONLY the ranking JSON for facts '
+        '(scores, records, games).\n'
+    )
 
 
 def truncate_blurb(text: str, limit: int = BLURB_MAX_CHARS) -> str:
@@ -215,14 +231,6 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
     )
 
 
-_SEARCH_RULES = (
-    'You may use web_search for brief street/media consensus about this team.\n'
-    'Rankings JSON is ground truth for scores, records, and games — never invent those.\n'
-    'If search results conflict with the ranking facts, the ranking facts win.\n'
-    'At most one short clause of social/media color; do not invent buzz without search hits.\n'
-)
-
-
 def build_blurb_prompt(context: Dict[str, Any]) -> str:
     """Prompt for MiniMax: why + debate hook, hard 280-char cap."""
     return (
@@ -232,7 +240,7 @@ def build_blurb_prompt(context: Dict[str, Any]) -> str:
         'Target 180–250 characters. Never return text longer than the hard rule.\n'
         'Requirements:\n'
         '- Explain WHY this team is ranked here using the JSON facts.\n'
-        f'{_SEARCH_RULES}'
+        f'{search_prompt_rules()}'
         '- End with a short complete debate question (must finish with ?).\n'
         '- No hashtags, no emojis, no quotes around the whole blurb.\n'
         '- Plain prose only.\n'
@@ -255,7 +263,7 @@ def build_climb_prompt(context: Dict[str, Any]) -> str:
         '3) One clear thing that would move them up.\n'
         '4) End with a complete debate question (?).\n'
         'Voice: confident that an impartial model (wins + strength + full resume) beats hot takes.\n'
-        f'{_SEARCH_RULES}'
+        f'{search_prompt_rules()}'
         'Do NOT use: TQ, CQ, Elo, delta, Δ, contrib, lever, point gaps, decimals, formulas.\n'
         'No hashtags, emojis, or quotes around the whole blurb.\n'
         'Reply with ONLY the blurb text.\n\n'

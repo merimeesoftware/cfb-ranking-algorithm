@@ -84,7 +84,7 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `CFBD_MAX_CALLS` | **25** in development if unset | Hard cap if you turn CFBD on |
 | `AI_MODE=stub` | Yes in development | Template explanations; **no MiniMax** |
 | `AI_MODE=off` | Production default | `explanation: null` + structured context only |
-| `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode |
+| `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode. Production `wrangler.toml` defaults to `live` once keys are set. |
 | `MINIMAX_MODEL` / `MINIMAX_BLURB_MODEL` | `MiniMax-M3` | Product default for explain + blurbs |
 | `MINIMAX_WEB_SEARCH` | `1` when live | MiniMax server `web_search` for media/street cues (not X API / Grok) |
 | `AI_MAX_CALLS` | **25** in development if unset | Hard cap on live MiniMax prompts per process |

@@ -222,10 +222,12 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         return stub_explain_from_context(context, question), mode
     if not MINIMAX_API_KEY:
         return stub_explain_from_context(context, question), 'stub'
+    search_on = minimax_web_search_enabled()
     search_note = (
-        'You may use web_search for brief media/street context; ranking JSON is ground truth.\n'
-        if minimax_web_search_enabled()
-        else 'Do not invent social buzz; use only the ranking JSON.\n'
+        'You may use web_search for brief media/street context; '
+        'for scores, records, and games use ONLY the Team context JSON — never invent those.\n'
+        if search_on
+        else 'Use ONLY the Team context JSON for scores, records, and games. Do not invent social buzz.\n'
     )
     w_tq, w_rec, w_cq = FRS_WEIGHTS
     prompt = (

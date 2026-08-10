@@ -55,6 +55,19 @@ def read_static_rankings(
         return None
 
 
+def read_static_rankings_any(
+    year: int,
+    week: int,
+) -> Optional[Dict[str, Any]]:
+    """Prefer SPA static copy, then STATIC_RANKINGS_DIR / static_rankings/."""
+    frontend = Path(__file__).resolve().parent / 'frontend' / 'static' / 'rankings'
+    for root in (frontend, Path(DEFAULT_ROOT)):
+        data = read_static_rankings(year, week, root=root)
+        if data is not None:
+            return data
+    return None
+
+
 def story_path_for(
     year: int,
     week: int,

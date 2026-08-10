@@ -18,7 +18,7 @@ binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
 [vars]
-AI_MODE = "off"
+AI_MODE = "live"
 CFBD_OFFLINE = "0"
 
 [[containers]]
