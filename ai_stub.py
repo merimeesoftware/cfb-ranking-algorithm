@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from ranking_service import FRS_WEIGHTS
+
 
 def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] = None) -> str:
     """Build a grounded template explanation from ranking context fields."""
@@ -33,8 +35,11 @@ def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] =
     if cq is not None:
         score_bits.append(f'Conference Quality {cq:.0f}' if isinstance(cq, (int, float)) else f'CQ {cq}')
     if score_bits:
-        parts.append('Formula mix (65% TQ / 27% Resume / 8% CQ): ' + '; '.join(score_bits) + '.')
-
+        pct = tuple(int(round(w * 100)) for w in FRS_WEIGHTS)
+        parts.append(
+            f'Formula mix ({pct[0]}% TQ / {pct[1]}% Resume / {pct[2]}% CQ): '
+            + '; '.join(score_bits) + '.'
+        )
     if wins is not None and losses is not None:
         parts.append(f'Record: {wins}-{losses}.')
 

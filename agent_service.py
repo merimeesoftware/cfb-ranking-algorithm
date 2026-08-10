@@ -9,7 +9,7 @@ from flask import Blueprint, jsonify, request
 from ai_stub import stub_explain_from_context
 from cache import get_cache
 from path_to_climb import compute_path_to_climb
-from ranking_service import get_or_calculate_rankings, DEFAULT_CONFIG
+from ranking_service import get_or_calculate_rankings, DEFAULT_CONFIG, FRS_WEIGHTS
 from shareable_blurb import (
     BLURB_MAX_CHARS,
     blurb_cache_key,
@@ -106,9 +106,9 @@ def _build_team_context(rankings: Dict[str, Any], team_name: str) -> Optional[Di
             'record_score': team['record_score'],
             'conference_quality_score': team['conference_quality_score'],
             'formula_breakdown': {
-                'tq_contribution': round(tq * 0.65, 2),
-                'rec_contribution': round(rec * 0.27, 2),
-                'cq_contribution': round(cq * 0.08, 2),
+                'tq_contribution': round(tq * FRS_WEIGHTS[0], 2),
+                'rec_contribution': round(rec * FRS_WEIGHTS[1], 2),
+                'cq_contribution': round(cq * FRS_WEIGHTS[2], 2),
                 'total': team.get('final_ranking_score'),
             },
             'records': team.get('records', {}),

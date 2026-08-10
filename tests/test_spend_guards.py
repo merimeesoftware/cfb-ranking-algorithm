@@ -152,9 +152,9 @@ def test_agent_explain_stub_expanded_context(client, monkeypatch):
         assert ctx['rank'] == 2
         assert 'formula_breakdown' in ctx
         fb = ctx['formula_breakdown']
-        assert fb['tq_contribution'] == round(1850 * 0.65, 2)
-        assert fb['rec_contribution'] == round(90 * 0.27, 2)
-        assert fb['cq_contribution'] == round(90 * 0.08, 2)
+        assert fb['tq_contribution'] == round(1850 * 0.75, 2)
+        assert fb['rec_contribution'] == round(90 * 0.20, 2)
+        assert fb['cq_contribution'] == round(90 * 0.05, 2)
         assert ctx['quality_wins'] == 2
         assert ctx['quality_losses'] == 1
         assert ctx['bad_losses'] == 0

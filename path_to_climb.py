@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
-WEIGHTS = (0.65, 0.27, 0.08)  # TQ, Resume, CQ
+from ranking_service import FRS_WEIGHTS
 
+WEIGHTS = FRS_WEIGHTS  # TQ, Resume, CQ
 
 def _contrib(team: Dict[str, Any], weights: Tuple[float, float, float] = WEIGHTS) -> Dict[str, float]:
     w_tq, w_rec, w_cq = weights

@@ -3,10 +3,11 @@
 ## Master Formula
 
 ```
-FRS = (0.65 × TeamQuality) + (0.27 × RecordScore) + (0.08 × ConferenceQuality)
+FRS = (0.75 × TeamQuality) + (0.20 × RecordScore) + (0.05 × ConferenceQuality)
 ```
 
 **Final Ranking Score (FRS)** combines three weighted components to produce the final rankings.
+(V5.2 blend — validated via week-by-week predictive backtests; see `docs/ALGORITHM_EVAL_RESULTS.md`.)
 
 ---
 
@@ -181,7 +182,13 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 
 ## Version History
 
-- **V5 (Current):**
+- **V5.2 (Current):**
+  - **Weights:** 75/20/05 (TQ/RS/CQ) — promoted after predictive eval (higher Elo weight)
+  - **Integrity:** CFBD transform preserves `notes` / `season_type` / `neutral_site`
+  - **reference_ranks:** implemented for Elo expectation but **disabled by default** (A/B showed worse Brier)
+  - **Eval lab:** `algo_lab/` week-by-week Brier/log-loss sandbox
+
+- **V5 (Previous):**
   - **Weights:** 65/27/08 (TQ/RS/CQ)
   - **Iterations:** 2 (reduced from 4)
   - **New Features:**

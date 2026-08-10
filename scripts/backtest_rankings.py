@@ -43,7 +43,19 @@ def _load_season_games(year: int, max_week: Optional[int]) -> List[Dict[str, Any
     from data_processor import CFBDataProcessor
 
     processor = CFBDataProcessor()
-    games = processor.get_games_for_season(year, through_week=max_week)
+    # Full-season fetch hits cache after warm_cfbd_cache.py; avoids week-scoped CFBD spam.
+    games = processor.get_games_for_season(
+        year,
+        through_week=None,
+        use_week_scoped_fetch=False,
+    )
+    if max_week is not None:
+        games = [g for g in games if int(g.get('week', 0)) <= max_week]
+    # FBS-involved only (exclude FCS-vs-FCS noise); matches production ranking focus.
+    games = [
+        g for g in games
+        if g.get('home_conference_type') != 'FCS' or g.get('away_conference_type') != 'FCS'
+    ]
     if not games:
         raise SystemExit(
             f'No games for {year} (through_week={max_week}). '

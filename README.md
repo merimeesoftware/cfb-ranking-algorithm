@@ -231,28 +231,26 @@ The conference rankings include:
 - **Win%** - Win percentages against each tier
 - **Quality Score** - Mean of member teams' quality scores
 
-## Math Behind the Rankings (Version 5.1 Lean Pure)
+## Math Behind the Rankings (Version 5.2)
 
 See the [ALGORITHM_BREAKDOWN.md](ALGORITHM_BREAKDOWN.md) file for detailed explanation of the mathematical model.
 
 Key components:
 
 1.  **Master Formula**
-    -   `FRS = (0.65 * TeamQuality) + (0.27 * RecordScore) + (0.08 * ConferenceQuality)`
+    -   `FRS = (0.75 * TeamQuality) + (0.20 * RecordScore) + (0.05 * ConferenceQuality)`
 
 2.  **Team Quality (Elo)**
     -   **Expectation:** $E_A = 1 / (1 + 10 ^ ((R_B - R_A) / 400))$
     -   **Update:** $\Delta = K \times MatchupWeight \times MoV \times (Actual - Expected)$
-    -   **Iterative Solver:** Season is simulated 2 times to ensure convergence.
+    -   **Iterative Solver:** Season is simulated 2 times (chaos tax); reference-rank Elo expectation is available but off by default after A/B.
 
 3.  **Resume (Record Score)**
     -   Rewards winning percentage, strength of schedule, and quality wins.
     -   **Milestone Multipliers:** Boosts for Undefeated seasons (1.05x) and Conference Championships.
 
 4.  **Conference Quality**
-    -   `CQ = Mean_Elo - (0.15 * StdDev)`
-    -   Rewards depth and penalizes high variance (cannibalization).
-
+    -   Hybrid top-half / full average with OOC multiplier and chaos tax.
 ## Algorithm Evaluation Sandbox
 
 To improve the algorithm scientifically (week-by-week predictive backtests, Brier/log-loss,

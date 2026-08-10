@@ -126,8 +126,9 @@ This is **model selection**, not neural net training:
    arg is unused — iterations mainly enable chaos tax).
 4. Optional market baseline: CFBD `/lines` spreads → implied probs; aim to approach
    (not necessarily beat) the market on Brier.
-5. Keep a changelog of config fingerprints + pooled metrics in this doc or a
-   sibling `docs/ALGORITHM_EVAL_RESULTS.md` when you land a winner.
+5. Keep a changelog of config fingerprints + pooled metrics in
+   [`docs/ALGORITHM_EVAL_RESULTS.md`](ALGORITHM_EVAL_RESULTS.md) when you land a winner.
+   Latest promoted config: **V5.2** (75/20/05 FRS; `use_reference_ranks=false`).
 
 ## Relationship to published rankings
 

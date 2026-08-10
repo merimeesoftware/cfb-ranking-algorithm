@@ -70,7 +70,7 @@ class TeamQualityRanker:
     - Bad Loss Penalty for losses to Bottom 25% teams
     - Perfection bonus (1.05x undefeated, 1.02x one-loss)
     - Champ Anchors (+100/+50)
-    - Resume-weighted FRS formula (0.65/0.27/0.08)
+    - Resume-weighted FRS formula (0.75/0.20/0.05)
     """
     
     def _create_default_team_stat(self) -> TeamStat:
@@ -104,9 +104,9 @@ class TeamQualityRanker:
         self.fcs_initial = self.config.get('fcs_initial', 900.0)
         
         self.base_factor = self.config.get('base_factor', 40.0) # K-factor
-        self.conference_weight = self.config.get('conference_weight', 0.08)   # V5.3: 8% CQ
-        self.record_weight = self.config.get('record_weight', 0.27)           # V5.3: 27% Resume
-        self.team_quality_weight = self.config.get('team_quality_weight', 0.65) # V5.3: 65% TQ
+        self.conference_weight = self.config.get('conference_weight', 0.05)   # V5.2: 5% CQ
+        self.record_weight = self.config.get('record_weight', 0.20)           # V5.2: 20% Resume
+        self.team_quality_weight = self.config.get('team_quality_weight', 0.75) # V5.2: 75% TQ
         
         # V4.0: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
         # Default 0.15 means 85% tier initial + 15% prior (reduced legacy bias)
@@ -298,7 +298,7 @@ class TeamQualityRanker:
 
         # Optional prior-iteration reference ranks for expectation / upset sizing
         use_ref = (
-            self.config.get('use_reference_ranks', True)
+            self.config.get('use_reference_ranks', False)
             and reference_ranks is not None
         )
         if use_ref:
