@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import RankingsTable from '$lib/components/RankingsTable.svelte';
 	import ConferenceTable from '$lib/components/ConferenceTable.svelte';
@@ -125,21 +125,81 @@
 		activeTab = tab;
 		syncUrl();
 	}
+
+	async function goToBoard(event?: MouseEvent) {
+		event?.preventDefault();
+		const board = document.getElementById('board');
+		const search = document.getElementById('team-search');
+		board?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		await tick();
+		if (search instanceof HTMLElement) {
+			search.focus({ preventScroll: true });
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>CFB Rankings | Home</title>
+	<title>CFB Rankings | Who belongs higher?</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-	<div class="text-center mb-6 sm:mb-8">
-		<h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
-			College Football Rankings
-		</h1>
-		<p class="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
-			Data-driven team quality rankings using Elo methodology
-		</p>
+<section
+	class="relative overflow-hidden bg-field-haze text-cfb-chalk"
+	aria-labelledby="hero-brand"
+>
+	<div
+		class="pointer-events-none absolute inset-0 opacity-40"
+		aria-hidden="true"
+	>
+		<div class="absolute left-0 right-0 top-1/3 h-px bg-cfb-chalk/25 animate-stripe-pulse"></div>
+		<div class="absolute left-0 right-0 top-1/2 h-px bg-cfb-chalk/15"></div>
+		<div class="absolute left-0 right-0 top-2/3 h-px bg-cfb-chalk/25 animate-stripe-pulse"></div>
+		<div class="absolute inset-y-0 left-[8%] w-px bg-cfb-gold/30"></div>
+		<div class="absolute inset-y-0 right-[8%] w-px bg-cfb-gold/30"></div>
 	</div>
+
+	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
+		<p
+			id="hero-brand"
+			class="hero-brand animate-hero-rise"
+		>
+			CFB Rankings
+		</p>
+		<h1 class="hero-headline mt-4 sm:mt-5 animate-hero-rise" style="animation-delay: 80ms">
+			Who belongs higher?
+		</h1>
+		<p
+			class="mt-4 max-w-2xl text-base sm:text-lg text-cfb-chalk/90 leading-relaxed animate-hero-rise"
+			style="animation-delay: 140ms"
+		>
+			This week’s board — clear takes for the fight, not voter vibes.
+		</p>
+
+		<div
+			class="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 animate-hero-rise"
+			style="animation-delay: 200ms"
+		>
+			<div>
+				<a
+					href="#board"
+					on:click={goToBoard}
+					class="btn btn-primary bg-cfb-gold text-primary-950 hover:bg-cfb-gold-bright focus:ring-cfb-gold px-6 py-3 text-base font-semibold shadow-sm"
+				>
+					See this week’s rankings
+				</a>
+				<p class="mt-2 text-sm text-cfb-chalk/70 sm:pl-1">Jump into the controversy</p>
+			</div>
+			<a
+				href="/methodology"
+				class="btn btn-ghost-light px-5 py-3 text-base sm:self-start"
+			>
+				How the board works
+			</a>
+		</div>
+	</div>
+</section>
+
+<div id="board" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 scroll-mt-20">
+	<WeekStoryStrip year={$filterState.year} week={$filterState.week} />
 
 	<FilterControls
 		years={$availableYears}
@@ -158,43 +218,51 @@
 		on:conferenceChange={handleConferenceFilterChange}
 	/>
 
-	<WeekStoryStrip year={$filterState.year} week={$filterState.week} />
-
-	<div class="flex border-b border-gray-200 dark:border-gray-700 mb-4 mt-6" role="tablist">
+	<div
+		class="flex border-b border-primary-200 dark:border-primary-800 mb-4 mt-2"
+		role="tablist"
+		aria-label="Board sections"
+	>
 		<button
+			type="button"
 			role="tab"
 			aria-selected={activeTab === 'teams'}
 			on:click={() => setTab('teams')}
-			class="flex-1 sm:flex-none px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500
+			class="flex-1 sm:flex-none px-4 py-3 text-sm font-semibold border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600
 				{activeTab === 'teams'
-					? 'border-primary-500 text-primary-600 dark:text-primary-400'
-					: 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}"
+					? 'border-primary-700 text-primary-800 dark:text-cfb-gold-bright'
+					: 'border-transparent text-primary-600 hover:text-primary-900 dark:text-primary-300'}"
 		>
-			Teams
+			The Board
 		</button>
 		<button
+			type="button"
 			role="tab"
 			aria-selected={activeTab === 'conferences'}
 			on:click={() => setTab('conferences')}
-			class="flex-1 sm:flex-none px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500
+			class="flex-1 sm:flex-none px-4 py-3 text-sm font-semibold border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600
 				{activeTab === 'conferences'
-					? 'border-primary-500 text-primary-600 dark:text-primary-400'
-					: 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}"
+					? 'border-primary-700 text-primary-800 dark:text-cfb-gold-bright'
+					: 'border-transparent text-primary-600 hover:text-primary-900 dark:text-primary-300'}"
 		>
 			Conferences
 		</button>
 	</div>
 
 	{#if $loading}
-		<LoadingSpinner message="Loading rankings..." />
+		<LoadingSpinner message="Building the board…" />
 	{:else if $error}
-		<div class="card p-6 text-center">
-			<p class="text-gray-600 dark:text-gray-400">{$error}</p>
+		<div class="card p-6 text-center" role="alert" aria-live="assertive">
+			<p class="font-display text-lg text-primary-900 dark:text-white">
+				Couldn’t load this week’s rankings.
+			</p>
+			<p class="mt-2 text-sm text-primary-700 dark:text-primary-300">{$error}</p>
 			<button
+				type="button"
 				on:click={() => fetchRankings($filterState.year, $filterState.week, { force: true })}
-				class="btn btn-primary mt-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+				class="btn btn-primary mt-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
 			>
-				Try Again
+				Reload board
 			</button>
 		</div>
 	{:else}
