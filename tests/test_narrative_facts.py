@@ -3,8 +3,11 @@ import json
 from pathlib import Path
 
 from narrative_facts import extract_week_facts, stub_week_story, stub_why_blurbs
+from shareable_blurb import BLURB_MAX_CHARS
 
 FIXTURES = Path(__file__).parent / 'fixtures'
+
+_BANNED_FAN_LEAKS = ('AI_MODE', 'MiniMax', 'stub narrative', 'TQ', 'CQ', 'Elo')
 
 
 def _current():
@@ -66,6 +69,18 @@ def test_stub_week_story_includes_headline_and_facts():
     assert len(story['paragraphs']) >= 1
     assert story['facts'] is facts or story['facts']['snapshot']['week'] == 10
     assert 'Oregon' in story['headline'] or any('Oregon' in p for p in story['paragraphs'])
+    # StoryBrand conflict headline
+    assert 'jumps' in story['headline'].lower()
+    assert '#1' in story['headline']
+    # Body sections
+    joined = ' '.join(story['paragraphs'])
+    assert 'Risers:' in joined
+    assert 'Taking heat:' in joined
+    assert 'Who belongs higher' in joined
+    # No internal AI/mode language in fan-visible copy
+    for banned in _BANNED_FAN_LEAKS:
+        assert banned not in story['headline']
+        assert banned not in joined
 
 
 def test_stub_why_blurbs_top_n_with_path_to_climb():
@@ -73,7 +88,14 @@ def test_stub_why_blurbs_top_n_with_path_to_climb():
     blurbs = result['blurbs']
     assert set(blurbs.keys()) == {'Oregon', 'Ohio State'}
     assert 'Georgia' not in blurbs
-    assert '#' in blurbs['Oregon'] or 'ranked' in blurbs['Oregon'].lower()
-    # #1 should mention top / no chase; #2 should reference path/gap to Oregon
-    assert '#1' in blurbs['Oregon'] or 'no team above' in blurbs['Oregon'].lower() or 'currently' in blurbs['Oregon'].lower()
-    assert 'Oregon' in blurbs['Ohio State'] or 'gap' in blurbs['Ohio State'].lower()
+    # Fan takes via stub_shareable_blurb
+    for name, text in blurbs.items():
+        assert name in text
+        assert len(text) <= BLURB_MAX_CHARS
+        assert '?' in text or any(
+            w in text.lower() for w in ('debate', 'prove', 'fair', 'belong')
+        )
+        for banned in ('AI_MODE', 'MiniMax', 'TQ', 'CQ', 'our model'):
+            assert banned not in text
+    assert 'No. 1' in blurbs['Oregon'] or '#1' in blurbs['Oregon'] or '1' in blurbs['Oregon']
+    assert 'Oregon' in blurbs['Ohio State'] or 'board' in blurbs['Ohio State'].lower()

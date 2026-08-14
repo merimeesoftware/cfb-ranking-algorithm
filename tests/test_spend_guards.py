@@ -151,8 +151,14 @@ def test_stub_explain_from_fixture():
     context = json.loads((FIXTURES / 'sample_team_context.json').read_text())
     text = stub_explain_from_context(context, 'Why #1?')
     assert 'Oregon' in text
-    assert 'AI_MODE=stub' in text
-    assert '#1' in text
+    assert '#1' in text or 'board' in text.lower()
+    # Fan-visible explanation must not leak stub/AI mode language
+    assert 'AI_MODE' not in text
+    assert 'MiniMax' not in text
+    assert 'stub' not in text.lower()
+    assert 'TQ' not in text
+    assert 'CQ' not in text
+    assert 'Elo' not in text
 
 
 def test_agent_explain_stub_mode(client, monkeypatch):
@@ -170,7 +176,9 @@ def test_agent_explain_stub_mode(client, monkeypatch):
         assert data['ai_mode'] == 'stub'
         assert data['explanation']
         assert 'Oregon' in data['explanation']
-        assert 'MiniMax' not in data['explanation'] or 'no MiniMax' in data['explanation']
+        assert 'AI_MODE' not in data['explanation']
+        assert 'MiniMax' not in data['explanation']
+        assert 'stub' not in data['explanation'].lower()
 
 
 def test_agent_explain_stub_expanded_context(client, monkeypatch):
@@ -268,7 +276,9 @@ def test_agent_explain_live_falls_back_without_key(client, monkeypatch):
             data = response.get_json()
             assert data['ai_mode'] == 'stub'
             assert data['explanation']
-            assert 'no MiniMax' in data['explanation']
+            assert 'Oregon' in data['explanation']
+            assert 'AI_MODE' not in data['explanation']
+            assert 'MiniMax' not in data['explanation']
 
 
 def test_agent_health_includes_ai_mode(client, monkeypatch):
@@ -283,4 +293,6 @@ def test_stub_uses_path_to_climb_and_neighbors():
     text = stub_explain_from_context(context)
     assert '#1' in text or 'Oregon' in text
     assert 'Ohio State' in text  # neighbor_behind / top win
-    assert 'AI_MODE=stub' in text
+    assert 'AI_MODE' not in text
+    assert 'MiniMax' not in text
+    assert 'board' in text.lower()

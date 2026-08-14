@@ -137,7 +137,7 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
         record_bit = f' ({wins}-{losses})'
 
     if rank == 1:
-        why = f'{name} sits No. 1{record_bit} in our model — {conf} resume still clear the field.'
+        why = f'{name} sits No. 1{record_bit} on the board — {conf} resume still clear the field.'
         hook = f' Prove {behind} can knock them off?' if behind else ' Who actually belongs above them?'
     elif path.get('at_top'):
         why = f'{name} is No. {rank}{record_bit} with nothing left to chase in the table.'
@@ -216,7 +216,7 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
 
     body = (
         f'{name} is chasing {ahead}. The gap is mostly {problem} — '
-        f'the model weighs the whole board, not the narrative. {plan}'
+        f'the board weighs the whole resume, not the narrative. {plan}'
     )
     hook = f' Think {name} already deserves that spot?'
     blurb = accept_blurb(f'{body} {hook}')

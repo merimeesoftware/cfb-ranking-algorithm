@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from path_to_climb import compute_path_to_climb
+from shareable_blurb import stub_shareable_blurb
 
 CFP_BAND = 12
 DEFAULT_TOP_MOVEMENTS = 5
@@ -131,7 +132,13 @@ def extract_week_facts(
 
 
 def stub_week_story(facts: Dict[str, Any]) -> Dict[str, Any]:
-    """Deterministic week-story prose from extract_week_facts output."""
+    """
+    Deterministic week-story prose (StoryBrand conflict voice).
+
+    Headline = biggest jumper vs leader still owning #1.
+    Body = risers / taking heat / playoff-band shakeup / top 5 + debate hook.
+    Never leaks AI_MODE, stub, or MiniMax into fan-visible copy.
+    """
     snap = facts.get('snapshot') or {}
     year = snap.get('year', '?')
     week = snap.get('week', '?')
@@ -144,29 +151,32 @@ def stub_week_story(facts: Dict[str, Any]) -> Dict[str, Any]:
         falls = facts.get('top_falls') or []
         if climbs:
             c = climbs[0]
-            headline = (
-                f"Week {week}: {c['team_name']} climbs {c['delta']} "
-                f"to #{c['rank']}; {leader} still leads"
-            )
+            spots = c['delta']
+            spot_word = 'spot' if spots == 1 else 'spots'
+            if c['team_name'] == leader:
+                headline = f"{leader} jumps {spots} {spot_word} into #1"
+            else:
+                headline = (
+                    f"{c['team_name']} jumps {spots} {spot_word} — "
+                    f"{leader} still owns #1"
+                )
             climb_bits = [
                 f"{m['team_name']} (+{m['delta']} to #{m['rank']})"
                 for m in climbs[:3]
             ]
-            paragraphs.append(
-                f"Biggest climbs into week {week}: " + '; '.join(climb_bits) + '.'
-            )
+            paragraphs.append('Risers: ' + '; '.join(climb_bits) + '.')
         else:
-            headline = f"Week {week} {year}: {leader} holds #1"
+            headline = f"{leader} still owns #1 — quiet week on the board"
             paragraphs.append(
-                f"Rankings for week {week} are stable at the top — "
-                f"{leader} remains #1."
+                f"The board held steady into week {week} — "
+                f"{leader} still owns #1."
             )
         if falls:
             fall_bits = [
                 f"{m['team_name']} ({m['delta']} to #{m['rank']})"
                 for m in falls[:3]
             ]
-            paragraphs.append('Notable drops: ' + '; '.join(fall_bits) + '.')
+            paragraphs.append('Taking heat: ' + '; '.join(fall_bits) + '.')
 
         band = facts.get('cfp_band_changes') or {}
         entered = band.get('entered') or []
@@ -175,19 +185,19 @@ def stub_week_story(facts: Dict[str, Any]) -> Dict[str, Any]:
             parts = []
             if entered:
                 parts.append(
-                    'into the CFP band: '
+                    'in: '
                     + ', '.join(f"{e['team_name']} (#{e['rank']})" for e in entered[:5])
                 )
             if exited:
                 parts.append(
-                    'out of the CFP band: '
+                    'out: '
                     + ', '.join(f"{e['team_name']} (#{e['rank']})" for e in exited[:5])
                 )
-            paragraphs.append('CFP 1–12 movement — ' + '; '.join(parts) + '.')
+            paragraphs.append('Playoff band shakeup — ' + '; '.join(parts) + '.')
     else:
-        headline = f"Week {week} {year} snapshot: {leader} at #1"
+        headline = f"Week {week} board: {leader} owns #1"
         paragraphs.append(
-            f"No prior-week file for week-over-week comparison. "
+            f"Fresh snapshot for week {week} {year} — no week-over-week compare yet. "
             f"Top of the board: "
             + ', '.join(
                 f"#{t['rank']} {t['team_name']}" for t in top[:5]
@@ -196,17 +206,19 @@ def stub_week_story(facts: Dict[str, Any]) -> Dict[str, Any]:
         )
 
     if top:
-        paragraphs.append(
-            'Current top '
-            + str(min(5, len(top)))
-            + ': '
-            + ', '.join(f"#{t['rank']} {t['team_name']}" for t in top[:5])
+        n = min(5, len(top))
+        top_line = (
+            f'Top {n}: '
+            + ', '.join(f"#{t['rank']} {t['team_name']}" for t in top[:n])
             + '.'
         )
-
-    paragraphs.append(
-        'Stub narrative generated from ranking facts only (AI_MODE=stub); no MiniMax call.'
-    )
+        if len(top) >= 2:
+            second = top[1]['team_name']
+            paragraphs.append(
+                f"{top_line} Who belongs higher — {leader} or {second}?"
+            )
+        else:
+            paragraphs.append(f'{top_line} Who belongs higher?')
 
     return {
         'headline': headline,
@@ -220,7 +232,7 @@ def stub_why_blurbs(
     top_n: int = 25,
 ) -> Dict[str, Any]:
     """
-    Build Top-N Why blurbs from scores/records + path_to_climb summaries.
+    Build Top-N Why blurbs as fan takes via stub_shareable_blurb.
     """
     teams = rankings.get('team_rankings') or []
     blurbs: Dict[str, str] = {}
@@ -229,48 +241,20 @@ def stub_why_blurbs(
     for i in range(limit):
         team = teams[i]
         name = team.get('team_name', f'Team {i + 1}')
-        rank = i + 1
         above = teams[i - 1] if i > 0 else None
+        below = teams[i + 1] if i + 1 < len(teams) else None
         path = compute_path_to_climb(team, above)
-
-        conf = team.get('conference', 'their conference')
-        records = team.get('records') or {}
-        wins = records.get('total_wins')
-        losses = records.get('total_losses')
-        final = team.get('final_ranking_score')
-        tq = team.get('team_quality_score')
-        rec = team.get('record_score')
-        cq = team.get('conference_quality_score')
-        qw = team.get('quality_wins')
-
-        parts = [f'{name} is ranked #{rank} ({conf}).']
-        if wins is not None and losses is not None:
-            parts.append(f'Record {wins}-{losses}.')
-        score_bits = []
-        if final is not None:
-            score_bits.append(
-                f'final {final:.1f}' if isinstance(final, (int, float)) else f'final {final}'
-            )
-        if tq is not None:
-            score_bits.append(
-                f'TQ {tq:.0f}' if isinstance(tq, (int, float)) else f'TQ {tq}'
-            )
-        if rec is not None:
-            score_bits.append(
-                f'Resume {rec:.0f}' if isinstance(rec, (int, float)) else f'Resume {rec}'
-            )
-        if cq is not None:
-            score_bits.append(
-                f'CQ {cq:.0f}' if isinstance(cq, (int, float)) else f'CQ {cq}'
-            )
-        if score_bits:
-            parts.append('Mix: ' + '; '.join(score_bits) + '.')
-        if qw:
-            parts.append(f'Quality wins: {qw}.')
-        if path.get('summary'):
-            parts.append(str(path['summary']))
-
-        blurbs[name] = ' '.join(parts)
+        context = {
+            'team_name': name,
+            'rank': i + 1,
+            'conference': team.get('conference'),
+            'records': team.get('records') or {},
+            'quality_wins': team.get('quality_wins'),
+            'path_to_climb': path,
+            'neighbor_ahead': above.get('team_name') if above else None,
+            'neighbor_behind': below.get('team_name') if below else None,
+        }
+        blurbs[name] = stub_shareable_blurb(context)
 
     return {
         'year': rankings.get('year'),
