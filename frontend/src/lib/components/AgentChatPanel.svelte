@@ -13,6 +13,8 @@
 	let loading = false;
 	let error: string | null = null;
 
+	const FRIENDLY_ERROR = 'Couldn’t break down this ranking right now.';
+
 	async function ask() {
 		loading = true;
 		error = null;
@@ -22,11 +24,11 @@
 				teamName,
 				$filterState.year,
 				$filterState.week,
-				question || `Why is ${teamName} ranked where they are?`
+				question || `Why is ${teamName} here — and who should be mad?`
 			);
 			explanation = result.explanation;
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to get explanation';
+		} catch {
+			error = FRIENDLY_ERROR;
 		} finally {
 			loading = false;
 		}
@@ -47,7 +49,7 @@
 		<div class="card w-full max-w-lg p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
 			<div class="flex items-center justify-between mb-4">
 				<h2 id="agent-chat-title" class="text-lg font-semibold text-gray-900 dark:text-white">
-					Ask about {teamName}
+					Why {teamName}?
 				</h2>
 				<button
 					type="button"
@@ -60,12 +62,12 @@
 			</div>
 
 			<label class="block text-sm text-gray-600 dark:text-gray-400 mb-2" for="agent-question">
-				Your question (optional)
+				Ask anything (optional)
 			</label>
 			<input
 				id="agent-question"
 				bind:value={question}
-				placeholder={`Why is ${teamName} ranked here?`}
+				placeholder={`Why is ${teamName} here — and who should be mad?`}
 				class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
 			/>
 
@@ -75,7 +77,7 @@
 				disabled={loading}
 				class="btn btn-primary mt-3 w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50"
 			>
-				{loading ? 'Thinking…' : 'Explain Ranking'}
+				{loading ? 'Breaking it down…' : 'Break it down'}
 			</button>
 
 			{#if error}

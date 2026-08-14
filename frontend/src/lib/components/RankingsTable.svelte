@@ -63,9 +63,9 @@
 				...(blurb ? { why_blurb: blurb } : {}),
 				...(climb?.blurb ? { climb_blurb: climb.blurb } : {}),
 			};
-		} catch (e) {
+		} catch {
 			if (requestId !== detailRequestId) return;
-			detailError = e instanceof Error ? e.message : 'Failed to load team details';
+			detailError = 'Couldn’t pull game details right now.';
 		} finally {
 			if (requestId === detailRequestId) {
 				detailLoading = false;
@@ -221,12 +221,12 @@
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
 					</svg>
-					Show Top 25 Only
+					Show Top 25 only
 				{:else}
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 					</svg>
-					View All {teams.length} Teams
+					See all {teams.length} teams
 				{/if}
 			</button>
 		</div>
