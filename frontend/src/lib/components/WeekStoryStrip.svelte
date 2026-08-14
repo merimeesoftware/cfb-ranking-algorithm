@@ -24,7 +24,7 @@
 {#if headline || paragraphs.length > 0}
 	<section class="mb-5 mt-1 px-0.5 sm:px-0" aria-label="This week on the board">
 		{#if headline}
-			<h2 class="font-display text-xl sm:text-2xl font-semibold text-primary-900 dark:text-chalk leading-snug tracking-wide">
+			<h2 class="font-display text-xl sm:text-2xl font-semibold text-primary-900 dark:text-cfb-chalk leading-snug tracking-wide">
 				{headline}
 			</h2>
 		{/if}

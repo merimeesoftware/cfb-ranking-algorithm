@@ -130,7 +130,8 @@
 		event?.preventDefault();
 		const board = document.getElementById('board');
 		const search = document.getElementById('team-search');
-		board?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		board?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
 		await tick();
 		if (search instanceof HTMLElement) {
 			search.focus({ preventScroll: true });
