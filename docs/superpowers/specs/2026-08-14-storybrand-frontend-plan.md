@@ -1,6 +1,6 @@
 # CFB Rankings — StoryBrand Plan (locked)
 
-**Status:** BrandScript + experience plan locked. No UI implementation until this doc is executed as a build brief.  
+**Status:** BrandScript locked; Phase 1 copy approved; **implementation in progress on `cursor/storybrand-implement-66f9` (PR #64).**  
 **Date:** 2026-08-14  
 **Supersedes:** exploratory work on `cursor/fan-facing-copy-66f9` / PR #62 (reverted).
 
