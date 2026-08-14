@@ -7,7 +7,7 @@ from ranking_service import FRS_WEIGHTS
 
 
 def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] = None) -> str:
-    """Build a grounded template explanation from ranking context fields."""
+    """Build a grounded fan-language explanation from ranking context fields."""
     name = context.get('team_name', 'This team')
     rank = context.get('rank')
     conf = context.get('conference', 'their conference')
@@ -21,23 +21,32 @@ def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] =
 
     parts = []
     if rank is not None:
-        parts.append(f'{name} is ranked #{rank} in {conf}.')
+        parts.append(f'{name} sits #{rank} on the board ({conf}).')
     else:
-        parts.append(f'{name} ranking context:')
+        parts.append(f'{name} on the board:')
 
     score_bits = []
     if final is not None:
-        score_bits.append(f'final score {final:.1f}' if isinstance(final, (int, float)) else f'final score {final}')
+        score_bits.append(
+            f'board score {final:.1f}' if isinstance(final, (int, float)) else f'board score {final}'
+        )
     if tq is not None:
-        score_bits.append(f'Team Quality (Elo) {tq:.0f}' if isinstance(tq, (int, float)) else f'Team Quality {tq}')
+        score_bits.append(
+            f'how they look {tq:.0f}' if isinstance(tq, (int, float)) else f'how they look {tq}'
+        )
     if rec is not None:
-        score_bits.append(f'Resume {rec:.0f}' if isinstance(rec, (int, float)) else f'Resume {rec}')
+        score_bits.append(
+            f'who they beat {rec:.0f}' if isinstance(rec, (int, float)) else f'who they beat {rec}'
+        )
     if cq is not None:
-        score_bits.append(f'Conference Quality {cq:.0f}' if isinstance(cq, (int, float)) else f'CQ {cq}')
+        score_bits.append(
+            f'league strength {cq:.0f}' if isinstance(cq, (int, float)) else f'league strength {cq}'
+        )
     if score_bits:
         pct = tuple(int(round(w * 100)) for w in FRS_WEIGHTS)
         parts.append(
-            f'Formula mix ({pct[0]}% TQ / {pct[1]}% Resume / {pct[2]}% CQ): '
+            f'The mix ({pct[0]}% how they look / {pct[1]}% who they beat / '
+            f'{pct[2]}% league strength): '
             + '; '.join(score_bits) + '.'
         )
     if wins is not None and losses is not None:
@@ -46,13 +55,13 @@ def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] =
     path = context.get('path_to_climb')
     if isinstance(path, dict):
         if path.get('at_top'):
-            parts.append('They are currently #1 — no team above to chase.')
+            parts.append('They own #1 — nobody above to chase.')
         elif path.get('summary'):
             parts.append(str(path['summary']))
 
     qw = context.get('quality_wins')
     if qw:
-        parts.append(f'Quality wins logged: {qw}.')
+        parts.append(f'Quality wins on the ledger: {qw}.')
 
     top_wins = context.get('top_quality_wins') or []
     if top_wins:
@@ -68,5 +77,4 @@ def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] =
     if question:
         parts.append(f'(Responding to: {question})')
 
-    parts.append('This is a stub explanation (AI_MODE=stub); no MiniMax call was made.')
     return ' '.join(parts)

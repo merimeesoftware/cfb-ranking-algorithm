@@ -18,7 +18,7 @@
 	$: applyTheme($theme);
 </script>
 
-<div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
+<div class="min-h-screen flex flex-col bg-cfb-chalk dark:bg-primary-950 transition-colors">
 	<Header />
 
 	<main class="flex-1">

@@ -22,19 +22,18 @@
 </script>
 
 {#if headline || paragraphs.length > 0}
-	<section
-		class="mb-4 mt-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-4 py-3"
-		aria-label="Week story"
-	>
+	<section class="mb-5 mt-1 px-0.5 sm:px-0" aria-label="This week on the board">
 		{#if headline}
-			<h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+			<h2 class="font-display text-xl sm:text-2xl font-semibold text-primary-900 dark:text-chalk leading-snug tracking-wide">
 				{headline}
 			</h2>
 		{/if}
 		{#if paragraphs.length > 0}
-			<div class="mt-2 space-y-2">
+			<div class="mt-3 space-y-2 max-w-3xl">
 				{#each paragraphs as para}
-					<p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{para}</p>
+					<p class="text-sm sm:text-[0.95rem] text-primary-800/90 dark:text-primary-100/85 leading-relaxed">
+						{para}
+					</p>
 				{/each}
 			</div>
 		{/if}

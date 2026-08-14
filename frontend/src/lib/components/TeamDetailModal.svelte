@@ -136,7 +136,7 @@
 		} else if (t.records.total_losses === 1) {
 			parts.push(`${name} sits at ${record} with one loss`);
 		} else {
-			parts.push(`${name} is ${record} in the model`);
+			parts.push(`${name} is ${record} on the board`);
 		}
 
 		if ((t.sos ?? 0) > 1600) parts.push('after a brutal schedule');
@@ -155,28 +155,14 @@
 		return full.length <= 280 ? full : full.slice(0, 279).trimEnd() + '…';
 	}
 
+	$: takeText = team.why_blurb || generateNarrative(team);
+
 	// Accordion State
 	let expandedSection: string | null = null;
 	function toggleSection(section: string) {
 		expandedSection = expandedSection === section ? null : section;
 	}
 
-	// Timeline Data
-	$: timelineEvents = [
-		...(team.wins_details || []).map(w => ({ ...w, type: 'win', date: 0 })), // We don't have dates, but order matters? 
-		// Actually, we don't have dates in the API response yet, but the arrays are likely in chronological order if the backend preserves it.
-		// The backend appends to the list as games are processed.
-		...(team.losses_details || []).map(l => ({ ...l, type: 'loss', date: 0 }))
-	]; 
-	// Merging and sorting isn't possible without dates or week numbers. 
-	// For now, let's just list Key Games (Quality Wins & Bad Losses) separately or assume we can't do a true timeline yet.
-	// Wait, the backend `wins_details` and `losses_details` are just lists.
-	// Let's just show "Key Games" instead of a timeline for now, or list them by category.
-
-	// Filter for "Key Games" - use is_quality_win and is_bad_loss flags from backend
-	$: keyWins = (team.wins_details || []).filter(w => w.is_quality_win);
-	$: badLosses = (team.losses_details || []).filter(l => l.is_bad_loss);
-	
 </script>
 
 <svelte:window on:keydown={(e) => e.key === 'Escape' && close()} />
@@ -211,38 +197,20 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex items-center gap-1 shrink-0">
-				<button
-					type="button"
-					on:click={() => (showAiExplain = true)}
-					class="px-3 py-1.5 text-sm font-medium rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
-					aria-label="Ask AI about this ranking"
-				>
-					Ask AI
-				</button>
-				<button
-					type="button"
-					on:click={copyLink}
-					class="px-3 py-1.5 text-sm font-medium rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
-					aria-label="Copy link to this team"
-				>
-					{copyFeedback ? 'Copied!' : 'Copy link'}
-				</button>
-				<button
-					on:click={close}
-					class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-					aria-label="Close"
-				>
-					<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-				</button>
-			</div>
+			<button
+				on:click={close}
+				class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+				aria-label="Close"
+			>
+				<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
 		</div>
 
 		{#if loading}
 			<div class="px-4 py-2 text-sm text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800">
-				Loading game details…
+				Pulling game details…
 			</div>
 		{/if}
 		{#if error}
@@ -254,104 +222,37 @@
 		<!-- Content -->
 		<div class="flex-1 overflow-y-auto p-0">
 			
-			<!-- Narrative Summary (shareable ≤280 chars) -->
+			<!-- 1. Shareable take -->
 			<div class="p-6 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
-				{#if team.why_blurb}
-					<p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
-						{team.why_blurb}
-					</p>
-				{:else}
-					<p class="text-gray-700 dark:text-gray-300 italic text-lg leading-relaxed">
-						{generateNarrative(team)}
-					</p>
-				{/if}
-				<div class="mt-3 flex items-center justify-between gap-3">
+				<p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed {team.why_blurb ? '' : 'italic'}">
+					{takeText}
+				</p>
+				<div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
 					<span class="text-xs text-gray-400 dark:text-gray-500">
-						{(team.why_blurb || generateNarrative(team)).length}/280 · shareable
+						{takeText.length}/280 · ready to post
 					</span>
-					<button
-						type="button"
-						on:click={copyBlurb}
-						class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
-					>
-						{blurbCopyFeedback ? 'Copied!' : 'Copy blurb'}
-					</button>
+					<div class="flex items-center gap-3">
+						<button
+							type="button"
+							on:click={copyBlurb}
+							class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
+						>
+							{blurbCopyFeedback ? 'Take copied' : 'Copy take'}
+						</button>
+						<button
+							type="button"
+							on:click={copyLink}
+							class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
+							aria-label="Share link to this team"
+						>
+							{copyFeedback ? 'Link copied' : 'Share link'}
+						</button>
+					</div>
 				</div>
 			</div>
 
 			<div class="p-6 space-y-6">
-				<!-- Score Breakdown -->
-				<div>
-					<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Ranking Components</h3>
-					<div class="space-y-4">
-						<!-- Team Quality -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">Team Quality</span>
-								<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">65%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.team_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {tqContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-blue-500 rounded-full" 
-									style="width: {Math.min((tqContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-							<p class="text-xs text-gray-500 mt-1">Elo-based power rating. Measures pure team strength.</p>
-						</div>
-
-						<!-- Record Score -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">Resume</span>
-								<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">27%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.record_score.toFixed(1)} <span class="text-gray-400">→</span> {recContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-green-500 rounded-full" 
-									style="width: {Math.min((recContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-							<p class="text-xs text-gray-500 mt-1">Rewards accomplishments: wins, SoS, and quality victories.</p>
-						</div>
-
-						<!-- Conference Quality -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">Conference</span>
-								<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">8%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.conference_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {confContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-purple-500 rounded-full" 
-									style="width: {Math.min((confContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-					</div>
-					
-					<div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-						<span class="font-bold text-gray-900 dark:text-white">Total Score</span>
-						<span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-							{team.final_ranking_score.toFixed(2)}
-						</span>
-					</div>
-				</div>
-
+				<!-- 2. Path to climb -->
 				{#if team.climb_blurb || team.path_to_climb?.summary}
 					<div>
 						<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-2">
@@ -363,15 +264,92 @@
 						{#if team.path_to_climb?.team_above && !team.path_to_climb.at_top}
 							<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
 								Chasing #{rank - 1} {team.path_to_climb.team_above}
-								{#if team.path_to_climb.primary_lever && team.path_to_climb.primary_lever !== 'balanced margins'}
-									· Needs: {team.path_to_climb.primary_lever}
-								{/if}
 							</p>
 						{/if}
 					</div>
 				{/if}
 
-				<!-- Resume Deep Dive (Accordion) -->
+				<!-- 3. Why here? -->
+				<button
+					type="button"
+					on:click={() => (showAiExplain = true)}
+					class="w-full px-4 py-3 text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+					aria-label="Why is {team.team_name} ranked here?"
+				>
+					Why here?
+				</button>
+
+				<!-- 4. Why this spot (score breakdown) -->
+				<div>
+					<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Why this spot</h3>
+					<div class="space-y-4">
+						<!-- How good they look -->
+						<div>
+							<div class="flex justify-between text-sm mb-1">
+								<div class="flex items-center gap-2">
+									<span class="font-medium text-gray-700 dark:text-gray-300">How good they look</span>
+									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">65%</span>
+								</div>
+								<span class="font-mono text-gray-900 dark:text-white">
+									{team.team_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {tqContrib.toFixed(1)}
+								</span>
+							</div>
+							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+								<div 
+									class="h-full bg-primary-500 rounded-full" 
+									style="width: {Math.min((tqContrib / team.final_ranking_score) * 100, 100)}%"
+								></div>
+							</div>
+						</div>
+
+						<!-- Who they beat -->
+						<div>
+							<div class="flex justify-between text-sm mb-1">
+								<div class="flex items-center gap-2">
+									<span class="font-medium text-gray-700 dark:text-gray-300">Who they beat</span>
+									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">27%</span>
+								</div>
+								<span class="font-mono text-gray-900 dark:text-white">
+									{team.record_score.toFixed(1)} <span class="text-gray-400">→</span> {recContrib.toFixed(1)}
+								</span>
+							</div>
+							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+								<div 
+									class="h-full bg-amber-500 rounded-full" 
+									style="width: {Math.min((recContrib / team.final_ranking_score) * 100, 100)}%"
+								></div>
+							</div>
+						</div>
+
+						<!-- League strength -->
+						<div>
+							<div class="flex justify-between text-sm mb-1">
+								<div class="flex items-center gap-2">
+									<span class="font-medium text-gray-700 dark:text-gray-300">League strength</span>
+									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">8%</span>
+								</div>
+								<span class="font-mono text-gray-900 dark:text-white">
+									{team.conference_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {confContrib.toFixed(1)}
+								</span>
+							</div>
+							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+								<div 
+									class="h-full bg-stone-500 rounded-full" 
+									style="width: {Math.min((confContrib / team.final_ranking_score) * 100, 100)}%"
+								></div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+						<span class="font-bold text-gray-900 dark:text-white">Board score</span>
+						<span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+							{team.final_ranking_score.toFixed(2)}
+						</span>
+					</div>
+				</div>
+
+				<!-- 5. Key games / resume deep dive -->
 				<div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
 					<!-- Quality Wins Header -->
 					<button 
@@ -414,7 +392,7 @@
 									{/each}
 								</div>
 							{:else}
-								<p class="text-sm text-gray-500 italic text-center py-2">No quality wins recorded.</p>
+								<p class="text-sm text-gray-500 italic text-center py-2">No quality wins on the ledger yet.</p>
 							{/if}
 						</div>
 					{/if}
@@ -552,7 +530,7 @@
 									{/each}
 								</div>
 							{:else}
-								<p class="text-sm text-gray-500 italic text-center py-2">No bad losses recorded.</p>
+								<p class="text-sm text-gray-500 italic text-center py-2">Clean sheet — no bad losses.</p>
 							{/if}
 						</div>
 					{/if}
@@ -645,15 +623,15 @@
 											</div>
 											<div class="grid grid-cols-3 gap-2 text-xs">
 												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Quality</div>
+													<div class="text-gray-400 mb-0.5">How they look</div>
 													<div class={getDiffClass(diff.tq, false)}>{formatDiff(diff.tq)}</div>
 												</div>
 												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Resume</div>
+													<div class="text-gray-400 mb-0.5">Who they beat</div>
 													<div class={getDiffClass(diff.rec, false)}>{formatDiff(diff.rec)}</div>
 												</div>
 												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Conf</div>
+													<div class="text-gray-400 mb-0.5">League</div>
 													<div class={getDiffClass(diff.conf, false)}>{formatDiff(diff.conf)}</div>
 												</div>
 											</div>
@@ -715,15 +693,15 @@
 											</div>
 											<div class="grid grid-cols-3 gap-2 text-xs">
 												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Quality</div>
+													<div class="text-gray-400 mb-0.5">How they look</div>
 													<div class={getDiffClass(diff.tq, true)}>{formatDiff(diff.tq)}</div>
 												</div>
 												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Resume</div>
+													<div class="text-gray-400 mb-0.5">Who they beat</div>
 													<div class={getDiffClass(diff.rec, true)}>{formatDiff(diff.rec)}</div>
 												</div>
 												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Conf</div>
+													<div class="text-gray-400 mb-0.5">League</div>
 													<div class={getDiffClass(diff.conf, true)}>{formatDiff(diff.conf)}</div>
 												</div>
 											</div>

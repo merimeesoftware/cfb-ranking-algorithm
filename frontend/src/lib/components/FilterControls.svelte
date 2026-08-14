@@ -46,60 +46,74 @@
 	}
 </script>
 
-<div class="card mb-6 overflow-hidden">
-	<div class="bg-primary-600 text-white px-4 py-3 flex justify-between items-center">
-		<h3 class="font-semibold flex items-center gap-2">
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-					d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-			</svg>
-			Ranking Controls
-		</h3>
-	</div>
-
-	<div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 overflow-x-auto">
+<div class="mb-6 overflow-hidden rounded-lg border border-primary-200 dark:border-primary-800 bg-white dark:bg-primary-900 shadow-sm">
+	<div
+		class="flex border-b border-primary-100 dark:border-primary-800 bg-cfb-chalk/70 dark:bg-primary-950/60 overflow-x-auto"
+		role="tablist"
+		aria-label="Board view"
+	>
 		<button
-			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-				{selectedView === 'fbs' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			type="button"
+			role="tab"
+			aria-selected={selectedView === 'fbs'}
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500
+				{selectedView === 'fbs'
+					? 'border-primary-700 text-primary-800 dark:text-cfb-gold-bright bg-white dark:bg-primary-900'
+					: 'border-transparent text-primary-600/80 hover:text-primary-900 dark:text-primary-300 hover:bg-white/60 dark:hover:bg-primary-800/50'}"
 			on:click={() => handleViewChange('fbs')}
 		>
-			National (FBS)
+			National
 		</button>
 		<button
-			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-				{selectedView === 'g5' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			type="button"
+			role="tab"
+			aria-selected={selectedView === 'g5'}
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500
+				{selectedView === 'g5'
+					? 'border-primary-700 text-primary-800 dark:text-cfb-gold-bright bg-white dark:bg-primary-900'
+					: 'border-transparent text-primary-600/80 hover:text-primary-900 dark:text-primary-300 hover:bg-white/60 dark:hover:bg-primary-800/50'}"
 			on:click={() => handleViewChange('g5')}
 		>
 			Group of 5
 		</button>
 		<button
-			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-				{selectedView === 'p4' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			type="button"
+			role="tab"
+			aria-selected={selectedView === 'p4'}
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500
+				{selectedView === 'p4'
+					? 'border-primary-700 text-primary-800 dark:text-cfb-gold-bright bg-white dark:bg-primary-900'
+					: 'border-transparent text-primary-600/80 hover:text-primary-900 dark:text-primary-300 hover:bg-white/60 dark:hover:bg-primary-800/50'}"
 			on:click={() => handleViewChange('p4')}
 		>
 			Power 4
 		</button>
 		<button
-			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-				{selectedView === 'fcs' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}"
+			type="button"
+			role="tab"
+			aria-selected={selectedView === 'fcs'}
+			class="flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500
+				{selectedView === 'fcs'
+					? 'border-primary-700 text-primary-800 dark:text-cfb-gold-bright bg-white dark:bg-primary-900'
+					: 'border-transparent text-primary-600/80 hover:text-primary-900 dark:text-primary-300 hover:bg-white/60 dark:hover:bg-primary-800/50'}"
 			on:click={() => handleViewChange('fcs')}
 		>
 			FCS
 		</button>
 	</div>
 
-	<div class="p-4 bg-white dark:bg-gray-800 space-y-4">
+	<div class="p-4 space-y-4">
 		<div class="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
 			<div class="flex-1 min-w-0 w-full sm:w-auto">
-				<label for="year-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-					Season Year
+				<label for="year-select" class="block text-sm font-medium text-primary-800 dark:text-primary-200 mb-1">
+					Season
 				</label>
 				<select
 					id="year-select"
 					value={selectedYear}
 					on:change={handleYearChange}
-					class="w-full form-select rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700
-						dark:text-white py-2.5 px-3 focus:ring-primary-500 focus:border-primary-500"
+					class="w-full form-select rounded-md border-primary-200 dark:border-primary-700 dark:bg-primary-950
+						dark:text-white py-2.5 px-3 focus:ring-primary-600 focus:border-primary-600"
 				>
 					{#each years as year}
 						<option value={year}>{year}</option>
@@ -108,16 +122,16 @@
 			</div>
 
 			<div class="flex-1 min-w-0 w-full sm:w-auto">
-				<label for="week-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+				<label for="week-select" class="block text-sm font-medium text-primary-800 dark:text-primary-200 mb-1">
 					Week
 				</label>
 				<select
 					id="week-select"
 					value={selectedWeek}
 					on:change={handleWeekChange}
-					class="w-full form-select rounded-lg border-gray-300 dark:border-gray-600
-						dark:bg-gray-700 dark:text-white py-2.5 px-3
-						focus:ring-primary-500 focus:border-primary-500"
+					class="w-full form-select rounded-md border-primary-200 dark:border-primary-700
+						dark:bg-primary-950 dark:text-white py-2.5 px-3
+						focus:ring-primary-600 focus:border-primary-600"
 				>
 					{#each weeks as week}
 						<option value={week}>Week {week}</option>
@@ -126,40 +140,45 @@
 			</div>
 
 			<button
+				type="button"
 				on:click={handleUpdateRankings}
 				class="w-full sm:w-auto btn btn-primary px-6 py-2.5 flex items-center justify-center gap-2"
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+					/>
 				</svg>
-				Update Rankings
+				Refresh board
 			</button>
 		</div>
 
 		<div class="flex flex-col sm:flex-row gap-4">
 			<div class="flex-1 min-w-0 w-full">
-				<label for="team-search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-					Search teams
+				<label for="team-search" class="block text-sm font-medium text-primary-800 dark:text-primary-200 mb-1">
+					Find your team
 				</label>
 				<input
 					id="team-search"
 					type="search"
 					value={searchQuery}
 					on:input={handleSearchInput}
-					placeholder="Team or conference name"
-					class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-2.5 px-3 focus:ring-primary-500 focus:border-primary-500"
+					placeholder="Ohio State, SEC, Boise…"
+					class="w-full rounded-md border-primary-200 dark:border-primary-700 dark:bg-primary-950 dark:text-white py-2.5 px-3 focus:ring-primary-600 focus:border-primary-600"
 				/>
 			</div>
 			<div class="flex-1 min-w-0 w-full sm:max-w-xs">
-				<label for="conference-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+				<label for="conference-filter" class="block text-sm font-medium text-primary-800 dark:text-primary-200 mb-1">
 					Conference
 				</label>
 				<select
 					id="conference-filter"
 					value={conferenceFilter || ''}
 					on:change={handleConferenceChange}
-					class="w-full form-select rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white py-2.5 px-3 focus:ring-primary-500 focus:border-primary-500"
+					class="w-full form-select rounded-md border-primary-200 dark:border-primary-700 dark:bg-primary-950 dark:text-white py-2.5 px-3 focus:ring-primary-600 focus:border-primary-600"
 				>
 					<option value="">All conferences</option>
 					{#each conferenceOptions as conf}

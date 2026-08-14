@@ -64,8 +64,8 @@
 			{/each}
 		</div>
 	{:else if sortedConferences.length === 0}
-		<div class="text-center py-8 text-gray-500 dark:text-gray-400">
-			No conference data available
+		<div class="text-center py-8 text-primary-600 dark:text-primary-300">
+			No conferences on the board for this view.
 		</div>
 	{:else}
 		<!-- Header -->
