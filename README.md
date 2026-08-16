@@ -1,6 +1,8 @@
-# CFB Ranking System
+# CFB Ranking System / True Rankings
 
-An algorithmic college football ranking system that implements a mathematically pure approach to team and conference rankings based on the mathematical model described in Idea.md.
+**True Rankings** — predictive college football rankings (**TR+**). Tagline: *How good they actually are.*
+
+An algorithmic college football ranking system that implements a mathematically pure approach to team and conference rankings. Public product docs: [PRODUCT.md](PRODUCT.md), brand/GTM: [docs/specs/2026-08-16-true-rankings-brand-gtm.md](docs/specs/2026-08-16-true-rankings-brand-gtm.md), weekly ritual: [docs/THE-DROP.md](docs/THE-DROP.md).
 
 ## Overview
 

@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-Product: **CFB Ranking System** — an algorithmic college football ranking app. It has three entry points that all share the same Python data/algorithm modules:
+Product: **True Rankings** (CFB Ranking System) — algorithmic college football rankings (**TR+**). Three entry points share the same Python data/algorithm modules:
 
 - **Flask API backend** — `app.py`, serves rankings JSON on port **5001**.
 - **SvelteKit frontend** — `frontend/`, dev server on port **5173** (Vite). In dev, calls backend via `/api` proxy → `:5001`.
