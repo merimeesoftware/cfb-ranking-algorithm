@@ -7,7 +7,18 @@
 	import FilterControls from '$lib/components/FilterControls.svelte';
 	import WeekStoryStrip from '$lib/components/WeekStoryStrip.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import BoardActions from '$lib/components/BoardActions.svelte';
+	import DropSignup from '$lib/components/DropSignup.svelte';
+	import SeoHead from '$lib/components/SeoHead.svelte';
 	import type { Conference } from '$lib/types';
+	import {
+		BRAND_NAME,
+		RATING_NAME,
+		TAGLINE,
+		pageTitle,
+		weekPath,
+		SITE_ORIGIN,
+	} from '$lib/brand';
 	import {
 		teams,
 		filteredTeams,
@@ -28,11 +39,20 @@
 		buildUrlParams,
 	} from '$lib/stores/rankings';
 
+	export let data: {
+		seed: {
+			year: number;
+			week: number;
+			teams: import('$lib/types').Team[];
+			teamCount: number;
+		} | null;
+		story: { headline?: string; paragraphs?: string[] } | null;
+		prevRanks: Record<string, number>;
+	};
+
 	// SvelteKit injects these; declare so Svelte 4 does not warn about unknown props
 	// svelte-ignore unused-export-let
 	export let params: Record<string, string> = {};
-	// svelte-ignore unused-export-let
-	export let data: Record<string, unknown> = {};
 
 	let activeTab: 'teams' | 'conferences' = 'teams';
 	let selectedConference: Conference | null = null;
@@ -40,10 +60,36 @@
 	let showConferenceModal = false;
 	let selectedTeamName: string | null = null;
 	let initialTeamName: string | null = null;
+	let prevRanks: Record<string, number> = data.prevRanks || {};
 
 	$: conferenceOptions = [
 		...new Set($teams.map((t) => t.conference).filter(Boolean)),
 	].sort((a, b) => a.localeCompare(b));
+
+	$: seoTitle = pageTitle([
+		$filterState.year && $filterState.week
+			? `${$filterState.year} Week ${$filterState.week}`
+			: 'This week',
+		TAGLINE,
+	]);
+
+	$: seoDescription = data.story?.headline
+		? `${data.story.headline} — ${TAGLINE}`
+		: `${BRAND_NAME} ${RATING_NAME} board for ${$filterState.year} Week ${$filterState.week}. ${TAGLINE}`;
+
+	$: jsonLd = {
+		'@context': 'https://schema.org',
+		'@type': 'ItemList',
+		name: `${BRAND_NAME} ${$filterState.year} Week ${$filterState.week}`,
+		description: seoDescription,
+		url: `${SITE_ORIGIN}${weekPath($filterState.year, $filterState.week)}`,
+		numberOfItems: Math.min(25, ($teams.length || data.seed?.teams.length || 0)),
+		itemListElement: ($teams.length ? $teams : data.seed?.teams || []).slice(0, 25).map((t, i) => ({
+			'@type': 'ListItem',
+			position: i + 1,
+			name: t.team_name,
+		})),
+	};
 
 	function syncUrl() {
 		const params = buildUrlParams($filterState, activeTab, selectedTeamName);
@@ -129,27 +175,27 @@
 	async function goToBoard(event?: MouseEvent) {
 		event?.preventDefault();
 		const board = document.getElementById('board');
-		const search = document.getElementById('team-search');
 		board?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		await tick();
+		const search = document.getElementById('team-search');
 		if (search instanceof HTMLElement) {
 			search.focus({ preventScroll: true });
 		}
 	}
 </script>
 
-<svelte:head>
-	<title>CFB Rankings | Who belongs higher?</title>
-</svelte:head>
+<SeoHead
+	title={seoTitle}
+	description={seoDescription}
+	canonicalPath={weekPath($filterState.year, $filterState.week)}
+	{jsonLd}
+/>
 
 <section
 	class="relative overflow-hidden bg-field-haze text-cfb-chalk"
 	aria-labelledby="hero-brand"
 >
-	<div
-		class="pointer-events-none absolute inset-0 opacity-40"
-		aria-hidden="true"
-	>
+	<div class="pointer-events-none absolute inset-0 opacity-40" aria-hidden="true">
 		<div class="absolute left-0 right-0 top-1/3 h-px bg-cfb-chalk/25 animate-stripe-pulse"></div>
 		<div class="absolute left-0 right-0 top-1/2 h-px bg-cfb-chalk/15"></div>
 		<div class="absolute left-0 right-0 top-2/3 h-px bg-cfb-chalk/25 animate-stripe-pulse"></div>
@@ -157,42 +203,47 @@
 		<div class="absolute inset-y-0 right-[8%] w-px bg-cfb-gold/30"></div>
 	</div>
 
-	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
-		<p
-			id="hero-brand"
-			class="hero-brand animate-hero-rise"
-		>
-			CFB Rankings
+	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+		<p id="hero-brand" class="hero-brand animate-hero-rise">{BRAND_NAME}</p>
+		<p class="mt-2 text-sm sm:text-base text-cfb-chalk/75 animate-hero-rise" style="animation-delay: 40ms">
+			{$filterState.year} Week {$filterState.week} · {RATING_NAME} · through Saturday
 		</p>
-		<h1 class="hero-headline mt-4 sm:mt-5 animate-hero-rise" style="animation-delay: 80ms">
-			Who belongs higher?
+		<h1 class="hero-headline mt-3 sm:mt-4 animate-hero-rise" style="animation-delay: 80ms">
+			{TAGLINE}
 		</h1>
 		<p
-			class="mt-4 max-w-2xl text-base sm:text-lg text-cfb-chalk/90 leading-relaxed animate-hero-rise"
+			class="mt-3 max-w-2xl text-base sm:text-lg text-cfb-chalk/90 leading-relaxed animate-hero-rise"
 			style="animation-delay: 140ms"
 		>
-			This week’s board — clear takes for the fight, not voter vibes.
+			{#if data.story?.headline}
+				{data.story.headline}
+			{:else}
+				This week’s true order — open math, free to cite, ready before you argue or bet.
+			{/if}
 		</p>
 
-		<div
-			class="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 animate-hero-rise"
-			style="animation-delay: 200ms"
-		>
-			<div>
-				<a
-					href="#board"
-					on:click={goToBoard}
-					class="btn btn-primary bg-cfb-gold text-primary-950 hover:bg-cfb-gold-bright focus:ring-cfb-gold px-6 py-3 text-base font-semibold shadow-sm"
-				>
-					See this week’s rankings
-				</a>
-				<p class="mt-2 text-sm text-cfb-chalk/70 sm:pl-1">Jump into the controversy</p>
-			</div>
+		<div class="mt-6 animate-hero-rise" style="animation-delay: 200ms">
+			<BoardActions
+				year={$filterState.year}
+				week={$filterState.week}
+				topTeams={$teams.length ? $teams : data.seed?.teams || []}
+			/>
+		</div>
+
+		<div class="mt-4 animate-hero-rise" style="animation-delay: 240ms">
+			<a
+				href="#board"
+				on:click={goToBoard}
+				class="text-sm text-cfb-gold-bright hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-cfb-gold rounded-sm"
+			>
+				Jump to the board
+			</a>
+			<span class="mx-2 text-cfb-chalk/40">·</span>
 			<a
 				href="/methodology"
-				class="btn btn-ghost-light px-5 py-3 text-base sm:self-start"
+				class="text-sm text-cfb-chalk/80 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cfb-gold rounded-sm"
 			>
-				How the board works
+				How it works
 			</a>
 		</div>
 	</div>
@@ -249,9 +300,9 @@
 		</button>
 	</div>
 
-	{#if $loading}
+	{#if $loading && $teams.length === 0 && !data.seed}
 		<LoadingSpinner message="Building the board…" />
-	{:else if $error}
+	{:else if $error && $teams.length === 0 && !data.seed}
 		<div class="card p-6 text-center" role="alert" aria-live="assertive">
 			<p class="font-display text-lg text-primary-900 dark:text-white">
 				Couldn’t load this week’s rankings.
@@ -268,9 +319,12 @@
 	{:else}
 		{#if activeTab === 'teams'}
 			<RankingsTable
-				teams={$filteredTeams}
-				allTeams={$teams}
+				teams={$filteredTeams.length ? $filteredTeams : data.seed?.teams || []}
+				allTeams={$teams.length ? $teams : data.seed?.teams || []}
 				{initialTeamName}
+				{prevRanks}
+				year={$filterState.year}
+				week={$filterState.week}
 				on:teamSelect={handleTeamSelect}
 				on:teamClear={handleTeamClear}
 			/>
@@ -278,6 +332,10 @@
 			<ConferenceTable conferences={$filteredConferences} on:click={handleConferenceClick} />
 		{/if}
 	{/if}
+
+	<div class="mt-8">
+		<DropSignup />
+	</div>
 </div>
 
 {#if showConferenceModal && selectedConference}

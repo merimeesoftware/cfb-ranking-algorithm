@@ -5,11 +5,15 @@
 	import TeamDetailModal from './TeamDetailModal.svelte';
 	import { fetchTeamDetail, fetchWhyBlurb, fetchShareableBlurb, fetchClimbBlurb } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
+	import { RATING_NAME, teamPath } from '$lib/brand';
 
 	export let teams: Team[] = [];
 	/** Full unfiltered list for deep-link ?team= lookup and accurate ranks */
 	export let allTeams: Team[] = [];
 	export let initialTeamName: string | null = null;
+	export let prevRanks: Record<string, number> = {};
+	export let year: number | null = null;
+	export let week: number | null = null;
 
 	const dispatch = createEventDispatcher<{
 		teamSelect: string;
@@ -152,9 +156,15 @@
 
 					<!-- Team Info -->
 					<div class="flex-1 min-w-0">
-						<div class="font-semibold text-gray-900 dark:text-white truncate">
+						<a
+							href={year != null && week != null
+								? teamPath(team.team_name, year, week)
+								: teamPath(team.team_name)}
+							class="font-semibold text-gray-900 dark:text-white truncate block hover:underline"
+							on:click|stopPropagation
+						>
 							{team.team_name}
-						</div>
+						</a>
 						<div class="flex items-center gap-2 mt-0.5">
 							<span class="badge {team.conference_type === 'Power 4' ? 'badge-power4' : team.conference_type === 'Group of 5' ? 'badge-g5' : 'badge-ind'}">
 								{team.conference}
@@ -165,13 +175,13 @@
 						</div>
 					</div>
 
-					<!-- Score -->
+					<!-- TR+ -->
 					<div class="text-right">
 						<div class="font-bold text-lg text-primary-600 dark:text-primary-400">
 							{team.final_ranking_score.toFixed(1)}
 						</div>
 						<div class="text-xs text-gray-500 dark:text-gray-400">
-							Score
+							{RATING_NAME}
 						</div>
 					</div>
 				</div>
@@ -188,20 +198,21 @@
 					<th class="table-header px-4 py-3 text-left">Team</th>
 					<th class="table-header px-4 py-3 text-left">Conference</th>
 					<th class="table-header px-4 py-3 text-center">Record</th>
-					<th class="table-header px-4 py-3 text-center">Team Elo</th>
-					<th class="table-header px-4 py-3 text-center">Resume</th>
-					<th class="table-header px-4 py-3 text-center">Conf Qual</th>
-					<th class="table-header px-4 py-3 text-right">Score</th>
+					<th class="table-header px-4 py-3 text-center">Δ</th>
+					<th class="table-header px-4 py-3 text-right">{RATING_NAME}</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
 				{#each displayedTeams as team, index}
 					{@const rank = index + 1}
-					<TeamRow 
-						{team} 
-						{rank} 
+					<TeamRow
+						{team}
+						{rank}
 						cfpClass={getCfpClass(rank)}
-						on:click={() => handleTeamClick(team)} 
+						prevRank={prevRanks[team.team_name] ?? null}
+						{year}
+						{week}
+						on:click={() => handleTeamClick(team)}
 					/>
 				{/each}
 			</tbody>
