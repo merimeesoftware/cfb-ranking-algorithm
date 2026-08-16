@@ -1,0 +1,26 @@
+User-Agent: *
+Allow: /
+
+# Explicit allow for major AI / search crawlers
+User-Agent: GPTBot
+Allow: /
+
+User-Agent: ChatGPT-User
+Allow: /
+
+User-Agent: ClaudeBot
+Allow: /
+
+User-Agent: anthropic-ai
+Allow: /
+
+User-Agent: PerplexityBot
+Allow: /
+
+User-Agent: Google-Extended
+Allow: /
+
+User-Agent: Googlebot
+Allow: /
+
+Sitemap: https://truerankings.com/sitemap.xml

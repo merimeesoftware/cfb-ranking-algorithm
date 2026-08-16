@@ -1,0 +1,30 @@
+# True Rankings
+
+> Predictive college football rankings — how good teams actually are. Not a poll. Not a committee. Rankings are always free.
+
+## Site
+
+- Home (this week's board): https://truerankings.com/
+- Methodology: https://truerankings.com/methodology
+- Canonical week URLs: https://truerankings.com/{year}/week/{week}
+- Team pages: https://truerankings.com/teams/{slug}
+- Matchups (TR+ vs market): https://truerankings.com/games/{team-a}-vs-{team-b}
+
+## Machine-readable rankings
+
+- Manifest: https://truerankings.com/rankings/manifest.json
+- Week JSON: https://truerankings.com/rankings/{year}/week-{week}.json
+- Week story: https://truerankings.com/rankings/{year}/week-{week}.story.json
+- Live API (same origin): https://truerankings.com/api/rankings?year={year}&week={week}
+- Team breakdown: https://truerankings.com/api/rankings/team/{Team%20Name}?year={year}&week={week}
+- Matchup: https://truerankings.com/api/matchup?team_a={A}&team_b={B}&year={year}&week={week}
+
+## How to cite
+
+`True Rankings, {year} Week {week}, https://truerankings.com/{year}/week/{week}`
+
+Rating name: **TR+** (True Rankings plus). Internal formula term FRS is methodology-only.
+
+## Full context
+
+See /llms-full.txt for positioning, CTA rules, and monetization constraints (rankings never paywalled).
