@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { BRAND_NAME } from '$lib/brand';
+
 	export let footerOnly: boolean = false;
 
 	const githubUrl = 'https://github.com/merimeesoftware/cfb-ranking-algorithm';
@@ -17,7 +19,7 @@
 					class="text-cfb-gold-bright hover:underline focus:outline-none focus-visible:underline"
 				>
 					College Football Data
-				</a>. The board is ours.
+				</a>. The board is ours. Rankings stay free.
 			</p>
 			<div class="flex items-center gap-4 text-sm">
 				<a
@@ -25,6 +27,12 @@
 					class="hover:text-white focus:outline-none focus-visible:underline"
 				>
 					How it works
+				</a>
+				<a
+					href="/#the-drop"
+					class="hover:text-white focus:outline-none focus-visible:underline"
+				>
+					The Drop
 				</a>
 				<a
 					href={githubUrl}
@@ -36,8 +44,17 @@
 				</a>
 			</div>
 		</div>
-		<div class="mt-4 text-center text-xs text-cfb-chalk/50">
-			© {new Date().getFullYear()} CFB Rankings. Not affiliated with the NCAA or College Football Playoff.
+		<div class="mt-4 text-center text-xs text-cfb-chalk/50 space-y-1">
+			<p>
+				© {new Date().getFullYear()}
+				{BRAND_NAME}. Not affiliated with the NCAA or College Football Playoff.
+			</p>
+			<p>
+				21+ where required. Gambling problem? Call
+				<a href="https://www.ncpgambling.org/help-treatment/" class="underline hover:text-cfb-chalk" rel="noopener noreferrer" target="_blank">1-800-GAMBLER</a>
+				or visit
+				<a href="https://www.ncpgambling.org/" class="underline hover:text-cfb-chalk" rel="noopener noreferrer" target="_blank">ncpgambling.org</a>.
+			</p>
 		</div>
 	</div>
 </footer>

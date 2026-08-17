@@ -1,5 +1,5 @@
-// Enable prerendering for all pages
 export const prerender = true;
 
-// Use client-side rendering (SPA mode)
-export const ssr = false;
+// SSR so prerendered HTML includes rankings for search / AI / social crawlers.
+// Client hydration still drives filters and live fetches.
+export const ssr = true;

@@ -45,6 +45,19 @@ You do **not** need two Workers unless you want a permanently separate staging U
 
 ---
 
+## Custom domain (True Rankings)
+
+Public brand hostname target: **`truerankings.com`** (fallbacks: `truecfb.com`, `truerankings.football`).
+
+1. Buy/DNS the domain at your registrar (or Cloudflare Registrar).
+2. Cloudflare dashboard → **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Domains & Routes** → **Add** → Custom Domain → `truerankings.com` (+ `www` if desired).
+3. Set frontend build var / secret `PUBLIC_SITE_URL=https://truerankings.com` so canonical, OG, sitemap, and citation links match.
+4. Optional runtime secrets: `DROP_WEBHOOK_URL` (The Drop ESP), affiliate IDs when you replace placeholder book URLs.
+
+Keep `robots.txt` Sitemap line and `scripts/generate-sitemap.mjs` aligned with `PUBLIC_SITE_URL`.
+
+---
+
 ## Secrets (dashboard — no CLI required)
 
 `wrangler secret put` is optional. Prefer the dashboard:

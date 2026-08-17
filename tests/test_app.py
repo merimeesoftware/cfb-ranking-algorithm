@@ -11,7 +11,8 @@ def test_index(client):
     response = client.get('/')
     assert response.status_code == 200
     data = response.get_json()
-    assert 'CFB Ranking API' in data['message']
+    assert 'True Rankings' in data['message']
+    assert data.get('rating') == 'TR+'
 
 
 def test_weeks_endpoint(client):

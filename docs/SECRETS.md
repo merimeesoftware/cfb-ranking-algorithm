@@ -46,6 +46,8 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 | `MINIMAX_API_KEY` | Optional | `/agent/explain` when `AI_MODE=live` (paygo MiniMax — not Coding Plan) |
 | `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
 | `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
+| `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
+| `PUBLIC_SITE_URL` | Optional (build) | Canonical origin for OG/sitemap/citations (default `https://truerankings.com`) |
 
 Or via CLI (after `wrangler login` once on your machine):
 

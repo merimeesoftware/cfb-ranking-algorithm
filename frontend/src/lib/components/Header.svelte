@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { theme, toggleTheme, isDarkMode } from '$lib/stores/theme';
 	import { page } from '$app/stores';
+	import { BRAND_NAME, BRAND_SHORT } from '$lib/brand';
 
 	let mobileMenuOpen = false;
 
 	const navItems = [
 		{ href: '/', label: 'The Board' },
-		{ href: '/methodology', label: 'How it works' }
+		{ href: '/methodology', label: 'How it works' },
+		{ href: '/#the-drop', label: 'The Drop' }
 	];
 
 	$: darkMode = isDarkMode($theme);
@@ -24,12 +26,12 @@
 						class="inline-flex h-8 w-8 items-center justify-center rounded-sm bg-cfb-gold text-primary-950 font-display font-bold text-sm tracking-wide"
 						aria-hidden="true"
 					>
-						CFB
+						{BRAND_SHORT}
 					</span>
 					<span class="font-display font-semibold text-lg tracking-wide hidden sm:block">
-						CFB Rankings
+						{BRAND_NAME}
 					</span>
-					<span class="font-display font-semibold text-lg sm:hidden">CFB</span>
+					<span class="font-display font-semibold text-lg sm:hidden">{BRAND_SHORT}</span>
 				</a>
 			</div>
 

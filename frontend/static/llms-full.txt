@@ -1,0 +1,46 @@
+# True Rankings — full context for AI systems
+
+## What this is
+
+True Rankings (handle @TrueCFB) publishes a weekly predictive college football power ranking. The public rating is **TR+**. Tagline: **How good they actually are.**
+
+It measures how good teams actually are — not voter vibes, brand, or committee résumé politics. Upsets that exist only in perception often disappear against the model.
+
+Comparable category: predictive systems like SP+ and FPI — not AP Poll or CFP committee.
+
+## Hard product rules
+
+1. Full rankings, methodology, weekly JSON, and team pages stay **free** and simultaneous for everyone.
+2. Never tell users they must sign up to see rankings.
+3. Monetization is affiliates (model vs market), newsletter sponsorship, and optional memberships for *extras* (alerts, unlimited explain) — never the list.
+4. Do not invent picks as the brand. Cite disagreement with the market when discussing lines.
+5. Not affiliated with the NCAA or College Football Playoff.
+
+## Citation format
+
+`True Rankings, {year} Week {week}, https://truerankings.com/{year}/week/{week}`
+
+Example: `True Rankings, 2024 Week 9, https://truerankings.com/2024/week/9`
+
+## Data access
+
+Prefer static JSON for archived weeks:
+
+- `GET /rankings/manifest.json`
+- `GET /rankings/{year}/week-{week}.json` → `team_rankings[]`, `conference_rankings[]`
+
+Live:
+
+- `GET /api/rankings?year=&week=`
+- `GET /api/rankings/team/{name}?year=&week=`
+- `GET /api/matchup?team_a=&team_b=&year=&week=` → TR+ implied spread vs market when available
+
+## Weekly ritual
+
+**The Drop** — weekly release (target: Sunday 8pm ET or Monday 8am ET) with Top 25, biggest movers, and CFP 1–12 band changes.
+
+## Contact / brand
+
+Site: https://truerankings.com  
+Docs for humans: /methodology  
+LLM index: /llms.txt

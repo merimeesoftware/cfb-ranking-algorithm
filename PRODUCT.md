@@ -1,52 +1,55 @@
-# PRODUCT.md — CFB Rankings
+# PRODUCT.md — True Rankings
 
 ## What it is
 
-**CFB Rankings** is a weekly college football rankings board for fans who argue. The product is the board: who’s where this week, a clear take you can post, and enough reason to stand on it.
+**True Rankings** is a weekly college football rankings board for fans who argue and bettors who check the model before the market. The public rating is **TR+**. Tagline: **How good they actually are.**
 
 ## Who it’s for
 
-The fan who fights rankings every week — meathead *and* nerdy. They want a board they can trust enough to fight with.
+1. The fan who fights rankings every week — meathead *and* nerdy  
+2. Media / AI systems that need a citable predictive order  
+3. Bettors who want where TR+ disagrees with the line  
 
 ## StoryBrand frame (locked)
 
 | Role | Answer |
 |------|--------|
-| Hero | The fan |
-| Guide | CFB Rankings |
-| Problem | Who belongs higher — without voter vibes or black-box noise |
-| Plan | Open the board → find your team → grab the take → jump into the argument |
-| Primary CTA | See this week’s rankings / join the controversy |
-| Success | Share the take → win the argument → optionally understand the formula |
+| Hero | The fan / bettor |
+| Guide | True Rankings |
+| Problem | Who is actually better — without voter vibes or brand premium |
+| Plan | Open the board → find your team → share/cite → check the line |
+| Primary CTAs | Share Top 25 · Copy citation · Get The Drop |
+| Success | Cite the model → win the argument → optionally understand the formula |
 
 ## Success order
 
-1. **Share the take** — postable ranking claim  
-2. **Win the argument** — board + reason strong enough to stand on  
-3. **Understand the formula** — optional depth (never required)
+1. **Share / cite** — postable ranking claim  
+2. **Own The Drop** — email list  
+3. **Model vs market** — affiliate when TR+ disagrees  
+4. **Understand the formula** — optional depth  
 
 ## Fan language (primary path)
 
-Use: board, rankings, who they beat, how they look, league strength, take, climb, debate, How it works.
+Use: board, rankings, TR+, who they beat, how they look, league strength, take, climb, The Drop, how good they actually are.
 
-Keep off the primary path: Elo, TQ, CQ, FRS, `AI_MODE`, stub, MiniMax, “methodology” as the hero word.
+Keep off the primary path: Elo, TQ, CQ, FRS, `AI_MODE`, stub, MiniMax (methodology deep dive only).
 
 ## Surfaces
 
 | Surface | Job |
 |---------|-----|
-| Home hero | Offer + better life + next action (grunt test) |
-| Week story | What shook this week |
+| Home / week page | This week’s true order + Drop CTAs |
 | The Board | Who’s where; find your team |
-| Team detail | Take → path to climb → why here → math (optional) |
+| Team page | Take → path to climb → why → math |
+| Matchup | TR+ implied spread vs market |
 | How it works | How the board decides, then the math |
 
-## Non-goals
+## Hard rules
 
-- Not a SaaS rankings dashboard voice  
-- Not algorithm-flex as first paint  
-- Methodology is not the product  
+- Rankings, methodology, and weekly JSON stay free and simultaneous  
+- No native app in 2026 (web + PWA)  
+- Sell disagreement with the market, not paywalled picks  
 
-## Canonical copy
+## Canonical strategy
 
-See `docs/superpowers/specs/2026-08-14-storybrand-copy-deck.md`.
+See [docs/specs/2026-08-16-true-rankings-brand-gtm.md](docs/specs/2026-08-16-true-rankings-brand-gtm.md).
