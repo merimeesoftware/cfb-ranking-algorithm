@@ -94,6 +94,9 @@ def test_fixture_slate_signals_and_ats():
     assert alpha_charlie['signal'] == 'GREEN'
     assert alpha_charlie['hit'] is True
 
+    lean = by_key[('Bravo', 'Delta')]
+    assert lean['signal'] == 'LEAN'
+
     week2 = by_key[('Alpha', 'Delta')]
     assert week2['signal'] == 'PASS'
     assert 'early_week' in week2['vetoes']
@@ -107,5 +110,5 @@ def test_fixture_slate_signals_and_ats():
     assert 'steam_against' in steam_game['vetoes']
 
     green = score_ats(rows, signals=['GREEN'])
-    assert green.graded >= 1
+    assert green.graded == 1
     assert green.ats_pct == 1.0
