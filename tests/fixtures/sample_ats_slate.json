@@ -1,0 +1,82 @@
+{
+  "note": "Synthetic closes for CI. Not live CFBD. Home spread: negative = home favored.",
+  "ratings": {
+    "Alpha": 1680,
+    "Bravo": 1540,
+    "Charlie": 1480,
+    "Delta": 1320,
+    "FCS State": 980
+  },
+  "games": [
+    {
+      "year": 2024,
+      "week": 6,
+      "home_team_name": "Alpha",
+      "away_team_name": "Charlie",
+      "home_score": 31,
+      "away_score": 17,
+      "home_conference_type": "Power 4",
+      "away_conference_type": "Power 4",
+      "notes": "",
+      "season_type": "regular",
+      "market_spread_home": -3.5,
+      "open_spread_home": -3.0
+    },
+    {
+      "year": 2024,
+      "week": 6,
+      "home_team_name": "Bravo",
+      "away_team_name": "Delta",
+      "home_score": 24,
+      "away_score": 21,
+      "home_conference_type": "Power 4",
+      "away_conference_type": "Power 4",
+      "notes": "",
+      "season_type": "regular",
+      "market_spread_home": -7.0,
+      "open_spread_home": -6.5
+    },
+    {
+      "year": 2024,
+      "week": 2,
+      "home_team_name": "Alpha",
+      "away_team_name": "Delta",
+      "home_score": 45,
+      "away_score": 10,
+      "home_conference_type": "Power 4",
+      "away_conference_type": "Power 4",
+      "notes": "",
+      "season_type": "regular",
+      "market_spread_home": -14.0,
+      "open_spread_home": -13.5
+    },
+    {
+      "year": 2024,
+      "week": 6,
+      "home_team_name": "Alpha",
+      "away_team_name": "FCS State",
+      "home_score": 56,
+      "away_score": 3,
+      "home_conference_type": "Power 4",
+      "away_conference_type": "FCS",
+      "notes": "",
+      "season_type": "regular",
+      "market_spread_home": -38.5,
+      "open_spread_home": -35.0
+    },
+    {
+      "year": 2024,
+      "week": 7,
+      "home_team_name": "Charlie",
+      "away_team_name": "Bravo",
+      "home_score": 20,
+      "away_score": 27,
+      "home_conference_type": "Power 4",
+      "away_conference_type": "Power 4",
+      "notes": "",
+      "season_type": "regular",
+      "market_spread_home": -1.5,
+      "open_spread_home": 2.5
+    }
+  ]
+}
