@@ -66,6 +66,7 @@ def classify(
     market_spread: Optional[float],
     opponent_tier: Optional[str] = None,
     steam_against: Optional[float] = None,
+    season_type: Optional[str] = None,
     green_edge: float = GREEN_EDGE,
     lean_edge: float = LEAN_EDGE,
     min_week: int = MIN_WEEK,
@@ -75,7 +76,8 @@ def classify(
     vetoes: List[str] = []
     if market_spread is None or edge is None:
         vetoes.append('no_line')
-    if week is not None and week < min_week:
+    is_postseason = str(season_type or 'regular').lower() == 'postseason'
+    if week is not None and week < min_week and not is_postseason:
         vetoes.append('early_week')
     if opponent_tier == 'FCS':
         vetoes.append('fcs')
@@ -137,13 +139,19 @@ def price_game(
     edge = edge_home(model, float(market))
     pick = pick_from_edge(edge)
     steam = steam_against_pick(pick, game.get('open_spread_home'), float(market))
-    opp_tier = game.get('away_conference_type') if pick == 'home' else game.get('home_conference_type')
+    home_ct = game.get('home_conference_type')
+    away_ct = game.get('away_conference_type')
+    if home_ct == 'FCS' or away_ct == 'FCS':
+        opp_tier = 'FCS'
+    else:
+        opp_tier = away_ct if pick == 'home' else home_ct
     traffic = classify(
         edge=edge,
         week=game.get('week'),
         market_spread=float(market),
         opponent_tier=opp_tier,
         steam_against=steam,
+        season_type=game.get('season_type'),
     )
 
     row: Dict[str, Any] = {

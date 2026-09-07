@@ -65,6 +65,50 @@ def test_vetoes_early_week_fcs_landmine_missing_line():
     assert 'no_line' in classify(edge=None, week=6, market_spread=None)['vetoes']
 
 
+def test_early_week_does_not_veto_postseason():
+    traffic = classify(
+        edge=-5.0, week=1, market_spread=-7.0, season_type='postseason'
+    )
+    assert traffic['signal'] == 'GREEN'
+    assert 'early_week' not in traffic['vetoes']
+
+
+def test_fcs_veto_when_pick_is_fcs_side():
+    # Fat FBS-home vs FCS-away number: model sides with FCS, |spread| <= landmine.
+    game = {
+        'home_team_name': 'G5 U',
+        'away_team_name': 'FCS State',
+        'week': 6,
+        'season_type': 'regular',
+        'home_conference_type': 'Group of 5',
+        'away_conference_type': 'FCS',
+        'market_spread_home': -24.0,
+        'open_spread_home': -24.0,
+    }
+    row = price_game(game, {'G5 U': 1400.0, 'FCS State': 980.0})
+    assert row['pick'] == 'away'
+    assert abs(row['market_spread_home']) <= 28.0
+    assert row['signal'] == 'PASS'
+    assert 'fcs' in row['vetoes']
+    assert 'landmine' not in row['vetoes']
+
+
+def test_price_game_postseason_week_1_is_not_early_week():
+    game = {
+        'home_team_name': 'Alpha',
+        'away_team_name': 'Bravo',
+        'week': 1,
+        'season_type': 'postseason',
+        'home_conference_type': 'Power 4',
+        'away_conference_type': 'Power 4',
+        'market_spread_home': -3.5,
+        'notes': 'bowl',
+    }
+    row = price_game(game, {'Alpha': 1680.0, 'Bravo': 1480.0})
+    assert 'early_week' not in row['vetoes']
+    assert row['signal'] == 'GREEN'
+
+
 def test_steam_against_veto():
     # Open home -3, close home +1 → moved 4 pts toward away
     against = steam_against_pick('home', -3.0, 1.0)
@@ -103,7 +147,7 @@ def test_fixture_slate_signals_and_ats():
 
     fcs = by_key[('Alpha', 'FCS State')]
     assert fcs['signal'] == 'PASS'
-    assert 'fcs' in fcs['vetoes'] or 'landmine' in fcs['vetoes']
+    assert 'fcs' in fcs['vetoes']
 
     steam_game = by_key[('Charlie', 'Bravo')]
     assert steam_game['signal'] == 'PASS'
