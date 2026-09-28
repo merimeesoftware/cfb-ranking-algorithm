@@ -5,8 +5,13 @@ from drop_service import subscribe_to_drop, validate_email
 
 def test_validate_email():
     assert validate_email('fan@example.com')
+    assert validate_email('fan@example.co.uk')
     assert not validate_email('nope')
     assert not validate_email('')
+    assert not validate_email('fan@example')
+    assert not validate_email('a@b.')
+    assert not validate_email('a@' + ('a.' * 200) + 'a@')
+    assert not validate_email('a' * 300 + '@example.com')
 
 
 def test_subscribe_accepts_without_webhook(monkeypatch):

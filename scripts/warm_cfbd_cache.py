@@ -28,14 +28,11 @@ def main() -> int:
     from spend_guards import cfbd_key_slot_status, get_cfbd_call_count
 
     slot = cfbd_key_slot_status()
-    print(
-        f"CFBD key slot={slot['slot']} "
-        f"has_a={slot['has_key_a']} has_b={slot['has_key_b']} "
-        f"active={slot['active_configured']}"
-    )
     if not slot['active_configured']:
-        print('No CFBD key configured for active slot.', file=sys.stderr)
+        print('No CFBD key configured for the active slot.', file=sys.stderr)
         return 1
+    # Slot booleans are derived from the API key env vars. Do not print them.
+    print('CFBD cache warm starting.')
 
     processor = CFBDataProcessor()
     print(f'Teams loaded: {len(processor.team_info_map)}')

@@ -17,14 +17,103 @@ DEFAULT_ROOT = os.environ.get(
     os.path.join(os.path.dirname(__file__), 'static_rankings'),
 )
 
+# Allowlist for path segments. CFB weeks stay in 0–20 (regular + postseason).
+_YEAR_MIN = 1869
+_YEAR_MAX = 2100
+_WEEK_MIN = 0
+_WEEK_MAX = 20
+_FILE_SUFFIXES = ('json', 'story.json', 'why.json', 'share.json', 'climb.json')
+
+
+def _root_prefix(root: Optional[Union[str, Path]]) -> str:
+    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
+    base_norm = os.path.normpath(str(base))
+    if base_norm.endswith(os.sep):
+        return base_norm
+    return base_norm + os.sep
+
+
+def _relative_name(year: int, week: int, suffix: str) -> str:
+    """Allowlisted ``YYYY/week-N.<suffix>`` segment (digits only)."""
+    if suffix not in _FILE_SUFFIXES:
+        raise ValueError('unsupported static rankings suffix')
+    if type(year) is not int or type(week) is not int:
+        raise ValueError('year and week must be integers')
+    if not (_YEAR_MIN <= year <= _YEAR_MAX and _WEEK_MIN <= week <= _WEEK_MAX):
+        raise ValueError('year or week is outside the allowed range')
+    return os.path.join(str(year), f'week-{week}.{suffix}')
+
+
+def _contained_fullpath(
+    year: int,
+    week: int,
+    suffix: str,
+    root: Optional[Union[str, Path]],
+) -> str:
+    """Normalize and require the file to stay under the rankings root."""
+    relative = _relative_name(year, week, suffix)
+    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
+    base_norm = os.path.normpath(str(base))
+    fullpath = os.path.normpath(os.path.join(base_norm, relative))
+    if not fullpath.startswith(_root_prefix(root)):
+        raise ValueError('static rankings path escapes the allowed root')
+    return fullpath
+
 
 def static_path_for(
     year: int,
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
-    return base / str(year) / f"week-{week}.json"
+    return Path(_contained_fullpath(year, week, 'json', root))
+
+
+def _write_contained(
+    payload: Dict[str, Any],
+    year: int,
+    week: int,
+    suffix: str,
+    root: Optional[Union[str, Path]],
+    *,
+    pretty: bool,
+) -> Path:
+    fullpath = _contained_fullpath(year, week, suffix, root)
+    # Re-check the normalized path in this function, immediately before IO.
+    fullpath = os.path.normpath(fullpath)
+    if not fullpath.startswith(_root_prefix(root)):
+        raise ValueError('static rankings path escapes the allowed root')
+    os.makedirs(os.path.dirname(fullpath), exist_ok=True)
+    with open(fullpath, 'w', encoding='utf-8') as handle:
+        if pretty:
+            json.dump(payload, handle, indent=2)
+            handle.write('\n')
+        else:
+            json.dump(payload, handle, separators=(',', ':'))
+    return Path(fullpath)
+
+
+def _read_contained(
+    year: int,
+    week: int,
+    suffix: str,
+    root: Optional[Union[str, Path]],
+) -> Optional[Dict[str, Any]]:
+    try:
+        fullpath = _contained_fullpath(year, week, suffix, root)
+    except ValueError:
+        return None
+    # Re-check the normalized path in this function, immediately before IO.
+    fullpath = os.path.normpath(fullpath)
+    prefix = _root_prefix(root)
+    if not fullpath.startswith(prefix):
+        return None
+    if not os.path.exists(fullpath):
+        return None
+    try:
+        with open(fullpath, 'r', encoding='utf-8') as handle:
+            return json.load(handle)
+    except (json.JSONDecodeError, OSError):
+        return None
 
 
 def write_static_rankings(
@@ -33,11 +122,7 @@ def write_static_rankings(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    path = static_path_for(year, week, root=root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, separators=(',', ':'))
-    return path
+    return _write_contained(payload, year, week, 'json', root, pretty=False)
 
 
 def read_static_rankings(
@@ -45,14 +130,7 @@ def read_static_rankings(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Optional[Dict[str, Any]]:
-    path = static_path_for(year, week, root=root)
-    if not path.exists():
-        return None
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return None
+    return _read_contained(year, week, 'json', root)
 
 
 def read_static_rankings_any(
@@ -73,8 +151,7 @@ def story_path_for(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
-    return base / str(year) / f"week-{week}.story.json"
+    return Path(_contained_fullpath(year, week, 'story.json', root))
 
 
 def why_path_for(
@@ -82,8 +159,7 @@ def why_path_for(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
-    return base / str(year) / f"week-{week}.why.json"
+    return Path(_contained_fullpath(year, week, 'why.json', root))
 
 
 def share_path_for(
@@ -91,8 +167,7 @@ def share_path_for(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
-    return base / str(year) / f"week-{week}.share.json"
+    return Path(_contained_fullpath(year, week, 'share.json', root))
 
 
 def climb_path_for(
@@ -100,18 +175,7 @@ def climb_path_for(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
-    return base / str(year) / f"week-{week}.climb.json"
-
-
-def _read_json(path: Path) -> Optional[Dict[str, Any]]:
-    if not path.exists():
-        return None
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return None
+    return Path(_contained_fullpath(year, week, 'climb.json', root))
 
 
 def read_week_story(
@@ -120,7 +184,7 @@ def read_week_story(
     root: Optional[Union[str, Path]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Load precomputed week-{n}.story.json if present."""
-    return _read_json(story_path_for(year, week, root=root))
+    return _read_contained(year, week, 'story.json', root)
 
 
 def read_why_blurbs(
@@ -129,7 +193,7 @@ def read_why_blurbs(
     root: Optional[Union[str, Path]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Load precomputed week-{n}.why.json if present."""
-    return _read_json(why_path_for(year, week, root=root))
+    return _read_contained(year, week, 'why.json', root)
 
 
 def write_week_story(
@@ -138,12 +202,7 @@ def write_week_story(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    path = story_path_for(year, week, root=root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, indent=2)
-        f.write('\n')
-    return path
+    return _write_contained(payload, year, week, 'story.json', root, pretty=True)
 
 
 def write_why_blurbs(
@@ -152,23 +211,7 @@ def write_why_blurbs(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    path = why_path_for(year, week, root=root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, indent=2)
-        f.write('\n')
-    return path
-
-
-def _write_kind_blurbs(
-    path: Path,
-    payload: Dict[str, Any],
-) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, indent=2)
-        f.write('\n')
-    return path
+    return _write_contained(payload, year, week, 'why.json', root, pretty=True)
 
 
 def read_share_blurbs(
@@ -177,7 +220,7 @@ def read_share_blurbs(
     root: Optional[Union[str, Path]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Load precomputed week-{n}.share.json if present."""
-    return _read_json(share_path_for(year, week, root=root))
+    return _read_contained(year, week, 'share.json', root)
 
 
 def read_climb_blurbs(
@@ -186,7 +229,7 @@ def read_climb_blurbs(
     root: Optional[Union[str, Path]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Load precomputed week-{n}.climb.json if present."""
-    return _read_json(climb_path_for(year, week, root=root))
+    return _read_contained(year, week, 'climb.json', root)
 
 
 def write_share_blurbs(
@@ -195,7 +238,7 @@ def write_share_blurbs(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    return _write_kind_blurbs(share_path_for(year, week, root=root), payload)
+    return _write_contained(payload, year, week, 'share.json', root, pretty=True)
 
 
 def write_climb_blurbs(
@@ -204,7 +247,7 @@ def write_climb_blurbs(
     week: int,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    return _write_kind_blurbs(climb_path_for(year, week, root=root), payload)
+    return _write_contained(payload, year, week, 'climb.json', root, pretty=True)
 
 
 def team_blurb_from_static(
