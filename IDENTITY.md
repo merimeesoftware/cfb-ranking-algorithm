@@ -1,6 +1,6 @@
-# DESIGN.md — CFB Rankings
+# IDENTITY.md — CFB Rankings
 
-Identity canon: [IDENTITY.md](IDENTITY.md).
+Locked design identity. Distilled from [DESIGN.md](DESIGN.md). DESIGN.md remains the fuller design doc and UI journey detail.
 
 ## Direction
 
@@ -29,30 +29,24 @@ Primary Tailwind scale is anchored on field green (`primary-700` ≈ `#1a3d2e`).
 
 ## Composition rules
 
-- **Brand first:** On home, “CFB Rankings” is a hero-level signal — not only nav text.  
-- **One composition** in the first viewport: brand, one headline, one supporting line, one CTA group, field atmosphere.  
-- **No hero cards / overlay chips.**  
-- **Board below the fold** via primary CTA → `#board` (smooth scroll + focus Find your team).  
-- Week story is **editorial** (rail + type), not admin card chrome.  
+- **Brand first:** On home, “CFB Rankings” is a hero-level signal — not only nav text.
+- **One composition** in the first viewport: brand, one headline, one supporting line, one CTA group, field atmosphere.
+- **No hero cards / overlay chips.**
+- **Board below the fold** via primary CTA → `#board` (smooth scroll + focus Find your team).
+- Week story is **editorial** (rail + type), not admin card chrome.
 - Filters: no “Ranking Controls” header bar.
 
 ## Motion
 
-- Hero rise (~0.7s) and soft goal-line stripe pulse for presence.  
+- Hero rise (~0.7s) and soft goal-line stripe pulse for presence.
 - Spinner / transitions respect `prefers-reduced-motion` (global reduce in `app.css`).
 
-## Grunt test (home)
+## Grunt test
 
 In ~5 seconds a visitor must grunt:
 
-1. **What?** This week’s CFB rankings board  
-2. **Better?** Clear takes for the fight, not voter vibes  
-3. **Next?** See this week’s rankings / jump into the controversy  
+1. **What?** This week’s CFB rankings board
+2. **Better?** Clear takes for the fight, not voter vibes
+3. **Next?** See this week’s rankings / jump into the controversy
 
 If visuals bury those answers, simplify — distinctiveness must not cost clarity.
-
-## Reference
-
-- StoryBrand plan: `docs/superpowers/specs/2026-08-14-storybrand-frontend-plan.md`  
-- Copy deck: `docs/superpowers/specs/2026-08-14-storybrand-copy-deck.md`  
-- Audit sketch: `docs/superpowers/specs/2026-08-01-frontend-audit.md` §5.10  
