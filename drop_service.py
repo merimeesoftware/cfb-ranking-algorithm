@@ -9,11 +9,20 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, Tuple
 
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# RFC 5321 maximum. Cap length before matching so a hostile payload cannot
+# force polynomial backtracking. The dot is literal and excluded from the
+# repeated label class, so each character has one way to match.
+_EMAIL_MAX_LEN = 254
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
 
 
 def validate_email(email: str) -> bool:
-    return bool(email and EMAIL_RE.match(email.strip()))
+    if not email or not isinstance(email, str):
+        return False
+    cleaned = email.strip()
+    if not cleaned or len(cleaned) > _EMAIL_MAX_LEN:
+        return False
+    return EMAIL_RE.match(cleaned) is not None
 
 
 def subscribe_to_drop(email: str, source: str = "web") -> Tuple[int, Dict[str, Any]]:
