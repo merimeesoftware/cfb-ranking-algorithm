@@ -36,7 +36,6 @@ class CFBDApiClient:
             'accept': 'application/json'
         }
         self._cache = get_cache()
-        self._key_suffix = (api_key[-4:] if api_key and api_key != 'offline-placeholder' else 'none')
     def _make_request(self, endpoint: str, params: Dict[str, Any] = None) -> Any:
         """Helper to make API requests with error handling and spend guards."""
         url = f"{self.BASE_URL}{endpoint}"
@@ -56,8 +55,7 @@ class CFBDApiClient:
             remaining = response.headers.get('X-CallLimit-Remaining')
             print(
                 f"CFBD LIVE #{call_n}: {endpoint} params={params} "
-                f"status={response.status_code} remaining={remaining} "
-                f"key=…{self._key_suffix}"
+                f"status={response.status_code} remaining={remaining}"
             )
             response.raise_for_status()
             return response.json()

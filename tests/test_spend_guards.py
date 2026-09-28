@@ -139,6 +139,30 @@ def test_make_request_blocked_when_offline(monkeypatch):
         mock_get.assert_not_called()
 
 
+def test_make_request_does_not_log_api_key(monkeypatch, capsys):
+    monkeypatch.setenv('CFBD_OFFLINE', '0')
+    monkeypatch.setenv('FLASK_ENV', 'development')
+    monkeypatch.setenv('CFBD_MAX_CALLS', '5')
+    reset_cfbd_call_count()
+    from api_integration import CFBDApiClient
+
+    secret = 'unit-test-token-wxyz'
+    client = CFBDApiClient(api_key=secret)
+    response = MagicMock()
+    response.status_code = 200
+    response.headers = {'X-CallLimit-Remaining': '999'}
+    response.json.return_value = []
+    response.raise_for_status.return_value = None
+    with patch('api_integration.requests.get', return_value=response):
+        assert client._make_request('/teams', {'year': 2024}) == []
+    logged = capsys.readouterr().out
+    assert secret not in logged
+    assert 'wxyz' not in logged
+    assert 'key=' not in logged
+    assert 'CFBD LIVE' in logged
+    reset_cfbd_call_count()
+
+
 def test_resolve_ai_mode_defaults(monkeypatch):
     monkeypatch.delenv('AI_MODE', raising=False)
     monkeypatch.setenv('FLASK_ENV', 'development')
