@@ -93,7 +93,7 @@
 
 	function syncUrl() {
 		const params = buildUrlParams($filterState, activeTab, selectedTeamName);
-		goto(`?${params}`, { replaceState: true, keepFocus: true, noScroll: true });
+		goto(`?${params}`, { replace: true, reset: false });
 	}
 
 	onMount(async () => {

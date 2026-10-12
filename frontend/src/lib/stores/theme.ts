@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { Theme } from '$lib/types';
 
 // Get initial theme from localStorage or default to system

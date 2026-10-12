@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { theme, toggleTheme, isDarkMode } from '$lib/stores/theme';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { BRAND_NAME, BRAND_SHORT } from '$lib/brand';
 
 	let mobileMenuOpen = false;
@@ -40,7 +40,7 @@
 					<a
 						href={item.href}
 						class="text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-cfb-gold rounded-sm
-							{$page.url.pathname === item.href
+							{page.url.pathname === item.href
 								? 'text-cfb-gold-bright'
 								: 'text-cfb-chalk/80 hover:text-white'}"
 					>
@@ -129,7 +129,7 @@
 						href={item.href}
 						on:click={() => (mobileMenuOpen = false)}
 						class="block px-4 py-3 text-base font-medium
-							{$page.url.pathname === item.href
+							{page.url.pathname === item.href
 								? 'text-cfb-gold-bright bg-white/5'
 								: 'text-cfb-chalk/80 hover:bg-white/5 hover:text-white'}"
 					>
