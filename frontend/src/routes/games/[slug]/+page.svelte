@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import SeoHead from '$lib/components/SeoHead.svelte';
 	import MatchupLines from '$lib/components/MatchupLines.svelte';
 	import DropSignup from '$lib/components/DropSignup.svelte';
@@ -44,8 +44,8 @@
 	let canonicalSlug = data.canonicalSlug;
 
 	onMount(async () => {
-		const y = Number($page.url.searchParams.get('year'));
-		const w = Number($page.url.searchParams.get('week'));
+		const y = Number(page.url.searchParams.get('year'));
+		const w = Number(page.url.searchParams.get('week'));
 		if (!y || !w || (y === year && w === week)) return;
 		try {
 			const rankings = await fetchRankingsFromApi(y, w);

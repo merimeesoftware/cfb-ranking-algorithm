@@ -1,4 +1,6 @@
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
@@ -6,7 +8,35 @@ import { defineConfig } from 'vite';
 const apiProxyTarget = process.env.API_PROXY_TARGET || 'http://localhost:5001';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [
+		tailwindcss(),
+		sveltekit({
+			preprocess: vitePreprocess(),
+			adapter: adapter({
+				pages: 'build',
+				assets: 'build',
+				fallback: 'index.html', // SPA fallback for client-side routing
+				precompress: false,
+				strict: true
+			}),
+			alias: {
+				$lib: './src/lib',
+				$components: './src/lib/components',
+				$stores: './src/lib/stores',
+				$utils: './src/lib/utils'
+			},
+			prerender: {
+				handleHttpError: ({ path, message }) => {
+					// Ignore missing static assets
+					if (path.endsWith('.png') || path.endsWith('.ico')) {
+						console.warn(`Missing static asset: ${path}`);
+						return;
+					}
+					throw new Error(message);
+				}
+			}
+		})
+	],
 	server: {
 		// Docker Desktop on Windows often misses bind-mount file events; polling keeps HMR honest.
 		watch: {
