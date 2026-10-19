@@ -18,6 +18,12 @@ WRANGLER_PATH = ROOT / 'wrangler.toml'
 SECRETS_PATH = ROOT / 'docs' / 'SECRETS.md'
 FIXTURES = ROOT / 'tests' / 'fixtures' / 'caps'
 PROVISIONED = "provisioned by DevSecOps on Michael's yes"
+GATEWAY_NAME = 'true-rankings'
+GATEWAY_URL = re.compile(
+    r'^https://gateway\.ai\.cloudflare\.com/v1/'
+    r'[A-Za-z0-9_-]+/[A-Za-z0-9_-]+/grok/v1/chat/completions$'
+)
+DIRECT_HOST = 'api.x.ai'
 
 
 def retired_name() -> str:
@@ -40,6 +46,35 @@ def closed_budget_errors(limit: int) -> list[str]:
     if limit != 0:
         return [f'daily budget {limit} is open; the production default is 0']
     return []
+
+
+def gateway_bypass_errors(call: dict) -> list[str]:
+    provider = call.get('provider')
+    if provider == 'xai':
+        url = str(call.get('url') or '').strip()
+        if not GATEWAY_URL.fullmatch(url):
+            return ['xAI call bypasses the gateway URL']
+        return []
+    if provider == 'workers_ai':
+        gateway_id = str(call.get('gateway_id') or '').strip()
+        if not re.fullmatch(r'[A-Za-z0-9_-]+', gateway_id):
+            return ['Workers AI call bypasses the gateway binding']
+        return []
+    return [f'unknown AI provider {provider or "(missing)"}']
+
+
+def worker_source_bypass() -> list[str]:
+    hits: list[str] = []
+    src = ROOT / 'worker' / 'src'
+    for path in sorted(src.glob('*.ts')):
+        if DIRECT_HOST in path.read_text(encoding='utf-8'):
+            hits.append(f'{path.relative_to(ROOT)} calls {DIRECT_HOST}')
+    providers = (src / 'providers.ts').read_text(encoding='utf-8')
+    if 'gateway.ai.cloudflare.com' not in providers or '/grok/v1/chat/completions' not in providers:
+        hits.append('xAI completion must target the gateway grok path')
+    if 'gateway:' not in providers or 'skipCache: true' not in providers:
+        hits.append('Workers AI completion must pass gateway id on the binding')
+    return hits
 
 
 def binding_count(text: str) -> int:
@@ -82,6 +117,14 @@ def evaluate() -> list[str]:
             errors.append(f'production {name} is not an integer')
             continue
         errors.extend(f'production {name}: {item}' for item in closed_budget_errors(limit))
+    if wrangler.get('AI_GATEWAY_ID') != GATEWAY_NAME:
+        errors.append(f'production AI_GATEWAY_ID must be {GATEWAY_NAME}')
+    if 'CF_ACCOUNT_ID' not in wrangler:
+        errors.append('production CF_ACCOUNT_ID must be a non-secret var')
+    dev = re.search(r'(?ms)^\[env\.dev\.vars\]\n(.*?)(?=^\[|\Z)', text)
+    dev_vars = dict(re.findall(r'(?m)^([A-Z0-9_]+)\s*=\s*"([^"]*)"', dev.group(1))) if dev else {}
+    if dev_vars.get('AI_GATEWAY_ID') != GATEWAY_NAME or 'CF_ACCOUNT_ID' not in dev_vars:
+        errors.append('env.dev.vars must set CF_ACCOUNT_ID and AI_GATEWAY_ID=true-rankings')
     if re.search(r'(?m)^XAI_API_KEY\s*=', text):
         errors.append('XAI_API_KEY must be a secret name, not a wrangler var')
     if binding_count(text) < 2:
@@ -93,6 +136,11 @@ def evaluate() -> list[str]:
         planted = json.loads((FIXTURES / name).read_text(encoding='utf-8'))
         if not closed_budget_errors(int(planted['limit'])):
             errors.append(f'{name} should fail the closed-budget check')
+    planted_gateway = json.loads((FIXTURES / 'gateway_bypass.json').read_text(encoding='utf-8'))
+    calls = planted_gateway.get('calls') or []
+    if len(calls) < 2 or any(not gateway_bypass_errors(call) for call in calls):
+        errors.append('gateway_bypass.json should fail when an AI call skips the gateway')
+    errors.extend(worker_source_bypass())
     hits = retired_name_hits()
     if hits:
         errors.append('retired provider name remains outside history:')
@@ -106,7 +154,7 @@ def main() -> int:
         for error in errors:
             print(error, file=sys.stderr)
         return 1
-    print('AI providers closed at 0; xAI and Workers AI bindings present; retired name absent')
+    print('AI providers closed at 0; gateway route required; retired name absent')
     return 0
 
 

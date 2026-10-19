@@ -30,12 +30,19 @@ run_worker_first = ["/api/*"]
 #   104 + 124 = 228
 # XAI_MAX_CALLS and WORKERS_AI_MAX_CALLS are 0 until a dollar figure is set:
 # stub or cached answers only. Unset code fallback is also 0.
+#
+# AI Gateway is logging only. Budgets stay on the spend-budget instance.
+# Release Ops creates AI Gateway true-rankings in the account, then sets
+# CF_ACCOUNT_ID. An empty account id refuses the live xAI call.
+# XAI_API_KEY stays a secret name. Do not assign it here.
 [vars]
 AI_MODE = "stub"
 CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
 WORKERS_AI_MAX_CALLS = "0"
 CFBD_MAX_CALLS = "4"
+CF_ACCOUNT_ID = ""
+AI_GATEWAY_ID = "true-rankings"
 
 # Workers AI. One binding, available as env.AI. Not a secret.
 [ai]
@@ -90,6 +97,8 @@ CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
 WORKERS_AI_MAX_CALLS = "0"
 CFBD_MAX_CALLS = "4"
+CF_ACCOUNT_ID = ""
+AI_GATEWAY_ID = "true-rankings"
 
 [env.dev.ai]
 binding = "AI"

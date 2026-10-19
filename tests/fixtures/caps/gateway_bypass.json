@@ -1,0 +1,14 @@
+{
+  "calls": [
+    {
+      "provider": "xai",
+      "url": "https://api.x.ai/v1/chat/completions",
+      "gateway_id": null
+    },
+    {
+      "provider": "workers_ai",
+      "url": null,
+      "gateway_id": null
+    }
+  ]
+}

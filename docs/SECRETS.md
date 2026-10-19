@@ -43,7 +43,7 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 |--------|-----------|---------|
 | `CFBD_API_KEY` | **Yes** | Fetch game data from College Football Data (slot A) |
 | `CFBD_API_KEY_B` | No | Optional second CFBD account (slot B); select with `CFBD_API_KEY_SLOT=B` |
-| `XAI_API_KEY` | When live xAI is enabled | provisioned by DevSecOps on Michael's yes. The Worker reads this name for `api.x.ai`. Do not put a value in the repo. Workers AI uses the `[ai]` binding, not a key. |
+| `XAI_API_KEY` | When live xAI is enabled | provisioned by DevSecOps on Michael's yes. The Worker reads this name only to authorize the AI Gateway grok path. Do not put a value in the repo. Workers AI uses the `[ai]` binding, not a key. |
 | `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
 | `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
 | `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
@@ -56,6 +56,8 @@ wrangler secret put CFBD_API_KEY
 ```
 
 `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. This repo only references that name. `CFBD_API_KEY` binds into the container. `XAI_API_KEY` stays on the Worker and is not forwarded into Flask.
+
+`CF_ACCOUNT_ID` and `AI_GATEWAY_ID` are non-secret Worker vars (`AI_GATEWAY_ID` is `true-rankings`). Live xAI calls go to `https://gateway.ai.cloudflare.com/v1/{CF_ACCOUNT_ID}/{AI_GATEWAY_ID}/grok/...`. Workers AI passes `gateway: { id }` on `env.AI.run`. The gateway logs the call and does not cache it. The `spend-budget` instance remains the budget. Release Ops creates AI Gateway `true-rankings` in the account, then sets `CF_ACCOUNT_ID`. This repo does not create the gateway.
 
 ### Frontend (Cloudflare Worker static assets)
 

@@ -28,6 +28,8 @@ export interface Env extends CapEnv {
 	AGENT_RATE_LIMITER: RateLimiter;
 	CFBD_API_KEY?: string;
 	XAI_API_KEY?: string;
+	CF_ACCOUNT_ID?: string;
+	AI_GATEWAY_ID?: string;
 	CACHE_CLEAR_SECRET?: string;
 	CORS_ORIGINS?: string;
 	AI?: WorkersAiBinding;
@@ -52,7 +54,8 @@ export class CfbApiContainer extends Container<Env> {
 	 * Paid-call caps and kill switches are forwarded even when unset, using the
 	 * in-code defaults from caps.ts / budget.ts. Unset and preview hostnames
 	 * use AI_MODE=stub and CFBD_OFFLINE=1 unless PREVIEW_* overrides a preview.
-	 * XAI_API_KEY is not forwarded. The ai.xai outbound host reads that secret.
+	 * XAI_API_KEY is not forwarded. The ai.xai outbound host sends it only to
+	 * the AI Gateway grok path. AI_GATEWAY_ID selects that gateway.
 	 */
 	private runtimeEnvVars(hostname: string): Record<string, string> {
 		return {

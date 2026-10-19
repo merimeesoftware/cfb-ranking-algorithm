@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, type SpendState } from '../src/spend-object.ts';
-import { completeWorkersAi, completeXai } from '../src/providers.ts';
+import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, type GatewayCall } from '../src/providers.ts';
 import {
 	buildRuntimeEnv,
 	checkPublicQuery,
@@ -290,14 +290,16 @@ test('public counter strip drops budget fields from a planted health payload', (
 	assert.equal(stripped.cache_dir, undefined);
 });
 
-test('xAI completion uses the secret name and does not echo it', async () => {
-	const seen: { url?: string; authorization?: string } = {};
+test('xAI completion uses the gateway URL and does not echo the secret', async () => {
+	const seen: { url?: string; authorization?: string; skipCache?: string } = {};
 	const response = await completeXai(
-		{ XAI_API_KEY: 'test-token' },
+		{ XAI_API_KEY: 'test-token', CF_ACCOUNT_ID: 'acct-test', AI_GATEWAY_ID: 'true-rankings' },
 		[{ role: 'user', content: 'Why is Oregon here?' }],
 		(async (url: string, init?: RequestInit) => {
 			seen.url = String(url);
-			seen.authorization = new Headers(init?.headers).get('authorization') ?? '';
+			const headers = new Headers(init?.headers);
+			seen.authorization = headers.get('authorization') ?? '';
+			seen.skipCache = headers.get('cf-aig-skip-cache') ?? '';
 			return new Response(JSON.stringify({
 				choices: [{ message: { content: 'The resume.' } }],
 			}), { status: 200 });
@@ -307,23 +309,43 @@ test('xAI completion uses the secret name and does not echo it', async () => {
 	assert.equal(response.status, 200);
 	assert.equal(body.ok, true);
 	assert.equal(body.text, 'The resume.');
-	assert.equal(seen.url, 'https://api.x.ai/v1/chat/completions');
+	assert.equal(
+		seen.url,
+		'https://gateway.ai.cloudflare.com/v1/acct-test/true-rankings/grok/v1/chat/completions',
+	);
+	assert.equal(isGatewayXaiUrl(seen.url ?? ''), true);
+	assert.equal(gatewayBypassErrors({ provider: 'xai', url: seen.url, gateway_id: 'true-rankings' }).length, 0);
 	assert.equal(seen.authorization, 'Bearer test-token');
+	assert.equal(seen.skipCache, 'true');
 	assert.equal(JSON.stringify(body).includes('test-token'), false);
 
-	const missing = await completeXai({}, [{ role: 'user', content: 'hi' }], (async () => {
+	const fetchImpl = (async () => {
 		throw new Error('fetch should not run');
-	}) as typeof fetch);
+	}) as typeof fetch;
+	const missing = await completeXai(
+		{ XAI_API_KEY: 'test-token' },
+		[{ role: 'user', content: 'hi' }],
+		fetchImpl,
+	);
 	assert.equal(missing.status, 503);
+	const noKey = await completeXai(
+		{ CF_ACCOUNT_ID: 'acct-test', AI_GATEWAY_ID: 'true-rankings' },
+		[{ role: 'user', content: 'hi' }],
+		fetchImpl,
+	);
+	assert.equal(noKey.status, 503);
 });
 
-test('Workers AI completion uses the binding', async () => {
+test('Workers AI completion passes the gateway id on the binding', async () => {
 	let model = '';
+	let options: { gateway?: { id?: string; skipCache?: boolean } } | undefined;
 	const response = await completeWorkersAi(
 		{
+			AI_GATEWAY_ID: 'true-rankings',
 			AI: {
-				async run(next: string) {
+				async run(next: string, _input: { messages: { role: string; content: string }[] }, gatewayOptions: { gateway: { id: string; skipCache: true } }) {
 					model = next;
+					options = gatewayOptions;
 					return { response: 'Stacked wins.' };
 				},
 			},
@@ -334,8 +356,41 @@ test('Workers AI completion uses the binding', async () => {
 	assert.equal(body.ok, true);
 	assert.equal(body.text, 'Stacked wins.');
 	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct');
-	const unbound = await completeWorkersAi({}, [{ role: 'user', content: 'hi' }]);
+	assert.equal(options?.gateway?.id, 'true-rankings');
+	assert.equal(options?.gateway?.skipCache, true);
+	assert.equal(gatewayBypassErrors({ provider: 'workers_ai', gateway_id: options?.gateway?.id }).length, 0);
+	const unbound = await completeWorkersAi(
+		{ AI_GATEWAY_ID: 'true-rankings' },
+		[{ role: 'user', content: 'hi' }],
+	);
 	assert.equal(unbound.status, 503);
+	let ran = false;
+	const noGateway = await completeWorkersAi(
+		{
+			AI: {
+				async run() {
+					ran = true;
+					return { response: 'should not run' };
+				},
+			},
+		},
+		[{ role: 'user', content: 'hi' }],
+	);
+	assert.equal(noGateway.status, 503);
+	assert.equal(ran, false);
+});
+
+test('planted gateway bypass fixture fails for a direct URL or a bare binding', () => {
+	const fixture = load('gateway_bypass.json') as { calls?: GatewayCall[] };
+	const calls = fixture.calls ?? [];
+	assert.equal(calls.length, 2);
+	for (const call of calls) {
+		assert.notEqual(gatewayBypassErrors(call).length, 0);
+	}
+	const source = readFileSync(new URL('../src/providers.ts', import.meta.url), 'utf8')
+		+ readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
+	assert.equal(source.includes('api.x.ai'), false);
+	assert.equal(source.includes('gateway.ai.cloudflare.com'), true);
 });
 
 test('container secrets do not forward the xAI credential', () => {

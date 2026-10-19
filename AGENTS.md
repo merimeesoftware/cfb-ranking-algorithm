@@ -33,7 +33,7 @@ Impeccable / OpenCode are fine to install **locally or via Cursor plugins** for 
 ### Local spend guards (prefer over live APIs)
 
 - Free CFBD tier is **1,000 calls/month**. Local default: `CFBD_OFFLINE=1` (also default when `FLASK_ENV=development` if unset) — no live CFBD; use `.cache/` and `frontend/static/rankings/`.
-- `AI_MODE=stub` (local, preview, and production default) returns template explanations with no live provider call. `off` returns `explanation: null`. `live` uses xAI (`XAI_API_KEY`, Worker-only) or Workers AI (the `[ai]` binding).
+- `AI_MODE=stub` (local, preview, and production default) returns template explanations with no live provider call. `off` returns `explanation: null`. `live` uses xAI (`XAI_API_KEY`, Worker-only) or Workers AI (the `[ai]` binding). Both go through AI Gateway `true-rankings` for logging. `CF_ACCOUNT_ID` and `AI_GATEWAY_ID` are non-secret vars. The `spend-budget` instance remains the budget.
 - **Hard caps when the vars are unset:** `XAI_MAX_CALLS` and `WORKERS_AI_MAX_CALLS` **0/day**, `CFBD_MAX_CALLS` **25/day**. Unset is never unlimited. Production `wrangler.toml` sets both AI caps to `0` and `CFBD_MAX_CALLS=4` so the free CFBD tier stays under 900 calls/month. The Worker stores that global counter on the `CfbApiContainer` instance `spend-budget`; Flask repeats the same numbers per process. `AI_KILL` stops both providers. `XAI_KILL` and `WORKERS_AI_KILL` stop one.
 - `AI_KILL=1` / `CFBD_KILL=1` stop live paid calls. Preview hostnames use `AI_MODE=stub` and `CFBD_OFFLINE=1` unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` are set.
 - `AGENT_RATE_LIMIT` caps `/agent/*` per `CF-Connecting-IP` (default 50/hour in dev, 30/hour in production). The edge limiter is separate and also ignores `X-Forwarded-For`.
