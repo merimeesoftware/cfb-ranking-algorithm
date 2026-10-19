@@ -53,7 +53,7 @@ Production uses a **single Cloudflare Worker** deploy (static frontend + API con
 
 | Where | Role |
 |-------|------|
-| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. |
+| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`. `SPEND_KILL_SECRET`: DevSecOps provisions on Michael's yes (D-20261019-174). `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. |
 | **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
 | **`.env` locally** | Your laptop |
 

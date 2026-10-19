@@ -11,6 +11,7 @@ import {
 	checkPublicQuery,
 	clientIp,
 	containerSecrets,
+	decodeVisitorPath,
 	enforceVisitorLimit,
 	SPEND_GATE_HOST,
 	internalHosts,
@@ -21,6 +22,7 @@ import {
 	routeApiRequest,
 	UPSTREAM_ORIGIN,
 	stripPublicCounters,
+	upstreamApiUrl,
 	BUSY_MESSAGE,
 } from '../src/caps.ts';
 
@@ -431,10 +433,16 @@ test('container secrets do not forward the xAI credential', () => {
 		CFBD_API_KEY: 'cfbd-test',
 		XAI_API_KEY: 'test-token',
 		CACHE_CLEAR_SECRET: 'clear-test',
+		SPEND_KILL_SECRET: 'kill-test',
+	} as {
+		CFBD_API_KEY: string;
+		XAI_API_KEY: string;
+		CACHE_CLEAR_SECRET: string;
 	});
 	assert.equal(forwarded.CFBD_API_KEY, 'cfbd-test');
 	assert.equal(forwarded.CACHE_CLEAR_SECRET, 'clear-test');
 	assert.equal('XAI_API_KEY' in forwarded, false);
+	assert.equal('SPEND_KILL_SECRET' in forwarded, false);
 });
 
 test('spend counter refuses xAI when the default cap is zero', async () => {
@@ -609,17 +617,28 @@ test('set_kill latches flags that a wiped env cannot clear', async () => {
 	const { data, state } = trackedSpend({});
 	const denied = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
 		method: 'POST',
-		headers: { 'x-cache-secret': latch.secret },
+		headers: { 'x-spend-kill-secret': latch.secret },
 		body: JSON.stringify({ action: 'set_kill', ai_kill: latch.ai_kill, cfbd_kill: latch.cfbd_kill }),
 	}));
 	assert.equal(denied.status, 403);
 	assert.equal(data.size, 0);
-	const wrong = await consumeSpend(
+	const cacheSecret = await consumeSpend(
 		state,
 		{ CACHE_CLEAR_SECRET: latch.secret },
+		new Request(`https://spend.budget/consume?secret=${latch.secret}`, {
+			method: 'POST',
+			headers: { 'x-cache-secret': latch.secret },
+			body: JSON.stringify({ action: 'set_kill', ai_kill: latch.ai_kill, secret: latch.secret }),
+		}),
+	);
+	assert.equal(cacheSecret.status, 403);
+	assert.equal(data.size, 0);
+	const wrong = await consumeSpend(
+		state,
+		{ SPEND_KILL_SECRET: latch.secret },
 		new Request('https://spend.budget/consume', {
 			method: 'POST',
-			headers: { 'x-cache-secret': 'nope' },
+			headers: { 'x-cache-secret': latch.secret },
 			body: JSON.stringify({ action: 'set_kill', ai_kill: latch.ai_kill }),
 		}),
 	);
@@ -634,10 +653,10 @@ test('set_kill latches flags that a wiped env cannot clear', async () => {
 	assert.deepEqual(planted, { action: 'set_kill', ai_kill: latch.ai_kill, cfbd_kill: latch.cfbd_kill });
 	const set = await consumeSpend(
 		state,
-		{ CACHE_CLEAR_SECRET: latch.secret },
+		{ SPEND_KILL_SECRET: latch.secret },
 		new Request('https://spend.budget/consume', {
 			method: 'POST',
-			headers: { 'x-cache-secret': latch.secret },
+			headers: { 'x-spend-kill-secret': latch.secret },
 			body: JSON.stringify(planted),
 		}),
 	);
@@ -675,8 +694,26 @@ test('spoofed api paths never select an internal or production host', () => {
 	assert.equal(team.ok, true);
 	if (team.ok) {
 		assert.equal(team.apiPath, '/rankings/team/Ohio State');
+		assert.equal(decodeURIComponent(team.upstream.pathname), team.apiPath);
 		assert.equal(team.upstream.pathname, '/rankings/team/Ohio%20State');
 		assert.equal(team.upstream.search, '?year=2024&week=15');
+	}
+	const cleared = routeApiRequest(
+		'https://preview.example.workers.dev/api/cache/clear?secret=planted&year=2024',
+	);
+	assert.equal(cleared.ok, true);
+	if (cleared.ok) {
+		assert.equal(cleared.apiPath, '/cache/clear');
+		assert.equal(cleared.upstream.search.includes('secret'), false);
+		assert.equal(cleared.upstream.search, '?year=2024');
+	}
+	const encodedSecret = routeApiRequest(
+		'https://preview.example.workers.dev/api/cache/clear?%73ecret=planted&year=2024',
+	);
+	assert.equal(encodedSecret.ok, true);
+	if (encodedSecret.ok) {
+		assert.equal(encodedSecret.upstream.search.includes('secret'), false);
+		assert.equal(encodedSecret.upstream.search, '?year=2024');
 	}
 	const safe = routeApiRequest(fixture.safe as string);
 	assert.equal(safe.ok, true);
@@ -690,6 +727,25 @@ test('spoofed api paths never select an internal or production host', () => {
 		assert.equal(isInternalHost(safe.upstream.hostname), false);
 		assert.equal(safe.upstream.hostname.includes('spend.budget'), false);
 	}
+});
+
+test('decodeVisitorPath rejects a second decode on its own', () => {
+	assert.equal(decodeVisitorPath('/api/%2561gent/explain'), null);
+	assert.equal(decodeVisitorPath('/api/agent%2509/explain'), null);
+});
+
+test('decodeVisitorPath rejects control characters on its own', () => {
+	assert.equal(decodeVisitorPath('/api/agent%09/explain'), null);
+	assert.equal(decodeVisitorPath('/api/agent\t/explain'), null);
+});
+
+test('upstreamApiUrl rejects a builder rewrite on its own', () => {
+	assert.equal(upstreamApiUrl('/%61gent/explain', ''), null);
+	assert.equal(upstreamApiUrl('/agent%09/explain', ''), null);
+});
+
+test('upstreamApiUrl rejects a control character the builder keeps', () => {
+	assert.equal(upstreamApiUrl('/agent\u0000/explain', ''), null);
 });
 
 test('agent limiter follows the routed path, not a normalized raw URL', async () => {
@@ -742,14 +798,25 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 	const agentHits = { n: 0 };
 	const env = apiEnv(capture, agentHits);
 	const response = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/explain', {
-		headers: { 'CF-Connecting-IP': '203.0.113.8' },
+		headers: {
+			'CF-Connecting-IP': '203.0.113.8',
+			'x-workers-ai-reserved': '1',
+			'x-xai-week-reserved': '1',
+			'x-spend-kill-secret': 'planted',
+			'x-cache-secret': 'planted',
+		},
 	}), env as never);
 	assert.equal(response.status, 200);
 	assert.ok(capture.request);
 	const upstream = new URL(capture.request.url);
 	assert.equal(upstream.hostname, 'api.internal');
 	assert.equal(upstream.pathname, '/agent/explain');
+	assert.equal(decodeURIComponent(upstream.pathname), '/agent/explain');
 	assert.equal(capture.request.headers.get('x-visitor-host'), 'preview.example.workers.dev');
+	assert.equal(capture.request.headers.get('x-workers-ai-reserved'), null);
+	assert.equal(capture.request.headers.get('x-xai-week-reserved'), null);
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
+	assert.equal(capture.request.headers.get('x-cache-secret'), null);
 	assert.equal(agentHits.n, 1);
 
 	for (const path of [
@@ -758,6 +825,21 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 		'/api/agent%2fexplain',
 		'/api/agent%2Fexplain',
 		'/api/%61gent/explain',
+		'/api/agent%09/explain',
+		'/api/agent%0A/explain',
+		'/api/agent%0D/explain',
+		'/api/agent%00/explain',
+		'/api/agent%09/health',
+		'/api/agent%0A/health',
+		'/api/agent%0D/health',
+		'/api/agent%00/health',
+		'/api/%2561gent/explain',
+		'/api/agent%2509/explain',
+		'/api/agent%252f/explain',
+		'/api/%C0%AF',
+		'/api/%FF',
+		'/api/agent%E2%88%95explain',
+		'/api/agent%EF%BC%8Fexplain',
 	]) {
 		capture.request = null;
 		agentHits.n = 0;
@@ -769,6 +851,141 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 		assert.equal(capture.request, null);
 		assert.equal(agentHits.n, 0);
 	}
+});
+
+test('agent health strips counters on the canonical path', async () => {
+	const capture: { request: Request | null } = { request: null };
+	const env = {
+		API_RATE_LIMITER: { async limit() { return { success: true }; } },
+		AGENT_RATE_LIMITER: { async limit() { return { success: true }; } },
+		ASSETS: { async fetch() { return new Response('no', { status: 404 }); } },
+		CFB_API: {
+			idFromName() { return 'id'; },
+			get() {
+				return {
+					async fetch(request: Request) {
+						capture.request = request;
+						return new Response(JSON.stringify({
+							status: 'ok',
+							cfbd_calls: 9,
+							spend: { xai_max_calls: 0 },
+						}), {
+							status: 200,
+							headers: { 'content-type': 'application/json' },
+						});
+					},
+				};
+			},
+		},
+	};
+	const response = await worker.fetch(
+		new Request('https://preview.example.workers.dev/api/agent/health'),
+		env as never,
+	);
+	assert.equal(response.status, 200);
+	const body = await response.json() as { status?: string; cfbd_calls?: number; spend?: unknown };
+	assert.equal(body.status, 'ok');
+	assert.equal(body.cfbd_calls, undefined);
+	assert.equal(body.spend, undefined);
+	assert.ok(capture.request);
+	assert.equal(new URL(capture.request.url).pathname, '/agent/health');
+});
+
+test('spend kill fails closed unless SPEND_KILL_SECRET matches the header', async () => {
+	const capture: { request: Request | null } = { request: null };
+	const env = {
+		...apiEnv(capture, { n: 0 }),
+		CFB_API: {
+			idFromName() { return 'id'; },
+			get() {
+				return {
+					async fetch(input: RequestInfo, init?: RequestInit) {
+						capture.request = input instanceof Request ? input : new Request(input, init);
+						return new Response('{"ok":true}', {
+							status: 200,
+							headers: { 'content-type': 'application/json' },
+						});
+					},
+				};
+			},
+		},
+	};
+	const closed = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill?secret=planted', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-cache-secret': 'planted' },
+		body: JSON.stringify({ ai_kill: 1, secret: 'planted' }),
+	}), { ...env, CACHE_CLEAR_SECRET: 'planted' } as never);
+	assert.equal(closed.status, 403);
+	assert.equal(capture.request, null);
+	const wrongHeader = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-cache-secret': 'planted' },
+		body: JSON.stringify({ ai_kill: 1 }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(wrongHeader.status, 401);
+	assert.equal(capture.request, null);
+	capture.request = null;
+	const querySecret = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill?secret=planted', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ ai_kill: 1 }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(querySecret.status, 401);
+	assert.equal(capture.request, null);
+	capture.request = null;
+	const bodySecret = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ ai_kill: 1, secret: 'planted' }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(bodySecret.status, 401);
+	assert.equal(capture.request, null);
+	const opened = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-spend-kill-secret': 'planted' },
+		body: JSON.stringify({ ai_kill: 1 }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(opened.status, 200);
+	assert.ok(capture.request);
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), 'planted');
+	assert.equal(capture.request.headers.get('x-cache-secret'), null);
+	capture.request = null;
+	const shortHeader = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-spend-kill-secret': 'x' },
+		body: JSON.stringify({ ai_kill: 1 }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(shortHeader.status, 401);
+	assert.equal(capture.request, null);
+});
+
+test('container forward drops kill and cache secrets except on cache clear', async () => {
+	const capture: { request: Request | null } = { request: null };
+	const env = apiEnv(capture, { n: 0 });
+	const cleared = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear?year=2024', {
+		method: 'POST',
+		headers: {
+			'x-spend-kill-secret': 'planted',
+			'x-cache-secret': 'planted',
+		},
+	}), env as never);
+	assert.equal(cleared.status, 200);
+	assert.ok(capture.request);
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
+	assert.equal(capture.request.headers.get('x-cache-secret'), 'planted');
+	capture.request = null;
+	const trailed = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill/', {
+		method: 'POST',
+		headers: {
+			'x-spend-kill-secret': 'planted',
+			'x-cache-secret': 'planted',
+		},
+	}), env as never);
+	assert.equal(trailed.status, 200);
+	assert.ok(capture.request);
+	assert.equal(new URL(capture.request.url).pathname, '/spend/kill/');
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
+	assert.equal(capture.request.headers.get('x-cache-secret'), null);
 });
 
 test('container fetch keeps preview stub and production live after overwriting x-visitor-host', async () => {

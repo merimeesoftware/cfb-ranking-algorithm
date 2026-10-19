@@ -170,6 +170,18 @@ def test_agent_health(client):
     assert data['status'] == 'ok'
 
 
-def test_cache_clear_requires_secret(client):
+def test_cache_clear_requires_secret(client, monkeypatch):
     response = client.post('/cache/clear')
     assert response.status_code == 403
+    monkeypatch.setenv('CACHE_CLEAR_SECRET', 'clear-test')
+    query = client.post('/cache/clear?secret=clear-test')
+    assert query.status_code == 401
+    body = client.post('/cache/clear', json={'secret': 'clear-test'})
+    assert body.status_code == 401
+    ok = client.post('/cache/clear', headers={'X-Cache-Secret': 'clear-test'})
+    assert ok.status_code == 200
+    non_ascii = client.post('/cache/clear', headers={'X-Cache-Secret': 'caf\u00e9'})
+    assert non_ascii.status_code == 401
+    monkeypatch.setenv('CACHE_CLEAR_SECRET', 'cle\u00e1r')
+    matched = client.post('/cache/clear', headers={'X-Cache-Secret': 'cle\u00e1r'})
+    assert matched.status_code == 200

@@ -80,6 +80,27 @@ const RULES = [
 	{ name: 'truerankings.com', re: /truerankings\.com/i },
 	{ name: 'workers.dev', re: /workers\.dev/i },
 ];
+/**
+ * Reviewed false positives. Each entry is one file and one rule.
+ * A `pattern` entry removes that exact substring `count` times, then the
+ * rule still runs on what remains. An entry without a pattern exempts that
+ * rule for that file only. A different file, or a different rule, still fails.
+ */
+const COUNTER_LIST = ['PUBLIC', 'COUNTER_KEYS'].join('_');
+const REVIEWED_ALLOWLIST = [
+	{
+		file: 'worker/src/caps.ts',
+		rule: 'workers.dev',
+		pattern: "host.endsWith('.workers.dev')",
+		count: 1,
+		reason: 'preview-host suffix check, not a published URL',
+	},
+	{
+		file: 'worker/src/caps.ts',
+		token: COUNTER_LIST,
+		reason: 'counter fields stripped from public JSON, not a credential',
+	},
+];
 const DUMMY_HOST = /https?:\/\/(?:[a-z0-9-]+\.)*example\.test\b/gi;
 const SECRET_PUBLIC = /PUBLIC_[A-Z0-9_]*(?:KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)/;
 
@@ -94,9 +115,7 @@ export function findForbiddenHosts(root, { honorAllowlist = true, extensions = n
 		const text = readFileSync(path);
 		if (text.includes(0)) return;
 		const source = text.toString('utf8').replace(DUMMY_HOST, '');
-		for (const rule of RULES) {
-			if (rule.re.test(source)) hits.push({ path, host: rule.name });
-		}
+		hits.push(...forbiddenHostsInSource(path, source));
 	}
 	function walk(dir) {
 		for (const name of readdirSync(dir)) {
@@ -122,6 +141,60 @@ function isAllowlisted(path) {
 	return rel === '' || (!rel.startsWith('..') && !rel.startsWith(`..${sep}`));
 }
 
+function repoRel(path) {
+	return relative(repoRoot, path).split(sep).join('/');
+}
+
+function reviewedEntry(path, rule) {
+	const rel = path.includes(sep) || path.includes('/') ? repoRel(path) : path;
+	return REVIEWED_ALLOWLIST.find((entry) => entry.file === rel && entry.rule === rule);
+}
+
+export function isReviewed(path, rule) {
+	return Boolean(reviewedEntry(path, rule));
+}
+
+/** Drop a reviewed pattern `count` times, then run the host rules on the rest. */
+export function forbiddenHostsInSource(path, source) {
+	const hits = [];
+	for (const rule of RULES) {
+		const entry = reviewedEntry(path, rule.name);
+		let scanned = source;
+		if (entry?.pattern && entry.count > 0) {
+			for (let i = 0; i < entry.count; i += 1) {
+				const at = scanned.indexOf(entry.pattern);
+				if (at === -1) break;
+				scanned = `${scanned.slice(0, at)}${scanned.slice(at + entry.pattern.length)}`;
+			}
+		}
+		rule.re.lastIndex = 0;
+		if (!rule.re.test(scanned)) continue;
+		if (entry && !entry.pattern) continue;
+		hits.push({ path, host: rule.name });
+	}
+	return hits;
+}
+
+function reviewedSecretTokens(path) {
+	const rel = repoRel(path);
+	return new Set(
+		REVIEWED_ALLOWLIST
+			.filter((entry) => entry.file === rel && entry.token)
+			.map((entry) => entry.token),
+	);
+}
+
+export function unexpectedSecretNames(path, source) {
+	const allowed = reviewedSecretTokens(path);
+	const hits = [];
+	for (const match of source.matchAll(/PUBLIC_[A-Z0-9_]+/g)) {
+		SECRET_PUBLIC.lastIndex = 0;
+		if (!SECRET_PUBLIC.test(match[0])) continue;
+		if (!allowed.has(match[0])) hits.push(match[0]);
+	}
+	return hits;
+}
+
 function findSecretPublicNames(root) {
 	const hits = [];
 	function walk(dir) {
@@ -138,7 +211,7 @@ function findSecretPublicNames(root) {
 			if (ext && !SECRET_EXT.has(ext) && name !== '.env.example') continue;
 			const text = readFileSync(path);
 			if (text.includes(0)) continue;
-			if (SECRET_PUBLIC.test(text.toString('utf8'))) hits.push(path);
+			if (unexpectedSecretNames(path, text.toString('utf8')).length) hits.push(path);
 		}
 	}
 	walk(root);
@@ -226,6 +299,47 @@ function selfTest() {
 	if (allowed.length) fail(`allowlisted fixtures must not trip, found ${JSON.stringify(allowed)}`);
 	const secrets = findSecretPublicNames(repoRoot);
 	if (secrets.length) fail(`secret-bearing PUBLIC_* name: ${secrets.join(', ')}`);
+	const capsPath = join(repoRoot, 'worker/src/caps.ts');
+	if (!isReviewed(capsPath, 'workers.dev')) fail('caps.ts workers.dev exception missing');
+	if (isReviewed(capsPath, 'truerankings.com')) fail('caps.ts exception must not cover other hosts');
+	if (isReviewed(join(repoRoot, 'worker/src/index.ts'), 'workers.dev')) {
+		fail('workers.dev exception must stay on caps.ts');
+	}
+	const capsHits = findForbiddenHosts(capsPath);
+	if (capsHits.length) fail(`reviewed caps.ts host exception leaked: ${JSON.stringify(capsHits)}`);
+	const capsSource = readFileSync(capsPath, 'utf8');
+	const plantedUrl = '"https://x.workers.dev"';
+	const plantedCaps = forbiddenHostsInSource(capsPath, `${capsSource}\nconst leak = ${plantedUrl};\n`);
+	if (!plantedCaps.some((hit) => hit.host === 'workers.dev')) {
+		fail('a workers.dev URL in caps.ts must trip');
+	}
+	const secondSuffix = forbiddenHostsInSource(
+		capsPath,
+		`${capsSource}\nif (!host.endsWith('.workers.dev')) return true;\n`,
+	);
+	if (!secondSuffix.some((hit) => hit.host === 'workers.dev')) {
+		fail('a second workers.dev suffix check in caps.ts must trip');
+	}
+	if (unexpectedSecretNames(capsPath, capsSource).length) {
+		fail(`${COUNTER_LIST} must be the only reviewed secret token in caps.ts`);
+	}
+	const plantedKey = ['PUBLIC', 'API_KEY'].join('_');
+	if (!unexpectedSecretNames(capsPath, `${capsSource}\nconst leak = "${plantedKey}";\n`).length) {
+		fail('a real public credential name in caps.ts must still trip');
+	}
+	if (!unexpectedSecretNames(join(repoRoot, 'worker/src/index.ts'), `const name = "${COUNTER_LIST}";\n`).length) {
+		fail(`${COUNTER_LIST} is reviewed only in caps.ts`);
+	}
+	const narrowDir = mkdtempSync(join(tmpdir(), 'public-host-narrow-'));
+	try {
+		writeFileSync(join(narrowDir, 'other.ts'), 'const host = "preview.workers.dev";\n');
+		const otherHits = findForbiddenHosts(narrowDir);
+		if (!otherHits.some((hit) => hit.host === 'workers.dev')) {
+			fail('workers.dev outside worker/src/caps.ts must trip');
+		}
+	} finally {
+		rmSync(narrowDir, { recursive: true, force: true });
+	}
 	const secretDir = mkdtempSync(join(tmpdir(), 'public-secret-'));
 	try {
 		const secretName = `PUBLIC_${'API_KEY'}`;

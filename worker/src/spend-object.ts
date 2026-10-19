@@ -48,6 +48,7 @@ function asBucket(value: unknown): SpendBucket | null {
 type SpendEnv = BudgetEnv & {
 	XAI_WEEKLY_USD_CAP?: string;
 	CACHE_CLEAR_SECRET?: string;
+	SPEND_KILL_SECRET?: string;
 };
 
 type SpendPayload = {
@@ -75,13 +76,26 @@ function killBit(value: unknown): 0 | 1 | null {
 	return null;
 }
 
-function secretsMatch(expected: string, provided: string): boolean {
-	if (!expected || expected.length !== provided.length) return false;
-	let diff = 0;
-	for (let i = 0; i < expected.length; i += 1) {
-		diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
-	}
-	return diff === 0;
+/** Compare SHA-256 digests so a different length does not return early. */
+async function secretsMatch(expected: string, provided: string): Promise<boolean> {
+	const encoder = new TextEncoder();
+	const [left, right] = await Promise.all([
+		crypto.subtle.digest('SHA-256', encoder.encode(expected)),
+		crypto.subtle.digest('SHA-256', encoder.encode(provided)),
+	]);
+	return crypto.subtle.timingSafeEqual(left, right);
+}
+
+/** Header only. Unset SPEND_KILL_SECRET fails closed and never uses another secret. */
+export async function spendKillAuthorized(
+	env: { SPEND_KILL_SECRET?: string },
+	request: Request,
+): Promise<{ ok: true } | { ok: false; status: 403 | 401 }> {
+	const expected = (env.SPEND_KILL_SECRET ?? '').trim();
+	if (!expected) return { ok: false, status: 403 };
+	const provided = request.headers.get('x-spend-kill-secret') ?? '';
+	if (!(await secretsMatch(expected, provided))) return { ok: false, status: 401 };
+	return { ok: true };
 }
 
 /** Public POST /api/spend/kill may only write the two flags. */
@@ -95,13 +109,9 @@ export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?:
 }
 
 async function setStoredKills(state: SpendState, env: SpendEnv, request: Request, payload: SpendPayload): Promise<Response> {
-	const expected = (env.CACHE_CLEAR_SECRET ?? '').trim();
-	const provided = request.headers.get('x-cache-secret') ?? '';
-	if (!expected) {
-		return Response.json({ ok: false, error: 'auth' }, { status: 403, headers: { 'cache-control': 'no-store' } });
-	}
-	if (!secretsMatch(expected, provided)) {
-		return Response.json({ ok: false, error: 'auth' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+	const auth = await spendKillAuthorized(env, request);
+	if (!auth.ok) {
+		return Response.json({ ok: false, error: 'auth' }, { status: auth.status, headers: { 'cache-control': 'no-store' } });
 	}
 	const updates: Record<string, 0 | 1> = {};
 	if (payload.ai_kill !== undefined) {

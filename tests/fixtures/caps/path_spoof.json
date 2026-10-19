@@ -51,6 +51,66 @@
     {
       "name": "encoded-agent-letter",
       "url": "https://preview.example.workers.dev/api/%61gent/explain"
+    },
+    {
+      "name": "control-tab-explain",
+      "url": "https://preview.example.workers.dev/api/agent%09/explain"
+    },
+    {
+      "name": "control-lf-explain",
+      "url": "https://preview.example.workers.dev/api/agent%0A/explain"
+    },
+    {
+      "name": "control-cr-explain",
+      "url": "https://preview.example.workers.dev/api/agent%0D/explain"
+    },
+    {
+      "name": "control-nul-explain",
+      "url": "https://preview.example.workers.dev/api/agent%00/explain"
+    },
+    {
+      "name": "control-tab-health",
+      "url": "https://preview.example.workers.dev/api/agent%09/health"
+    },
+    {
+      "name": "control-lf-health",
+      "url": "https://preview.example.workers.dev/api/agent%0A/health"
+    },
+    {
+      "name": "control-cr-health",
+      "url": "https://preview.example.workers.dev/api/agent%0D/health"
+    },
+    {
+      "name": "control-nul-health",
+      "url": "https://preview.example.workers.dev/api/agent%00/health"
+    },
+    {
+      "name": "double-encoded-agent-letter",
+      "url": "https://preview.example.workers.dev/api/%2561gent/explain"
+    },
+    {
+      "name": "double-encoded-agent-tab",
+      "url": "https://preview.example.workers.dev/api/agent%2509/explain"
+    },
+    {
+      "name": "double-encoded-agent-slash",
+      "url": "https://preview.example.workers.dev/api/agent%252f/explain"
+    },
+    {
+      "name": "overlong-slash",
+      "url": "https://preview.example.workers.dev/api/%C0%AF"
+    },
+    {
+      "name": "invalid-utf8",
+      "url": "https://preview.example.workers.dev/api/%FF"
+    },
+    {
+      "name": "division-slash",
+      "url": "https://preview.example.workers.dev/api/agent%E2%88%95explain"
+    },
+    {
+      "name": "fullwidth-slash",
+      "url": "https://preview.example.workers.dev/api/agent%EF%BC%8Fexplain"
     }
   ],
   "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10"

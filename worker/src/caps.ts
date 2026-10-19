@@ -119,17 +119,37 @@ export function requestPathSpoofed(rawUrl: string): boolean {
 	return pathHasSpoof(rest.slice(slash));
 }
 
+/** Drop every query key that decodes to `secret`, in any case. */
+function searchWithoutSecret(search: string): string {
+	if (!search) return search;
+	const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+	const kept = new URLSearchParams();
+	for (const [key, value] of params) {
+		if (key.toLowerCase() === 'secret') continue;
+		kept.append(key, value);
+	}
+	const text = kept.toString();
+	return text ? `?${text}` : '';
+}
+
 /**
- * Container URL from a fixed origin plus a validated path.
- * Returns null when the path could select a host.
+ * Container URL from the one canonical path.
+ * The URL parser must reproduce that path. A rewrite (a stripped tab, for
+ * example) is a 400, not a different route.
  */
 export function upstreamApiUrl(pathname: string, search: string): URL | null {
-	if (!pathname.startsWith('/') || pathHasSpoof(pathname)) return null;
+	if (!pathname.startsWith('/') || pathHasSpoof(pathname) || hasControlCharacter(pathname)) return null;
 	const target = new URL(UPSTREAM_ORIGIN);
 	target.pathname = pathname;
-	target.search = search;
+	target.search = searchWithoutSecret(search);
 	if (target.origin !== UPSTREAM_ORIGIN || isInternalHost(target.hostname)) return null;
-	if (pathHasSpoof(target.pathname)) return null;
+	let forwarded: string;
+	try {
+		forwarded = decodeURIComponent(target.pathname);
+	} catch {
+		return null;
+	}
+	if (forwarded !== pathname || pathHasSpoof(target.pathname)) return null;
 	return target;
 }
 
@@ -161,14 +181,38 @@ function requestTarget(rawUrl: string): { path: string; search: string; hostname
 	return { path, search, hostname: incoming.hostname };
 }
 
+/** C0 controls and DEL. Raw or percent-encoded, these are not team names. */
+function hasControlCharacter(value: string): boolean {
+	for (let i = 0; i < value.length; i += 1) {
+		const code = value.charCodeAt(i);
+		if (code <= 0x1f || code === 0x7f) return true;
+	}
+	return false;
+}
+
+/** U+2215 and U+FF0F. They are not `/`, and they are not a visitor route. */
+function hasUnicodeSlash(value: string): boolean {
+	return value.includes('\u2215') || value.includes('\uFF0F');
+}
+
+function hasEncodedControl(path: string): boolean {
+	for (const token of path.match(/%[0-9A-Fa-f]{2}/g) ?? []) {
+		const byte = Number.parseInt(token.slice(1), 16);
+		if (byte <= 0x1f || byte === 0x7f) return true;
+	}
+	return false;
+}
+
 /**
- * Decode a visitor path once.
- * Team names use encodeURIComponent (spaces, accents). An encoded slash,
- * a backslash, a failed decode, a leftover %, or an encoded unreserved
- * byte (for example %61) is not a team name.
+ * Decode a visitor path once into the canonical path.
+ * Team names use encodeURIComponent (spaces, accents). A control character,
+ * an encoded slash or backslash, a slash lookalike (U+2215, U+FF0F), a
+ * backslash, a failed decode, a second decode that changes the path, or an
+ * encoded unreserved byte (`%61`) is rejected.
  */
 export function decodeVisitorPath(path: string): string | null {
 	if (path.includes('\\') || /%5c/i.test(path) || /%2f/i.test(path)) return null;
+	if (hasControlCharacter(path) || hasEncodedControl(path)) return null;
 	if (/%(?![0-9A-Fa-f]{2})/.test(path)) return null;
 	for (const token of path.match(/%[0-9A-Fa-f]{2}/g) ?? []) {
 		const byte = Number.parseInt(token.slice(1), 16);
@@ -180,12 +224,17 @@ export function decodeVisitorPath(path: string): string | null {
 	} catch {
 		return null;
 	}
-	if (
-		decoded.includes('%')
-		|| decoded.includes('\\')
-		|| /%2f/i.test(decoded)
-		|| /%5c/i.test(decoded)
-	) return null;
+	if (hasControlCharacter(decoded) || decoded.includes('\\') || /%2f/i.test(decoded) || /%5c/i.test(decoded)) {
+		return null;
+	}
+	if (hasUnicodeSlash(path) || hasUnicodeSlash(decoded)) return null;
+	let again: string;
+	try {
+		again = decodeURIComponent(decoded);
+	} catch {
+		return null;
+	}
+	if (again !== decoded) return null;
 	return decoded;
 }
 
@@ -207,7 +256,10 @@ export function normalizeVisitorPath(path: string): string | null {
 	return `/${parts.join('/')}${trailing ? '/' : ''}`;
 }
 
-/** Reject spoofed paths before any upstream URL is built. */
+/**
+ * One canonical path for the classifier, the limiters, counter stripping,
+ * and the container URL. Callers use `apiPath`; they do not parse the URL again.
+ */
 export function routeApiRequest(rawUrl: string): ApiRoute {
 	if (requestPathSpoofed(rawUrl)) return { ok: false, status: 400 };
 	const target = requestTarget(rawUrl);
@@ -255,9 +307,8 @@ export function isNonProductionHostname(hostname: string): boolean {
 	if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost')) {
 		return true;
 	}
-	// Joined so the preview-host check is not a published site URL.
-	const previewSuffix = ['workers', 'dev'].join('.');
-	if (!host.endsWith(`.${previewSuffix}`)) return false;
+	// Preview hosts use the platform suffix. The production worker name does not.
+	if (!host.endsWith('.workers.dev')) return false;
 	const label = host.split('.')[0] ?? '';
 	return label !== PRODUCTION_WORKER_NAME;
 }
@@ -456,7 +507,7 @@ export async function enforceVisitorLimit(
 	return { limited: false, ip, code: '' };
 }
 
-const STRIPPED_COUNTER_KEYS = [
+const PUBLIC_COUNTER_KEYS = [
 	'cfbd_calls',
 	'cfbd_max_calls',
 	'cfbd_offline',
@@ -480,7 +531,7 @@ const STRIPPED_COUNTER_KEYS = [
 export function stripPublicCounters(body: unknown): Record<string, unknown> {
 	if (!body || typeof body !== 'object' || Array.isArray(body)) return { status: 'ok' };
 	const out: Record<string, unknown> = { ...(body as Record<string, unknown>) };
-	for (const key of STRIPPED_COUNTER_KEYS) delete out[key];
+	for (const key of PUBLIC_COUNTER_KEYS) delete out[key];
 	return out;
 }
 
