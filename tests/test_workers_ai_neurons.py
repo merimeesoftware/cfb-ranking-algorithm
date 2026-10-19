@@ -33,7 +33,7 @@ def test_live_config_stays_under_8000():
         spec['neurons_per_million_input'],
         spec['neurons_per_million_output'],
     )
-    assert per_call == 60
-    assert spec['calls_per_day'] * per_call == 6000
+    assert per_call == 58
+    assert spec['calls_per_day'] * per_call == 5800
     assert spec['calls_per_day'] * per_call <= spec['ceiling']
     assert main() == 0

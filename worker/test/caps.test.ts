@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, publicKillSetBody, type SpendState } from '../src/spend-object.ts';
+import worker, { CfbApiContainer } from '../src/index.ts';
 import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_HOST, WORKERS_AI_MAX_OUTPUT_TOKENS, XAI_HOST, type GatewayCall } from '../src/providers.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from '../src/xai-usd.ts';
 import {
@@ -166,8 +167,8 @@ test('per-IP limiter trips on CF-Connecting-IP and ignores X-Forwarded-For', asy
 		},
 	});
 	assert.equal(clientIp(request), fixture.cf_connecting_ip);
-	const first = await enforceVisitorLimit(request, { api, agent });
-	const second = await enforceVisitorLimit(request, { api, agent });
+	const first = await enforceVisitorLimit(request, { api, agent }, '/agent/explain');
+	const second = await enforceVisitorLimit(request, { api, agent }, '/agent/explain');
 	assert.equal(first.limited, false);
 	assert.equal(second.limited, true);
 	assert.equal(second.code, 'agent_rate_limit');
@@ -221,7 +222,7 @@ test('kill switch blocks both AI providers and CFBD', () => {
 	assert.equal(paidCallAllowed(env, 'xai'), false);
 	assert.equal(paidCallAllowed(env, 'workers_ai'), false);
 	assert.equal(paidCallAllowed(env, 'cfbd'), false);
-	assert.equal(BUSY_MESSAGE, 'Busy right now, try again later.');
+	assert.equal(BUSY_MESSAGE, 'Busy right now. Try again later.');
 });
 
 test('per-provider kill flags block only that provider', () => {
@@ -384,7 +385,7 @@ test('Workers AI completion passes the gateway id on the binding', async () => {
 	assert.equal(body.ok, true);
 	assert.equal(body.text, 'Stacked wins.');
 	assert.equal(model, DEFAULT_WORKERS_AI_MODEL);
-	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct-fp8');
+	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct-fast');
 	assert.equal(input?.max_tokens, WORKERS_AI_MAX_OUTPUT_TOKENS);
 	assert.equal(input?.tools, undefined);
 	assert.equal(input?.web_search, undefined);
@@ -680,4 +681,125 @@ test('spoofed api paths never select an internal or production host', () => {
 		assert.equal(isInternalHost(safe.upstream.hostname), false);
 		assert.equal(safe.upstream.hostname.includes('spend.budget'), false);
 	}
+});
+
+test('agent limiter follows the routed path, not a normalized raw URL', async () => {
+	let agentHits = 0;
+	const limiters = {
+		api: { async limit() { return { success: true }; } },
+		agent: {
+			async limit() {
+				agentHits += 1;
+				return { success: true };
+			},
+		},
+	};
+	const traversal = new Request('https://preview.example.workers.dev/api/%2e%2e/agent/explain');
+	await enforceVisitorLimit(traversal, limiters, '/rankings');
+	assert.equal(agentHits, 0);
+	await enforceVisitorLimit(traversal, limiters, '/agent/explain');
+	assert.equal(agentHits, 1);
+});
+
+function apiEnv(capture: { request: Request | null }, agentHits: { n: number }) {
+	return {
+		API_RATE_LIMITER: { async limit() { return { success: true }; } },
+		AGENT_RATE_LIMITER: {
+			async limit() {
+				agentHits.n += 1;
+				return { success: true };
+			},
+		},
+		ASSETS: { async fetch() { return new Response('no', { status: 404 }); } },
+		CFB_API: {
+			idFromName() { return 'id'; },
+			get() {
+				return {
+					async fetch(request: Request) {
+						capture.request = request;
+						return new Response('{"status":"ok"}', {
+							status: 200,
+							headers: { 'content-type': 'application/json' },
+						});
+					},
+				};
+			},
+		},
+	};
+}
+
+test('fetch keeps the container on api.internal and rejects dot-dot paths', async () => {
+	const capture: { request: Request | null } = { request: null };
+	const agentHits = { n: 0 };
+	const env = apiEnv(capture, agentHits);
+	const response = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/explain', {
+		headers: { 'CF-Connecting-IP': '203.0.113.8' },
+	}), env as never);
+	assert.equal(response.status, 200);
+	assert.ok(capture.request);
+	const upstream = new URL(capture.request.url);
+	assert.equal(upstream.hostname, 'api.internal');
+	assert.equal(upstream.pathname, '/agent/explain');
+	assert.equal(capture.request.headers.get('x-visitor-host'), 'preview.example.workers.dev');
+	assert.equal(agentHits.n, 1);
+
+	for (const path of ['/api/%2e%2e/agent/explain', '/api/.%2e/agent/explain']) {
+		capture.request = null;
+		agentHits.n = 0;
+		const rejected = await worker.fetch(
+			new Request(`https://preview.example.workers.dev${path}`),
+			env as never,
+		);
+		assert.equal(rejected.status, 400);
+		assert.equal(capture.request, null);
+		assert.equal(agentHits.n, 0);
+	}
+});
+
+test('workers ai outbound refuses call 101 before the model runs', async () => {
+	const state = spendState({});
+	const budgetEnv = { AI_MAX_CALLS: '100' };
+	for (let n = 0; n < 100; n += 1) {
+		const accepted = await consumeSpend(state, budgetEnv, new Request('https://spend.budget/consume', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ provider: 'workers_ai', bucket: 'workers_ai' }),
+		}));
+		assert.equal(accepted.status, 200);
+	}
+	let modelRan = false;
+	const env = {
+		AI_MAX_CALLS: '100',
+		AI_GATEWAY_ID: 'true-rankings',
+		AI: {
+			async run() {
+				modelRan = true;
+				return { response: 'no' };
+			},
+		},
+		CFB_API: {
+			idFromName() { return 'spend-budget'; },
+			get() {
+				return {
+					fetch(request: Request) {
+						return consumeSpend(state, budgetEnv, request);
+					},
+				};
+			},
+		},
+	};
+	const handler = CfbApiContainer.outboundByHost['ai.workers'] as (
+		request: Request,
+		env: typeof env,
+	) => Promise<Response>;
+	const response = await handler(new Request('https://ai.workers/complete', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ messages: [{ role: 'user', content: 'Why is Oregon here?' }] }),
+	}), env);
+	assert.equal(response.status, 429);
+	const body = await response.json() as { ok: boolean; code: string };
+	assert.equal(body.ok, false);
+	assert.equal(body.code, 'workers_ai_budget');
+	assert.equal(modelRan, false);
 });

@@ -10,8 +10,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Tuple
 
-BUSY_MESSAGE = 'Busy right now, try again later.'
-FORMULA_MESSAGE = 'Custom formula parameters are not accepted.'
+BUSY_MESSAGE = 'Busy right now. Try again later.'
+FORMULA_MESSAGE = "Same numbers, same time, for everyone. Custom settings aren't accepted."
 UNPUBLISHED_MESSAGE = "That week isn't on the board yet."
 MISSING_WEEK_MESSAGE = 'year and week are required.'
 

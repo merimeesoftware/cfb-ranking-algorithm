@@ -11,6 +11,7 @@ import {
 	isCounterEndpoint,
 	isInternalHost,
 	isSpendKillRoute,
+	isVisitorApiPath,
 	paidCallAllowed,
 	routeApiRequest,
 	VISITOR_HOST_HEADER,
@@ -190,6 +191,20 @@ CfbApiContainer.outboundByHost = {
 				{ status: 429, headers: { 'cache-control': 'no-store' } },
 			);
 		}
+		if (request.headers.get('x-workers-ai-reserved') !== '1') {
+			const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
+			const reserved = await stub.fetch('https://spend.budget/consume', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ provider: 'workers_ai', bucket: 'workers_ai' }),
+			});
+			if (!reserved.ok) {
+				return Response.json(
+					{ ok: false, code: 'workers_ai_budget' },
+					{ status: 429, headers: { 'cache-control': 'no-store' } },
+				);
+			}
+		}
 		return completeFromRequest('workers_ai', env, request);
 	},
 };
@@ -235,15 +250,23 @@ async function sanitizeCounters(pathname: string, response: Response): Promise<R
 /** Invoked for /api/* only (see wrangler.toml run_worker_first). */
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
+		let incoming: URL;
+		try {
+			incoming = new URL(request.url);
+		} catch {
+			return jsonResponse({ ok: false, error: 'path' }, 400);
+		}
+		if (!isVisitorApiPath(incoming.pathname)) {
+			return jsonResponse({ ok: false, error: 'path' }, 400);
+		}
 		const routed = routeApiRequest(request.url);
 		if (!routed.ok) return jsonResponse({ ok: false, error: 'path' }, routed.status);
-		const incoming = new URL(request.url);
 		const apiPath = routed.apiPath;
 
 		const limit = await enforceVisitorLimit(request, {
 			api: env.API_RATE_LIMITER,
 			agent: env.AGENT_RATE_LIMITER,
-		});
+		}, apiPath);
 		if (limit.limited) return busyResponse(limit.code);
 
 		if (isSpendKillRoute(request.method, apiPath)) {

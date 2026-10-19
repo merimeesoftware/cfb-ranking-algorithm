@@ -127,7 +127,7 @@ Production `AI_MODE=stub` and `CFBD_OFFLINE=1` in `wrangler.toml`.
 |---------|--------------------|----------------------|
 | `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI is refused even when `XAI_API_KEY` is set. The gateway path stays in the Worker and is not called. |
 | `XAI_WEEKLY_USD_CAP` | **0** | Rolling ISO-week dollar stop on `spend-budget` (`xai:usd:YYYY-Www`). CI fails when this plus the CFBD paid tier reaches $5. The tier is $0.23 only if `CFBD_TIER=1`. |
-| `AI_MAX_CALLS` | **100/day** | Workers AI on `spend-budget`. `@cf/meta/llama-3.1-8b-instruct-fp8`, max 160 output tokens, 4000 input characters. 100 × 60 Neurons = 6000, ceiling 8000. |
+| `AI_MAX_CALLS` | **100/day** | Workers AI on `spend-budget`. `@cf/meta/llama-3.1-8b-instruct-fast`, max 80 output tokens, 4000 input characters. 100 × 58 Neurons = 5800, ceiling 8000. |
 | `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | provider `cfbd`, source `app`. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 700 app ceiling. 150 is reserved for MCP via #115. 50 is margin. |
 | `AI_KILL` | off (`0`) | Stops xAI and Workers AI |
 | `XAI_KILL` / `WORKERS_AI_KILL` | off (`0`) | Stops that provider |
@@ -145,7 +145,7 @@ This change does not add a Durable Object migration. The global counters use SQL
 
 Flask reaches the Durable Object by calling `http://spend.budget/consume`. The container outbound handler (`CfbApiContainer.outboundByHost`, which needs `ContainerProxy` exported from the Worker) turns that into a DO request. If the gate cannot be reached, the live call is refused.
 
-`/api/rankings`, `/api/matchup`, and `/api/weeks` serve the precomputed manifest only. Custom formula parameters return `400` JSON. A visitor rate limit returns `429` with `{"busy": true, "message": "Busy right now, try again later."}`. An explain cap or kill switch returns that same busy flag with the stub explanation. `/agent/explain` accepts an allowlisted `question_id` only.
+`/api/rankings`, `/api/matchup`, and `/api/weeks` serve the precomputed manifest only. Custom settings return `400` JSON. A visitor rate limit returns `429` with `{"busy": true, "message": "Busy right now. Try again later."}`. An explain cap or kill switch returns that same busy flag with the stub explanation. `/agent/explain` accepts an allowlisted `question_id` only.
 
 ---
 

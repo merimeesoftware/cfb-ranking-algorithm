@@ -13,13 +13,14 @@
 	let explanation = '';
 	let loading = false;
 	let busy = false;
+	let aiWritten = false;
 	let error: string | null = null;
 
 	const FRIENDLY_ERROR = 'Couldn’t break down this ranking right now.';
+	const AI_WRITTEN_LINE = "Written by AI from this week's numbers.";
 	const QUESTIONS = [
 		{ id: 'why_here', label: 'Why is this team here?' },
-		{ id: 'who_mad', label: 'Who should argue with this spot?' },
-		{ id: 'path_up', label: 'What would move them up?' },
+		{ id: 'path_up', label: "What's holding them back?" },
 		{ id: 'results', label: 'Which results are carrying this?' },
 		{ id: 'neighbors', label: 'Why not the teams next to them?' },
 	];
@@ -28,6 +29,7 @@
 		loading = true;
 		error = null;
 		busy = false;
+		aiWritten = false;
 		explanation = '';
 		try {
 			const result = await explainRanking(
@@ -38,6 +40,7 @@
 			);
 			if (result.busy) busy = true;
 			if (result.explanation) explanation = result.explanation;
+			aiWritten = result.aiWritten === true;
 		} catch {
 			error = FRIENDLY_ERROR;
 		} finally {
@@ -96,6 +99,9 @@
 				<div class="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
 					{explanation}
 				</div>
+				{#if aiWritten}
+					<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{AI_WRITTEN_LINE}</p>
+				{/if}
 			{/if}
 		</div>
 	</div>

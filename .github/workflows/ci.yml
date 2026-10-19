@@ -60,7 +60,7 @@ jobs:
         working-directory: worker
         run: |
           npm ci
-          node --experimental-strip-types --test test/caps.test.ts
+          node --experimental-strip-types --import ./test/register-cf-loader.mjs --test test/caps.test.ts
 
   frontend:
     name: Frontend

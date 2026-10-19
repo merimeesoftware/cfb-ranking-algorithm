@@ -89,7 +89,7 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `AI_MODE=live` | Opt-in | xAI or Workers AI, each under its own daily cap |
 | `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI stays refused, including when `XAI_API_KEY` is set. The gateway path is not called. |
 | `XAI_WEEKLY_USD_CAP` | **0** | Rolling ISO-week dollar stop. CI fails at $5 a week with CFBD's paid tier. |
-| `AI_MAX_CALLS` | **100/day** | Workers AI call cap. 100 × 60 worst-case Neurons = 6000, under the 8000 ceiling. |
+| `AI_MAX_CALLS` | **100/day** | Workers AI call cap. 100 × 58 worst-case Neurons = 5800, under the 8000 ceiling. |
 | `AI_PROVIDER` | `workers_ai` | Live path when a request omits `provider` |
 | `AGENT_RATE_LIMIT` | 50/hour in development, 30/hour in production | Per-visitor cap on `/agent/*`, keyed on `CF-Connecting-IP` only. Applies to both providers. |
 | `AI_KILL` | off | `1` stops both xAI and Workers AI |

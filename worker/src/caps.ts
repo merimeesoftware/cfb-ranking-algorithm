@@ -4,8 +4,8 @@
  */
 import { dailyLimitFor, type SpendBucket } from './budget.ts';
 
-export const BUSY_MESSAGE = 'Busy right now, try again later.';
-export const FORMULA_MESSAGE = 'Custom formula parameters are not accepted.';
+export const BUSY_MESSAGE = 'Busy right now. Try again later.';
+export const FORMULA_MESSAGE = "Same numbers, same time, for everyone. Custom settings aren't accepted.";
 export const UNPUBLISHED_MESSAGE = "That week isn't on the board yet.";
 export const SPEND_GATE_HOST = 'spend.budget';
 /** Fixed origin for container fetches. The visitor path never chooses this host. */
@@ -105,6 +105,11 @@ export function pathHasSpoof(path: string): boolean {
 		|| /\/%2f/i.test(value);
 }
 
+/** Visitor API paths after URL normalization. `/api/../...` is not one of them. */
+export function isVisitorApiPath(pathname: string): boolean {
+	return /^\/api(\/|$)/.test(pathname);
+}
+
 /** Check the raw request string. The scheme's :// is not part of the path. */
 export function requestPathSpoofed(rawUrl: string): boolean {
 	const scheme = rawUrl.indexOf('://');
@@ -141,6 +146,7 @@ export function routeApiRequest(rawUrl: string): ApiRoute {
 	} catch {
 		return { ok: false, status: 400 };
 	}
+	if (!isVisitorApiPath(incoming.pathname)) return { ok: false, status: 400 };
 	if (isInternalHost(incoming.hostname)) return { ok: false, status: 400 };
 	const apiPath = incoming.pathname.replace(/^\/api/, '') || '/';
 	if (!apiPath.startsWith('/')) return { ok: false, status: 400 };
@@ -365,10 +371,10 @@ export function checkPublicQuery(
 export async function enforceVisitorLimit(
 	request: Request,
 	limiters: { api: RateLimiter; agent: RateLimiter },
+	apiPath: string,
 ): Promise<{ limited: boolean; ip: string; code: string }> {
 	const ip = clientIp(request);
-	const path = new URL(request.url).pathname;
-	const agentRoute = path.startsWith('/api/agent');
+	const agentRoute = apiPath === '/agent' || apiPath.startsWith('/agent/');
 	const apiResult = await limiters.api.limit({ key: ip });
 	if (!apiResult.success) {
 		return { limited: true, ip, code: 'api_rate_limit' };

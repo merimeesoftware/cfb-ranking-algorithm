@@ -108,7 +108,7 @@ def test_xai_explain_is_refused_when_the_cap_is_raised(client, monkeypatch):
     body = response.get_json()
     assert body['busy'] is True
     assert body['capped'] is True
-    assert body['message'] == 'Busy right now, try again later.'
+    assert body['message'] == 'Busy right now. Try again later.'
     assert body['code'] == 'xai_weekly_usd'
     opened.assert_not_called()
 
@@ -151,7 +151,7 @@ def test_xai_explain_stops_on_daily_zero_when_the_week_cap_fits(client, monkeypa
     assert response.status_code == 200
     body = response.get_json()
     assert body['busy'] is True
-    assert body['message'] == 'Busy right now, try again later.'
+    assert body['message'] == 'Busy right now. Try again later.'
     assert body['code'] == 'xai_budget'
     assert xai_week_micros() == 0
     opened.assert_not_called()
@@ -257,3 +257,111 @@ def test_provider_kill_serves_stub_for_each_path(client, monkeypatch):
                 assert body['code'] == 'kill_switch'
                 assert body['explanation']
     opened.assert_not_called()
+
+
+def test_question_allowlist_is_the_four_phil_cleared():
+    from agent_service import EXPLAIN_QUESTIONS, NO_PREDICTION_RULE, _explain_prompt
+
+    assert tuple(EXPLAIN_QUESTIONS) == ('why_here', 'path_up', 'results', 'neighbors')
+    for question in EXPLAIN_QUESTIONS.values():
+        assert NO_PREDICTION_RULE in _explain_prompt({'team_name': 'Oregon'}, question)
+
+
+def _post_live_explain(client, monkeypatch, answer: str, question_id: str = 'why_here'):
+    monkeypatch.setenv('AI_MODE', 'live')
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
+    monkeypatch.setenv('XAI_MAX_CALLS', '0')
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    monkeypatch.setenv('AI_WORKERS_HOST', 'ai.workers')
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+    from spend_guards import reset_provider_call_counts
+
+    reset_provider_call_counts()
+    cache = get_cache()
+    logical = explain_cache_logical(
+        'workers_ai', 2024, 10, 'Oregon', question_id, blurb_cache_period(),
+    )
+    cache_key = cache._generate_key('explain', logical)
+    cache.invalidate(cache_key)
+
+    def fake_urlopen(req, timeout=60):
+        return _Response({'ok': True, 'text': answer})
+
+    payload = {
+        'team_name': 'Oregon',
+        'year': 2024,
+        'week': 10,
+        'question_id': question_id,
+        'provider': 'workers_ai',
+    }
+    return cache, cache_key, payload, fake_urlopen
+
+
+def test_grounded_answer_passes_and_inventions_serve_string_10(client, monkeypatch):
+    from agent_service import EXPLAIN_BREAKDOWN
+
+    grounded = 'Oregon is 9-0 after beating Ohio State.'
+    planted = {
+        'number': 'Oregon is 12-0 after beating Ohio State.',
+        'team': 'Oregon beat Ohio State. Alabama sits nearby.',
+        'game': 'Oregon lost to Ohio State.',
+    }
+    cache, cache_key, payload, fake_urlopen = _post_live_explain(client, monkeypatch, grounded)
+    with patch('agent_service.get_or_calculate_rankings', return_value=_rankings()):
+        with patch('agent_service.urllib.request.urlopen', side_effect=fake_urlopen):
+            passed = client.post('/agent/explain', json=payload)
+    assert passed.status_code == 200
+    body = passed.get_json()
+    assert body['explanation'] == grounded
+    assert body['ai_written'] is True
+    assert body['cached'] is False
+    assert cache.get(cache_key)['explanation'] == grounded
+
+    for name, answer in planted.items():
+        cache.invalidate(cache_key)
+        _cache, _key, _payload, opener = _post_live_explain(client, monkeypatch, answer)
+        calls = []
+
+        def fake_urlopen(req, timeout=60, _calls=calls, _answer=answer):
+            _calls.append(req.full_url)
+            return _Response({'ok': True, 'text': _answer})
+
+        with patch('agent_service.get_or_calculate_rankings', return_value=_rankings()):
+            with patch('agent_service.urllib.request.urlopen', side_effect=fake_urlopen):
+                failed = client.post('/agent/explain', json=payload)
+                again = client.post('/agent/explain', json=payload)
+        assert failed.status_code == 200, name
+        assert failed.get_json()['explanation'] == EXPLAIN_BREAKDOWN, name
+        assert failed.get_json()['ai_written'] is False
+        assert cache.get(cache_key) is None, name
+        assert again.get_json()['explanation'] == EXPLAIN_BREAKDOWN
+        assert len(calls) == 2, name
+
+
+def test_stub_explain_is_not_cached(client, monkeypatch):
+    monkeypatch.setenv('AI_MODE', 'stub')
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+
+    cache = get_cache()
+    logical = explain_cache_logical(
+        'stub', 2024, 10, 'Oregon', 'why_here', blurb_cache_period(),
+    )
+    cache_key = cache._generate_key('explain', logical)
+    cache.invalidate(cache_key)
+    with patch('agent_service.get_or_calculate_rankings', return_value=_rankings()):
+        first = client.post('/agent/explain', json={
+            'team_name': 'Oregon', 'year': 2024, 'week': 10, 'question_id': 'why_here',
+        })
+        second = client.post('/agent/explain', json={
+            'team_name': 'Oregon', 'year': 2024, 'week': 10, 'question_id': 'why_here',
+        })
+    assert first.status_code == 200
+    assert first.get_json()['ai_written'] is False
+    assert second.get_json()['cached'] is False
+    assert cache.get(cache_key) is None

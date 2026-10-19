@@ -7,7 +7,7 @@
     "deploy:dev": "wrangler deploy --env dev",
     "check": "wrangler check",
     "types": "wrangler types",
-    "test": "node --experimental-strip-types --test test/caps.test.ts"
+    "test": "node --experimental-strip-types --import ./test/register-cf-loader.mjs --test test/caps.test.ts"
   },
   "devDependencies": {
     "@cloudflare/containers": "^0.2.0",

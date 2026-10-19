@@ -1,6 +1,7 @@
 """Agent endpoints for ranking explanations and CFBD MCP proxy."""
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from functools import wraps
@@ -65,10 +66,15 @@ CFBD_MCP_URL = os.environ.get('CFBD_MCP_URL', '')
 PROVIDER_TIMEOUT = int(os.environ.get('AI_PROVIDER_TIMEOUT', '60'))
 
 # Fixed prompts. Free-text questions are rejected.
+# String 10 stays the curly apostrophe already locked in the visitor UI.
+EXPLAIN_BREAKDOWN = 'Couldn\u2019t break down this ranking right now.'
+NO_PREDICTION_RULE = (
+    'Answers describe only results already played, with no predictions, '
+    'picks, odds or forward-looking verbs.'
+)
 EXPLAIN_QUESTIONS = {
     'why_here': 'Why is this team ranked here?',
-    'who_mad': 'Who should argue with this spot?',
-    'path_up': 'What would move this team up?',
+    'path_up': "What's holding them back?",
     'results': 'Which results are carrying this rank?',
     'neighbors': 'Why this team and not the ones next to it?',
 }
@@ -146,6 +152,7 @@ def _build_team_context(rankings: Dict[str, Any], team_name: str) -> Optional[Di
             'top_quality_wins': _top_quality_wins(team),
             'neighbor_ahead': team_above['team_name'] if team_above else None,
             'neighbor_behind': team_below['team_name'] if team_below else None,
+            'games': _played_games(team),
             'path_to_climb': compute_path_to_climb(team, team_above),
         }
     return None
@@ -198,6 +205,8 @@ def _call_provider(provider: str, prompt: str) -> str:
     headers = {'content-type': 'application/json'}
     if reserved:
         headers['x-xai-week-reserved'] = '1'
+    if provider == 'workers_ai' and os.environ.get('SPEND_GATE_HOST', '').strip():
+        headers['x-workers-ai-reserved'] = '1'
     req = urllib.request.Request(
         f'http://{host}/complete',
         data=payload,
@@ -228,11 +237,106 @@ def _call_provider(provider: str, prompt: str) -> str:
     return 'LLM explanation unavailable: empty text content'
 
 
+def _played_games(team: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Wins and losses already on the server payload. No future games."""
+    games: List[Dict[str, str]] = []
+    for result, key in (('win', 'wins_details'), ('loss', 'losses_details')):
+        for row in team.get(key) or []:
+            if not isinstance(row, dict):
+                continue
+            opponent = row.get('opponent')
+            if isinstance(opponent, str) and opponent.strip():
+                games.append({'opponent': opponent.strip(), 'result': result})
+    return games
+
+
+def _number_token(raw: str) -> str:
+    if '.' in raw:
+        value = float(raw)
+        if value.is_integer():
+            return str(int(value))
+        return format(value, 'f').rstrip('0').rstrip('.')
+    return str(int(raw))
+
+
+def _payload_facts(payload: Dict[str, Any]) -> tuple[set[str], set[str], set[tuple[str, str]]]:
+    numbers: set[str] = set()
+    names: set[str] = set()
+    games: set[tuple[str, str]] = set()
+
+    def walk(value: Any) -> None:
+        if isinstance(value, bool) or value is None:
+            return
+        if isinstance(value, (int, float)):
+            numbers.add(_number_token(str(value) if isinstance(value, int) else format(value, 'f')))
+            return
+        if isinstance(value, str):
+            text = value.strip()
+            if any(char.isalpha() for char in text):
+                names.add(text.lower())
+            for match in re.findall(r'\d+(?:\.\d+)?', text):
+                numbers.add(_number_token(match))
+            return
+        if isinstance(value, dict):
+            for item in value.values():
+                walk(item)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item)
+
+    walk(payload)
+    for game in payload.get('games') or []:
+        if not isinstance(game, dict):
+            continue
+        opponent = game.get('opponent')
+        result = game.get('result')
+        if isinstance(opponent, str) and result in ('win', 'loss'):
+            games.add((result, opponent.strip().lower()))
+            names.add(opponent.strip().lower())
+    return numbers, names, games
+
+
+_NAME_SPAN = re.compile(
+    r"[A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*)*"
+)
+_GAME_CLAIM = re.compile(
+    r'(?i:\b(beat|beats|beating|beaten|defeated|defeats|lost to|fell to)\s+)'
+    r"([A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*)*)"
+)
+_NOT_A_TEAM = {
+    'the', 'they', 'their', 'this', 'that', 'these', 'those', 'record',
+    'quality', 'notable', 'immediately', 'a', 'an', 'after', 'before',
+    'with', 'from', 'and', 'but', 'or', 'on', 'in', 'at', 'for', 'to',
+}
+
+
+def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
+    """Every number, team name, and played game in the answer is in the payload."""
+    text = (answer or '').strip()
+    if not text or text.startswith('LLM explanation unavailable'):
+        return False
+    numbers, names, games = _payload_facts(payload)
+    for raw in re.findall(r'\d+(?:\.\d+)?', text):
+        if _number_token(raw) not in numbers:
+            return False
+    for span in _NAME_SPAN.findall(text):
+        if span.lower() in _NOT_A_TEAM:
+            continue
+        if span.lower() not in names:
+            return False
+    for verb, opponent in _GAME_CLAIM.findall(text):
+        result = 'loss' if verb.lower() in ('lost to', 'fell to') else 'win'
+        if (result, opponent.lower()) not in games:
+            return False
+    return True
+
+
 def _explain_prompt(context: Dict[str, Any], question: str) -> str:
     w_tq, w_rec, w_cq = FRS_WEIGHTS
     return (
         'You are a college football ranking analyst. Answer concisely.\n'
         'Use ONLY the Team context JSON for scores, records, and games. Do not invent them.\n'
+        f'{NO_PREDICTION_RULE}\n'
         f'Question: {question}\n\n'
         f'Team context (JSON): {context}\n\n'
         f'Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality.'
@@ -381,6 +485,9 @@ def explain_ranking():
                 context, team_name, year, week, question_id, provider,
             )
 
+    ai_written = served == 'live' and answer_is_grounded(explanation or '', context)
+    if served == 'live' and not ai_written:
+        explanation = EXPLAIN_BREAKDOWN
     payload = {
         'team_name': team_name,
         'year': year,
@@ -388,13 +495,15 @@ def explain_ranking():
         'context': context,
         'explanation': explanation,
         'ai_mode': served,
+        'ai_written': ai_written,
         'question_id': question_id,
-        'provider': provider if served == 'live' else 'stub',
+        'provider': provider if ai_written else 'stub',
         'cached': False,
         'formula': DEFAULT_CONFIG,
     }
-    ttl = TTL_BLURB_IN_SEASON if is_in_season() else TTL_BLURB_OFFSEASON
-    cache.set(cache_key, payload, ttl, prefix='explain')
+    if ai_written:
+        ttl = TTL_BLURB_IN_SEASON if is_in_season() else TTL_BLURB_OFFSEASON
+        cache.set(cache_key, payload, ttl, prefix='explain')
     return jsonify(payload)
 
 

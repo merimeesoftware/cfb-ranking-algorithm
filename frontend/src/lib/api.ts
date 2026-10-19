@@ -19,7 +19,7 @@ function resolveApiBase(): string {
 export const API_BASE = resolveApiBase();
 
 /** Shown when a paid-call cap, kill switch, or visitor limit trips. */
-export const BUSY_MESSAGE = 'Busy right now, try again later.';
+export const BUSY_MESSAGE = 'Busy right now. Try again later.';
 
 export class BoardNotice extends Error {
 	readonly code: string;
@@ -193,7 +193,7 @@ export async function fetchRankingsFromApi(
 	if (response.status === 400) {
 		throw noticeFromPayload(
 			data as { error?: string; message?: string; code?: string },
-			'Custom formula parameters are not accepted.',
+			"Same numbers, same time, for everyone. Custom settings aren't accepted.",
 		);
 	}
 	if (!response.ok) {
@@ -452,7 +452,13 @@ export async function explainRanking(
 	year: number,
 	week: number,
 	questionId: string
-): Promise<{ explanation: string; context: Record<string, unknown>; busy?: boolean; message?: string }> {
+): Promise<{
+	explanation: string;
+	context: Record<string, unknown>;
+	busy?: boolean;
+	message?: string;
+	aiWritten?: boolean;
+}> {
 	const response = await fetch(`${API_BASE}/agent/explain`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -464,6 +470,7 @@ export async function explainRanking(
 		busy?: boolean;
 		message?: string;
 		error?: string;
+		ai_written?: boolean;
 	};
 	if (response.status === 429 || data.busy) {
 		return {
@@ -471,6 +478,7 @@ export async function explainRanking(
 			context: data.context || {},
 			busy: true,
 			message: data.message || BUSY_MESSAGE,
+			aiWritten: false,
 		};
 	}
 	if (!response.ok) {
@@ -479,5 +487,6 @@ export async function explainRanking(
 	return {
 		explanation: data.explanation || '',
 		context: data.context || {},
+		aiWritten: data.ai_written === true,
 	};
 }

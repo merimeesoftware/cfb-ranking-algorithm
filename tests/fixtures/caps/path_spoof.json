@@ -31,6 +31,14 @@
     {
       "name": "protocol-relative-workers",
       "url": "https://preview.example.workers.dev/api//ai.workers/run"
+    },
+    {
+      "name": "encoded-dot-dot",
+      "url": "https://preview.example.workers.dev/api/%2e%2e/agent/explain"
+    },
+    {
+      "name": "mixed-dot-dot",
+      "url": "https://preview.example.workers.dev/api/.%2e/agent/explain"
     }
   ],
   "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10"

@@ -6,11 +6,10 @@
  * and defaults to 100. The named container instance `spend-budget` is the
  * shared counter. Flask keeps a same-number per-process cap as a second gate.
  *
- * Workers AI neurons (@cf/meta/llama-3.1-8b-instruct-fp8, the closest current
- * id; llama-3.1-8b-instruct-fast is not in the catalog):
+ * Workers AI neurons (@cf/meta/llama-3.1-8b-instruct-fast):
  *   13778 per million input tokens, 26128 per million output tokens.
- *   Worst case = ceil((4000*13778 + 160*26128) / 1_000_000) = 60 per call.
- *   AI_MAX_CALLS 100 * 60 = 6000, ceiling 8000, free daily Neurons 10000.
+ *   Worst case = ceil((4000*13778 + 80*26128) / 1_000_000) = 58 per call.
+ *   AI_MAX_CALLS 100 * 58 = 5800, ceiling 8000, free daily Neurons 10000.
  *   Fin's band for 100 calls is about 500 to 3800. The output cap holds the
  *   published-rate worst case under 8000.
  */
