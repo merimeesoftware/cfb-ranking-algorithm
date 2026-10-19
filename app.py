@@ -18,7 +18,6 @@ from ranking_service import (
 from agent_service import agent_bp, set_data_processor
 from path_to_climb import compute_path_to_climb
 from spend_guards import is_cfbd_offline
-from drop_service import subscribe_to_drop
 from matchup_service import build_matchup_payload
 
 load_dotenv()
@@ -66,7 +65,6 @@ def index():
             "/rankings",
             "/rankings/team/<team_name>",
             "/matchup",
-            "/drop/subscribe",
             "/weeks",
             "/cache/stats",
             "/cache/clear",
@@ -78,25 +76,17 @@ def index():
     })
 
 
-@app.route('/drop/subscribe', methods=['POST'])
-def drop_subscribe():
-    payload = request.get_json(silent=True) or {}
-    email = payload.get('email') or ''
-    source = payload.get('source') or 'web'
-    status, body = subscribe_to_drop(email, source=source)
-    return jsonify(body), status
-
-
 @app.route('/matchup', methods=['GET'])
 def get_matchup():
     try:
+        if request.args.get('market_spread') is not None:
+            return jsonify({"error": "market_spread is not accepted."}), 400
         team_a = request.args.get('team_a') or request.args.get('a')
         team_b = request.args.get('team_b') or request.args.get('b')
         if not team_a or not team_b:
             return jsonify({"error": "team_a and team_b are required"}), 400
         year = request.args.get('year', default=2024, type=int)
         week = request.args.get('week', default=None, type=int)
-        market = request.args.get('market_spread', default=None, type=float)
         data = get_or_calculate_rankings(
             data_processor, year, week, request.args, prefer_static=True
         )
@@ -108,7 +98,6 @@ def get_matchup():
             team_b,
             year,
             week or data.get('week'),
-            market_spread=market,
         )
         if not payload:
             return jsonify({"error": "One or both teams not found in rankings."}), 404

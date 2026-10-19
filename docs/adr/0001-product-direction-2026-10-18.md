@@ -19,8 +19,8 @@ On 2026-10-18 Michael set new product direction.
    - Momentum gets its own visible number per team.
    - It is defined so it cannot reduce to chasing the last game (for example a decay half-life or weighted window, a minimum-games floor and a cap on any one game's share).
    - It ships only if it passes the gate on #96 (issuecomment-6258649874): Elo plus form is compared against Elo alone, judged by a paired bootstrap by week on the validate (2023) and holdout (2024) Brier, with tuning on 2019–2022 only, point estimate ≤ 0 on both splits. If the result is inconclusive (95% CI upper bound above +0.001), momentum gets weight 0 in the ordering and is still shown as its own number. FRS before/after is reported, not the bar. It's an internal fit check, never presented as a prediction.
-2. **The Drop is out.** `/drop/subscribe`, the signup UI and the email-list goal are removed. (Being built as #93 PR2.)
-3. **Gambling and prediction are out.** The matchup implied spread, the `--ats` / lines code, and any odds, picks or prediction framing are removed and not to return. Michael: "I don't want gambling anywhere near this." (Being built as #93 PR2.)
+2. **The Drop is out.** `/drop/subscribe`, the signup UI and the email-list goal are removed. (Done in the #93 PR2 that follows this ADR.)
+3. **Gambling and prediction are out.** The matchup implied spread, the `--ats` / lines code, and any odds, picks or prediction framing are removed and not to return. Michael: "I don't want gambling anywhere near this." (Done in the #93 PR2 that follows this ADR. The `/games` page remains a head-to-head of published ratings.)
 4. **Core product.** Engagement comes from fans debating the rankings:
    1. Make the algorithm crystal clear: explain and visualize it so a fan grasps it fast. (#97)
    2. A team "why here" view: click any team to see why it sits where it does (factors, key wins and losses, schedule strength, momentum). (#98)
@@ -33,7 +33,7 @@ On 2026-10-18 Michael set new product direction.
 ## Consequences
 
 - PURPOSE.md must be amended (thesis plus momentum; remove bettor audience, "or bet" wording, model-vs-market, The Drop success goal and affiliate goal). Draft prepared for Michael's signature; the locked public line "Predictive order you check before you argue or bet…" changes, which only Michael can approve.
-- Other docs still carry betting or Drop material and need follow-up so they don't contradict this ADR: `PRODUCT.md`, `docs/THE-DROP.md`, `docs/specs/2026-08-16-true-rankings-brand-gtm.md`, `README.md` ("Optional ATS consideration"), and open PR #69 "Betting layer on V5.3 Elo (GREEN / LEAN / PASS)", which conflicts with decision 3.
+- `PRODUCT.md`, the brand spec, the README, and the public LLM notes were updated with the removal. `docs/THE-DROP.md` is deleted. PURPOSE.md is still the 2026-09-28 lock and still contains the bettor lines and The Drop goal; only Michael can change those locked lines. Open PR #69 "Betting layer on V5.3 Elo (GREEN / LEAN / PASS)" is left untouched and conflicts with decision 3. August 2026 audit notes still describe the old `/lines` path as history.
 - The internal eval stays a next-week Brier backtest. It is used as an internal fit check only and is never presented publicly as predictions.
 - Adding a momentum term changes the published formula, the cache key and the methodology page. The doc/code gaps in `/methodology` and `ALGORITHM_BREAKDOWN.md` (stale weights, K, HFA, prior fade) are fixed as part of #97 before any new visuals.
 - No new paid calls (MiniMax, CFBD) on visitor paths until #93's caps are merged. Ask-the-AI (#100) depends on #93.

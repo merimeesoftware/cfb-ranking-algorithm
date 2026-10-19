@@ -1,5 +1,7 @@
 # CFB Ranking System — Data, Storage & Memory Audit
 
+> Historical note (2026-10-19): betting-line cache rows in this audit describe code that has been removed. See ADR 0001.
+
 **Date:** 2026-08-01  
 **Scope:** `cache.py`, `api_integration.py`, `data_processor.py`, `app.py` (+ supporting deployment context)  
 **Purpose:** Inventory data flows, evaluate cache architecture, identify memory/multi-worker gaps, and define a Cloudflare migration path.

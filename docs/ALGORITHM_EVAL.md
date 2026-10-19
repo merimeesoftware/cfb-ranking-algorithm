@@ -124,9 +124,7 @@ This is **model selection**, not neural net training:
 2. Sweep K and HFA; keep if validation Brier improves ≥ ~0.005 and test holds.
 3. Probe whether iterative `reference_ranks` should actually feed Elo (today the
    arg is unused — iterations mainly enable chaos tax).
-4. Optional market baseline: CFBD `/lines` spreads → implied probs; aim to approach
-   (not necessarily beat) the market on Brier.
-5. Keep a changelog of config fingerprints + pooled metrics in
+4. Keep a changelog of config fingerprints + pooled metrics in
    [`docs/ALGORITHM_EVAL_RESULTS.md`](ALGORITHM_EVAL_RESULTS.md) when you land a winner.
    Latest: **V5.3 confirmed** by full priors + week-15 + 32-config sweep
    (tune 2019–2022 / validate 2023 / holdout 2024) — no further promotions.

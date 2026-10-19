@@ -1,8 +1,8 @@
 # CFB Ranking System / True Rankings
 
-**True Rankings** — predictive college football rankings (**TR+**). Tagline: *How good they actually are.*
+**True Rankings** — college football rankings (**TR+**). Tagline: *How good they actually are.*
 
-An algorithmic college football ranking system that implements a mathematically pure approach to team and conference rankings. Public product docs: [PURPOSE.md](PURPOSE.md), [PRODUCT.md](PRODUCT.md), brand/GTM: [docs/specs/2026-08-16-true-rankings-brand-gtm.md](docs/specs/2026-08-16-true-rankings-brand-gtm.md), weekly ritual: [docs/THE-DROP.md](docs/THE-DROP.md).
+An algorithmic college football ranking system that implements a mathematically pure approach to team and conference rankings. Public product docs: [PURPOSE.md](PURPOSE.md), [PRODUCT.md](PRODUCT.md), brand notes: [docs/specs/2026-08-16-true-rankings-brand-gtm.md](docs/specs/2026-08-16-true-rankings-brand-gtm.md).
 
 ## Overview
 
@@ -11,7 +11,6 @@ This application creates college football rankings using a dynamic team quality 
 1. **Adjusts scores based on opponent quality** - Beating stronger teams yields greater rewards
 2. **Accounts for home/away performance** - Away wins are valued more than home wins
 3. **Factors in conference strength** - Teams get credit for their conference's collective strength
-4. **Optional ATS (Against The Spread) consideration** - Teams can earn bonuses for exceeding expectations
 
 The system processes games sequentially through the season week-by-week, allowing teams' scores to evolve organically. This creates a ranking system that reflects the interconnected nature of college football performance.
 
@@ -130,7 +129,7 @@ python main.py --year 2023 --compare "Michigan" "Ohio State"  # Compare two team
 
 ```
 usage: main.py [-h] --year YEAR [--week WEEK] [--output-dir OUTPUT_DIR] [--save] [--charts]
-               [--ats] [--exclude-fcs] [--top TOP] [--compare TEAM1 TEAM2]
+               [--exclude-fcs] [--top TOP] [--compare TEAM1 TEAM2]
 
 CFB Ranking System
 
@@ -142,7 +141,6 @@ options:
                         Output directory (default: ranking_results)
   --save                Save rankings to file
   --charts              Generate charts
-  --ats                 Use Against The Spread performance
   --exclude-fcs         Exclude FCS games
   --top TOP             Number of teams to display (default: 25)
   --compare TEAM1 TEAM2
@@ -255,7 +253,7 @@ Key components:
     -   Hybrid top-half / full average with OOC multiplier and chaos tax.
 ## Algorithm Evaluation Sandbox
 
-To improve the algorithm scientifically (week-by-week predictive backtests, Brier/log-loss,
+To check the algorithm internally (week-by-week backtests, Brier/log-loss,
 hyperparameter sweeps), see **[docs/ALGORITHM_EVAL.md](docs/ALGORITHM_EVAL.md)** and the
 `algo_lab/` package:
 

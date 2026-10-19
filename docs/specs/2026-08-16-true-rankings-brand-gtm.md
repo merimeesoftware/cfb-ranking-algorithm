@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Date | 2026-08-16 |
-| Status | Approved for implementation |
+| Status | Brand name, TR+, tagline, and routes still in force. The Drop, affiliates, and model-vs-market were removed (ADR 0001, 2026-10-18). |
 | Brand | **True Rankings** |
 | Rating | **TR+** (consumer name for Final Ranking Score / FRS) |
 | Handle | **@TrueCFB** |
@@ -13,30 +13,28 @@
 
 ## Positioning
 
-True Rankings is a predictive model of how good teams **actually** are — not a poll, not a committee, not the narrative. Perception creates “upsets”; the model is the order you check before you argue or bet.
+True Rankings is a ranking of how good teams **actually** are — not a poll, not a committee, not the narrative.
 
-Sits next to SP+ / FPI (predictive power ratings), away from AP / CFP (resume and voters). Differentiation: open methodology, weekly explainability, and model-vs-market lines on the same page.
+It sits away from AP / CFP (resume and voters). Differentiation: open methodology and a weekly board you can cite.
 
 ### Brand architecture
 
 | Layer | Name | Use |
 |-------|------|-----|
 | Site / citations | True Rankings | “True Rankings has Ohio State at 4” |
-| Rating number | TR+ | Table column, share cards, matchup math |
-| Weekly ritual | The Drop | Sunday/Monday release + email |
-| Internal / methodology | FRS, Lean Pure | Docs and deep math only |
+| Rating number | TR+ | Table column, share cards, comparisons |
+| Internal / methodology | FRS | Docs and deep math only |
 
 ### Non-goals
 
 - Native iOS/Android app in 2026 (web + PWA only)
 - Paywalling rankings, methodology, weekly JSON, or team pages
-- Selling “picks” as the brand — sell **disagreement with the market**
+- Email signup, odds, spreads, picks, or sportsbook links
 
 ## Product surface (2026)
 
 1. **Fans** — where is my team, and why?
 2. **Media / AI** — cite this week’s order
-3. **Bettors** — where does TR+ disagree with the market?
 
 Default land: current season / current week. The ranking **is** the homepage.
 
@@ -44,37 +42,28 @@ Default land: current season / current week. The ranking **is** the homepage.
 
 | Route | Job |
 |-------|-----|
-| `/` | This week’s board + Drop CTAs |
+| `/` | This week’s board |
 | `/{year}/week/{week}` | Canonical crawlable week page |
 | `/teams/{slug}` | Team page (share/search/AI) |
-| `/games/{slug}` | Matchup: TR+ vs market |
+| `/games/{slug}` | Head-to-head of published TR+ ratings |
 | `/methodology` | How it works |
 | `/rankings/{year}/week-{n}.json` | Machine-readable rankings |
 | `/llms.txt`, `/llms-full.txt` | AI crawler guidance |
 | `/sitemap.xml`, `/robots.txt` | Search |
 
-### CTA order (never invert)
+### CTA order
 
-1. Share / cite (growth)
-2. Email The Drop (owned audience)
-3. Open a book on *this* number (revenue)
-4. Membership extras later — **not** the list
+1. Share / cite
+2. Read how it works
 
-## Monetization (rankings stay free)
+## Monetization
 
-| Layer | Sell | Free |
-|-------|------|------|
-| Affiliates | Geo-gated click-out on model-vs-market | Ranking + implied number |
-| Newsletter | One sponsor slot in The Drop | Same ranking in the email |
-| Membership (later) | Alerts, unlimited why, what-if | List, methodology, JSON |
-| B2B (later) | Embed + commercial API SLA | Fan HTML + public JSON |
-
-Compliance when lines are shown: 21+ (18+ where required), state geo, affiliate disclosure, responsible-gambling links, “not affiliated with NCAA/CFP”.
+Nothing is sold on the board. Rankings, methodology, and weekly JSON stay free. Later ideas wait on usage (ADR 0001). There is no affiliate or newsletter path.
 
 ## Distribution
 
 - **Search:** prerendered HTML, unique titles, JSON-LD, sitemap
-- **Social:** The Drop ritual — Top 25 card, movers, CFP-12 mismatch
+- **Social:** Top 25 card and movers on X (@TrueCFB)
 - **AI:** `llms.txt`, stable JSON, citation snippet on every page
 
 ## Custom domain
@@ -83,4 +72,4 @@ Attach `truerankings.com` (or fallback) to Worker `true-rankings-cfb` in Cloudfl
 
 ## Implementation checklist
 
-See plan todos: brand spine → citation routes → Drop ritual → lines/affiliates.
+Brand spine and citation routes are in the site. The Drop and lines were not shipped and are not to be added.
