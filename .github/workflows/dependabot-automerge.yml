@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 35
     permissions:
       # Add the existing owner:cfb-minicon label and post the comment.
-      # contents and issues are omitted so this job cannot merge or create labels.
+      # contents is omitted so this job cannot merge.
       pull-requests: write
       checks: read
       statuses: read
