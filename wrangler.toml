@@ -35,7 +35,7 @@ tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
 
 # --- Dev environment ---
-# URL: https://cfb-rankings-dev.<account>.workers.dev
+# Custom domain: pending Michael's choice. Do not hard-code a public host.
 [env.dev]
 name = "cfb-rankings-dev"
 

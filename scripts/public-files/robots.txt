@@ -22,5 +22,3 @@ Allow: /
 
 User-Agent: Googlebot
 Allow: /
-
-Sitemap: https://truerankings.com/sitemap.xml

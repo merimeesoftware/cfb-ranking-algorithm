@@ -14,7 +14,7 @@
 ## Weekly checklist
 
 1. Confirm week JSON + story published under `frontend/static/rankings/{year}/week-{n}.*`  
-2. Canonical URL: `https://truerankings.com/{year}/week/{n}`  
+2. Canonical URL: `{SITE_URL}/{year}/week/{n}`  
 3. Generate share card (Top 25 + movers) — until automated, screenshot the week page OG title + board  
 4. Post pack (copy templates below)  
 5. Send The Drop email (Top 25, three movers, one CFP 1–12 mismatch, cite line)  
@@ -35,8 +35,8 @@ How good they actually are — not a poll.
 4. …
 5. …
 
-Full board (free): https://truerankings.com/{year}/week/{n}
-Cite: True Rankings, {year} Week {n}, https://truerankings.com/{year}/week/{n}
+Full board (free): {SITE_URL}/{year}/week/{n}
+Cite: True Rankings, {year} Week {n}, {SITE_URL}/{year}/week/{n}
 ```
 
 ### B — Biggest movers
@@ -48,7 +48,7 @@ Week {n} movers (TR+):
 ↑ …
 ↓ {team} {n} → #{rank}
 
-The Drop: https://truerankings.com/#the-drop
+The Drop: {SITE_URL}/#the-drop
 ```
 
 ### C — CFP 1–12 mismatch
@@ -60,7 +60,7 @@ Into our CFP 1–12: {team}
 Out of our CFP 1–12: {team}
 
 Committee / AP can disagree. The model is the check.
-https://truerankings.com/{year}/week/{n}
+{SITE_URL}/{year}/week/{n}
 ```
 
 ### D — Model vs market (only when delta ≥ 3 pts)
@@ -70,7 +70,7 @@ The market is buying the brand. TR+ is buying the team.
 
 {favorite} TR+ -{x.x} vs market -{y.y} (Δ {z.z})
 
-https://truerankings.com/games/{slug}
+{SITE_URL}/games/{slug}
 ```
 
 ## Email (The Drop)

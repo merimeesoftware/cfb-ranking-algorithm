@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { citationText, weekPath, SITE_ORIGIN, BRAND_NAME, RATING_NAME } from '$lib/brand';
+	import { citationText, weekPath, publicUrl, BRAND_NAME, RATING_NAME } from '$lib/brand';
 
 	export let year: number;
 	export let week: number;
@@ -10,7 +10,7 @@
 	$: pageUrl =
 		typeof window !== 'undefined'
 			? `${window.location.origin}${weekPath(year, week)}`
-			: `${SITE_ORIGIN}${weekPath(year, week)}`;
+			: publicUrl(weekPath(year, week));
 
 	$: cite = citationText(year, week, pageUrl);
 
