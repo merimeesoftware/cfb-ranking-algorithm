@@ -272,17 +272,29 @@ def get_or_calculate_rankings(
     request_args,
     *,
     prefer_static: bool = True,
+    allow_compute: bool = True,
 ) -> Optional[Dict[str, Any]]:
-    # Archived weeks: try precomputed static file first (no CFBD / no solver)
-    if prefer_static and week is not None and is_archived_week(year, week):
+    # Public routes pass allow_compute=False so a cache miss cannot call CFBD.
+    static = None
+    if week is not None and (prefer_static or not allow_compute):
         try:
             from static_rankings import read_static_rankings_any
             static = read_static_rankings_any(year, week)
-            if static is not None:
-                print(f"STATIC HIT: rankings {year} week={week}")
-                return static
+            if static is not None and (prefer_static or not allow_compute):
+                if prefer_static and is_archived_week(year, week):
+                    print(f"STATIC HIT: rankings {year} week={week}")
+                    return static
+                if not allow_compute:
+                    print(f"STATIC HIT: rankings {year} week={week}")
+                    return static
         except Exception as e:
             print(f"Static rankings read error: {e}")
+
+    if not allow_compute:
+        if static is not None:
+            return static
+        print(f"STATIC MISS: rankings {year} week={week} (compute disabled)")
+        return None
 
     cache = get_cache()
     key = rankings_cache_key(year, week, request_args)

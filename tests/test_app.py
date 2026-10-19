@@ -17,12 +17,14 @@ def test_index(client):
 
 def test_weeks_endpoint(client):
     with patch('app.data_processor') as mock_dp:
-        mock_dp.get_available_weeks.return_value = [1, 2, 3, 4, 5]
+        mock_dp.get_available_weeks.side_effect = AssertionError('weeks must not call CFBD')
         response = client.get('/weeks?year=2024')
         assert response.status_code == 200
         data = response.get_json()
-        assert data['weeks'] == [1, 2, 3, 4, 5]
-        assert data['max_week'] == 5
+        assert data['weeks'] == list(range(1, 16))
+        assert data['max_week'] == 15
+        assert data['published'] is True
+        mock_dp.get_available_weeks.assert_not_called()
 
 
 def test_rankings_slim_by_default(client):
@@ -62,10 +64,9 @@ def test_rankings_detail_preserves_wins_details(client):
     }
     with patch('app.get_or_calculate_rankings', return_value=mock_data):
         response = client.get('/rankings?year=2024&week=10&detail=true')
-        assert response.status_code == 200
+        assert response.status_code == 400
         data = response.get_json()
-        assert data['team_rankings'][0]['wins_details'][0]['opponent'] == 'X'
-        assert 'rankings' not in data
+        assert data['code'] == 'formula_params'
 
 
 def test_team_breakdown_includes_game_details(client):

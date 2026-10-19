@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { explainRanking } from '$lib/api';
+	import { BUSY_MESSAGE, explainRanking } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
 
 	export let teamName: string;
@@ -11,6 +11,7 @@
 	let question = '';
 	let explanation = '';
 	let loading = false;
+	let busy = false;
 	let error: string | null = null;
 
 	const FRIENDLY_ERROR = 'Couldn’t break down this ranking right now.';
@@ -18,6 +19,7 @@
 	async function ask() {
 		loading = true;
 		error = null;
+		busy = false;
 		explanation = '';
 		try {
 			const result = await explainRanking(
@@ -26,7 +28,11 @@
 				$filterState.week,
 				question || `Why is ${teamName} here — and who should be mad?`
 			);
-			explanation = result.explanation;
+			if (result.busy) {
+				busy = true;
+			} else {
+				explanation = result.explanation;
+			}
 		} catch {
 			error = FRIENDLY_ERROR;
 		} finally {
@@ -80,7 +86,9 @@
 				{loading ? 'Breaking it down…' : 'Break it down'}
 			</button>
 
-			{#if error}
+			{#if busy}
+				<p class="mt-3 text-sm text-gray-700 dark:text-gray-300" role="status">{BUSY_MESSAGE}</p>
+			{:else if error}
 				<p class="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
 			{/if}
 

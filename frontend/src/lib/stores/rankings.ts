@@ -1,6 +1,8 @@
 import { writable, derived, get } from 'svelte/store';
 import type { Team, Conference, FilterState } from '$lib/types';
 import {
+	BoardNotice,
+	BUSY_MESSAGE,
 	fetchRankingsFromApi,
 	fetchAvailableWeeks,
 } from '$lib/api';
@@ -42,6 +44,8 @@ export const teams = writable<Team[]>([]);
 export const conferences = writable<Conference[]>([]);
 export const loading = writable<boolean>(false);
 export const error = writable<string | null>(null);
+/** Calm board message: cap, unpublished week, or rejected custom params. */
+export const notice = writable<string | null>(null);
 
 export const filterState = writable<FilterState>({
 	year: currentSeasonWeek.year,
@@ -121,6 +125,7 @@ export async function fetchRankings(
 
 	loading.set(true);
 	error.set(null);
+	notice.set(null);
 
 	try {
 		const data = await fetchRankingsFromApi(year, week, view);
@@ -134,13 +139,24 @@ export async function fetchRankings(
 		filterState.update((state) => ({ ...state, year: data.year, week: data.week ?? week }));
 	} catch (e) {
 		const message = e instanceof Error ? e.message : 'Failed to fetch rankings';
-		error.set(message);
-		if (cached) {
-			teams.set(cached.teams);
-			conferences.set(cached.conferences);
+		if (e instanceof BoardNotice) {
+			notice.set(message || BUSY_MESSAGE);
+			if (cached) {
+				teams.set(cached.teams);
+				conferences.set(cached.conferences);
+			} else {
+				teams.set([]);
+				conferences.set([]);
+			}
 		} else {
-			teams.set([]);
-			conferences.set([]);
+			error.set(message);
+			if (cached) {
+				teams.set(cached.teams);
+				conferences.set(cached.conferences);
+			} else {
+				teams.set([]);
+				conferences.set([]);
+			}
 		}
 	} finally {
 		loading.set(false);

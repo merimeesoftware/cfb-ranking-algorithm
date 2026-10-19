@@ -24,13 +24,14 @@ from shareable_blurb import (
     stub_climb_blurb,
     stub_shareable_blurb,
 )
+from public_board import BUSY_MESSAGE, busy_body
 from spend_guards import (
     AIBudgetError,
     AIRateLimitError,
     check_agent_rate_limit,
+    is_ai_killed,
     register_live_ai_call,
     resolve_ai_mode,
-    spend_status,
 )
 from static_rankings import (
     DEFAULT_ROOT,
@@ -76,10 +77,13 @@ def _require_agent_route(f):
 
 
 def _client_key() -> str:
-    forwarded = request.headers.get('X-Forwarded-For', '')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
-    return request.remote_addr or 'unknown'
+    """Visitor identity from Cloudflare. X-Forwarded-For is not trusted."""
+    connecting = (request.headers.get('CF-Connecting-IP') or '').strip()
+    return connecting or 'unknown'
+
+
+def _busy(code: str):
+    return jsonify(busy_body(code)), 429
 
 
 def _top_quality_wins(team: Dict[str, Any], limit: int = 3) -> List[str]:
@@ -209,8 +213,7 @@ def _call_minimax(
 
 def ai_max_display() -> str:
     from spend_guards import ai_max_calls
-    max_c = ai_max_calls()
-    return str(max_c) if max_c is not None else 'unlimited'
+    return str(ai_max_calls())
 
 
 def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Optional[str], str]:
@@ -220,6 +223,8 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         return None, mode
     if mode == 'stub':
         return stub_explain_from_context(context, question), mode
+    if is_ai_killed():
+        raise AIBudgetError('AI kill switch is on.')
     if not MINIMAX_API_KEY:
         return stub_explain_from_context(context, question), 'stub'
     search_on = minimax_web_search_enabled()
@@ -237,24 +242,13 @@ def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Option
         f"Team context (JSON): {context}\n\n"
         f"Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality."
     )
-    try:
-        return _call_minimax(prompt, model=MINIMAX_MODEL), mode
-    except AIBudgetError as e:
-        stub = stub_explain_from_context(context, question)
-        return f'{stub} [{e}]', 'stub'
+    return _call_minimax(prompt, model=MINIMAX_MODEL), mode
 
 
 @agent_bp.route('/health', methods=['GET'])
 def agent_health():
-    return jsonify({
-        'status': 'ok',
-        'minimax_configured': bool(MINIMAX_API_KEY),
-        'minimax_model': MINIMAX_MODEL,
-        'minimax_blurb_model': MINIMAX_BLURB_MODEL,
-        'minimax_web_search': minimax_web_search_enabled(),
-        'cfbd_mcp_configured': bool(CFBD_MCP_URL),
-        **spend_status(),
-    })
+    # Budget, cap counters, and key-slot status stay off this public route.
+    return jsonify({'status': 'ok'})
 
 
 @agent_bp.route('/explain', methods=['POST'])
@@ -271,8 +265,8 @@ def explain_ranking():
 
     try:
         check_agent_rate_limit(_client_key())
-    except AIRateLimitError as e:
-        return jsonify({'error': str(e), **spend_status()}), 429
+    except AIRateLimitError:
+        return _busy('agent_rate_limit')
 
     body = request.get_json(silent=True) or {}
     team_name = body.get('team_name') or request.args.get('team_name')
@@ -284,13 +278,14 @@ def explain_ranking():
     if not team_name:
         return jsonify({'error': 'team_name is required'}), 400
 
-    # Prefer static/slim for agent reads — never force a cold solver when files exist.
+    # Static files only — a visitor question must not start a CFBD recompute.
     rankings = get_or_calculate_rankings(
         _data_processor,
         year,
         week,
         request.args,
         prefer_static=True,
+        allow_compute=False,
     )
     if not rankings:
         return jsonify({'error': f'No rankings data for {year}'}), 404
@@ -299,7 +294,10 @@ def explain_ranking():
     if not context:
         return jsonify({'error': f"Team '{team_name}' not found in rankings"}), 404
 
-    explanation, mode = _resolve_explanation(context, question)
+    try:
+        explanation, mode = _resolve_explanation(context, question)
+    except AIBudgetError:
+        return _busy('kill_switch' if is_ai_killed() else 'ai_budget')
 
     return jsonify({
         'team_name': team_name,
@@ -309,7 +307,6 @@ def explain_ranking():
         'explanation': explanation,
         'ai_mode': mode,
         'formula': DEFAULT_CONFIG,
-        'spend': spend_status(),
     })
 
 
@@ -329,6 +326,8 @@ def _resolve_blurb(context: Dict[str, Any], kind: str = 'share') -> tuple[str, s
     mode = resolve_ai_mode()
     if mode != 'live':
         return stub_fn(context), mode
+    if is_ai_killed():
+        raise AIBudgetError('AI kill switch is on.')
     if not MINIMAX_API_KEY:
         return stub_fn(context), 'stub'
 
@@ -355,7 +354,7 @@ def _resolve_blurb(context: Dict[str, Any], kind: str = 'share') -> tuple[str, s
                 previous = (raw or '')[:500]
         return stub_fn(context), 'stub'
     except AIBudgetError:
-        return stub_fn(context), 'stub'
+        raise
 
 
 def _static_blurb_for_team(
@@ -395,8 +394,8 @@ def _blurb_http(kind: str):
 
     try:
         check_agent_rate_limit(_client_key())
-    except AIRateLimitError as e:
-        return jsonify({'error': str(e), **spend_status()}), 429
+    except AIRateLimitError:
+        return _busy('agent_rate_limit')
 
     body = request.get_json(silent=True) or {}
     team_name = body.get('team_name') or request.args.get('team_name')
@@ -422,7 +421,6 @@ def _blurb_http(kind: str):
             'refresh': 'daily' if is_in_season() else 'monthly',
             'cached': True,
             'source': 'static',
-            'spend': spend_status(),
         })
 
     cache = get_cache()
@@ -437,7 +435,6 @@ def _blurb_http(kind: str):
             **cached,
             'cached': True,
             'source': cached.get('source', 'cache'),
-            'spend': spend_status(),
         })
 
     rankings = get_or_calculate_rankings(
@@ -446,6 +443,7 @@ def _blurb_http(kind: str):
         week,
         request.args,
         prefer_static=True,
+        allow_compute=False,
     )
     if not rankings:
         return jsonify({'error': f'No rankings data for {year}'}), 404
@@ -454,7 +452,14 @@ def _blurb_http(kind: str):
     if not context:
         return jsonify({'error': f"Team '{team_name}' not found in rankings"}), 404
 
-    blurb, mode = _resolve_blurb(context, kind=kind)
+    try:
+        blurb, mode = _resolve_blurb(context, kind=kind)
+    except AIBudgetError:
+        return jsonify({
+            **busy_body('kill_switch' if is_ai_killed() else 'ai_budget'),
+            'kind': kind,
+            'blurb': None,
+        }), 429
     if len(blurb) > BLURB_MAX_CHARS:
         # Invariant: never serve a chopped or over-limit blurb
         blurb = stub_climb_blurb(context) if kind == 'climb' else stub_shareable_blurb(context)
@@ -482,10 +487,7 @@ def _blurb_http(kind: str):
         prefix=prefix,
     )
 
-    return jsonify({
-        **payload,
-        'spend': spend_status(),
-    })
+    return jsonify(payload)
 
 
 @agent_bp.route('/blurb', methods=['GET', 'POST'])

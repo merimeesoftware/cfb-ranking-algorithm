@@ -41,7 +41,7 @@ CFBD_API_KEY_SLOT=A CFBD_OFFLINE=0 ./venv/bin/python scripts/warm_cfbd_cache.py 
 CFBD_API_KEY_SLOT=B CFBD_OFFLINE=0 ./venv/bin/python scripts/warm_cfbd_cache.py 2021 2022
 ```
 
-`GET /agent/health` → `cfbd_key` shows which slot is active and whether A/B are configured (never the raw keys).
+`cfbd_key_slot_status()` still reports which slot is active for local scripts. The public `GET /agent/health` route does not include that block or any budget counters.
 
 3. **Start a new Cloud Agent** (or restart this one). Secrets inject at **VM boot**, not when you restart Flask alone.
 

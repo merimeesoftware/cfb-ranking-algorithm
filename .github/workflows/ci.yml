@@ -32,6 +32,24 @@ jobs:
         env:
           CFBD_API_KEY: test-key-for-unit-tests
 
+  worker:
+    name: Worker caps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install and test paid-call caps
+        working-directory: worker
+        run: |
+          npm ci
+          node --experimental-strip-types --test test/caps.test.ts
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest

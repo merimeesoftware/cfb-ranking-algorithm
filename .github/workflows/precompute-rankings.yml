@@ -35,6 +35,8 @@ jobs:
       - name: Precompute static rankings
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          # Not the public cap (25/day). This job publishes the board and needs its own budget.
+          CFBD_MAX_CALLS: "200"
         run: |
           if [ -n "${{ github.event.inputs.year }}" ] && [ -n "${{ github.event.inputs.through_week }}" ]; then
             python scripts/precompute_rankings.py --year ${{ github.event.inputs.year }} --through-week ${{ github.event.inputs.through_week }}

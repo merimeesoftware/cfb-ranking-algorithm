@@ -1,0 +1,5 @@
+{
+  "FLASK_ENV": "production",
+  "expect_ai": 100,
+  "expect_cfbd": 25
+}

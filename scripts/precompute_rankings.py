@@ -25,6 +25,10 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / '.env')
 
+# Trusted batch job, separate from the public site's 25 CFBD calls/day.
+# Cache hits do not count. Override with CFBD_MAX_CALLS when a cold season needs more.
+os.environ.setdefault('CFBD_MAX_CALLS', '200')
+
 from data_processor import CFBDataProcessor
 from ranking_service import (
     get_or_calculate_rankings,

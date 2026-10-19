@@ -112,7 +112,7 @@ def test_ai_max_calls_budget(monkeypatch):
 def test_ai_max_defaults_in_development(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('AI_MAX_CALLS', raising=False)
-    assert ai_max_calls() == 25
+    assert ai_max_calls() == 100
 
 
 def test_spend_status_shape(monkeypatch):
@@ -125,7 +125,7 @@ def test_spend_status_shape(monkeypatch):
     assert status['cfbd_offline'] is True
     assert status['ai_mode'] == 'stub'
     assert status['cfbd_max_calls'] == 25
-    assert status['ai_max_calls'] == 25
+    assert status['ai_max_calls'] == 100
 
 
 def test_make_request_blocked_when_offline(monkeypatch):
@@ -305,11 +305,23 @@ def test_agent_explain_live_falls_back_without_key(client, monkeypatch):
             assert 'MiniMax' not in data['explanation']
 
 
-def test_agent_health_includes_ai_mode(client, monkeypatch):
+def test_agent_health_hides_spend_counters(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'stub')
     response = client.get('/agent/health')
     assert response.status_code == 200
-    assert response.get_json()['ai_mode'] == 'stub'
+    data = response.get_json()
+    assert data['status'] == 'ok'
+    for key in (
+        'ai_mode',
+        'ai_live_calls',
+        'ai_max_calls',
+        'cfbd_calls',
+        'cfbd_max_calls',
+        'cfbd_key',
+        'agent_rate_limit_per_hour',
+        'spend',
+    ):
+        assert key not in data
 
 
 def test_stub_uses_path_to_climb_and_neighbors():

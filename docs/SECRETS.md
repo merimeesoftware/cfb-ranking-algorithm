@@ -83,17 +83,19 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | Variable | Local default | Purpose |
 |----------|---------------|---------|
 | `CFBD_OFFLINE=1` | Yes in development | Block live CFBD HTTP; use `.cache/` + `frontend/static/rankings/` |
-| `CFBD_MAX_CALLS` | **25** in development if unset | Hard cap if you turn CFBD on |
+| `CFBD_MAX_CALLS` | **25/day** in code if unset | Hard cap on live CFBD calls. Unset is never unlimited. |
 | `AI_MODE=stub` | Yes in development | Template explanations; **no MiniMax** |
 | `AI_MODE=off` | Production default | `explanation: null` + structured context only |
 | `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode. Production `wrangler.toml` defaults to `live` once keys are set. |
 | `MINIMAX_MODEL` / `MINIMAX_BLURB_MODEL` | `MiniMax-M3` | Product default for explain + blurbs |
 | `MINIMAX_WEB_SEARCH` | `1` when live | MiniMax server `web_search` for media/street cues (not X API / Grok) |
-| `AI_MAX_CALLS` | **25** in development if unset | Hard cap on live MiniMax prompts per process |
-| `AGENT_RATE_LIMIT` | 50/hour in development | Per-IP cap on `/agent/*` |
+| `AI_MAX_CALLS` | **100/day** in code if unset | Hard cap on live MiniMax prompts. Unset is never unlimited. |
+| `AGENT_RATE_LIMIT` | 50/hour in development, 30/hour in production | Per-visitor cap on `/agent/*`, keyed on `CF-Connecting-IP` only |
+| `AI_KILL` / `CFBD_KILL` | off | `1` stops every live MiniMax or CFBD call |
+| `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` | stub / `1` on non-production hosts | Explicit override for preview and dev versions |
 
 Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
-`GET /agent/health` returns current spend counters (`minimax_model`, `minimax_web_search`, …).
+`GET /agent/health` and `GET /cache/stats` are public and return `{ "status": "ok" }` only. They do not include budgets, call counts, or cache paths. The global daily counters live in the `SpendBudget` Durable Object.
 
 Scheduled blurbs: `.github/workflows/precompute-blurbs.yml` runs **stub/offline only** (no MiniMax key in GitHub). Live MiniMax + `web_search` happens on **Cloudflare** when `AI_MODE=live` and static/cache miss. Artifacts are uploaded; commit-to-main remains optional.
 

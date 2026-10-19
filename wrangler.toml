@@ -17,9 +17,27 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
+# Production spend mode. Do not change these without an explicit product decision.
+# Daily caps are NOT set here: unset AI_MAX_CALLS / CFBD_MAX_CALLS fall back to
+# the in-code defaults (100 AI calls/day, 25 CFBD calls/day). Kill switches
+# AI_KILL and CFBD_KILL default off. Preview hostnames force stub/offline
+# unless PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set on that version.
 [vars]
 AI_MODE = "live"
 CFBD_OFFLINE = "0"
+
+# Per-visitor limits keyed on CF-Connecting-IP. namespace_id is account-unique.
+# Counters are per Cloudflare location; the Durable Object daily budget is global.
+# period must be 10 or 60 seconds.
+[[ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "9301"
+simple = { limit = 60, period = 60 }
+
+[[ratelimits]]
+name = "AGENT_RATE_LIMITER"
+namespace_id = "9302"
+simple = { limit = 10, period = 60 }
 
 [[containers]]
 class_name = "CfbApiContainer"
@@ -30,9 +48,18 @@ max_instances = 3
 name = "CFB_API"
 class_name = "CfbApiContainer"
 
+# Global per-day AI and CFBD counters shared by every container instance.
+[[durable_objects.bindings]]
+name = "SPEND_BUDGET"
+class_name = "SpendBudget"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["SpendBudget"]
 
 # --- Dev environment ---
 # URL: https://cfb-rankings-dev.<account>.workers.dev
@@ -45,9 +72,21 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
+# Non-production worker. Preview/dev stays stub + offline.
+# PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are the explicit overrides.
 [env.dev.vars]
 AI_MODE = "stub"
-CFBD_OFFLINE = "0"
+CFBD_OFFLINE = "1"
+
+[[env.dev.ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "9311"
+simple = { limit = 60, period = 60 }
+
+[[env.dev.ratelimits]]
+name = "AGENT_RATE_LIMITER"
+namespace_id = "9312"
+simple = { limit = 10, period = 60 }
 
 [[env.dev.containers]]
 class_name = "CfbApiContainer"
@@ -58,6 +97,14 @@ max_instances = 2
 name = "CFB_API"
 class_name = "CfbApiContainer"
 
+[[env.dev.durable_objects.bindings]]
+name = "SPEND_BUDGET"
+class_name = "SpendBudget"
+
 [[env.dev.migrations]]
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
+
+[[env.dev.migrations]]
+tag = "v2"
+new_sqlite_classes = ["SpendBudget"]

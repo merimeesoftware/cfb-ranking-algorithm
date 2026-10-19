@@ -34,9 +34,10 @@ Impeccable / OpenCode are fine to install **locally or via Cursor plugins** for 
 
 - Free CFBD tier is **1,000 calls/month**. Local default: `CFBD_OFFLINE=1` (also default when `FLASK_ENV=development` if unset) — no live CFBD; use `.cache/` and `frontend/static/rankings/`.
 - `AI_MODE=stub` (dev default) returns template explanations with **no MiniMax** call. `off` returns `explanation: null`. `live` needs a paygo MiniMax key (not Coding Plan).
-- **Hard caps in development** (even if you enable live): `CFBD_MAX_CALLS` and `AI_MAX_CALLS` default to **25**. Override in `.env`.
-- `AGENT_RATE_LIMIT` caps `/agent/explain` per IP (default 50/hour in dev).
-- Check live counters: `GET /agent/health` → `cfbd_calls`, `ai_live_calls`, budgets.
+- **Hard caps in every environment** when the vars are unset: `AI_MAX_CALLS` **100/day**, `CFBD_MAX_CALLS` **25/day**. Unset is never unlimited. The Worker Durable Object `SpendBudget` is the global counter; Flask repeats the same numbers per process.
+- `AI_KILL=1` / `CFBD_KILL=1` stop live paid calls. Preview hostnames use `AI_MODE=stub` and `CFBD_OFFLINE=1` unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` are set.
+- `AGENT_RATE_LIMIT` caps `/agent/*` per `CF-Connecting-IP` (default 50/hour in dev, 30/hour in production). The edge limiter is separate and also ignores `X-Forwarded-For`.
+- `GET /agent/health` and `GET /cache/stats` do not expose budgets or counters.
 - See `.env.example`.
 
 ### CFBD_API_KEY for live data

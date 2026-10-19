@@ -17,9 +17,14 @@ from ranking_service import (
 )
 from agent_service import agent_bp, set_data_processor
 from path_to_climb import compute_path_to_climb
-from spend_guards import is_cfbd_offline
 from drop_service import subscribe_to_drop
 from matchup_service import build_matchup_payload
+from public_board import (
+    UNPUBLISHED_MESSAGE,
+    evaluate_public_query,
+    load_manifest,
+)
+from static_rankings import read_static_rankings_any
 
 load_dotenv()
 
@@ -90,18 +95,25 @@ def drop_subscribe():
 @app.route('/matchup', methods=['GET'])
 def get_matchup():
     try:
+        _parsed, rejected = evaluate_public_query('matchup', request.args, load_manifest())
+        if rejected:
+            body, status = rejected
+            return jsonify(body), status
         team_a = request.args.get('team_a') or request.args.get('a')
         team_b = request.args.get('team_b') or request.args.get('b')
         if not team_a or not team_b:
             return jsonify({"error": "team_a and team_b are required"}), 400
-        year = request.args.get('year', default=2024, type=int)
-        week = request.args.get('week', default=None, type=int)
+        year = _parsed['year']
+        week = _parsed['week']
         market = request.args.get('market_spread', default=None, type=float)
-        data = get_or_calculate_rankings(
-            data_processor, year, week, request.args, prefer_static=True
-        )
+        data = read_static_rankings_any(year, week)
         if not data:
-            return jsonify({"error": f"No game data found for {year}."}), 404
+            return jsonify({
+                "published": False,
+                "message": UNPUBLISHED_MESSAGE,
+                "year": year,
+                "week": week,
+            }), 200
         payload = build_matchup_payload(
             data.get('team_rankings') or [],
             team_a,
@@ -120,23 +132,22 @@ def get_matchup():
 
 @app.route('/weeks', methods=['GET'])
 def get_weeks():
-    year = request.args.get('year', default=datetime.now().year, type=int)
-    cache_key = cache._generate_key('available_weeks', year)
-    cached = cache.get(cache_key)
-    if cached is not None:
-        weeks = cached
-    else:
-        weeks = data_processor.get_available_weeks(year)
-        # Historical seasons change rarely; current season refreshes hourly
-        from cache import TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, is_historical_season
-        ttl = TTL_GAMES_HISTORICAL if is_historical_season(year) else TTL_GAMES_CURRENT
-        cache.set(cache_key, weeks, ttl, prefix='weeks')
-    return jsonify({"year": year, "weeks": weeks, "max_week": max(weeks) if weeks else 15})
+    parsed, rejected = evaluate_public_query('weeks', request.args, load_manifest())
+    if rejected:
+        body, status = rejected
+        return jsonify(body), status
+    return jsonify({
+        "year": parsed['year'],
+        "weeks": parsed['weeks'],
+        "max_week": parsed['max_week'],
+        "published": True,
+    })
 
 
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
-    return jsonify(cache.get_stats())
+    # Counters stay internal. This route used to publish cache size and paths.
+    return jsonify({"status": "ok"})
 
 
 @app.route('/cache/clear', methods=['POST'])
@@ -154,20 +165,25 @@ def clear_cache():
 @app.route('/rankings', methods=['GET'])
 def get_rankings():
     try:
-        year = request.args.get('year', default=2023, type=int)
-        week = request.args.get('week', default=None, type=int)
-        detail = request.args.get('detail', 'false').lower() == 'true'
-        # Detail views need full payloads (skip slim static files)
-        data = get_or_calculate_rankings(
-            data_processor, year, week, request.args, prefer_static=not detail
-        )
+        parsed, rejected = evaluate_public_query('rankings', request.args, load_manifest())
+        if rejected:
+            body, status = rejected
+            return jsonify(body), status
+        year = parsed['year']
+        week = parsed['week']
+        data = read_static_rankings_any(year, week)
         if not data:
-            return jsonify({"error": f"No game data found for {year}."}), 404
-        if not detail and data.get('detail') is not False:
+            return jsonify({
+                "published": False,
+                "message": UNPUBLISHED_MESSAGE,
+                "code": "not_published",
+                "year": year,
+                "week": week,
+                "team_rankings": [],
+                "conference_rankings": [],
+            }), 200
+        if data.get('detail') is not False:
             data = slim_rankings_for_list(data)
-        elif detail and 'rankings' in data:
-            # Avoid shipping the duplicate name-keyed map on the wire
-            data = {k: v for k, v in data.items() if k != 'rankings'}
         return jsonify(data)
     except Exception as e:
         print(f"Error during ranking calculation: {e}")
@@ -177,15 +193,20 @@ def get_rankings():
 @app.route('/rankings/team/<team_name>', methods=['GET'])
 def get_team_breakdown(team_name):
     try:
-        year = request.args.get('year', default=2023, type=int)
-        week = request.args.get('week', default=None, type=int)
-        # Offline: serve static/slim. Online: prefer full payload for wins_details.
+        parsed, rejected = evaluate_public_query('team', request.args, load_manifest())
+        if rejected:
+            body, status = rejected
+            return jsonify(body), status
+        year = parsed['year']
+        week = parsed['week']
+        # Published files only. A team page must not pull CFBD.
         data = get_or_calculate_rankings(
             data_processor,
             year,
             week,
             request.args,
-            prefer_static=is_cfbd_offline(),
+            prefer_static=True,
+            allow_compute=False,
         )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404
