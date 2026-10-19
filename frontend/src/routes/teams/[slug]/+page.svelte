@@ -154,4 +154,10 @@
 	</div>
 </div>
 
-<AgentChatPanel teamName={t.team_name} open={askOpen} on:close={() => (askOpen = false)} />
+<AgentChatPanel
+	teamName={t.team_name}
+	year={year}
+	week={week}
+	open={askOpen}
+	on:close={() => (askOpen = false)}
+/>

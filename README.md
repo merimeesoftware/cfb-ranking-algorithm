@@ -40,7 +40,7 @@ The system processes games sequentially through the season week-by-week, allowin
 3. Set up your API key:
    - Copy `.env.example` to `.env`
    - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here`
-   - Optional: `MINIMAX_API_KEY` for agent features
+   - Leave `AI_MODE=stub`. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes and is not a local value.
 
 ## Deployment
 
@@ -53,7 +53,7 @@ Production uses a **single Cloudflare Worker** deploy (static frontend + API con
 
 | Where | Role |
 |-------|------|
-| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`, optional `MINIMAX_API_KEY` |
+| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. |
 | **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
 | **`.env` locally** | Your laptop |
 

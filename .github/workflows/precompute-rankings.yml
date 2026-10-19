@@ -32,9 +32,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Restore CFBD snapshots
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            static_rankings
+          key: cfbd-precompute-${{ github.run_id }}
+          restore-keys: |
+            cfbd-precompute-
+
       - name: Precompute static rankings
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          # Repo variable. "1" skips the run before any live fetch. Empty is off.
+          CFBD_KILL: ${{ vars.CFBD_KILL }}
+          # Per Sunday, after skipping published weeks. Warm runs refetch the
+          # latest week only. 24 × 52/12 = 104/month, inside the 700 app ceiling.
+          # Provider cfbd, source app. See config/cfbd-month.json.
+          CFBD_MAX_CALLS: "24"
         run: |
           if [ -n "${{ github.event.inputs.year }}" ] && [ -n "${{ github.event.inputs.through_week }}" ]; then
             python scripts/precompute_rankings.py --year ${{ github.event.inputs.year }} --through-week ${{ github.event.inputs.through_week }}

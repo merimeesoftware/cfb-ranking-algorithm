@@ -27,16 +27,17 @@ Impeccable / OpenCode are fine to install **locally or via Cursor plugins** for 
 
 ### Secrets
 
-- **Production (deployed app):** store `CFBD_API_KEY` / optional paygo `MINIMAX_API_KEY` in **Cloudflare**. See [docs/SECRETS.md](docs/SECRETS.md).
+- **Production (deployed app):** store `CFBD_API_KEY` in **Cloudflare**. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. See [docs/SECRETS.md](docs/SECRETS.md).
 - **This Cloud Agent VM only:** Cursor Secrets tab — [.cursor/SECRETS.md](.cursor/SECRETS.md). Cursor secrets do not sync to Cloudflare.
 
 ### Local spend guards (prefer over live APIs)
 
-- Free CFBD tier is **1,000 calls/month**. Local default: `CFBD_OFFLINE=1` (also default when `FLASK_ENV=development` if unset) — no live CFBD; use `.cache/` and `frontend/static/rankings/`.
-- `AI_MODE=stub` (dev default) returns template explanations with **no MiniMax** call. `off` returns `explanation: null`. `live` needs a paygo MiniMax key (not Coding Plan).
-- **Hard caps in development** (even if you enable live): `CFBD_MAX_CALLS` and `AI_MAX_CALLS` default to **25**. Override in `.env`.
-- `AGENT_RATE_LIMIT` caps `/agent/explain` per IP (default 50/hour in dev).
-- Check live counters: `GET /agent/health` → `cfbd_calls`, `ai_live_calls`, budgets.
+- Free CFBD tier is **1,000 calls/month**, shared with the agent/dev MCP server (#115). This app is provider `cfbd`, source `app`, ceiling **700/month** (cron + live). 150 is reserved for MCP via #115. 50 is margin. Local default: `CFBD_OFFLINE=1` (also default when `FLASK_ENV=development` if unset) — no live CFBD; use `.cache/` and `frontend/static/rankings/`.
+- `AI_MODE=stub` (local, preview, and production default) returns template explanations with no live provider call. `off` returns `explanation: null`. `live` uses xAI (`XAI_API_KEY`, Worker-only) or Workers AI (the `[ai]` binding). Both go through AI Gateway `true-rankings` for logging. `CF_ACCOUNT_ID` and `AI_GATEWAY_ID` are non-secret vars. The `spend-budget` instance remains the budget.
+- **Hard caps when the vars are unset:** xAI is hard **0/day** and `XAI_ENABLED` defaults off, so a key does not start a call. `XAI_WEEKLY_USD_CAP` defaults to **0**. The week estimate is input and output tokens times `config/xai-usd.json`. CI fails when that cap plus CFBD's paid tier reaches **$5** a week ($0.23 only when `CFBD_TIER=1`). `AI_MAX_CALLS` is the Workers AI cap, **100/day** (worst case 58 Neurons × 100 = 5800, ceiling 8000). `CFBD_MAX_CALLS` **25/day** in code, **4/day** in production. Unset is never unlimited. The Worker stores the daily counter and the xAI week dollars on the `CfbApiContainer` instance `spend-budget`; Flask repeats the same numbers per process. `AI_KILL` stops both providers. `XAI_KILL` and `WORKERS_AI_KILL` stop one.
+- `AI_KILL=1` / `CFBD_KILL=1` stop live paid calls. Preview hostnames use `AI_MODE=stub` and `CFBD_OFFLINE=1` unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` are set.
+- `AGENT_RATE_LIMIT` caps `/agent/*` per `CF-Connecting-IP` (default 50/hour in dev, 30/hour in production). The edge limiter is separate and also ignores `X-Forwarded-For`.
+- `GET /agent/health` and `GET /cache/stats` do not expose budgets or counters.
 - See `.env.example`.
 
 ### CFBD_API_KEY for live data

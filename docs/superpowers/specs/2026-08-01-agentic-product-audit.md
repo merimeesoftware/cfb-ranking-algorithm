@@ -14,7 +14,7 @@
 
 ## Executive Summary
 
-The CFB Ranking System today has three entry points (Flask API, SvelteKit frontend, CLI) and an optional **product agent path** (MiniMax via `/agent/explain`). Early drafts also proposed an OpenCode + gh-aw **dev/CI agent layer**; that layer is **not committed** and is not required for production.
+The CFB Ranking System today has three entry points (Flask API, SvelteKit frontend, CLI) and an optional **product agent path** (xAI via `/agent/explain`). Early drafts also proposed an OpenCode + gh-aw **dev/CI agent layer**; that layer is **not committed** and is not required for production.
 
 **Core principle:** Rankings computation stays synchronous, cached, and REST-first. Agent capabilities run on a **sidecar path** that reads precomputed rankings and optionally enriches answers via CFBD MCP — never blocking or replacing `GET /rankings`.
 
@@ -36,7 +36,7 @@ The CFB Ranking System today has three entry points (Flask API, SvelteKit fronte
 
 ---
 
-## 1. OpenCode + MiniMax Integration (CI / Dev)
+## 1. OpenCode + xAI Integration (CI / Dev)
 
 ### 1.1 Current State
 
@@ -44,7 +44,7 @@ The repo already ships:
 
 | Asset | Purpose |
 |-------|---------|
-| `opencode.jsonc` | OpenCode config: `minimax/MiniMax-M2.7`, Anthropic-compatible base URL, MCP/bash/edit permissions |
+| `opencode.jsonc` | OpenCode config: `xai/grok-4`, Anthropic-compatible base URL, MCP/bash/edit permissions |
 | `.opencode/workflows/*.ts` | Local agent workflows (`ranking-qa`, `cfbd-audit`, `frontend-audit`, `deploy-smoke`) |
 | `.github/workflows/*.md` | gh-aw source workflows compiled to `.lock.yml` |
 | `.github/skills/agentic-workflows/SKILL.md` | Dispatcher conventions for authoring gh-aw workflows |
@@ -54,19 +54,19 @@ The repo already ships:
 ```jsonc
 // opencode.jsonc (existing)
 {
-  "model": "minimax/MiniMax-M2.7",
+  "model": "xai/grok-4",
   "provider": {
-    "minimax": {
+    "xai": {
       "options": {
-        "apiKey": "{env:MINIMAX_API_KEY}",
-        "baseURL": "https://api.minimax.io/anthropic"
+        "apiKey": "{env:XAI_API_KEY}",
+        "baseURL": "https://api.x.ai/anthropic"
       }
     }
   }
 }
 ```
 
-**Required secrets:** `MINIMAX_API_KEY`, `CFBD_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+**Required secrets:** `XAI_API_KEY`, `CFBD_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 
 ### 1.2 Architecture: Two-Tier Agent Execution
 
@@ -79,7 +79,7 @@ The repo already ships:
          ┌─────────────────────┼─────────────────────┐
          ▼                     ▼                     ▼
   .opencode/workflows/   opencode.jsonc      Local Flask :5001
-  (TypeScript DSL)       (MiniMax provider)   + CFBD_API_KEY
+  (TypeScript DSL)       (xAI provider)   + CFBD_API_KEY
 
                     ┌──────────────────────┐
                     │   GitHub Actions     │
@@ -94,7 +94,7 @@ The repo already ships:
 
 **Tier 1 — Local dev (`.opencode/workflows/`):** Fast iteration, full shell access, direct API calls. Used for ranking QA, CFBD audits, frontend quality checks, deploy smoke tests.
 
-**Tier 2 — CI (gh-aw `.github/workflows/*.md`):** Scheduled and PR-triggered agent jobs with constrained network (`api.minimax.io`, `api.collegefootballdata.com`) and read-only repo permissions by default.
+**Tier 2 — CI (gh-aw `.github/workflows/*.md`):** Scheduled and PR-triggered agent jobs with constrained network (`api.x.ai`, `api.collegefootballdata.com`) and read-only repo permissions by default.
 
 ### 1.3 gh-aw Workflow Conventions
 
@@ -113,7 +113,7 @@ imports:
 network:
   allowed:
     - defaults
-    - api.minimax.io
+    - api.x.ai
     - api.collegefootballdata.com
 permissions:
   contents: read
@@ -231,7 +231,7 @@ POST /agent/explain
     ├─► Step 2: If MCP sidecar healthy → enrich with 1–3 targeted tool calls
     │           Else → return explanation from structured data only (degraded mode)
     │
-    └─► Step 3: LLM synthesis (MiniMax) with citations to structured factors
+    └─► Step 3: LLM synthesis (xAI) with citations to structured factors
 ```
 
 **Health check:** `GET /agent/health` returns `{ "mcp_sidecar": "up"|"down", "rankings_cache": "warm"|"cold" }`.
@@ -324,7 +324,7 @@ X-Request-Id: <uuid>            (optional, for tracing)
     "latency_ms": 340
   },
   "meta": {
-    "model": "minimax/MiniMax-M2.7",
+    "model": "xai/grok-4",
     "latency_ms": 2100,
     "cached_rankings": true,
     "degraded_mode": false
@@ -357,7 +357,7 @@ agent/
    - `calculate_rankings_logic()` or cache read for `year`/`week`
    - Reuse `build_comparison()` logic from `GET /rankings/team/<team_name>` (extract to shared `ranking_breakdown.py`)
 3. **Optional MCP enrichment** — 1–3 tool calls based on intent.
-4. **LLM synthesis** — MiniMax via Anthropic-compatible API; system prompt requires citing `structured` fields only (no hallucinated scores).
+4. **LLM synthesis** — xAI via Anthropic-compatible API; system prompt requires citing `structured` fields only (no hallucinated scores).
 5. **Return** combined JSON; log `request_id` + token usage.
 
 ### 3.5 Extraction Refactor (Prerequisite)
@@ -509,7 +509,7 @@ User: "Compare Ohio State and Texas"
   → intent: compare_teams, params: { teams: ["Ohio State", "Texas"] }
 ```
 
-Options: client-side regex/heuristics first; server-side MiniMax classifier if needed.
+Options: client-side regex/heuristics first; server-side xAI classifier if needed.
 
 ### 4.7 Accessibility & Performance
 
@@ -782,7 +782,7 @@ Retry-After: 42          # on 429
 | Secret | Where | Notes |
 |--------|-------|-------|
 | `CFBD_API_KEY` | Backend + MCP sidecar only | Never expose to frontend |
-| `MINIMAX_API_KEY` | Backend explainer + CI only | Never expose to frontend |
+| `XAI_API_KEY` | Backend explainer + CI only | Never expose to frontend |
 | `AGENT_API_KEY` | Optional frontend embed (Phase 2) | Scoped, rotatable; prefer server-side proxy |
 | `CACHE_CLEAR_SECRET` | Existing | Keep for `/cache/clear` |
 
@@ -915,7 +915,7 @@ Metrics (Prometheus or structured logs):
 | Variable | Required by | Description |
 |----------|-------------|-------------|
 | `CFBD_API_KEY` | Flask, MCP sidecar | CollegeFootballData API |
-| `MINIMAX_API_KEY` | Explainer, OpenCode CI | LLM provider |
+| `XAI_API_KEY` | Explainer, OpenCode CI | LLM provider |
 | `MCP_SIDECAR_URL` | Flask agent module | Default `http://localhost:5100` |
 | `AGENT_RATE_LIMIT_PER_MIN` | Flask | Default `5` |
 | `AGENT_API_KEY` | Flask (Phase 3+) | Bearer token validation |
@@ -972,7 +972,7 @@ docker-compose.yml                # cfbd-mcp sidecar service (Phase 3)
 | Decision | Rationale | Alternatives rejected |
 |----------|-----------|----------------------|
 | MCP as sidecar, not in Flask process | Isolates CFBD quota; avoids blocking GIL; independent restart | In-process MCP SDK |
-| MiniMax for product + CI | Already configured in `opencode.jsonc`; single vendor | Separate model for prod |
+| xAI for product + CI | Already configured in `opencode.jsonc`; single vendor | Separate model for prod |
 | Structured-first, LLM-second | Prevents hallucination; reuses existing breakdown logic | Pure LLM over raw rankings JSON |
 | Explicit intents in Phase 1 | Predictable testing; lower cost | Full NLU from day one |
 | POST not GET for explain | Complex body; not cacheable; avoids query-length limits | `GET /agent/explain?q=...` |

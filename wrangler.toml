@@ -5,11 +5,12 @@ compatibility_date = "2026-03-01"
 # Unified Workers deploy: SvelteKit static frontend + Flask API container.
 #   npm run build --prefix frontend && npx wrangler deploy
 #
-# Secrets (set once per environment):
+# Secrets (set once per environment, outside this file):
 #   wrangler secret put CFBD_API_KEY
-#   wrangler secret put MINIMAX_API_KEY      # optional
 #   wrangler secret put CACHE_CLEAR_SECRET   # optional
-# See docs/DEPLOY-CLOUDFLARE.md
+# XAI_API_KEY is a secret name only. It is provisioned by DevSecOps on
+# Michael's yes. Do not assign it in this file.
+# See docs/SECRETS.md and docs/DEPLOY-CLOUDFLARE.md
 
 [assets]
 directory = "./frontend/build"
@@ -17,9 +18,63 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
+# Production spend mode. AI_MODE=stub and CFBD_OFFLINE=1.
+# Kill switches AI_KILL (both providers), XAI_KILL, WORKERS_AI_KILL, and
+# CFBD_KILL default off. Preview hostnames also stay stub/offline unless
+# PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
+#
+# Monthly CFBD projection. The free tier is about 1,000 and is shared.
+# This app is provider cfbd, source app. Ceiling is 700.
+# 150 is reserved for MCP via #115. 50 is margin. 700 + 150 + 50 = 900.
+# The formula lives in config/cfbd-month.json:
+#   cron 24 calls/Sunday × 52/12 = 104
+#   live CFBD_MAX_CALLS 4/day × 31 = 124
+#   104 + 124 = 228, under the 700 app ceiling.
+# xAI daily budget is hard 0 and XAI_ENABLED is off. The gateway path stays
+# in the Worker and is not called. Workers AI is the only live provider.
+# XAI_WEEKLY_USD_CAP is the rolling ISO-week dollar stop (default 0).
+# CI fails when that cap plus CFBD's paid-tier week cost reaches $5.
+# The tier cost is 0 unless CFBD_TIER=1 ($0.23). Do not set CFBD_TIER here.
+# Prices: config/xai-usd.json (verify; https://docs.x.ai/developers/pricing).
+# AI_MAX_CALLS is that daily call cap.
+# Neurons for @cf/meta/llama-3.1-8b-instruct-fp8:
+#   13778 per million input tokens, 26128 per million output tokens.
+#   Worst case = ceil((4000*13778 + 80*26128) / 1_000_000) = 58 per call.
+#   100 * 58 = 5800, ceiling 8000, free daily Neurons 10,000.
+#   Fin's band for 100 calls is about 500 to 3,800. The output cap holds
+#   the published-rate worst case under 8,000.
+#
+# AI Gateway is logging only. Budgets stay on the spend-budget instance.
+# Release Ops creates AI Gateway true-rankings in the account, then sets
+# CF_ACCOUNT_ID. An empty account id refuses the live xAI call.
+# XAI_API_KEY stays a secret name. Do not assign it here.
 [vars]
-AI_MODE = "live"
-CFBD_OFFLINE = "0"
+AI_MODE = "stub"
+CFBD_OFFLINE = "1"
+XAI_MAX_CALLS = "0"
+XAI_ENABLED = "0"
+XAI_WEEKLY_USD_CAP = "0"
+AI_MAX_CALLS = "100"
+CFBD_MAX_CALLS = "4"
+CF_ACCOUNT_ID = ""
+AI_GATEWAY_ID = "true-rankings"
+
+# Workers AI. One binding, available as env.AI. Not a secret.
+[ai]
+binding = "AI"
+
+# Per-visitor limits keyed on CF-Connecting-IP. namespace_id is account-unique.
+# Counters are per Cloudflare location; the Durable Object daily budget is global.
+# period must be 10 or 60 seconds.
+[[ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "9301"
+simple = { limit = 60, period = 60 }
+
+[[ratelimits]]
+name = "AGENT_RATE_LIMITER"
+namespace_id = "9302"
+simple = { limit = 10, period = 60 }
 
 [[containers]]
 class_name = "CfbApiContainer"
@@ -29,6 +84,10 @@ max_instances = 3
 [[durable_objects.bindings]]
 name = "CFB_API"
 class_name = "CfbApiContainer"
+
+# Daily AI/CFBD counters live on the existing CfbApiContainer class
+# (instance name spend-budget). Do not add a migration for them: non-production
+# Workers Builds upload a version, and a new migration tag fails that upload.
 
 [[migrations]]
 tag = "v1"
@@ -45,9 +104,31 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
+# Non-production worker. Preview/dev stays stub + offline.
+# PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are the explicit overrides.
 [env.dev.vars]
 AI_MODE = "stub"
-CFBD_OFFLINE = "0"
+CFBD_OFFLINE = "1"
+XAI_MAX_CALLS = "0"
+XAI_ENABLED = "0"
+XAI_WEEKLY_USD_CAP = "0"
+AI_MAX_CALLS = "100"
+CFBD_MAX_CALLS = "4"
+CF_ACCOUNT_ID = ""
+AI_GATEWAY_ID = "true-rankings"
+
+[env.dev.ai]
+binding = "AI"
+
+[[env.dev.ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "9311"
+simple = { limit = 60, period = 60 }
+
+[[env.dev.ratelimits]]
+name = "AGENT_RATE_LIMITER"
+namespace_id = "9312"
+simple = { limit = 10, period = 60 }
 
 [[env.dev.containers]]
 class_name = "CfbApiContainer"

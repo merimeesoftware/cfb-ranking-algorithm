@@ -1,0 +1,8 @@
+{
+  "model": "@cf/meta/llama-3.1-8b-instruct-fp8",
+  "neurons_per_million_input": 13778,
+  "neurons_per_million_output": 26128,
+  "max_input_tokens": 4000,
+  "max_output_tokens": 80,
+  "ceiling": 8000
+}

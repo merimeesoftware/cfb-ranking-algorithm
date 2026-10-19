@@ -65,7 +65,7 @@ Until `PUBLIC_SITE_URL` is set, the build uses same-origin relative links, omits
 1. **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Variables and Secrets**
 2. **Add** → type **Secret** → name `CFBD_API_KEY` → paste value → **Encrypt** → **Deploy**
 
-Repeat for `MINIMAX_API_KEY` / `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again.
+Repeat for `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. Do not create or paste it from this repo.
 
 For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Worker, or use `wrangler secret put CFBD_API_KEY --env dev` once.
 
@@ -116,8 +116,36 @@ Confirm Workers **Paid** is enabled — Containers are Paid-only.
 | Secret | Required |
 |--------|----------|
 | `CFBD_API_KEY` | Yes (live rankings) |
-| `MINIMAX_API_KEY` | Optional (`AI_MODE=live`) |
+| `XAI_API_KEY` | provisioned by DevSecOps on Michael's yes. Not a var. The Worker sends it only to the AI Gateway grok path. |
 | `CACHE_CLEAR_SECRET` | Optional (protects `POST /api/cache/clear`) |
+
+### Paid-call caps (deploy migration)
+
+Production `AI_MODE=stub` and `CFBD_OFFLINE=1` in `wrangler.toml`.
+
+| Control | Default when unset | Where it is enforced |
+|---------|--------------------|----------------------|
+| `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI is refused even when `XAI_API_KEY` is set. The gateway path stays in the Worker and is not called. |
+| `XAI_WEEKLY_USD_CAP` | **0** | Rolling ISO-week dollar stop on `spend-budget` (`xai:usd:YYYY-Www`). CI fails when this plus the CFBD paid tier reaches $5. The tier is $0.23 only if `CFBD_TIER=1`. |
+| `AI_MAX_CALLS` | **100/day** | Workers AI on `spend-budget`. `@cf/meta/llama-3.1-8b-instruct-fp8`, max 80 output tokens, 4000 input characters. 100 × 58 Neurons = 5800, ceiling 8000. A higher `AI_MAX_CALLS` still stops at 100. |
+| `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | provider `cfbd`, source `app`. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 700 app ceiling. 150 is reserved for MCP via #115. 50 is margin. |
+| `AI_KILL` | off (`0`) | Stops xAI and Workers AI |
+| `XAI_KILL` / `WORKERS_AI_KILL` | off (`0`) | Stops that provider |
+| `CFBD_KILL` | off (`0`) | Worker gate and Flask |
+| Visitor rate limit | 60/min on `/api/*`, 10/min on `/api/agent/*` | Workers Rate Limiting bindings, key = `CF-Connecting-IP` |
+| Preview / dev versions | `AI_MODE=stub`, `CFBD_OFFLINE=1` | Worker, unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` is set |
+| `CF_ACCOUNT_ID` | non-secret var, empty until Release Ops sets it | Account segment of the AI Gateway URL |
+| `AI_GATEWAY_ID` | `true-rankings` | Gateway id for both providers |
+
+Both providers go through Cloudflare AI Gateway, for logging only. xAI uses `https://gateway.ai.cloudflare.com/v1/{CF_ACCOUNT_ID}/{AI_GATEWAY_ID}/grok/v1/chat/completions`. Workers AI passes `gateway: { id: AI_GATEWAY_ID }` on `env.AI.run`, with cache skipped. The `spend-budget` instance stays the source of truth for budgets.
+
+Release Ops, once: create AI Gateway `true-rankings` in the account. Do not create it from this repo. Then set the non-secret var `CF_ACCOUNT_ID` to that account id. An empty account id refuses the live xAI call.
+
+This change does not add a Durable Object migration. The global counters use SQLite storage on the existing `CfbApiContainer` class, instance name `spend-budget`, and that fetch returns before the container process starts. Workers Builds on pull requests upload a version (`wrangler versions upload`). A new migration tag is rejected there (`pending Durable Object migration`). The `API_RATE_LIMITER` (`namespace_id` `9301`) and `AGENT_RATE_LIMITER` (`namespace_id` `9302`) bindings are created on deploy. Dev uses `9311` and `9312` so it does not share production counters. No Cloudflare dashboard rate-limit rule is required for this change.
+
+Flask reaches the Durable Object by calling `http://spend.budget/consume`. The container outbound handler (`CfbApiContainer.outboundByHost`, which needs `ContainerProxy` exported from the Worker) turns that into a DO request. If the gate cannot be reached, the live call is refused.
+
+`/api/rankings`, `/api/matchup`, and `/api/weeks` serve the precomputed manifest only. Custom settings return `400` JSON. A visitor rate limit returns `429` with `{"busy": true, "message": "Busy right now. Try again later."}`. An explain cap or kill switch returns that same busy flag with the stub explanation. `/agent/explain` accepts an allowlisted `question_id` only.
 
 ---
 

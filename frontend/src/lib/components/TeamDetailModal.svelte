@@ -3,6 +3,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
 	import AgentChatPanel from './AgentChatPanel.svelte';
+	import { BUSY_MESSAGE } from '$lib/api';
 
 	export let team: Team;
 	export let rank: number;
@@ -214,7 +215,9 @@
 			</div>
 		{/if}
 		{#if error}
-			<div class="px-4 py-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800">
+			<div class="px-4 py-2 text-sm {error === BUSY_MESSAGE
+				? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800'
+				: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800'}" role="status">
 				{error}
 			</div>
 		{/if}
@@ -224,6 +227,9 @@
 			
 			<!-- 1. Shareable take -->
 			<div class="p-6 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
+				{#if team.take_busy}
+					<p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed" role="status">{BUSY_MESSAGE}</p>
+				{:else}
 				<p class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed {team.why_blurb ? '' : 'italic'}">
 					{takeText}
 				</p>
@@ -249,11 +255,19 @@
 						</button>
 					</div>
 				</div>
+				{/if}
 			</div>
 
 			<div class="p-6 space-y-6">
 				<!-- 2. Path to climb -->
-				{#if team.climb_blurb || team.path_to_climb?.summary}
+				{#if team.climb_busy}
+					<div>
+						<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-2">
+							Path to climb
+						</h3>
+						<p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed" role="status">{BUSY_MESSAGE}</p>
+					</div>
+				{:else if team.climb_blurb || team.path_to_climb?.summary}
 					<div>
 						<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-2">
 							Path to climb

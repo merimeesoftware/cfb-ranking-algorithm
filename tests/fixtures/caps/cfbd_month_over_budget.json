@@ -1,0 +1,10 @@
+{
+  "provider": "cfbd",
+  "source": "app",
+  "cron_calls_per_run": 200,
+  "live_cfbd_per_day": 25,
+  "sundays_per_year": 52,
+  "months": 12,
+  "days": 31,
+  "ceiling": 700
+}

@@ -27,13 +27,13 @@ def test_resolve_blurb_retries_until_under_280(monkeypatch):
 
     calls = {'n': 0}
 
-    def fake_minimax(prompt, **kwargs):
+    def fake_provider(provider, prompt, **kwargs):
         calls['n'] += 1
         return too_long if calls['n'] == 1 else good
 
-    with patch('agent_service.MINIMAX_API_KEY', 'test-key'):
-        with patch('agent_service._call_minimax', side_effect=fake_minimax):
-            blurb, mode = _resolve_blurb(_ctx(), kind='share')
+    monkeypatch.setenv('AI_WORKERS_HOST', 'ai.workers')
+    with patch('agent_service._call_provider', side_effect=fake_provider):
+        blurb, mode = _resolve_blurb(_ctx(), kind='share')
 
     assert mode == 'live'
     assert blurb == good
@@ -46,9 +46,9 @@ def test_resolve_blurb_falls_back_to_stub_if_all_attempts_over_limit(monkeypatch
     monkeypatch.setenv('AI_MODE', 'live')
     too_long = 'B' * 320
 
-    with patch('agent_service.MINIMAX_API_KEY', 'test-key'):
-        with patch('agent_service._call_minimax', return_value=too_long) as mock_call:
-            blurb, mode = _resolve_blurb(_ctx(), kind='share')
+    monkeypatch.setenv('AI_WORKERS_HOST', 'ai.workers')
+    with patch('agent_service._call_provider', return_value=too_long) as mock_call:
+        blurb, mode = _resolve_blurb(_ctx(), kind='share')
 
     assert mode == 'stub'
     assert len(blurb) <= BLURB_MAX_CHARS

@@ -36,6 +36,6 @@ On 2026-10-18 Michael set new product direction.
 - Other docs still carry betting or Drop material and need follow-up so they don't contradict this ADR: `PRODUCT.md`, `docs/THE-DROP.md`, `docs/specs/2026-08-16-true-rankings-brand-gtm.md`, `README.md` ("Optional ATS consideration"), and open PR #69 "Betting layer on V5.3 Elo (GREEN / LEAN / PASS)", which conflicts with decision 3.
 - The internal eval stays a next-week Brier backtest. It is used as an internal fit check only and is never presented publicly as predictions.
 - Adding a momentum term changes the published formula, the cache key and the methodology page. The doc/code gaps in `/methodology` and `ALGORITHM_BREAKDOWN.md` (stale weights, K, HFA, prior fade) are fixed as part of #97 before any new visuals.
-- No new paid calls (MiniMax, CFBD) on visitor paths until #93's caps are merged. Ask-the-AI (#100) depends on #93.
+- No new paid calls (xAI, CFBD) on visitor paths until #93's caps are merged. Ask-the-AI (#100) depends on #93.
 - All UI work waits for Dean's signed comps and the #94 preview stills check; user-facing copy needs a Phil consult against the amended PURPOSE.md.
 - Conference evidence must report what the data shows. If the Big 12 does not hold up in a given season, the page says so.

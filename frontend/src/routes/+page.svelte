@@ -24,6 +24,7 @@
 		filteredConferences,
 		loading,
 		error,
+		notice,
 		filterState,
 		availableYears,
 		maxWeek,
@@ -97,6 +98,11 @@
 
 	onMount(async () => {
 		const urlState = parseUrlParams(window.location.search);
+		// No URL week: stay on the published board instead of asking the API to compute "this week".
+		if (!urlState.year && !urlState.week && data.seed) {
+			setYear(data.seed.year);
+			setWeek(data.seed.week);
+		}
 		if (urlState.year) setYear(urlState.year);
 		if (urlState.week) setWeek(urlState.week);
 		if (urlState.view) setView(urlState.view);
@@ -301,6 +307,10 @@
 
 	{#if $loading && $teams.length === 0 && !data.seed}
 		<LoadingSpinner message="Building the board…" />
+	{:else if $notice && $teams.length === 0 && (!data.seed || data.seed.year !== $filterState.year || data.seed.week !== $filterState.week)}
+		<div class="card p-6 text-center" role="status" aria-live="polite">
+			<p class="font-display text-lg text-primary-900 dark:text-white">{$notice}</p>
+		</div>
 	{:else if $error && $teams.length === 0 && !data.seed}
 		<div class="card p-6 text-center" role="alert" aria-live="assertive">
 			<p class="font-display text-lg text-primary-900 dark:text-white">
@@ -316,10 +326,26 @@
 			</button>
 		</div>
 	{:else}
+		{#if $notice}
+			<p class="mb-3 text-sm text-primary-700 dark:text-primary-300" role="status">{$notice}</p>
+		{/if}
+		{#if $filterState.view === 'fcs' && $filteredTeams.length === 0 && !$loading}
+			<p class="mb-3 text-sm text-primary-700 dark:text-primary-300" role="status">
+				This published board doesn't include that view.
+			</p>
+		{/if}
 		{#if activeTab === 'teams'}
 			<RankingsTable
-				teams={$filteredTeams.length ? $filteredTeams : data.seed?.teams || []}
-				allTeams={$teams.length ? $teams : data.seed?.teams || []}
+				teams={$filteredTeams.length
+					? $filteredTeams
+					: $filterState.view === 'fcs'
+						? []
+						: data.seed?.teams || []}
+				allTeams={$teams.length
+					? $teams
+					: $filterState.view === 'fcs'
+						? []
+						: data.seed?.teams || []}
 				{initialTeamName}
 				{prevRanks}
 				year={$filterState.year}

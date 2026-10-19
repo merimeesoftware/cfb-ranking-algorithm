@@ -18,6 +18,23 @@ function resolveApiBase(): string {
 
 export const API_BASE = resolveApiBase();
 
+/** Shown when a paid-call cap, kill switch, or visitor limit trips. */
+export const BUSY_MESSAGE = 'Busy right now. Try again later.';
+
+export class BoardNotice extends Error {
+	readonly code: string;
+
+	constructor(message: string, code = 'notice') {
+		super(message);
+		this.name = 'BoardNotice';
+		this.code = code;
+	}
+}
+
+function noticeFromPayload(payload: { message?: string; error?: string; code?: string }, fallback: string): BoardNotice {
+	return new BoardNotice(payload.message || payload.error || fallback, payload.code || 'notice');
+}
+
 export function mapTeamFromApi(t: Record<string, unknown>): Team {
 	return {
 		team_name: (t.team_name || t.team || '') as string,
@@ -153,13 +170,36 @@ export async function fetchRankingsFromApi(
 	const allDivisions = view === 'fcs' ? 'true' : 'false';
 	const url = `${API_BASE}/rankings?year=${year}&week=${week}&all_divisions=${allDivisions}`;
 	const response = await fetch(url);
-	if (!response.ok) {
-		const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-		throw new Error((error as { error?: string; message?: string }).error ||
-			(error as { message?: string }).message ||
-			`HTTP ${response.status}`);
+	const data = (await response.json().catch(() => ({}))) as {
+		busy?: boolean;
+		published?: boolean;
+		message?: string;
+		error?: string;
+		code?: string;
+		team_rankings?: Record<string, unknown>[];
+		teams?: Record<string, unknown>[];
+		conference_rankings?: Record<string, unknown>[];
+		conferences?: Record<string, unknown>[];
+		year?: number;
+		week?: number;
+		generated_at?: string;
+	};
+	if (response.status === 429 || data.busy) {
+		throw noticeFromPayload(data as { message?: string; code?: string }, BUSY_MESSAGE);
 	}
-	const data = await response.json();
+	if (data.published === false) {
+		throw noticeFromPayload(data as { message?: string; code?: string }, "That week isn't on the board yet.");
+	}
+	if (response.status === 400) {
+		throw noticeFromPayload(
+			data as { error?: string; message?: string; code?: string },
+			"Same numbers, same time, for everyone. Custom settings aren't accepted.",
+		);
+	}
+	if (!response.ok) {
+		const error = data as { error?: string; message?: string };
+		throw new Error(error.error || error.message || `HTTP ${response.status}`);
+	}
 	return {
 		teams: (data.team_rankings || data.teams || []).map(mapTeamFromApi),
 		conferences: (data.conference_rankings || data.conferences || []).map(mapConferenceFromApi),
@@ -209,9 +249,17 @@ export async function fetchTeamDetail(
 > {
 	const url = `${API_BASE}/rankings/team/${encodeURIComponent(teamName)}?year=${year}&week=${week}`;
 	const response = await fetch(url);
+	if (response.status === 429) {
+		const error = await response.json().catch(() => ({}));
+		throw noticeFromPayload(error as { message?: string; code?: string }, BUSY_MESSAGE);
+	}
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({}));
-		throw new Error((error as { error?: string }).error || `HTTP ${response.status}`);
+		const payload = error as { error?: string; message?: string; published?: boolean; code?: string };
+		if (payload.published === false || response.status === 400) {
+			throw noticeFromPayload(payload, payload.message || payload.error || BUSY_MESSAGE);
+		}
+		throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
 	}
 	const data = await response.json();
 	const t = data.team || {};
@@ -313,7 +361,7 @@ async function fetchStaticKindBlurb(
 	}
 }
 
-/** Client wait budget for live MiniMax+web_search (server up to ~120s × retries). */
+/** Client wait budget for a live provider completion. */
 const LIVE_BLURB_TIMEOUT_MS = 200_000;
 
 /** AI/stub shareable blurb (≤280 chars), cached daily in-season / monthly offseason. */
@@ -321,7 +369,7 @@ export async function fetchShareableBlurb(
 	teamName: string,
 	year: number,
 	week: number
-): Promise<{ blurb: string; ai_mode?: string; cache_period?: string } | null> {
+): Promise<{ blurb: string; ai_mode?: string; cache_period?: string; busy?: boolean; message?: string } | null> {
 	const staticBlurb = await fetchStaticKindBlurb('share', year, week, teamName);
 	if (staticBlurb) {
 		return { blurb: staticBlurb, ai_mode: 'static' };
@@ -333,12 +381,22 @@ export async function fetchShareableBlurb(
 			body: JSON.stringify({ team_name: teamName, year, week }),
 			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
-		if (!response.ok) return null;
-		const data = (await response.json()) as {
+		const data = (await response.json().catch(() => ({}))) as {
 			blurb?: string;
 			ai_mode?: string;
 			cache_period?: string;
+			busy?: boolean;
+			message?: string;
 		};
+		if (response.status === 429 || data.busy) {
+			return {
+				blurb: data.blurb || '',
+				ai_mode: 'capped',
+				busy: true,
+				message: data.message || BUSY_MESSAGE,
+			};
+		}
+		if (!response.ok) return null;
 		if (!data.blurb) return null;
 		return {
 			blurb: data.blurb,
@@ -355,7 +413,7 @@ export async function fetchClimbBlurb(
 	teamName: string,
 	year: number,
 	week: number
-): Promise<{ blurb: string; ai_mode?: string } | null> {
+): Promise<{ blurb: string; ai_mode?: string; busy?: boolean; message?: string } | null> {
 	const staticBlurb = await fetchStaticKindBlurb('climb', year, week, teamName);
 	if (staticBlurb) {
 		return { blurb: staticBlurb, ai_mode: 'static' };
@@ -367,8 +425,21 @@ export async function fetchClimbBlurb(
 			body: JSON.stringify({ team_name: teamName, year, week }),
 			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
+		const data = (await response.json().catch(() => ({}))) as {
+			blurb?: string;
+			ai_mode?: string;
+			busy?: boolean;
+			message?: string;
+		};
+		if (response.status === 429 || data.busy) {
+			return {
+				blurb: data.blurb || '',
+				ai_mode: 'capped',
+				busy: true,
+				message: data.message || BUSY_MESSAGE,
+			};
+		}
 		if (!response.ok) return null;
-		const data = (await response.json()) as { blurb?: string; ai_mode?: string };
 		if (!data.blurb) return null;
 		return { blurb: data.blurb, ai_mode: data.ai_mode };
 	} catch {
@@ -380,16 +451,42 @@ export async function explainRanking(
 	teamName: string,
 	year: number,
 	week: number,
-	question?: string
-): Promise<{ explanation: string; context: Record<string, unknown> }> {
+	questionId: string
+): Promise<{
+	explanation: string;
+	context: Record<string, unknown>;
+	busy?: boolean;
+	message?: string;
+	aiWritten?: boolean;
+}> {
 	const response = await fetch(`${API_BASE}/agent/explain`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ team_name: teamName, year, week, question }),
+		body: JSON.stringify({ team_name: teamName, year, week, question_id: questionId }),
 	});
-	if (!response.ok) {
-		const error = await response.json().catch(() => ({}));
-		throw new Error((error as { error?: string }).error || `HTTP ${response.status}`);
+	const data = (await response.json().catch(() => ({}))) as {
+		explanation?: string;
+		context?: Record<string, unknown>;
+		busy?: boolean;
+		message?: string;
+		error?: string;
+		ai_written?: boolean;
+	};
+	if (response.status === 429 || data.busy) {
+		return {
+			explanation: data.explanation || '',
+			context: data.context || {},
+			busy: true,
+			message: data.message || BUSY_MESSAGE,
+			aiWritten: false,
+		};
 	}
-	return response.json();
+	if (!response.ok) {
+		throw new Error(data.error || data.message || `HTTP ${response.status}`);
+	}
+	return {
+		explanation: data.explanation || '',
+		context: data.context || {},
+		aiWritten: data.ai_written === true,
+	};
 }

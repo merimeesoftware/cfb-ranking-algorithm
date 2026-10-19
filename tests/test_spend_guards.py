@@ -1,6 +1,10 @@
 """Tests for CFBD offline / AI spend guards."""
 import json
 import os
+import threading
+import time
+import urllib.error
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -9,18 +13,18 @@ import pytest
 from spend_guards import (
     AIBudgetError,
     CFBDOfflineError,
-    get_ai_call_count,
     get_cfbd_call_count,
+    get_provider_call_count,
     is_cfbd_offline,
-    register_live_ai_call,
     register_live_cfbd_call,
-    reset_ai_call_count,
+    register_live_provider_call,
     reset_cfbd_call_count,
+    reset_provider_call_counts,
     resolve_ai_mode,
     resolve_cfbd_api_key,
     cfbd_key_status,
     spend_status,
-    ai_max_calls,
+    provider_max_calls,
     cfbd_max_calls,
 )
 from ai_stub import stub_explain_from_context
@@ -74,27 +78,139 @@ def test_cfbd_max_calls_budget(monkeypatch):
     reset_cfbd_call_count()
 
 
+def test_cfbd_gate_names_provider_and_app_source(monkeypatch):
+    reset_cfbd_call_count()
+    monkeypatch.setenv('CFBD_MAX_CALLS', '2')
+    monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
+    response = MagicMock()
+    response.read.return_value = b'{"ok": true, "count": 1}'
+    response.__enter__.return_value = response
+    with patch('urllib.request.urlopen', return_value=response) as opened:
+        assert register_live_cfbd_call() == 1
+    request = opened.call_args.args[0]
+    body = json.loads(request.data.decode())
+    assert body['provider'] == 'cfbd'
+    assert body['bucket'] == 'cfbd'
+    assert body['source'] == 'app'
+    assert request.full_url == 'http://spend.budget/consume'
+    reset_cfbd_call_count()
+
+
 def test_cfbd_max_defaults_in_development(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
     assert cfbd_max_calls() == 25
 
 
-def test_ai_max_calls_budget(monkeypatch):
-    reset_ai_call_count()
+def test_provider_max_calls_budget(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
     monkeypatch.setenv('AI_MAX_CALLS', '2')
-    assert register_live_ai_call() == 1
-    assert register_live_ai_call() == 2
+    assert register_live_provider_call('workers_ai') == 1
+    assert register_live_provider_call('workers_ai') == 2
     with pytest.raises(AIBudgetError):
-        register_live_ai_call()
-    assert get_ai_call_count() == 2
-    reset_ai_call_count()
+        register_live_provider_call('workers_ai')
+    assert get_provider_call_count('workers_ai') == 2
+    reset_provider_call_counts()
 
 
-def test_ai_max_defaults_in_development(monkeypatch):
+def test_workers_ai_cap_of_1000_still_refuses_call_101(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    monkeypatch.setenv('AI_MAX_CALLS', '1000')
+    assert provider_max_calls('workers_ai') == 100
+    for n in range(1, 101):
+        assert register_live_provider_call('workers_ai') == n
+    with pytest.raises(AIBudgetError):
+        register_live_provider_call('workers_ai')
+    assert get_provider_call_count('workers_ai') == 100
+    reset_provider_call_counts()
+
+
+def test_xai_stays_refused_when_the_cap_is_raised(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    monkeypatch.setenv('XAI_ENABLED', '1')
+    monkeypatch.setenv('XAI_MAX_CALLS', '2')
+    with pytest.raises(AIBudgetError):
+        register_live_provider_call('xai')
+    assert get_provider_call_count('xai') == 0
+    reset_provider_call_counts()
+
+
+def test_overlapping_calls_reserve_one_gate_slot(monkeypatch):
+    """Two threads and a cap of 1: only the reserved call reaches spend-budget."""
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.setenv('AI_MAX_CALLS', '1')
+    monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
+    gate_calls = []
+
+    def slow_open(req, timeout=5):
+        gate_calls.append(req.full_url)
+        time.sleep(0.15)
+        response = MagicMock()
+        response.read.return_value = b'{"ok": true, "count": 1}'
+        response.__enter__.return_value = response
+        return response
+
+    errors = []
+
+    def once():
+        try:
+            register_live_provider_call('workers_ai')
+        except AIBudgetError:
+            errors.append('budget')
+
+    with patch('urllib.request.urlopen', side_effect=slow_open):
+        threads = [threading.Thread(target=once) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+    assert gate_calls == ['http://spend.budget/consume']
+    assert errors == ['budget']
+    assert get_provider_call_count('workers_ai') == 1
+    reset_provider_call_counts()
+
+
+def test_stored_ai_kill_is_reported_as_kill_switch(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
+    monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
+    denied = urllib.error.HTTPError(
+        'http://spend.budget/consume',
+        429,
+        'Too Many Requests',
+        hdrs=None,
+        fp=BytesIO(b'{"ok": false, "code": "kill_switch"}'),
+    )
+    from agent_service import _budget_code
+
+    with patch('urllib.request.urlopen', side_effect=denied):
+        with pytest.raises(AIBudgetError) as caught:
+            register_live_provider_call('workers_ai')
+    assert caught.value.code == 'kill_switch'
+    assert _budget_code('workers_ai', caught.value) == 'kill_switch'
+    assert get_provider_call_count('workers_ai') == 0
+    reset_provider_call_counts()
+
+
+def test_provider_max_defaults(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
+    monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
     monkeypatch.delenv('AI_MAX_CALLS', raising=False)
-    assert ai_max_calls() == 25
+    assert provider_max_calls('xai') == 0
+    assert provider_max_calls('workers_ai') == 100
 
 
 def test_spend_status_shape(monkeypatch):
@@ -102,12 +218,14 @@ def test_spend_status_shape(monkeypatch):
     monkeypatch.setenv('CFBD_OFFLINE', '1')
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
+    monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
     monkeypatch.delenv('AI_MAX_CALLS', raising=False)
     status = spend_status()
     assert status['cfbd_offline'] is True
     assert status['ai_mode'] == 'stub'
     assert status['cfbd_max_calls'] == 25
-    assert status['ai_max_calls'] == 25
+    assert status['xai_max_calls'] == 0
+    assert status['workers_ai_max_calls'] == 100
 
 
 def test_make_request_blocked_when_offline(monkeypatch):
@@ -160,7 +278,7 @@ def test_stub_explain_from_fixture():
     assert '#1' in text or 'board' in text.lower()
     # Fan-visible explanation must not leak stub/AI mode language
     assert 'AI_MODE' not in text
-    assert 'MiniMax' not in text
+    assert 'xAI' not in text
     assert 'stub' not in text.lower()
     assert 'TQ' not in text
     assert 'CQ' not in text
@@ -169,13 +287,15 @@ def test_stub_explain_from_fixture():
 
 def test_agent_explain_stub_mode(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'stub')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
+    monkeypatch.delenv('AI_WORKERS_HOST', raising=False)
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
     with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
         response = client.post('/agent/explain', json={
             'team_name': 'Oregon',
             'year': 2024,
             'week': 10,
+            'question_id': 'why_here',
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -183,20 +303,29 @@ def test_agent_explain_stub_mode(client, monkeypatch):
         assert data['explanation']
         assert 'Oregon' in data['explanation']
         assert 'AI_MODE' not in data['explanation']
-        assert 'MiniMax' not in data['explanation']
+        assert 'xAI' not in data['explanation']
         assert 'stub' not in data['explanation'].lower()
 
 
 def test_agent_explain_stub_expanded_context(client, monkeypatch):
     """Phase 4: context includes formula, path_to_climb, neighbors, top quality wins."""
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+
+    cache = get_cache()
+    logical = explain_cache_logical('stub', 2024, 10, 'Ohio State', 'why_here', blurb_cache_period())
+    cache.invalidate(cache._generate_key('explain', logical))
     monkeypatch.setenv('AI_MODE', 'stub')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
+    monkeypatch.delenv('AI_WORKERS_HOST', raising=False)
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
     with patch('agent_service.get_or_calculate_rankings', return_value=mock_data) as mock_get:
         response = client.post('/agent/explain', json={
             'team_name': 'Ohio State',
             'year': 2024,
             'week': 10,
+            'question_id': 'why_here',
         })
         assert response.status_code == 200
         # Offline-first default in tests: prefer_static should be True
@@ -240,6 +369,7 @@ def test_agent_explain_off_mode(client, monkeypatch):
             'team_name': 'Georgia',
             'year': 2024,
             'week': 10,
+            'question_id': 'why_here',
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -253,6 +383,13 @@ def test_agent_explain_off_mode(client, monkeypatch):
 
 def test_agent_explain_prefer_static_online(client, monkeypatch):
     """Agent path always prefers static/slim rankings (no cold solver on explain)."""
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+
+    cache = get_cache()
+    logical = explain_cache_logical('stub', 2024, 10, 'Oregon', 'results', blurb_cache_period())
+    cache.invalidate(cache._generate_key('explain', logical))
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.setenv('CFBD_OFFLINE', '0')
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
@@ -261,22 +398,24 @@ def test_agent_explain_prefer_static_online(client, monkeypatch):
             'team_name': 'Oregon',
             'year': 2024,
             'week': 10,
+            'question_id': 'results',
         })
         assert response.status_code == 200
         assert mock_get.call_args.kwargs.get('prefer_static') is True
 
 
-def test_agent_explain_live_falls_back_without_key(client, monkeypatch):
+def test_agent_explain_live_falls_back_without_host(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'live')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
-    # Module captured MINIMAX_API_KEY at import — patch the module attr
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
+    monkeypatch.delenv('AI_WORKERS_HOST', raising=False)
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
-    with patch('agent_service.MINIMAX_API_KEY', ''):
-        with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
+    with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
             response = client.post('/agent/explain', json={
                 'team_name': 'Oregon',
                 'year': 2024,
                 'week': 10,
+                'question_id': 'why_here',
+                'provider': 'workers_ai',
             })
             assert response.status_code == 200
             data = response.get_json()
@@ -284,14 +423,27 @@ def test_agent_explain_live_falls_back_without_key(client, monkeypatch):
             assert data['explanation']
             assert 'Oregon' in data['explanation']
             assert 'AI_MODE' not in data['explanation']
-            assert 'MiniMax' not in data['explanation']
+            assert 'xAI' not in data['explanation']
 
 
-def test_agent_health_includes_ai_mode(client, monkeypatch):
+def test_agent_health_hides_spend_counters(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'stub')
     response = client.get('/agent/health')
     assert response.status_code == 200
-    assert response.get_json()['ai_mode'] == 'stub'
+    data = response.get_json()
+    assert data['status'] == 'ok'
+    for key in (
+        'ai_mode',
+        'ai_live_calls',
+        'xai_max_calls',
+        'workers_ai_max_calls',
+        'cfbd_calls',
+        'cfbd_max_calls',
+        'cfbd_key',
+        'agent_rate_limit_per_hour',
+        'spend',
+    ):
+        assert key not in data
 
 
 def test_stub_uses_path_to_climb_and_neighbors():
@@ -300,5 +452,5 @@ def test_stub_uses_path_to_climb_and_neighbors():
     assert '#1' in text or 'Oregon' in text
     assert 'Ohio State' in text  # neighbor_behind / top win
     assert 'AI_MODE' not in text
-    assert 'MiniMax' not in text
+    assert 'xAI' not in text
     assert 'board' in text.lower()

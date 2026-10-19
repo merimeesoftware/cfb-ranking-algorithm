@@ -1,0 +1,26 @@
+{
+  "storage": {
+    "ai_kill": 1,
+    "cfbd_kill": 1,
+    "cfbd:app:2099-01-01": 4
+  },
+  "env": {
+    "AI_KILL": "0",
+    "XAI_KILL": "0",
+    "WORKERS_AI_KILL": "0",
+    "CFBD_KILL": "0"
+  },
+  "expect_code": "kill_switch",
+  "requests": [
+    {"provider": "xai", "bucket": "xai"},
+    {"provider": "workers_ai", "bucket": "workers_ai"},
+    {"provider": "cfbd", "source": "app"},
+    {"action": "reserve_usd", "provider": "xai", "bucket": "xai", "prompt": "hi"}
+  ],
+  "latch": {
+    "secret": "planted-clear",
+    "ai_kill": 1,
+    "cfbd_kill": 1,
+    "route": "/spend/kill"
+  }
+}
