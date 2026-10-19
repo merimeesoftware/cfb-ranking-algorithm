@@ -1,6 +1,10 @@
 """Tests for CFBD offline / AI spend guards."""
 import json
 import os
+import threading
+import time
+import urllib.error
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -137,6 +141,67 @@ def test_xai_stays_refused_when_the_cap_is_raised(monkeypatch):
     with pytest.raises(AIBudgetError):
         register_live_provider_call('xai')
     assert get_provider_call_count('xai') == 0
+    reset_provider_call_counts()
+
+
+def test_overlapping_calls_reserve_one_gate_slot(monkeypatch):
+    """Two threads and a cap of 1: only the reserved call reaches spend-budget."""
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.setenv('AI_MAX_CALLS', '1')
+    monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
+    gate_calls = []
+
+    def slow_open(req, timeout=5):
+        gate_calls.append(req.full_url)
+        time.sleep(0.15)
+        response = MagicMock()
+        response.read.return_value = b'{"ok": true, "count": 1}'
+        response.__enter__.return_value = response
+        return response
+
+    errors = []
+
+    def once():
+        try:
+            register_live_provider_call('workers_ai')
+        except AIBudgetError:
+            errors.append('budget')
+
+    with patch('urllib.request.urlopen', side_effect=slow_open):
+        threads = [threading.Thread(target=once) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+    assert gate_calls == ['http://spend.budget/consume']
+    assert errors == ['budget']
+    assert get_provider_call_count('workers_ai') == 1
+    reset_provider_call_counts()
+
+
+def test_stored_ai_kill_is_reported_as_kill_switch(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
+    monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
+    denied = urllib.error.HTTPError(
+        'http://spend.budget/consume',
+        429,
+        'Too Many Requests',
+        hdrs=None,
+        fp=BytesIO(b'{"ok": false, "code": "kill_switch"}'),
+    )
+    from agent_service import _budget_code
+
+    with patch('urllib.request.urlopen', side_effect=denied):
+        with pytest.raises(AIBudgetError) as caught:
+            register_live_provider_call('workers_ai')
+    assert caught.value.code == 'kill_switch'
+    assert _budget_code('workers_ai', caught.value) == 'kill_switch'
+    assert get_provider_call_count('workers_ai') == 0
     reset_provider_call_counts()
 
 

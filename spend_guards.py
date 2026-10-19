@@ -321,6 +321,19 @@ def get_provider_call_count(provider: str) -> int:
         return _provider_counts.get(provider, 0)
 
 
+def _raise_gate_denial(bucket: str, body: Dict[str, Any], error_cls, from_exc: BaseException | None = None) -> None:
+    """Keep the Durable Object code. A latched kill is not a budget miss."""
+    code = body.get('code') if isinstance(body.get('code'), str) else None
+    message = f'{bucket} daily budget or kill switch denied the live call.'
+    if error_cls is AIBudgetError:
+        error: BaseException = AIBudgetError(message, code=code)
+    else:
+        error = error_cls(message)
+    if from_exc is not None:
+        raise error from from_exc
+    raise error
+
+
 def _consume_global_budget(bucket: str) -> None:
     """Ask the Worker Durable Object before a live paid call.
 
@@ -355,18 +368,33 @@ def _consume_global_budget(bucket: str) -> None:
         except (json.JSONDecodeError, OSError):
             body = {}
         if not body.get('ok', False):
-            raise error_cls(
-                f'{bucket} daily budget or kill switch denied the live call.'
-            ) from exc
+            _raise_gate_denial(bucket, body, error_cls, from_exc=exc)
         return
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
         raise error_cls(f'{bucket} spend gate unreachable; live call refused.') from exc
     if not body.get('ok', False):
-        raise error_cls(f'{bucket} daily budget exhausted.')
+        _raise_gate_denial(bucket, body, error_cls)
+
+
+def _release_cfbd_slot(day: str) -> None:
+    global _live_call_count
+    with _call_lock:
+        if _live_call_day == day and _live_call_count > 0:
+            _live_call_count -= 1
+
+
+def _release_provider_slot(provider: str, day: str) -> None:
+    with _call_lock:
+        if _provider_days[provider] == day and _provider_counts[provider] > 0:
+            _provider_counts[provider] -= 1
 
 
 def register_live_cfbd_call() -> int:
-    """Increment and return the new live-call count. Raises if over budget."""
+    """Reserve one live CFBD call, then ask the spend gate.
+
+    The local slot is taken under the lock before the gate runs, so a second
+    overlapping call cannot also increment spend-budget.
+    """
     global _live_call_count, _live_call_day
     if is_cfbd_killed():
         raise CFBDOfflineError('CFBD kill switch is on. Live calls are stopped.')
@@ -381,23 +409,23 @@ def register_live_cfbd_call() -> int:
                 f'CFBD live call budget exhausted ({max_calls}). '
                 'Raise CFBD_MAX_CALLS or set CFBD_OFFLINE=1 and use static/cache.'
             )
-    _consume_global_budget('cfbd')
-    with _call_lock:
-        today = _utc_day()
-        if _live_call_day != today:
-            _live_call_count = 0
-            _live_call_day = today
-        if _live_call_count >= max_calls:
-            raise CFBDOfflineError(
-                f'CFBD live call budget exhausted ({max_calls}). '
-                'Raise CFBD_MAX_CALLS or set CFBD_OFFLINE=1 and use static/cache.'
-            )
         _live_call_count += 1
-        return _live_call_count
+        reserved = _live_call_count
+        day = _live_call_day
+    try:
+        _consume_global_budget('cfbd')
+    except Exception:
+        _release_cfbd_slot(day)
+        raise
+    return reserved
 
 
 def register_live_provider_call(provider: str) -> int:
-    """Increment one provider's live prompt count. Raises if over budget or killed."""
+    """Reserve one provider prompt, then ask the spend gate.
+
+    The local slot is taken under the lock before the gate runs, so a second
+    overlapping call cannot also increment spend-budget.
+    """
     if provider not in AI_PROVIDERS:
         raise AIBudgetError(f'Unknown AI provider: {provider}')
     if provider == 'xai' and not is_xai_enabled():
@@ -415,19 +443,15 @@ def register_live_provider_call(provider: str) -> int:
                 f'{provider} live prompt budget exhausted ({max_calls}). '
                 'Raise the provider cap or use AI_MODE=stub.'
             )
-    _consume_global_budget(provider)
-    with _call_lock:
-        today = _utc_day()
-        if _provider_days[provider] != today:
-            _provider_counts[provider] = 0
-            _provider_days[provider] = today
-        if _provider_counts[provider] >= max_calls:
-            raise AIBudgetError(
-                f'{provider} live prompt budget exhausted ({max_calls}). '
-                'Raise the provider cap or use AI_MODE=stub.'
-            )
         _provider_counts[provider] += 1
-        return _provider_counts[provider]
+        reserved = _provider_counts[provider]
+        day = _provider_days[provider]
+    try:
+        _consume_global_budget(provider)
+    except Exception:
+        _release_provider_slot(provider, day)
+        raise
+    return reserved
 
 
 def check_agent_rate_limit(client_key: str) -> None:
