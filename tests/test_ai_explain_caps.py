@@ -10,9 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from check_ai_providers import (  # noqa: E402
+    canon_scan_exclusions,
     closed_budget_errors,
     contains_retired_name,
     evaluate,
+    filter_retired_name_hits,
+    retired_name_hits,
 )
 
 FIXTURES = Path(__file__).parent / 'fixtures' / 'caps'
@@ -159,6 +162,18 @@ def test_retired_name_detector_trips_on_planted_text():
     planted = ''.join(chr(code) for code in (109, 105, 110, 105, 109, 97, 120))
     assert contains_retired_name(f'the old client was {planted}')
     assert not contains_retired_name('xAI and Workers AI')
+
+
+def test_retired_name_scan_excludes_only_purpose():
+    planted = ''.join(chr(code) for code in (109, 105, 110, 105, 109, 97, 120))
+    assert canon_scan_exclusions() == ('PURPOSE.md',)
+    lines = [
+        f'PURPOSE.md:47: stub, {planted}, Lean Pure',
+        f'README.md:3: {planted}',
+        f'worker/src/index.ts:1: {planted}',
+    ]
+    assert filter_retired_name_hits(lines) == lines[1:]
+    assert all(not hit.startswith('PURPOSE.md:') for hit in retired_name_hits())
 
 
 @pytest.mark.parametrize('fixture_name', [

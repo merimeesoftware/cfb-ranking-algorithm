@@ -86,6 +86,24 @@ def contains_retired_name(text: str) -> bool:
     return retired_name().casefold() in text.casefold()
 
 
+def canon_scan_exclusions() -> tuple[str, ...]:
+    """Canon files stay out of the retired-name scan. This list is only PURPOSE.md."""
+    return ('PURPOSE.md',)
+
+
+def filter_retired_name_hits(lines: list[str]) -> list[str]:
+    excluded = set(canon_scan_exclusions())
+    kept: list[str] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        path = line.split(':', 1)[0].replace('\\', '/')
+        if path in excluded:
+            continue
+        kept.append(line)
+    return kept
+
+
 def retired_name_hits() -> list[str]:
     result = subprocess.run(
         ['git', 'grep', '-i', '-n', '-I', retired_name()],
@@ -98,7 +116,7 @@ def retired_name_hits() -> list[str]:
         return []
     if result.returncode != 0:
         return [result.stderr.strip() or 'git grep failed']
-    return [line for line in result.stdout.splitlines() if line.strip()]
+    return filter_retired_name_hits(result.stdout.splitlines())
 
 
 def evaluate() -> list[str]:
