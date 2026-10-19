@@ -44,6 +44,21 @@
         .catch(() => {
           window.__offsiteReached = 'blocked';
         });
+      window.__wsReached = 'pending';
+      try {
+        const socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`);
+        socket.addEventListener('open', () => {
+          window.__wsReached = 'open';
+        });
+        socket.addEventListener('error', () => {
+          window.__wsReached = 'blocked';
+        });
+        socket.addEventListener('close', () => {
+          if (window.__wsReached === 'pending') window.__wsReached = 'blocked';
+        });
+      } catch {
+        window.__wsReached = 'blocked';
+      }
     </script>
   </body>
 </html>

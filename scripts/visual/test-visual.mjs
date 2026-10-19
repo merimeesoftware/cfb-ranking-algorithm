@@ -2,20 +2,31 @@
  * Proves the stills gate in both directions.
  * A planted page with the same elements and the same title text, but a
  * different colour and block position, must exit 1. A matching still must
- * pass. A route with no signed comp must be "no comps", never a pass.
- * A page that calls /api/agent and an off-site origin must trip the guard
- * without the fixture server receiving /api/agent.
+ * pass. A route with no signed comp must exit 3, never 0.
+ * A page that calls /api/agent, an off-site origin, or a websocket must
+ * trip the guard without the fixture server receiving /api/agent.
+ * A signature that exists only on a side tree is ignored when --base
+ * points at an empty manifest. An oversized mask and a path-escape
+ * comp exit 1.
  *
  * --fail-job-on-planted-mismatch exits with the gate's status (1) after the
  * proof, so a CI job can show the red run. The default run exits 0 when
  * every proof holds.
  */
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyRequest, resolveThresholds } from './lib/visual-rules.mjs';
+import {
+  EXIT_FAIL,
+  EXIT_NO_COMPS,
+  EXIT_PASS,
+  classifyRequest,
+  decideCiExit,
+  maskAreaRatio,
+  resolveThresholds,
+} from './lib/visual-rules.mjs';
 import { assertPreviewTarget } from './lib/preview-url.mjs';
 import { evaluateComp, sha256, signoffOk } from './lib/comps.mjs';
 import { comparePngBuffers, solidPng } from './lib/compare-stills.mjs';
@@ -36,9 +47,9 @@ function assert(condition, message) {
   if (!condition) failures.push(message);
 }
 
-function runCli(args) {
+function runNode(script, args) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [path.join(HERE, 'visual-check.mjs'), ...args], {
+    const child = spawn(process.execPath, [path.join(HERE, script), ...args], {
       cwd: HERE,
     });
     let stdout = '';
@@ -51,6 +62,14 @@ function runCli(args) {
     });
     child.on('close', (code) => resolve({ code, stdout, stderr }));
   });
+}
+
+function runCli(args) {
+  return runNode('visual-check.mjs', args);
+}
+
+function runCi(args) {
+  return runNode('ci-stills.mjs', args);
 }
 
 function readReport(dir) {
@@ -112,23 +131,47 @@ function unitTests() {
   assert(different.status === 'fail' && different.ratio > 0.5, 'recolored pixels fail even though the canvas is the same size');
 
   const unsignedDir = mkdtempSync(path.join(tmpdir(), 'unsigned-'));
-  writeFileSync(path.join(unsignedDir, 'comp.png'), same);
+  mkdirSync(path.join(unsignedDir, 'renders'));
+  writeFileSync(path.join(unsignedDir, 'renders', 'comp.png'), same);
   const badHash = evaluateComp(
     {
-      file: 'comp.png',
+      file: 'renders/comp.png',
       sha256: '0'.repeat(64),
       signed_by: 'owner:dean-cfb',
       signoff: SIGNOFF,
     },
     unsignedDir
   );
-  assert(!badHash.signed && badHash.reason === 'sha256 mismatch', 'sha256 mismatch is not signed');
+  assert(!badHash.signed && !badHash.hardFail && badHash.reason === 'sha256 mismatch', 'sha256 mismatch is not signed');
   const noBy = evaluateComp(
-    { file: 'comp.png', sha256: sha256(same), signed_by: '', signoff: SIGNOFF },
+    { file: 'renders/comp.png', sha256: sha256(same), signed_by: '', signoff: SIGNOFF },
     unsignedDir
   );
   assert(!noBy.signed && noBy.reason === 'missing signed_by', 'missing signed_by is not signed');
   assert(evaluateComp(null, unsignedDir).reason === 'no signed comp', 'missing entry is no signed comp');
+  const escaped = evaluateComp(
+    { file: '../comp.png', sha256: sha256(same), signed_by: 'owner:dean-cfb', signoff: SIGNOFF },
+    unsignedDir
+  );
+  assert(escaped.hardFail && escaped.reason === 'comp path escapes renders', 'a .. comp path is a hard failure');
+  const outside = path.join(unsignedDir, 'outside.png');
+  writeFileSync(outside, same);
+  symlinkSync(outside, path.join(unsignedDir, 'renders', 'linked.png'));
+  const linked = evaluateComp(
+    {
+      file: 'renders/linked.png',
+      sha256: sha256(same),
+      signed_by: 'owner:dean-cfb',
+      signoff: SIGNOFF,
+    },
+    unsignedDir
+  );
+  assert(linked.hardFail && !linked.signed, 'a symlink out of renders is not signed');
+  assert(maskAreaRatio([{ x: 0, y: 0, width: 390, height: 844 }], 390, 844) > 0.1, 'a full-viewport mask exceeds 10%');
+  assert(maskAreaRatio([{ x: 0, y: 0, width: 20, height: 10 }], 390, 844) < 0.1, 'a small mask is under the cap');
+  assert(decideCiExit(EXIT_NO_COMPS, 0) === EXIT_PASS, 'exit 3 is allowed only with zero signed comps');
+  assert(decideCiExit(EXIT_NO_COMPS, 1) === EXIT_NO_COMPS, 'exit 3 fails once a comp is signed');
+  assert(decideCiExit(EXIT_FAIL, 0) === EXIT_FAIL, 'a pixel or guard failure is never turned into a pass');
 
   const noCompsSummary = buildSummary({
     chrome: 'test',
@@ -161,7 +204,8 @@ async function signedManifest(server) {
         violations: [],
       });
       const filename = `match-${viewport.name}.png`;
-      writeFileSync(path.join(dir, filename), shot.png);
+      mkdirSync(path.join(dir, 'renders'), { recursive: true });
+      writeFileSync(path.join(dir, 'renders', filename), shot.png);
     }
   } finally {
     await browser.close();
@@ -169,12 +213,12 @@ async function signedManifest(server) {
   const comps = [];
   for (const width of ['390', '1440']) {
     const filename = `match-${width}.png`;
-    const bytes = readFileSync(path.join(dir, filename));
+    const bytes = readFileSync(path.join(dir, 'renders', filename));
     for (const route of ['/match', '/mismatch']) {
       comps.push({
         route,
         width,
-        file: filename,
+        file: `renders/${filename}`,
         sha256: sha256(bytes),
         signed_by: 'owner:dean-cfb',
         signoff: SIGNOFF,
@@ -211,10 +255,15 @@ async function integrationTests() {
     await server.close();
   }
 
-  const diffOut = process.env.VISUAL_SELF_TEST_OUT
-    ? path.join(process.env.VISUAL_SELF_TEST_OUT, 'mismatch')
-    : path.join(compDir, 'out-mismatch');
-  mkdirSync(diffOut, { recursive: true });
+  const outDir = (name) => {
+    const dir = process.env.VISUAL_SELF_TEST_OUT
+      ? path.join(process.env.VISUAL_SELF_TEST_OUT, name)
+      : path.join(compDir, `out-${name}`);
+    mkdirSync(dir, { recursive: true });
+    return dir;
+  };
+
+  const diffOut = outDir('mismatch');
   const mismatchRun = await runCli([
     '--fixture-dir',
     PLANTED,
@@ -255,7 +304,7 @@ async function integrationTests() {
   const bareRun = await runCli(['--fixture-dir', PLANTED, '--manifest', bareManifestPath, '--out', bareOut]);
   console.log('--- no comps ---');
   console.log(bareRun.stdout);
-  assert(bareRun.code === 0, `no-comps run should exit 0, got ${bareRun.code}`);
+  assert(bareRun.code === 3, `no-comps run should exit 3, got ${bareRun.code}`);
   const bareReport = safeReport(bareOut);
   assert(
     bareReport && bareReport.results.every((item) => item.status === 'no comps'),
@@ -269,7 +318,7 @@ async function integrationTests() {
       {
         route: '/match',
         width: '390',
-        file: 'match-390.png',
+        file: 'renders/match-390.png',
         sha256: 'ab'.repeat(32),
         signed_by: 'owner:dean-cfb',
         signoff: SIGNOFF,
@@ -277,7 +326,7 @@ async function integrationTests() {
       {
         route: '/match',
         width: '1440',
-        file: 'match-1440.png',
+        file: 'renders/match-1440.png',
         sha256: 'ab'.repeat(32),
         signed_by: 'owner:dean-cfb',
         signoff: SIGNOFF,
@@ -289,7 +338,7 @@ async function integrationTests() {
   const hashOut = path.join(compDir, 'out-hash');
   const hashRun = await runCli(['--fixture-dir', PLANTED, '--manifest', hashManifestPath, '--out', hashOut]);
   const hashReport = safeReport(hashOut);
-  assert(hashRun.code === 0, `sha256 mismatch should not pass and should not fail the run, got ${hashRun.code}`);
+  assert(hashRun.code === 3, `sha256 mismatch should exit 3, got ${hashRun.code}`);
   assert(
     hashReport && hashReport.results.every((item) => item.status === 'no comps' && item.reason === 'sha256 mismatch'),
     'sha256 mismatch is no comps'
@@ -323,8 +372,185 @@ async function integrationTests() {
   const flags = guardReport?.results?.[0]?.flags;
   assert(flags && flags.agent === 'blocked', `page saw /api/agent blocked, got ${flags && flags.agent}`);
   assert(flags && flags.offsite === 'blocked', `page saw off-site fetch blocked, got ${flags && flags.offsite}`);
+  assert(kinds.has('websocket'), 'guard records a websocket and does not connect it');
 
-  return mismatchRun.code;
+  const exits = {};
+  exits.PLANTED_MISMATCH_EXIT = mismatchRun.code;
+  exits.PLANTED_NOCOMP_EXIT = bareRun.code;
+  exits.PLANTED_BAD_HASH_EXIT = hashRun.code;
+  exits.PLANTED_GUARD_EXIT = guardRun.code;
+
+  const baseRoot = path.join(compDir, 'base-repo');
+  const baseManifestDir = path.join(baseRoot, 'design/comps');
+  mkdirSync(baseManifestDir, { recursive: true });
+  writeFileSync(
+    path.join(baseManifestDir, 'manifest.json'),
+    JSON.stringify({
+      routes: [{ path: '/match', name: 'match' }],
+      comps: [],
+    })
+  );
+  const prRoot = path.join(compDir, 'pr-repo');
+  const prManifestDir = path.join(prRoot, 'design/comps');
+  mkdirSync(path.join(prManifestDir, 'renders'), { recursive: true });
+  const prComps = [];
+  for (const width of ['390', '1440']) {
+    const filename = `match-${width}.png`;
+    copyFileSync(path.join(compDir, 'renders', filename), path.join(prManifestDir, 'renders', filename));
+    prComps.push({
+      route: '/match',
+      width,
+      file: `renders/${filename}`,
+      sha256: sha256(readFileSync(path.join(prManifestDir, 'renders', filename))),
+      signed_by: 'owner:dean-cfb',
+      signoff: SIGNOFF,
+    });
+  }
+  writeFileSync(
+    path.join(prManifestDir, 'manifest.json'),
+    JSON.stringify({
+      routes: [{ path: '/match', name: 'match' }],
+      comps: prComps,
+    })
+  );
+  const prVerdict = evaluateComp(prComps[0], prManifestDir);
+  assert(prVerdict.signed, 'the PR tree signature is well formed and would count if the head were trusted');
+  const prOut = outDir('pr-signature');
+  const prRun = await runCli(['--fixture-dir', PLANTED, '--base', baseRoot, '--out', prOut]);
+  console.log('--- PR-added signature ignored ---');
+  console.log(prRun.stdout);
+  if (prRun.stderr) console.error(prRun.stderr);
+  exits.PLANTED_PR_SIGNATURE_EXIT = prRun.code;
+  const prReport = safeReport(prOut);
+  assert(prRun.code === 3, `a PR-added signature must exit 3, got ${prRun.code}`);
+  assert(prReport && prReport.manifestSource === 'base', 'CI manifest source is the base tree');
+  assert(
+    prReport && prReport.manifestPath === path.join(baseManifestDir, 'manifest.json'),
+    'the checker read the base manifest, not the PR manifest'
+  );
+  assert(prReport && prReport.signedCompCount === 0, 'the base manifest contributes zero signed comps');
+  assert(
+    prReport && prReport.results.every((item) => item.status === 'no comps') && !prReport.results.some((item) => item.status === 'pass'),
+    'a signature that exists only on the PR head does not pass'
+  );
+
+  const bootstrapOut = outDir('bootstrap-ci');
+  const bootstrapRun = await runCi(['--fixture-dir', PLANTED, '--base', baseRoot, '--out', bootstrapOut]);
+  console.log('--- bootstrap CI (zero signed comps) ---');
+  console.log(bootstrapRun.stdout);
+  exits.PLANTED_BOOTSTRAP_CI_EXIT = bootstrapRun.code;
+  assert(bootstrapRun.code === 0, `exit 3 is allowed while the base has zero signed comps, got ${bootstrapRun.code}`);
+  assert(bootstrapRun.stdout.includes('Bootstrap:'), 'bootstrap CI prints why exit 3 was allowed');
+  const bootstrapReport = safeReport(bootstrapOut);
+  assert(bootstrapReport && bootstrapReport.exitCode === 3, 'the checker still exits 3 during bootstrap');
+
+  const maskManifest = {
+    routes: [{ path: '/match', name: 'match' }],
+    comps: ['390', '1440'].map((width) => {
+      const viewport = width === '390' ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+      return {
+        route: '/match',
+        width,
+        file: `renders/match-${width}.png`,
+        sha256: sha256(readFileSync(path.join(compDir, 'renders', `match-${width}.png`))),
+        signed_by: 'owner:dean-cfb',
+        signoff: SIGNOFF,
+        masks: [{ x: 0, y: 0, width: viewport.width, height: viewport.height }],
+      };
+    }),
+  };
+  const maskManifestPath = path.join(compDir, 'mask-manifest.json');
+  writeFileSync(maskManifestPath, JSON.stringify(maskManifest));
+  const maskOut = outDir('mask');
+  const maskRun = await runCli(['--fixture-dir', PLANTED, '--manifest', maskManifestPath, '--out', maskOut]);
+  console.log('--- oversized mask ---');
+  console.log(maskRun.stdout);
+  if (maskRun.stderr) console.error(maskRun.stderr);
+  exits.PLANTED_MASK_EXIT = maskRun.code;
+  const maskReport = safeReport(maskOut);
+  assert(maskRun.code === 1, `an oversized mask must exit 1, got ${maskRun.code}`);
+  assert(maskReport && maskReport.signedCompCount === 2, 'an oversized mask is still a signed comp');
+  assert(
+    maskReport &&
+      maskReport.results.every(
+        (item) => item.status === 'fail' && String(item.reason).includes('mask area') && item.reason !== 'pixels differ'
+      ),
+    'an oversized mask fails before the pixel diff'
+  );
+
+  const outside = path.join(compDir, 'outside.png');
+  writeFileSync(outside, readFileSync(path.join(compDir, 'renders', 'match-1440.png')));
+  symlinkSync(outside, path.join(compDir, 'renders', 'escaped.png'));
+  const escapeManifest = {
+    routes: [{ path: '/match', name: 'match' }],
+    comps: [
+      {
+        route: '/match',
+        width: '390',
+        file: 'renders/../../outside.png',
+        sha256: sha256(readFileSync(path.join(compDir, 'renders', 'match-390.png'))),
+        signed_by: 'owner:dean-cfb',
+        signoff: SIGNOFF,
+      },
+      {
+        route: '/match',
+        width: '1440',
+        file: 'renders/escaped.png',
+        sha256: sha256(readFileSync(outside)),
+        signed_by: 'owner:dean-cfb',
+        signoff: SIGNOFF,
+      },
+    ],
+  };
+  const escapeManifestPath = path.join(compDir, 'escape-manifest.json');
+  writeFileSync(escapeManifestPath, JSON.stringify(escapeManifest));
+  const escapeOut = outDir('path-escape');
+  const escapeRun = await runCli(['--fixture-dir', PLANTED, '--manifest', escapeManifestPath, '--out', escapeOut]);
+  console.log('--- path-escape comp ---');
+  console.log(escapeRun.stdout);
+  if (escapeRun.stderr) console.error(escapeRun.stderr);
+  exits.PLANTED_PATH_ESCAPE_EXIT = escapeRun.code;
+  const escapeReport = safeReport(escapeOut);
+  assert(escapeRun.code === 1, `a path-escape comp must exit 1, got ${escapeRun.code}`);
+  assert(
+    escapeReport &&
+      escapeReport.results.every((item) => item.status === 'fail' && item.reason === 'comp path escapes renders'),
+    'a lexical .. path and a symlink out of renders both fail'
+  );
+  assert(escapeReport && escapeReport.signedCompCount === 0, 'a path-escape comp is not signed');
+
+  const mixedManifest = {
+    routes: [
+      { path: '/match', name: 'match' },
+      { path: '/nocomp', name: 'nocomp' },
+    ],
+    comps: ['390', '1440'].map((width) => ({
+      route: '/match',
+      width,
+      file: `renders/match-${width}.png`,
+      sha256: sha256(readFileSync(path.join(compDir, 'renders', `match-${width}.png`))),
+      signed_by: 'owner:dean-cfb',
+      signoff: SIGNOFF,
+    })),
+  };
+  const mixedManifestPath = path.join(compDir, 'mixed-manifest.json');
+  writeFileSync(mixedManifestPath, JSON.stringify(mixedManifest));
+  const mixedOut = outDir('signed-nocomp');
+  const mixedRun = await runCi(['--fixture-dir', PLANTED, '--manifest', mixedManifestPath, '--out', mixedOut]);
+  console.log('--- signed manifest with a no-comps route ---');
+  console.log(mixedRun.stdout);
+  if (mixedRun.stderr) console.error(mixedRun.stderr);
+  exits.PLANTED_SIGNED_NOCOMP_CI_EXIT = mixedRun.code;
+  const mixedReport = safeReport(mixedOut);
+  assert(mixedRun.code === 3, `exit 3 fails CI once any comp is signed, got ${mixedRun.code}`);
+  assert(mixedReport && mixedReport.exitCode === 3, 'the checker exit stays 3 when a signed manifest has a no-comps route');
+  assert((mixedReport?.signedCompCount || 0) > 0, 'the mixed manifest has a signed comp');
+  assert(
+    mixedReport && mixedReport.results.some((item) => item.status === 'pass') && mixedReport.results.some((item) => item.status === 'no comps'),
+    'the mixed run both matches a signed comp and reports no comps'
+  );
+
+  return { mismatchCode: mismatchRun.code, exits };
 }
 
 function safeReport(dir) {
@@ -336,9 +562,18 @@ function safeReport(dir) {
   }
 }
 
-unitTests();
-await previewHostTests();
-const mismatchCode = await integrationTests();
+const planted = { exits: {} };
+try {
+  unitTests();
+  await previewHostTests();
+  const result = await integrationTests();
+  planted.exits = result.exits;
+  planted.mismatchCode = result.mismatchCode;
+} finally {
+  for (const [key, value] of Object.entries(planted.exits)) {
+    console.log(`${key}=${value}`);
+  }
+}
 
 if (failures.length > 0) {
   console.error(`visual self-test failed (${failures.length})`);
@@ -346,8 +581,10 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log('visual self-test: planted mismatch failed the gate, match passed, no comps stayed unsigned, guard tripped');
+console.log(
+  'visual self-test: mismatch failed, match passed, missing comp and bad hash exited 3, PR signature ignored, oversized mask and path escape failed, guard tripped'
+);
 if (PROPAGATE) {
-  console.log(`Propagating planted mismatch exit ${mismatchCode} so the job fails.`);
-  process.exit(mismatchCode);
+  console.log(`Propagating planted mismatch exit ${planted.mismatchCode} so the job fails.`);
+  process.exit(planted.mismatchCode);
 }
