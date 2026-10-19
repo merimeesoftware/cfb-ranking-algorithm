@@ -372,22 +372,43 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
         "The formula is 80% Team Quality + 15% Record Score + 5% Conference Quality.",
         context,
     )
-    beat_neighbor = f"{context['team_name']} beat {context['neighbor_behind']}."
+    subject = context['team_name']
     top_wins = {
         str(name).strip().lower()
         for name in (context.get('top_quality_wins') or [])
     }
-    neighbor = str(context.get('neighbor_behind') or '').strip().lower()
-    if neighbor and neighbor in top_wins:
-        assert answer_is_grounded(beat_neighbor, context), beat_neighbor
-    else:
-        assert not answer_is_grounded(beat_neighbor, context), beat_neighbor
+    opponent = next(
+        name.strip()
+        for name in (
+            context.get('neighbor_behind'),
+            context.get('neighbor_ahead'),
+        )
+        if isinstance(name, str)
+        and name.strip()
+        and name.strip().lower() not in top_wins
+        and name.strip().lower() != subject.strip().lower()
+    )
+    assert not answer_is_grounded(f'{subject} beat {opponent}.', context)
+    assert not answer_is_grounded(f'{subject} topped {opponent}.', context)
+    assert not answer_is_grounded(f'{subject} edged {opponent}.', context)
+    assert not answer_is_grounded(f'{subject} got a win over {opponent}.', context)
     assert not answer_is_grounded('Oregon lost to Ohio State.', context)
     assert not answer_is_grounded('Oregon is 12-0.', context)
+    assert not answer_is_grounded('Oregon is 12\u20130.', context)
+    assert not answer_is_grounded('Oregon is 12 \u2013 0.', context)
     assert not answer_is_grounded('Oregon is 15-0.', context)
+    assert not answer_is_grounded('The formula is 5% Team Quality.', context)
+    # 15 is not a payload number. A bare 5/15/80 whitelist would let this pass.
+    assert not answer_is_grounded('Oregon has 15 quality wins.', context)
     assert not answer_is_grounded('South Carolina lost to BYU.', context)
     assert not answer_is_grounded('Oregon is 40-0.', context)
     assert not answer_is_grounded('Alabama sits nearby.', context)
+    listed = dict(context)
+    listed['top_quality_wins'] = [opponent]
+    assert answer_is_grounded(f'{subject} beat {opponent}.', listed)
+    assert answer_is_grounded(f'{subject} got a win over {opponent}.', listed)
+    assert not answer_is_grounded(f'{subject} topped {opponent}.', listed)
+    assert not answer_is_grounded(f'{subject} edged {opponent}.', listed)
     prompt = _explain_prompt(context, 'Which results are carrying this rank?')
     assert 'This context has no played-game list.' in prompt
     played = dict(context)

@@ -299,10 +299,28 @@ def _payload_facts(payload: Dict[str, Any]) -> tuple[set[str], set[str], set[tup
 _NAME_SPAN = re.compile(
     r"[A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*)*"
 )
-_GAME_CLAIM = re.compile(
-    r'(?i:\b(beat|beats|beating|beaten|defeated|defeats|lost to|fell to)\s+)'
-    r"([A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*)*)"
+_FORMULA_LABELS = ('Team Quality', 'Record Score', 'Conference Quality')
+_EXACT_FORMULA = re.compile(
+    '|'.join(
+        rf'\b{int(round(float(weight) * 100))}%\s+{re.escape(label)}\b'
+        for weight, label in zip(FRS_WEIGHTS, _FORMULA_LABELS)
+    )
 )
+_RECORD_PAIR = re.compile(r'\b(\d+)\s*[-\u2010-\u2015]\s*(\d+)\b')
+_RESULT_WORD = re.compile(
+    r'\b(?:wins?|won|winning|losses|loss|lost|losing|results?|'
+    r'beats?|beating|beaten|fell|topped|edged|upset|over)\b',
+    re.IGNORECASE,
+)
+_LOSS_WORD = re.compile(
+    r'\b(?:losses|loss|lost|losing|fell)\b',
+    re.IGNORECASE,
+)
+_OTHER_RESULT = re.compile(
+    r'\b(?:topped|edged|upset|results?)\b',
+    re.IGNORECASE,
+)
+_TOP_WIN_PHRASE = re.compile(r'\bbeat\b|\bwin over\b', re.IGNORECASE)
 _NOT_A_TEAM = {
     'the', 'they', 'their', 'this', 'that', 'these', 'those', 'record',
     'quality', 'notable', 'immediately', 'a', 'an', 'after', 'before',
@@ -348,31 +366,70 @@ def _strip_possessive(name: str) -> str:
     return text
 
 
-_FORMULA_PERCENT = re.compile(
-    r'\b(80|15|5)%\s+(Team Quality|Record Score|Conference Quality)'
-)
+def _context_teams(payload: Dict[str, Any]) -> set[str]:
+    teams: set[str] = set()
+
+    def add(value: Any) -> None:
+        if isinstance(value, str) and value.strip():
+            teams.add(_strip_possessive(value))
+
+    add(payload.get('team_name'))
+    add(payload.get('neighbor_ahead'))
+    add(payload.get('neighbor_behind'))
+    for name in payload.get('top_quality_wins') or []:
+        add(name)
+    for game in payload.get('games') or []:
+        if isinstance(game, dict):
+            add(game.get('opponent'))
+    return teams
+
+
+def _sentences(text: str) -> list[str]:
+    return [part.strip() for part in re.split(r'[.!?]+', text) if part.strip()]
+
+
+def _mentioned_teams(text: str, teams: set[str]) -> set[str]:
+    lowered = re.sub(r"['\u2019]s\b", '', text, flags=re.IGNORECASE).lower()
+    found: set[str] = set()
+    for team in sorted(teams, key=len, reverse=True):
+        pattern = re.compile(rf'\b{re.escape(team)}\b')
+        if pattern.search(lowered):
+            found.add(team)
+            lowered = pattern.sub(' ', lowered)
+    return found
+
+
+def _top_win_exception(sentence: str, others: set[str], top_wins: set[str]) -> bool:
+    """beat or win over a top_quality_wins team, with no other result word."""
+    if not others or not others <= top_wins:
+        return False
+    if _LOSS_WORD.search(sentence) or _OTHER_RESULT.search(sentence):
+        return False
+    return _TOP_WIN_PHRASE.search(sentence) is not None
 
 
 def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     """Every number and team name in the answer is in the payload.
 
-    Formula percents are removed before the number check. An N-M pair is
+    Only the three FRS weight phrases are removed before the number check.
+    Any other percent fails. An N-M pair, including a Unicode dash, is
     accepted only when it is the total record or the conference record.
-    A win claim is
-    allowed when that opponent is in games, or, when games is empty, only
-    when the opponent is in top_quality_wins. Any loss claim fails unless
-    games lists that loss.
+    With no games list, a sentence that names another payload team and a
+    result word fails, except beat or win over a top_quality_wins team.
+    When games are listed, that result has to be one of them.
     """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
         return False
     numbers, names, games = _payload_facts(payload)
-    counted = _FORMULA_PERCENT.sub(' ', text)
+    counted = _EXACT_FORMULA.sub(' ', text)
+    if '%' in counted:
+        return False
     for raw in re.findall(r'\d+(?:\.\d+)?', counted):
         if _number_token(raw) not in numbers:
             return False
     allowed_records = _record_pairs(payload.get('records'))
-    for wins, losses in re.findall(r'\b(\d+)-(\d+)\b', text):
+    for wins, losses in _RECORD_PAIR.findall(text):
         if (wins, losses) not in allowed_records:
             return False
     named = re.sub(r"['\u2019]s\b", '. ', text, flags=re.IGNORECASE)
@@ -382,22 +439,25 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
             continue
         if normalized not in names:
             return False
-    played = payload.get('games') or []
+    subject = _strip_possessive(str(payload.get('team_name') or ''))
+    roster = _context_teams(payload)
     top_wins = {
         _strip_possessive(name)
         for name in (payload.get('top_quality_wins') or [])
         if isinstance(name, str) and name.strip()
     }
-    for verb, opponent in _GAME_CLAIM.findall(text):
-        result = 'loss' if verb.lower() in ('lost to', 'fell to') else 'win'
-        claimed = _strip_possessive(opponent)
-        if played:
-            if (result, claimed) not in games:
-                return False
+    played = bool(payload.get('games'))
+    for sentence in _sentences(text):
+        others = _mentioned_teams(sentence, roster) - {subject}
+        if not others or _RESULT_WORD.search(sentence) is None:
             continue
-        if result == 'win' and claimed in top_wins:
-            continue
-        return False
+        if not played:
+            if _top_win_exception(sentence, others, top_wins):
+                continue
+            return False
+        kind = 'loss' if _LOSS_WORD.search(sentence) else 'win'
+        if any((kind, team) not in games for team in others):
+            return False
     return True
 
 
