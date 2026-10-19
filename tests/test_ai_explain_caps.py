@@ -383,7 +383,9 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     else:
         assert not answer_is_grounded(beat_neighbor, context), beat_neighbor
     assert not answer_is_grounded('Oregon lost to Ohio State.', context)
+    assert not answer_is_grounded('Oregon is 12-0.', context)
     assert not answer_is_grounded('Oregon is 15-0.', context)
+    assert not answer_is_grounded('South Carolina lost to BYU.', context)
     assert not answer_is_grounded('Oregon is 40-0.', context)
     assert not answer_is_grounded('Alabama sits nearby.', context)
     prompt = _explain_prompt(context, 'Which results are carrying this rank?')

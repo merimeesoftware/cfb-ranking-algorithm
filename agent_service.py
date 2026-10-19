@@ -322,6 +322,24 @@ _EXPLAINER_TERMS = {
 }
 
 
+def _record_pairs(records: Any) -> set[tuple[str, str]]:
+    """Total and conference win-loss pairs. Other splits are not a record."""
+    if not isinstance(records, dict):
+        return set()
+    pairs: set[tuple[str, str]] = set()
+    for wins_key, losses_key in (
+        ('total_wins', 'total_losses'),
+        ('conf_wins', 'conf_losses'),
+    ):
+        wins = records.get(wins_key)
+        losses = records.get(losses_key)
+        if isinstance(wins, bool) or isinstance(losses, bool):
+            continue
+        if isinstance(wins, int) and isinstance(losses, int):
+            pairs.add((str(wins), str(losses)))
+    return pairs
+
+
 def _strip_possessive(name: str) -> str:
     text = name.strip().lower()
     for suffix in ("'s", '\u2019s'):
@@ -338,7 +356,9 @@ _FORMULA_PERCENT = re.compile(
 def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     """Every number and team name in the answer is in the payload.
 
-    Formula percents are removed before the number check. A win claim is
+    Formula percents are removed before the number check. An N-M pair is
+    accepted only when it is the total record or the conference record.
+    A win claim is
     allowed when that opponent is in games, or, when games is empty, only
     when the opponent is in top_quality_wins. Any loss claim fails unless
     games lists that loss.
@@ -350,6 +370,10 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     counted = _FORMULA_PERCENT.sub(' ', text)
     for raw in re.findall(r'\d+(?:\.\d+)?', counted):
         if _number_token(raw) not in numbers:
+            return False
+    allowed_records = _record_pairs(payload.get('records'))
+    for wins, losses in re.findall(r'\b(\d+)-(\d+)\b', text):
+        if (wins, losses) not in allowed_records:
             return False
     named = re.sub(r"['\u2019]s\b", '. ', text, flags=re.IGNORECASE)
     for span in _NAME_SPAN.findall(named):
