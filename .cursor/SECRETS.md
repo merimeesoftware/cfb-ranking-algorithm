@@ -82,3 +82,4 @@ cp .env.example .env
 | `CLOUDFLARE_ACCOUNT_ID` | Same |
 | `VITE_API_URL` | Frontend uses `/api` proxy |
 | `CACHE_CLEAR_SECRET` | Optional prod-only admin; set in Cloudflare if you want it |
+| `SPEND_KILL_SECRET` | Not a Cursor secret. Release Ops sets it on the Worker. Do not read or print the value. |

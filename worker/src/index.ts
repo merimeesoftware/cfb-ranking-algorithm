@@ -22,7 +22,7 @@ import {
 	type RateLimiter,
 } from './caps.ts';
 import { completeFromRequest, WORKERS_AI_HOST, XAI_HOST, type WorkersAiBinding } from './providers.ts';
-import { consumeSpend, publicKillSetBody } from './spend-object.ts';
+import { consumeSpend, publicKillSetBody, spendKillAuthorized } from './spend-object.ts';
 
 export { ContainerProxy };
 
@@ -36,6 +36,7 @@ export interface Env extends CapEnv {
 	CF_ACCOUNT_ID?: string;
 	AI_GATEWAY_ID?: string;
 	CACHE_CLEAR_SECRET?: string;
+	SPEND_KILL_SECRET?: string;
 	CORS_ORIGINS?: string;
 	AI?: WorkersAiBinding;
 }
@@ -270,6 +271,8 @@ export default {
 		if (limit.limited) return busyResponse(limit.code);
 
 		if (isSpendKillRoute(request.method, apiPath)) {
+			const auth = spendKillAuthorized(env, request);
+			if (!auth.ok) return jsonResponse({ ok: false, error: 'auth' }, auth.status);
 			let raw: unknown = {};
 			try {
 				raw = await request.json();
@@ -283,7 +286,7 @@ export default {
 				method: 'POST',
 				headers: {
 					'content-type': 'application/json',
-					'x-cache-secret': request.headers.get('x-cache-secret') ?? '',
+					'x-spend-kill-secret': request.headers.get('x-spend-kill-secret') ?? '',
 				},
 				body: JSON.stringify(body),
 			});
@@ -328,6 +331,8 @@ export default {
 		headers.delete('host');
 		headers.delete('x-forwarded-for');
 		headers.delete(VISITOR_HOST_HEADER);
+		headers.delete('x-workers-ai-reserved');
+		headers.delete('x-xai-week-reserved');
 		headers.set(VISITOR_HOST_HEADER, routed.modeHost);
 		headers.set('CF-Connecting-IP', limit.ip);
 

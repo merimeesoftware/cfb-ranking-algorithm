@@ -65,7 +65,7 @@ Until `PUBLIC_SITE_URL` is set, the build uses same-origin relative links, omits
 1. **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Variables and Secrets**
 2. **Add** → type **Secret** → name `CFBD_API_KEY` → paste value → **Encrypt** → **Deploy**
 
-Repeat for `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. Do not create or paste it from this repo.
+Repeat for `CACHE_CLEAR_SECRET` if cache clear should be enabled, and for `SPEND_KILL_SECRET` when Release Ops turns on the kill route. Values are encrypted and never shown again. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. Do not create or paste secret values from this repo.
 
 For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Worker, or use `wrangler secret put CFBD_API_KEY --env dev` once.
 
@@ -117,7 +117,10 @@ Confirm Workers **Paid** is enabled — Containers are Paid-only.
 |--------|----------|
 | `CFBD_API_KEY` | Yes (live rankings) |
 | `XAI_API_KEY` | provisioned by DevSecOps on Michael's yes. Not a var. The Worker sends it only to the AI Gateway grok path. |
-| `CACHE_CLEAR_SECRET` | Optional (protects `POST /api/cache/clear`) |
+| `CACHE_CLEAR_SECRET` | Optional. Protects `POST /api/cache/clear`. The container reads header `X-Cache-Secret` only. |
+| `SPEND_KILL_SECRET` | Release Ops. Protects `POST /api/spend/kill`. Header `X-Spend-Kill-Secret` only. Stays on the Worker. Unset returns 403 and does not fall back to `CACHE_CLEAR_SECRET`. |
+
+Set or clear the stored kill latch with `POST /api/spend/kill` and header `X-Spend-Kill-Secret`. The JSON body may contain only `ai_kill` and `cfbd_kill`, each `0` or `1`. `1` latches the flag. `0` clears it. Release Ops provisions `SPEND_KILL_SECRET`. This repo does not set or read the value.
 
 ### Paid-call caps (deploy migration)
 

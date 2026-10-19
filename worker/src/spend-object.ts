@@ -48,6 +48,7 @@ function asBucket(value: unknown): SpendBucket | null {
 type SpendEnv = BudgetEnv & {
 	XAI_WEEKLY_USD_CAP?: string;
 	CACHE_CLEAR_SECRET?: string;
+	SPEND_KILL_SECRET?: string;
 };
 
 type SpendPayload = {
@@ -84,6 +85,18 @@ function secretsMatch(expected: string, provided: string): boolean {
 	return diff === 0;
 }
 
+/** Header only. Unset SPEND_KILL_SECRET fails closed and never uses another secret. */
+export function spendKillAuthorized(
+	env: { SPEND_KILL_SECRET?: string },
+	request: Request,
+): { ok: true } | { ok: false; status: 403 | 401 } {
+	const expected = (env.SPEND_KILL_SECRET ?? '').trim();
+	if (!expected) return { ok: false, status: 403 };
+	const provided = request.headers.get('x-spend-kill-secret') ?? '';
+	if (!secretsMatch(expected, provided)) return { ok: false, status: 401 };
+	return { ok: true };
+}
+
 /** Public POST /api/spend/kill may only write the two flags. */
 export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?: unknown; cfbd_kill?: unknown } | null {
 	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -95,13 +108,9 @@ export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?:
 }
 
 async function setStoredKills(state: SpendState, env: SpendEnv, request: Request, payload: SpendPayload): Promise<Response> {
-	const expected = (env.CACHE_CLEAR_SECRET ?? '').trim();
-	const provided = request.headers.get('x-cache-secret') ?? '';
-	if (!expected) {
-		return Response.json({ ok: false, error: 'auth' }, { status: 403, headers: { 'cache-control': 'no-store' } });
-	}
-	if (!secretsMatch(expected, provided)) {
-		return Response.json({ ok: false, error: 'auth' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+	const auth = spendKillAuthorized(env, request);
+	if (!auth.ok) {
+		return Response.json({ ok: false, error: 'auth' }, { status: auth.status, headers: { 'cache-control': 'no-store' } });
 	}
 	const updates: Record<string, 0 | 1> = {};
 	if (payload.ai_kill !== undefined) {

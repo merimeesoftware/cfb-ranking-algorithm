@@ -43,7 +43,8 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 |--------|-----------|---------|
 | `CFBD_API_KEY` | **Yes** | Fetch game data from CollegeFootballData.com. One key only. |
 | `XAI_API_KEY` | When live xAI is enabled | provisioned by DevSecOps on Michael's yes. The Worker reads this name only to authorize the AI Gateway grok path. Do not put a value in the repo. Workers AI uses the `[ai]` binding, not a key. |
-| `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
+| `CACHE_CLEAR_SECRET` | Optional | Admin `POST /cache/clear`. Header `X-Cache-Secret` only. |
+| `SPEND_KILL_SECRET` | Release Ops | `POST /api/spend/kill`. Header `X-Spend-Kill-Secret` only. Not forwarded to the container. Unset fails closed (403) and does not use `CACHE_CLEAR_SECRET`. |
 | `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
 | `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
 | `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. No `PUBLIC_*` name may hold a key, token, or password. |
