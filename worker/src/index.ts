@@ -83,13 +83,44 @@ export class CfbApiContainer extends Container<Env> {
  * Container outbound hosts. spend.budget is the shared daily counter.
  * ai.xai and ai.workers perform the live completion. No visitor can reach them.
  */
+async function xaiPrompt(request: Request): Promise<string> {
+	try {
+		const body = (await request.json()) as { messages?: { content?: unknown }[] };
+		if (!Array.isArray(body.messages)) return '';
+		return body.messages
+			.map((message) => (typeof message?.content === 'string' ? message.content : ''))
+			.join('');
+	} catch {
+		return '';
+	}
+}
+
 CfbApiContainer.outboundByHost = {
 	'spend.budget': async (request: Request, env: Env): Promise<Response> => {
-		let payload: { provider?: string; bucket?: string; source?: string } = {};
+		let payload: { provider?: string; bucket?: string; source?: string; action?: string; prompt?: string } = {};
 		try {
-			payload = (await request.json()) as { provider?: string; bucket?: string; source?: string };
+			payload = (await request.json()) as {
+				provider?: string;
+				bucket?: string;
+				source?: string;
+				action?: string;
+				prompt?: string;
+			};
 		} catch {
 			return Response.json({ ok: false, error: 'json' }, { status: 400 });
+		}
+		if (payload.action === 'reserve_usd') {
+			const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
+			return stub.fetch('https://spend.budget/consume', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					action: 'reserve_usd',
+					provider: 'xai',
+					bucket: 'xai',
+					prompt: typeof payload.prompt === 'string' ? payload.prompt : '',
+				}),
+			});
 		}
 		const bucket = payload.provider ?? payload.bucket;
 		if (bucket !== 'xai' && bucket !== 'workers_ai' && bucket !== 'cfbd') {
@@ -122,6 +153,21 @@ CfbApiContainer.outboundByHost = {
 				{ ok: false, code: 'kill_switch' },
 				{ status: 429, headers: { 'cache-control': 'no-store' } },
 			);
+		}
+		if (request.headers.get('x-xai-week-reserved') !== '1') {
+			const prompt = await xaiPrompt(request.clone());
+			const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
+			const reserved = await stub.fetch('https://spend.budget/consume', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					action: 'reserve_usd',
+					provider: 'xai',
+					bucket: 'xai',
+					prompt,
+				}),
+			});
+			if (!reserved.ok) return busyResponse('xai_weekly_usd');
 		}
 		return completeFromRequest('xai', env, request);
 	},

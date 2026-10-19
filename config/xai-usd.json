@@ -1,0 +1,11 @@
+{
+  "model": "grok-4",
+  "price_status": "verify",
+  "source_url": "https://docs.x.ai/developers/pricing",
+  "usd_per_million_input_tokens": 25,
+  "usd_per_million_output_tokens": 100,
+  "max_output_tokens": 256,
+  "input_tokens_per_char": 1,
+  "weekly_limit_usd": 5,
+  "cfbd_tier1_usd_per_week": "0.23"
+}

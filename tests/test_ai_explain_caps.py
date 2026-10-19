@@ -104,8 +104,55 @@ def test_xai_explain_is_refused_when_the_cap_is_raised(client, monkeypatch):
     assert response.status_code == 200
     body = response.get_json()
     assert body['busy'] is True
-    assert body['code'] == 'xai_budget'
+    assert body['capped'] is True
+    assert body['message'] == 'Busy right now, try again later.'
+    assert body['code'] == 'xai_weekly_usd'
     opened.assert_not_called()
+
+
+def test_xai_explain_stops_on_daily_zero_when_the_week_cap_fits(client, monkeypatch):
+    fixture = _load('xai_repeat_explain.json')
+    monkeypatch.setenv('AI_MODE', 'live')
+    monkeypatch.setenv('XAI_ENABLED', '1')
+    monkeypatch.setenv('XAI_MAX_CALLS', '5')
+    monkeypatch.setenv('XAI_WEEKLY_USD_CAP', '4')
+    monkeypatch.setenv('AI_XAI_HOST', 'ai.xai')
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+    from spend_guards import reset_xai_week_spend, xai_week_micros
+
+    reset_xai_week_spend()
+    cache = get_cache()
+    logical = explain_cache_logical(
+        'xai',
+        fixture['year'],
+        fixture['week'],
+        fixture['team_name'],
+        fixture['question_id'],
+        blurb_cache_period(),
+    )
+    cache.invalidate(cache._generate_key('explain', logical))
+    with patch('agent_service.get_or_calculate_rankings', return_value=_rankings()):
+        with patch('agent_service.urllib.request.urlopen') as opened:
+            response = client.post('/agent/explain', json={
+                'team_name': fixture['team_name'],
+                'year': fixture['year'],
+                'week': fixture['week'],
+                'question_id': fixture['question_id'],
+                'provider': 'xai',
+            })
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body['busy'] is True
+    assert body['message'] == 'Busy right now, try again later.'
+    assert body['code'] == 'xai_budget'
+    assert xai_week_micros() == 0
+    opened.assert_not_called()
+    reset_xai_week_spend()
 
 
 def test_retired_name_detector_trips_on_planted_text():

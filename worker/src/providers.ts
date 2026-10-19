@@ -1,4 +1,5 @@
 import { dailyLimitFor } from './budget.ts';
+import { weeklyCapMicros, XAI_USD } from './xai-usd.ts';
 
 /**
  * Live AI completions through Cloudflare AI Gateway.
@@ -41,6 +42,7 @@ export interface ProviderEnv {
 	WORKERS_AI_MODEL?: string;
 	CF_ACCOUNT_ID?: string;
 	AI_GATEWAY_ID?: string;
+	XAI_WEEKLY_USD_CAP?: string;
 	AI?: WorkersAiBinding;
 }
 
@@ -140,6 +142,14 @@ function jsonResult(body: Record<string, unknown>, status: number): Response {
 	});
 }
 
+export function xaiCompletionBody(model: string, messages: ChatMessage[]): {
+	model: string;
+	messages: ChatMessage[];
+	max_tokens: number;
+} {
+	return { model, messages, max_tokens: XAI_USD.max_output_tokens };
+}
+
 export function clipMessages(messages: ChatMessage[], maxChars: number): ChatMessage[] {
 	let remaining = maxChars;
 	const out: ChatMessage[] = [];
@@ -165,8 +175,10 @@ export async function completeXai(
 	const key = env.XAI_API_KEY;
 	const url = xaiGatewayUrl(env.CF_ACCOUNT_ID, env.AI_GATEWAY_ID);
 	// The gateway URL is computed so the path stays in this file. A hard daily
-	// budget of 0, or the default-off provider, returns before fetch.
-	if (!xaiEnabled(env) || dailyLimitFor('xai', env) === 0 || !key || !url || !isGatewayXaiUrl(url)) {
+	// budget of 0, a weekly dollar cap of 0, or the default-off provider
+	// returns before fetch.
+	const weeklyClosed = weeklyCapMicros(env.XAI_WEEKLY_USD_CAP) === 0;
+	if (!xaiEnabled(env) || dailyLimitFor('xai', env) === 0 || weeklyClosed || !key || !url || !isGatewayXaiUrl(url)) {
 		return jsonResult({ ok: false, error: 'disabled' }, 503);
 	}
 	const model = env.XAI_MODEL?.trim() || DEFAULT_XAI_MODEL;
@@ -179,7 +191,7 @@ export async function completeXai(
 				'content-type': 'application/json',
 				'cf-aig-skip-cache': 'true',
 			},
-			body: JSON.stringify({ model, messages }),
+			body: JSON.stringify(xaiCompletionBody(model, messages)),
 		});
 	} catch {
 		return jsonResult({ ok: false, error: 'upstream' }, 502);

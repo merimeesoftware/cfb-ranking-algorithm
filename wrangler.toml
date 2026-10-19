@@ -32,6 +32,10 @@ run_worker_first = ["/api/*"]
 #   104 + 124 = 228, under the 700 app ceiling.
 # xAI daily budget is hard 0 and XAI_ENABLED is off. The gateway path stays
 # in the Worker and is not called. Workers AI is the only live provider.
+# XAI_WEEKLY_USD_CAP is the rolling ISO-week dollar stop (default 0).
+# CI fails when that cap plus CFBD's paid-tier week cost reaches $5.
+# The tier cost is 0 unless CFBD_TIER=1 ($0.23). Do not set CFBD_TIER here.
+# Prices: config/xai-usd.json (verify; https://docs.x.ai/developers/pricing).
 # AI_MAX_CALLS is that daily call cap.
 # Neurons for @cf/meta/llama-3.1-8b-instruct-fp8 (closest current id;
 # llama-3.1-8b-instruct-fast is not in the catalog):
@@ -50,6 +54,7 @@ AI_MODE = "stub"
 CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
 XAI_ENABLED = "0"
+XAI_WEEKLY_USD_CAP = "0"
 AI_MAX_CALLS = "100"
 CFBD_MAX_CALLS = "4"
 CF_ACCOUNT_ID = ""
@@ -107,6 +112,7 @@ AI_MODE = "stub"
 CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
 XAI_ENABLED = "0"
+XAI_WEEKLY_USD_CAP = "0"
 AI_MAX_CALLS = "100"
 CFBD_MAX_CALLS = "4"
 CF_ACCOUNT_ID = ""

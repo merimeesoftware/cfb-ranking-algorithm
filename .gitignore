@@ -69,6 +69,7 @@ ranking_results/
 !tests/fixtures/**/*.json
 !config/cfbd-month.json
 !config/workers-ai-neurons.json
+!config/xai-usd.json
 !design/comps/**/*.json
 
 # Security scan reports

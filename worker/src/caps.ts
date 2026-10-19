@@ -56,6 +56,7 @@ export interface CapEnv {
 	PREVIEW_AI_MODE?: string;
 	PREVIEW_CFBD_OFFLINE?: string;
 	AGENT_RATE_LIMIT?: string;
+	XAI_WEEKLY_USD_CAP?: string;
 }
 
 export type BoardRoute = 'rankings' | 'matchup' | 'weeks' | 'team';
@@ -161,6 +162,7 @@ export function buildRuntimeEnv(
 		XAI_KILL: isKillSwitch(env.XAI_KILL) ? '1' : '0',
 		WORKERS_AI_KILL: isKillSwitch(env.WORKERS_AI_KILL) ? '1' : '0',
 		CFBD_KILL: isKillSwitch(env.CFBD_KILL) ? '1' : '0',
+		XAI_WEEKLY_USD_CAP: env.XAI_WEEKLY_USD_CAP?.trim() || '0',
 	};
 	if (env.AGENT_RATE_LIMIT?.trim()) {
 		out.AGENT_RATE_LIMIT = env.AGENT_RATE_LIMIT.trim();

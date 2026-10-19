@@ -31,6 +31,7 @@ from spend_guards import (
     AIBudgetError,
     AIRateLimitError,
     check_agent_rate_limit,
+    guard_xai_spend,
     is_provider_killed,
     register_live_provider_call,
     resolve_ai_mode,
@@ -169,24 +170,38 @@ def _provider_host(provider: str) -> str:
     return os.environ.get(name, '').strip()
 
 
+def _budget_code(provider: str, exc: AIBudgetError) -> str:
+    if is_provider_killed(provider):
+        return 'kill_switch'
+    return exc.code or f'{provider}_budget'
+
+
 def _call_provider(provider: str, prompt: str) -> str:
     """Ask the Worker host for one completion. The credential stays on the Worker."""
     if provider not in ('xai', 'workers_ai'):
         raise AIBudgetError(f'Unknown AI provider: {provider}')
     if is_provider_killed(provider):
-        raise AIBudgetError('AI kill switch is on.')
+        raise AIBudgetError('AI kill switch is on.', code='kill_switch')
+    if provider == 'xai':
+        guard_xai_spend(prompt, commit=False)
     host = _provider_host(provider)
     if not host:
         raise ProviderUnconfigured(provider)
+    reserved = False
+    if provider == 'xai':
+        reserved = guard_xai_spend(prompt, commit=True)
     call_n = register_live_provider_call(provider)
     print(f'AI LIVE prompt #{call_n} provider={provider}')
     payload = json.dumps({
         'messages': [{'role': 'user', 'content': prompt}],
     }).encode()
+    headers = {'content-type': 'application/json'}
+    if reserved:
+        headers['x-xai-week-reserved'] = '1'
     req = urllib.request.Request(
         f'http://{host}/complete',
         data=payload,
-        headers={'content-type': 'application/json'},
+        headers=headers,
         method='POST',
     )
     try:
@@ -199,8 +214,11 @@ def _call_provider(provider: str, prompt: str) -> str:
             data = json.loads(exc.read().decode() or '{}')
         except (json.JSONDecodeError, OSError):
             data = {}
-        if data.get('code') == 'kill_switch' or exc.code == 429:
-            raise AIBudgetError('AI kill switch or budget denied the live call.') from exc
+        if data.get('code') in ('kill_switch', 'xai_weekly_usd') or exc.code == 429:
+            raise AIBudgetError(
+                'AI kill switch or budget denied the live call.',
+                code=data.get('code') or None,
+            ) from exc
         return 'LLM explanation unavailable: upstream'
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
         return f'LLM explanation unavailable: {exc}'
@@ -357,9 +375,11 @@ def explain_ranking():
             served = 'live'
         except ProviderUnconfigured:
             explanation, served = stub_explain_from_context(context, question), 'stub'
-        except AIBudgetError:
-            code = 'kill_switch' if is_provider_killed(provider) else f'{provider}_budget'
-            return _capped_explain(code, context, team_name, year, week, question_id, provider)
+        except AIBudgetError as exc:
+            return _capped_explain(
+                _budget_code(provider, exc),
+                context, team_name, year, week, question_id, provider,
+            )
 
     payload = {
         'team_name': team_name,
@@ -518,9 +538,9 @@ def _blurb_http(kind: str):
 
     try:
         blurb, mode = _resolve_blurb(context, kind=kind)
-    except AIBudgetError:
+    except AIBudgetError as exc:
         provider = resolve_ai_provider()
-        code = 'kill_switch' if is_provider_killed(provider) else f'{provider}_budget'
+        code = _budget_code(provider, exc)
         stub = stub_climb_blurb(context) if kind == 'climb' else stub_shareable_blurb(context)
         return jsonify({
             **busy_body(code),

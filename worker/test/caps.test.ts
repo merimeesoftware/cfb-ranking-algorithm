@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, type SpendState } from '../src/spend-object.ts';
-import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_MAX_OUTPUT_TOKENS, type GatewayCall } from '../src/providers.ts';
+import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_MAX_OUTPUT_TOKENS, type GatewayCall } from '../src/providers.ts';
+import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from '../src/xai-usd.ts';
 import {
 	buildRuntimeEnv,
 	checkPublicQuery,
@@ -255,6 +256,7 @@ test('runtime env forwards caps and keeps preview and unset production stub/offl
 	assert.equal(forwarded.SPEND_GATE_HOST, 'spend.budget');
 	assert.equal(forwarded.AI_XAI_HOST, 'ai.xai');
 	assert.equal(forwarded.AI_WORKERS_HOST, 'ai.workers');
+	assert.equal(forwarded.XAI_WEEKLY_USD_CAP, '0');
 	assert.equal('XAI_API_KEY' in forwarded, false);
 
 	const unset = buildRuntimeEnv(
@@ -439,4 +441,117 @@ test('spend counter refuses xAI when the default cap is zero', async () => {
 	assert.equal(body.ok, false);
 	assert.equal(body.limit, 0);
 	assert.equal(body.code, 'xai_budget');
+});
+
+test('xAI week estimate matches the verify rates and the ISO week id', () => {
+	assert.equal(worstCaseMicros('hi'), 2 * 25 + 256 * 100);
+	assert.equal(weeklyCapMicros(undefined), 0);
+	assert.equal(weeklyCapMicros(''), 0);
+	assert.equal(weeklyCapMicros('0'), 0);
+	assert.equal(weeklyCapMicros('0.23'), 230_000);
+	assert.equal(wouldCross(0, 25650, 0), true);
+	assert.equal(wouldCross(0, 25650, 25650), false);
+	assert.equal(wouldCross(1, 25650, 25650), true);
+	assert.equal(isoWeekId(new Date('2026-10-19T05:17:00Z')), '2026-W43');
+	assert.equal(isoWeekId(new Date('2026-01-01T00:00:00Z')), '2026-W01');
+	assert.equal(isoWeekId(new Date('2025-12-29T00:00:00Z')), '2026-W01');
+	assert.equal(isoWeekId(new Date('2027-01-01T00:00:00Z')), '2026-W53');
+	assert.equal(xaiUsdKey(new Date('2026-10-19T05:17:00Z')), 'xai:usd:2026-W43');
+	assert.equal(xaiCompletionBody('grok-4', [{ role: 'user', content: 'hi' }]).max_tokens, 256);
+});
+
+test('weekly dollar cap of 0 refuses the reserve and does not store', async () => {
+	const data = new Map<string, number>();
+	const closed = {
+		storage: {
+			async get<T = unknown>(key: string) {
+				return data.get(key) as T | undefined;
+			},
+			async put(key: string, value: number) {
+				data.set(key, value);
+			},
+		},
+		async blockConcurrencyWhile<T>(callback: () => Promise<T>) {
+			return callback();
+		},
+	};
+	const denied = await consumeSpend(closed, {}, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ action: 'reserve_usd', provider: 'xai', bucket: 'xai', prompt: 'hi' }),
+	}));
+	assert.equal(denied.status, 429);
+	const body = await denied.json() as {
+		ok: boolean;
+		busy: boolean;
+		message: string;
+		code: string;
+		spent_micros: number;
+	};
+	assert.equal(body.ok, false);
+	assert.equal(body.busy, true);
+	assert.equal(body.message, BUSY_MESSAGE);
+	assert.equal(body.code, 'xai_weekly_usd');
+	assert.equal(body.spent_micros, 0);
+	assert.equal(data.size, 0);
+});
+
+test('a second reserve that would cross the week cap does not add', async () => {
+	const data = new Map<string, number>();
+	const state = {
+		storage: {
+			async get<T = unknown>(key: string) {
+				return data.get(key) as T | undefined;
+			},
+			async put(key: string, value: number) {
+				data.set(key, value);
+			},
+		},
+		async blockConcurrencyWhile<T>(callback: () => Promise<T>) {
+			return callback();
+		},
+	};
+	const env = { XAI_WEEKLY_USD_CAP: '0.03' };
+	const first = await consumeSpend(state, env, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ action: 'reserve_usd', bucket: 'xai', prompt: 'hi' }),
+	}));
+	assert.equal(first.status, 200);
+	const opened = await first.json() as { ok: boolean; spent_micros: number; week: string };
+	assert.equal(opened.ok, true);
+	assert.equal(opened.spent_micros, worstCaseMicros('hi'));
+	assert.match(opened.week, /^\d{4}-W\d{2}$/);
+	assert.equal(data.get(xaiUsdKey()), worstCaseMicros('hi'));
+	const second = await consumeSpend(state, env, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ action: 'reserve_usd', bucket: 'xai', prompt: 'hi' }),
+	}));
+	assert.equal(second.status, 429);
+	const denied = await second.json() as { ok: boolean; busy: boolean; message: string; code: string };
+	assert.equal(denied.ok, false);
+	assert.equal(denied.busy, true);
+	assert.equal(denied.message, BUSY_MESSAGE);
+	assert.equal(denied.code, 'xai_weekly_usd');
+	assert.equal(data.get(xaiUsdKey()), worstCaseMicros('hi'));
+});
+
+test('raising the weekly cap still does not fetch while the daily budget is 0', async () => {
+	let fetched = false;
+	const response = await completeXai(
+		{
+			XAI_API_KEY: 'test-token',
+			CF_ACCOUNT_ID: 'acct-test',
+			AI_GATEWAY_ID: 'true-rankings',
+			XAI_ENABLED: '1',
+			XAI_WEEKLY_USD_CAP: '4',
+		},
+		[{ role: 'user', content: 'hi' }],
+		(async () => {
+			fetched = true;
+			return new Response('{}', { status: 200 });
+		}) as typeof fetch,
+	);
+	const body = await response.json() as { ok: boolean; error: string };
+	assert.equal(response.status, 503);
+	assert.equal(body.error, 'disabled');
+	assert.equal(fetched, false);
 });

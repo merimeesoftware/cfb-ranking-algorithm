@@ -41,6 +41,9 @@ jobs:
       - name: Workers AI neuron budget
         run: python scripts/check_workers_ai_neurons.py
 
+      - name: Weekly dollar cap
+        run: python scripts/check_weekly_usd.py
+
   worker:
     name: Worker caps
     runs-on: ubuntu-latest

@@ -15,6 +15,10 @@ class CFBDOfflineError(RuntimeError):
 class AIBudgetError(RuntimeError):
     """Raised when a live xAI or Workers AI prompt is refused."""
 
+    def __init__(self, message: str, *, code: str | None = None):
+        super().__init__(message)
+        self.code = code
+
 
 class AIRateLimitError(RuntimeError):
     """Raised when too many /agent/explain requests hit the rate limit."""
@@ -36,6 +40,8 @@ _live_call_day = ''
 _provider_counts = {'xai': 0, 'workers_ai': 0}
 _provider_days = {'xai': '', 'workers_ai': ''}
 _ai_rate_events: Dict[str, list] = defaultdict(list)
+_xai_week_micros = 0
+_xai_week_id = ''
 
 
 def _env_flag(name: str, default: str = '0') -> bool:
@@ -201,6 +207,134 @@ def reset_provider_call_counts() -> None:
             _provider_counts[provider] = 0
             _provider_days[provider] = today
         _ai_rate_events.clear()
+
+
+def reset_xai_week_spend() -> None:
+    """Clear the local ISO-week dollar ledger. The Durable Object is separate."""
+    global _xai_week_micros, _xai_week_id
+    with _call_lock:
+        _xai_week_micros = 0
+        _xai_week_id = ''
+
+
+def xai_weekly_cap_micros() -> int:
+    """Unset, blank, or invalid XAI_WEEKLY_USD_CAP is 0. Never unlimited."""
+    from xai_usd import usd_to_micros
+
+    raw = os.environ.get('XAI_WEEKLY_USD_CAP', '0').strip()
+    if not raw:
+        return 0
+    try:
+        return usd_to_micros(raw)
+    except (ValueError, ArithmeticError):
+        return 0
+
+
+def xai_week_micros() -> int:
+    """Micros reserved in this process for the current UTC ISO week."""
+    from xai_usd import iso_week_id
+
+    with _call_lock:
+        if _xai_week_id != iso_week_id():
+            return 0
+        return _xai_week_micros
+
+
+def guard_xai_spend(prompt: str, *, commit: bool = False) -> bool:
+    """Refuse an xAI call before it is sent.
+
+    Cap 0 raises ``xai_weekly_usd`` and does not record. A weekly cap that
+    still fits raises ``xai_budget`` while the daily budget is hard 0, also
+    without recording. ``commit`` records the worst-case cost only when both
+    gates allow the call. Returns True when this call reserved the week.
+    """
+    from xai_usd import iso_week_id, worst_case_micros, would_cross
+
+    if not is_xai_enabled():
+        raise AIBudgetError('xAI is disabled. Live calls are refused.', code='xai_budget')
+    if is_provider_killed('xai'):
+        raise AIBudgetError('AI kill switch is on. Live calls are stopped.', code='kill_switch')
+    worst = worst_case_micros(prompt)
+    cap = xai_weekly_cap_micros()
+    host = os.environ.get('SPEND_GATE_HOST', '').strip()
+    if host:
+        if would_cross(0, worst, cap):
+            raise AIBudgetError(
+                'xAI weekly dollar cap would be crossed.',
+                code='xai_weekly_usd',
+            )
+        if provider_max_calls('xai') <= 0:
+            raise AIBudgetError(
+                'xAI live prompt budget exhausted (0).',
+                code='xai_budget',
+            )
+        if not commit:
+            return False
+        _post_xai_week_reserve(host, prompt)
+        return True
+    global _xai_week_micros, _xai_week_id
+    with _call_lock:
+        week = iso_week_id()
+        spent = _xai_week_micros if _xai_week_id == week else 0
+        if would_cross(spent, worst, cap):
+            raise AIBudgetError(
+                'xAI weekly dollar cap would be crossed.',
+                code='xai_weekly_usd',
+            )
+        if provider_max_calls('xai') <= 0:
+            raise AIBudgetError(
+                'xAI live prompt budget exhausted (0).',
+                code='xai_budget',
+            )
+        if not commit:
+            return False
+        _xai_week_id = week
+        _xai_week_micros = spent + worst
+        return True
+
+
+def _post_xai_week_reserve(host: str, prompt: str) -> None:
+    """Ask spend-budget to reserve this prompt's worst-case week cost."""
+    import json
+    import urllib.error
+    import urllib.request
+
+    payload = json.dumps({
+        'action': 'reserve_usd',
+        'provider': 'xai',
+        'bucket': 'xai',
+        'prompt': prompt,
+    }).encode()
+    req = urllib.request.Request(
+        f'http://{host}/consume',
+        data=payload,
+        headers={'content-type': 'application/json'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            body = json.loads(resp.read().decode() or '{}')
+    except urllib.error.HTTPError as exc:
+        try:
+            body = json.loads(exc.read().decode() or '{}')
+        except (json.JSONDecodeError, OSError):
+            body = {}
+        if not body.get('ok', False):
+            raise AIBudgetError(
+                'xAI weekly dollar cap would be crossed.',
+                code=body.get('code') or 'xai_weekly_usd',
+            ) from exc
+        return
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
+        raise AIBudgetError(
+            'xAI spend gate unreachable; live call refused.',
+            code='xai_weekly_usd',
+        ) from exc
+    if not body.get('ok', False):
+        raise AIBudgetError(
+            'xAI weekly dollar cap would be crossed.',
+            code=body.get('code') or 'xai_weekly_usd',
+        )
 
 
 def get_cfbd_call_count() -> int:
