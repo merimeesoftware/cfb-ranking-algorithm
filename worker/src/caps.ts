@@ -119,9 +119,9 @@ export function requestPathSpoofed(rawUrl: string): boolean {
 	return pathHasSpoof(rest.slice(slash));
 }
 
-/** Drop a cache-clear secret if a caller put it on the query string. */
+/** Drop every query key that decodes to `secret`, in any case. */
 function searchWithoutSecret(search: string): string {
-	if (!search || !/[?&]secret=/i.test(search)) return search;
+	if (!search) return search;
 	const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 	const kept = new URLSearchParams();
 	for (const [key, value] of params) {
@@ -190,6 +190,11 @@ function hasControlCharacter(value: string): boolean {
 	return false;
 }
 
+/** U+2215 and U+FF0F. They are not `/`, and they are not a visitor route. */
+function hasUnicodeSlash(value: string): boolean {
+	return value.includes('\u2215') || value.includes('\uFF0F');
+}
+
 function hasEncodedControl(path: string): boolean {
 	for (const token of path.match(/%[0-9A-Fa-f]{2}/g) ?? []) {
 		const byte = Number.parseInt(token.slice(1), 16);
@@ -201,8 +206,9 @@ function hasEncodedControl(path: string): boolean {
 /**
  * Decode a visitor path once into the canonical path.
  * Team names use encodeURIComponent (spaces, accents). A control character,
- * an encoded slash or backslash, a backslash, a failed decode, a second
- * decode that changes the path, or an encoded unreserved byte (`%61`) is rejected.
+ * an encoded slash or backslash, a slash lookalike (U+2215, U+FF0F), a
+ * backslash, a failed decode, a second decode that changes the path, or an
+ * encoded unreserved byte (`%61`) is rejected.
  */
 export function decodeVisitorPath(path: string): string | null {
 	if (path.includes('\\') || /%5c/i.test(path) || /%2f/i.test(path)) return null;
@@ -221,6 +227,7 @@ export function decodeVisitorPath(path: string): string | null {
 	if (hasControlCharacter(decoded) || decoded.includes('\\') || /%2f/i.test(decoded) || /%5c/i.test(decoded)) {
 		return null;
 	}
+	if (hasUnicodeSlash(path) || hasUnicodeSlash(decoded)) return null;
 	let again: string;
 	try {
 		again = decodeURIComponent(decoded);
@@ -300,7 +307,7 @@ export function isNonProductionHostname(hostname: string): boolean {
 	if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost')) {
 		return true;
 	}
-	// Preview hosts end in .workers.dev. The production worker name does not.
+	// Preview hosts use the platform suffix. The production worker name does not.
 	if (!host.endsWith('.workers.dev')) return false;
 	const label = host.split('.')[0] ?? '';
 	return label !== PRODUCTION_WORKER_NAME;

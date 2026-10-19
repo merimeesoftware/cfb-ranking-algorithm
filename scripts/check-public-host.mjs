@@ -82,13 +82,17 @@ const RULES = [
 ];
 /**
  * Reviewed false positives. Each entry is one file and one rule.
- * A different file, or a different rule in the same file, still fails.
+ * A `pattern` entry removes that exact substring `count` times, then the
+ * rule still runs on what remains. An entry without a pattern exempts that
+ * rule for that file only. A different file, or a different rule, still fails.
  */
 const COUNTER_LIST = ['PUBLIC', 'COUNTER_KEYS'].join('_');
 const REVIEWED_ALLOWLIST = [
 	{
 		file: 'worker/src/caps.ts',
 		rule: 'workers.dev',
+		pattern: "host.endsWith('.workers.dev')",
+		count: 1,
 		reason: 'preview-host suffix check, not a published URL',
 	},
 	{
@@ -111,10 +115,7 @@ export function findForbiddenHosts(root, { honorAllowlist = true, extensions = n
 		const text = readFileSync(path);
 		if (text.includes(0)) return;
 		const source = text.toString('utf8').replace(DUMMY_HOST, '');
-		for (const rule of RULES) {
-			rule.re.lastIndex = 0;
-			if (rule.re.test(source) && !isReviewed(path, rule.name)) hits.push({ path, host: rule.name });
-		}
+		hits.push(...forbiddenHostsInSource(path, source));
 	}
 	function walk(dir) {
 		for (const name of readdirSync(dir)) {
@@ -144,9 +145,34 @@ function repoRel(path) {
 	return relative(repoRoot, path).split(sep).join('/');
 }
 
-export function isReviewed(path, rule) {
+function reviewedEntry(path, rule) {
 	const rel = path.includes(sep) || path.includes('/') ? repoRel(path) : path;
-	return REVIEWED_ALLOWLIST.some((entry) => entry.file === rel && entry.rule === rule);
+	return REVIEWED_ALLOWLIST.find((entry) => entry.file === rel && entry.rule === rule);
+}
+
+export function isReviewed(path, rule) {
+	return Boolean(reviewedEntry(path, rule));
+}
+
+/** Drop a reviewed pattern `count` times, then run the host rules on the rest. */
+export function forbiddenHostsInSource(path, source) {
+	const hits = [];
+	for (const rule of RULES) {
+		const entry = reviewedEntry(path, rule.name);
+		let scanned = source;
+		if (entry?.pattern && entry.count > 0) {
+			for (let i = 0; i < entry.count; i += 1) {
+				const at = scanned.indexOf(entry.pattern);
+				if (at === -1) break;
+				scanned = `${scanned.slice(0, at)}${scanned.slice(at + entry.pattern.length)}`;
+			}
+		}
+		rule.re.lastIndex = 0;
+		if (!rule.re.test(scanned)) continue;
+		if (entry && !entry.pattern) continue;
+		hits.push({ path, host: rule.name });
+	}
+	return hits;
 }
 
 function reviewedSecretTokens(path) {
@@ -282,6 +308,18 @@ function selfTest() {
 	const capsHits = findForbiddenHosts(capsPath);
 	if (capsHits.length) fail(`reviewed caps.ts host exception leaked: ${JSON.stringify(capsHits)}`);
 	const capsSource = readFileSync(capsPath, 'utf8');
+	const plantedUrl = '"https://x.workers.dev"';
+	const plantedCaps = forbiddenHostsInSource(capsPath, `${capsSource}\nconst leak = ${plantedUrl};\n`);
+	if (!plantedCaps.some((hit) => hit.host === 'workers.dev')) {
+		fail('a workers.dev URL in caps.ts must trip');
+	}
+	const secondSuffix = forbiddenHostsInSource(
+		capsPath,
+		`${capsSource}\nif (!host.endsWith('.workers.dev')) return true;\n`,
+	);
+	if (!secondSuffix.some((hit) => hit.host === 'workers.dev')) {
+		fail('a second workers.dev suffix check in caps.ts must trip');
+	}
 	if (unexpectedSecretNames(capsPath, capsSource).length) {
 		fail(`${COUNTER_LIST} must be the only reviewed secret token in caps.ts`);
 	}

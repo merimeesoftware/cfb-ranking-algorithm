@@ -707,6 +707,14 @@ test('spoofed api paths never select an internal or production host', () => {
 		assert.equal(cleared.upstream.search.includes('secret'), false);
 		assert.equal(cleared.upstream.search, '?year=2024');
 	}
+	const encodedSecret = routeApiRequest(
+		'https://preview.example.workers.dev/api/cache/clear?%73ecret=planted&year=2024',
+	);
+	assert.equal(encodedSecret.ok, true);
+	if (encodedSecret.ok) {
+		assert.equal(encodedSecret.upstream.search.includes('secret'), false);
+		assert.equal(encodedSecret.upstream.search, '?year=2024');
+	}
 	const safe = routeApiRequest(fixture.safe as string);
 	assert.equal(safe.ok, true);
 	if (safe.ok) {
@@ -794,6 +802,8 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 			'CF-Connecting-IP': '203.0.113.8',
 			'x-workers-ai-reserved': '1',
 			'x-xai-week-reserved': '1',
+			'x-spend-kill-secret': 'planted',
+			'x-cache-secret': 'planted',
 		},
 	}), env as never);
 	assert.equal(response.status, 200);
@@ -805,6 +815,8 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 	assert.equal(capture.request.headers.get('x-visitor-host'), 'preview.example.workers.dev');
 	assert.equal(capture.request.headers.get('x-workers-ai-reserved'), null);
 	assert.equal(capture.request.headers.get('x-xai-week-reserved'), null);
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
+	assert.equal(capture.request.headers.get('x-cache-secret'), null);
 	assert.equal(agentHits.n, 1);
 
 	for (const path of [
@@ -824,6 +836,10 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 		'/api/%2561gent/explain',
 		'/api/agent%2509/explain',
 		'/api/agent%252f/explain',
+		'/api/%C0%AF',
+		'/api/%FF',
+		'/api/agent%E2%88%95explain',
+		'/api/agent%EF%BC%8Fexplain',
 	]) {
 		capture.request = null;
 		agentHits.n = 0;
@@ -932,6 +948,43 @@ test('spend kill fails closed unless SPEND_KILL_SECRET matches the header', asyn
 	assert.equal(opened.status, 200);
 	assert.ok(capture.request);
 	assert.equal(capture.request.headers.get('x-spend-kill-secret'), 'planted');
+	assert.equal(capture.request.headers.get('x-cache-secret'), null);
+	capture.request = null;
+	const shortHeader = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json', 'x-spend-kill-secret': 'x' },
+		body: JSON.stringify({ ai_kill: 1 }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(shortHeader.status, 401);
+	assert.equal(capture.request, null);
+});
+
+test('container forward drops kill and cache secrets except on cache clear', async () => {
+	const capture: { request: Request | null } = { request: null };
+	const env = apiEnv(capture, { n: 0 });
+	const cleared = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear?year=2024', {
+		method: 'POST',
+		headers: {
+			'x-spend-kill-secret': 'planted',
+			'x-cache-secret': 'planted',
+		},
+	}), env as never);
+	assert.equal(cleared.status, 200);
+	assert.ok(capture.request);
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
+	assert.equal(capture.request.headers.get('x-cache-secret'), 'planted');
+	capture.request = null;
+	const trailed = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill/', {
+		method: 'POST',
+		headers: {
+			'x-spend-kill-secret': 'planted',
+			'x-cache-secret': 'planted',
+		},
+	}), env as never);
+	assert.equal(trailed.status, 200);
+	assert.ok(capture.request);
+	assert.equal(new URL(capture.request.url).pathname, '/spend/kill/');
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
 	assert.equal(capture.request.headers.get('x-cache-secret'), null);
 });
 

@@ -76,24 +76,25 @@ function killBit(value: unknown): 0 | 1 | null {
 	return null;
 }
 
-function secretsMatch(expected: string, provided: string): boolean {
-	if (!expected || expected.length !== provided.length) return false;
-	let diff = 0;
-	for (let i = 0; i < expected.length; i += 1) {
-		diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
-	}
-	return diff === 0;
+/** Compare SHA-256 digests so a different length does not return early. */
+async function secretsMatch(expected: string, provided: string): Promise<boolean> {
+	const encoder = new TextEncoder();
+	const [left, right] = await Promise.all([
+		crypto.subtle.digest('SHA-256', encoder.encode(expected)),
+		crypto.subtle.digest('SHA-256', encoder.encode(provided)),
+	]);
+	return crypto.subtle.timingSafeEqual(left, right);
 }
 
 /** Header only. Unset SPEND_KILL_SECRET fails closed and never uses another secret. */
-export function spendKillAuthorized(
+export async function spendKillAuthorized(
 	env: { SPEND_KILL_SECRET?: string },
 	request: Request,
-): { ok: true } | { ok: false; status: 403 | 401 } {
+): Promise<{ ok: true } | { ok: false; status: 403 | 401 }> {
 	const expected = (env.SPEND_KILL_SECRET ?? '').trim();
 	if (!expected) return { ok: false, status: 403 };
 	const provided = request.headers.get('x-spend-kill-secret') ?? '';
-	if (!secretsMatch(expected, provided)) return { ok: false, status: 401 };
+	if (!(await secretsMatch(expected, provided))) return { ok: false, status: 401 };
 	return { ok: true };
 }
 
@@ -108,7 +109,7 @@ export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?:
 }
 
 async function setStoredKills(state: SpendState, env: SpendEnv, request: Request, payload: SpendPayload): Promise<Response> {
-	const auth = spendKillAuthorized(env, request);
+	const auth = await spendKillAuthorized(env, request);
 	if (!auth.ok) {
 		return Response.json({ ok: false, error: 'auth' }, { status: auth.status, headers: { 'cache-control': 'no-store' } });
 	}

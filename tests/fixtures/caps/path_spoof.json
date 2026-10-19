@@ -95,6 +95,22 @@
     {
       "name": "double-encoded-agent-slash",
       "url": "https://preview.example.workers.dev/api/agent%252f/explain"
+    },
+    {
+      "name": "overlong-slash",
+      "url": "https://preview.example.workers.dev/api/%C0%AF"
+    },
+    {
+      "name": "invalid-utf8",
+      "url": "https://preview.example.workers.dev/api/%FF"
+    },
+    {
+      "name": "division-slash",
+      "url": "https://preview.example.workers.dev/api/agent%E2%88%95explain"
+    },
+    {
+      "name": "fullwidth-slash",
+      "url": "https://preview.example.workers.dev/api/agent%EF%BC%8Fexplain"
     }
   ],
   "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10"

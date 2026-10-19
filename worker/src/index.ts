@@ -271,7 +271,7 @@ export default {
 		if (limit.limited) return busyResponse(limit.code);
 
 		if (isSpendKillRoute(request.method, apiPath)) {
-			const auth = spendKillAuthorized(env, request);
+			const auth = await spendKillAuthorized(env, request);
 			if (!auth.ok) return jsonResponse({ ok: false, error: 'auth' }, auth.status);
 			let raw: unknown = {};
 			try {
@@ -333,6 +333,8 @@ export default {
 		headers.delete(VISITOR_HOST_HEADER);
 		headers.delete('x-workers-ai-reserved');
 		headers.delete('x-xai-week-reserved');
+		headers.delete('x-spend-kill-secret');
+		if (apiPath !== '/cache/clear') headers.delete('x-cache-secret');
 		headers.set(VISITOR_HOST_HEADER, routed.modeHost);
 		headers.set('CF-Connecting-IP', limit.ip);
 
