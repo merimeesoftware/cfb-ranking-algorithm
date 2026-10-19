@@ -1,7 +1,8 @@
 name: Preview stills
 
 # Local PR build only. No secrets, no pull_request_target, no Workers preview.
-# Preview versions of true-rankings-cfb use production AI_MODE (see #93, #94).
+# Preview versions of true-rankings-cfb stay AI_MODE=stub and CFBD_OFFLINE=1
+# (see #93, #94). They do not follow production AI_MODE=live.
 #
 # contents: read is the whole permission set. actions/upload-artifact@v7
 # publishes with that token and does not need actions: write. npm caches

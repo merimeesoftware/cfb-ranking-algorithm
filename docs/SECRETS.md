@@ -85,9 +85,9 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 |----------|---------------|---------|
 | `CFBD_OFFLINE=1` | Yes in development | Block live CFBD HTTP; use `.cache/` + `frontend/static/rankings/` |
 | `CFBD_MAX_CALLS` | **4/day** in production config; **25/day** in code if unset | Hard cap on live CFBD calls. Unset is never unlimited. |
-| `AI_MODE=stub` | Yes locally, in preview, and in production `wrangler.toml` | Template explanations. No live provider call. |
+| `AI_MODE=stub` | Yes locally and in preview / `env.dev` | Template explanations. No live provider call. |
 | `AI_MODE=off` | Opt-in | `explanation: null` + structured context only |
-| `AI_MODE=live` | Opt-in | xAI or Workers AI, each under its own daily cap |
+| `AI_MODE=live` | Production `wrangler.toml` `[vars]` (Workers AI). Opt-in locally. | xAI or Workers AI, each under its own daily cap. Production keeps xAI off (`XAI_ENABLED=0`, `XAI_MAX_CALLS=0`). |
 | `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI stays refused, including when `XAI_API_KEY` is set. The gateway path is not called. |
 | `XAI_WEEKLY_USD_CAP` | **0** | Rolling ISO-week dollar stop. CI fails at $5 a week with CFBD's paid tier. |
 | `AI_MAX_CALLS` | **100/day** | Workers AI call cap. 100 × 58 worst-case Neurons = 5800, under the 8000 ceiling. |

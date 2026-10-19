@@ -21,9 +21,9 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-# Production spend mode. AI_MODE=stub and CFBD_OFFLINE=1.
+# Production spend mode. AI_MODE=live (Workers AI) and CFBD_OFFLINE=1.
 # Kill switches AI_KILL (both providers), XAI_KILL, WORKERS_AI_KILL, and
-# CFBD_KILL default off. Preview hostnames also stay stub/offline unless
+# CFBD_KILL default off. Preview hostnames stay stub/offline unless
 # PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
 #
 # Monthly CFBD projection. The free tier is about 1,000 and is shared.
@@ -52,7 +52,7 @@ run_worker_first = ["/api/*"]
 # CF_ACCOUNT_ID. An empty account id refuses the live xAI call.
 # XAI_API_KEY stays a secret name. Do not assign it here.
 [vars]
-AI_MODE = "stub"
+AI_MODE = "live"
 CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
 XAI_ENABLED = "0"
