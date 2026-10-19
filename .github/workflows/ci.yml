@@ -53,6 +53,9 @@ jobs:
           npm run check
           npm run build
 
+      - name: CFBD credit on the board
+        run: python3 scripts/check_cfbd_credit.py --built
+
       - name: Public host guard
         env:
           PUBLIC_SITE_URL: ""

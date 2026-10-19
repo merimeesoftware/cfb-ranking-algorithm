@@ -5,25 +5,47 @@ or 'elo_only' (how they look, 1 part; the order if Heat fails the #96 gate, and 
 only option when Heat has no 3-week history). Resume, schedule strength and quality of
 wins are CONTEXT: shown beside the bar, never part of the gap.
 
-Inputs
-- frontend/static/rankings/2024/week-{1,6,7,9,10}.json  (published static board: Elo, record_score, sos/sov ranks)
-- data/order-config.json                               (ordering parts + weights; illustrative Heat)
-- data/games-2024-espn.json                            (game list + venue stand-in for #105)
+Inputs (all invented; this file does not read a published board)
+- data/roster-synthetic.json  seeded teams, records, and ratings
+- data/order-config.json      ordering parts + weights; illustrative Heat
+- data/games-synthetic.json   invented game list + venue stand-in for #105
 Output: data/fixtures.json. Field names are the ones #105/#96 are asked to ship
 (prev_rank, resume_rank, sos_rank, sov_rank, heat, parts[], venue, tag).
+The season and week numbers are labels for the comp states.
 """
 import json, math, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[3]
-STATIC = REPO / 'frontend/static/rankings/2024'
 CFG = json.loads((HERE / 'order-config.json').read_text())
 WINDOW = CFG['heat_window_weeks']
-GAMES = json.loads((HERE / 'games-2024-espn.json').read_text())['teams']
+SYNTHETIC = json.loads((HERE / 'games-synthetic.json').read_text())
+ROSTER = json.loads((HERE / 'roster-synthetic.json').read_text())
+GAMES = SYNTHETIC['teams']
+DEFAULT_GAMES = SYNTHETIC['default']
+WEEKS = {int(k): v for k, v in ROSTER['weeks'].items()}
 
 
 def load(week):
-    return json.loads((STATIC / f'week-{week}.json').read_text())['team_rankings']
+    """Seeded roster for one labeled week. Missing weeks are not a published board."""
+    if week not in WEEKS:
+        raise FileNotFoundError(week)
+    spec = WEEKS[week]
+    rows = []
+    for team in ROSTER['teams']:
+        name = team['team_name']
+        wins, losses = spec['records'][name]
+        rows.append({
+            'team_name': name,
+            'conference': team['conference'],
+            'conference_type': team['conference_type'],
+            'color': team['color'],
+            'team_quality_score': spec['quality'][name],
+            'record_score': spec['resume'][name],
+            'sos_rank': spec['sos'][name],
+            'sov_rank': spec['sov'][name],
+            'records': {'total_wins': wins, 'total_losses': losses},
+        })
+    return rows
 
 
 def pct(values, p):
@@ -46,8 +68,7 @@ def board(week, variant):
     for t in teams:
         t['_score'] = sum(p['weight'] * t[p['field']] for p in parts)
     teams.sort(key=lambda t: -t['_score'])
-    # Published sos_rank/sov_rank rank every team incl. FCS (week 10 max 544/662), so "#{x} of {N}"
-    # needs them re-ranked among the board's teams (#105 should ship these, or the N they rank over).
+    # sos/sov seeds are invented. "#{x} of {N}" re-ranks them on this roster only.
     for f in ('sos_rank', 'sov_rank'):
         order = sorted(teams, key=lambda t: (t.get(f) or 10**6, t['team_name']))
         for i, t in enumerate(order):
@@ -94,7 +115,7 @@ def games_for(name, week, teams):
     me = fbs[name]
     cupcake = max(pct(p4, 25), p25) if me.get('conference_type') == 'Power 4' else p25
     out = []
-    for g in GAMES.get(name, []):
+    for g in GAMES.get(name, DEFAULT_GAMES):
         if g['week'] > week:
             continue
         opp = fbs.get(g['opponent'])
@@ -149,7 +170,7 @@ def main():
     prev = prev_ranks(10, 'elo_heat')
     S['board-closed'] = {'season': 2024, 'week': 10, 'variant': 'elo_heat', 'parts_count': 2, 'board_size': len(teams),
                          'board': [row(x, prev) for x in teams[:25]], 'open': None}
-    mid, heat_team = 'Iowa State', 'Colorado'
+    mid, heat_team = ROSTER['open']['mid'], ROSTER['open']['heat']
     S['row-open-mid'] = open_state(10, 'elo_heat', mid)
     S['row-open-mid-1part'] = open_state(10, 'elo_only', mid)
     S['negative-part'] = {**S['row-open-mid'], 'focus': 'negative'}

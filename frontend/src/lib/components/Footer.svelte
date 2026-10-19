@@ -10,16 +10,14 @@
 <footer class="bg-primary-900 text-cfb-chalk/80 border-t border-primary-800">
 	<div class="max-w-7xl mx-auto px-4 py-6">
 		<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-			<p class="text-sm text-center sm:text-left">
-				Game data from
+			<p class="text-sm text-center sm:text-left" data-cfbd-credit>
 				<a
 					href="https://collegefootballdata.com/"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="text-cfb-gold-bright hover:underline focus:outline-none focus-visible:underline"
-				>
-					College Football Data
-				</a>. The board is ours. Rankings stay free.
+				>Data provided by CollegeFootballData.com.</a>
+				The board is ours. Rankings stay free.
 			</p>
 			<div class="flex items-center gap-4 text-sm">
 				<a
