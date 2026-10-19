@@ -95,7 +95,7 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` | stub / `1` on non-production hosts | Explicit override for preview and dev versions |
 
 Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
-`GET /agent/health` and `GET /cache/stats` are public and return `{ "status": "ok" }` only. They do not include budgets, call counts, or cache paths. The global daily counters live in the `SpendBudget` Durable Object.
+`GET /agent/health` and `GET /cache/stats` are public and return `{ "status": "ok" }` only. They do not include budgets, call counts, or cache paths. The global daily counters live on the `CfbApiContainer` instance named `spend-budget`.
 
 Scheduled blurbs: `.github/workflows/precompute-blurbs.yml` runs **stub/offline only** (no MiniMax key in GitHub). Live MiniMax + `web_search` happens on **Cloudflare** when `AI_MODE=live` and static/cache miss. Artifacts are uploaded; commit-to-main remains optional.
 

@@ -125,13 +125,13 @@ Production `AI_MODE=live` and `CFBD_OFFLINE=0` in `wrangler.toml` stay as they a
 
 | Control | Default when unset | Where it is enforced |
 |---------|--------------------|----------------------|
-| `AI_MAX_CALLS` | **100 calls / UTC day** | `SpendBudget` Durable Object, then Flask |
-| `CFBD_MAX_CALLS` | **25 calls / UTC day** | same (leaves headroom under the ~1k/month free tier). The weekly precompute workflow sets its own `CFBD_MAX_CALLS=200` and does not use this Durable Object. |
+| `AI_MAX_CALLS` | **100 calls / UTC day** | named `CfbApiContainer` instance `spend-budget`, then Flask |
+| `CFBD_MAX_CALLS` | **25 calls / UTC day** | same (leaves headroom under the ~1k/month free tier). The weekly precompute workflow sets its own `CFBD_MAX_CALLS=200` and does not use this counter. |
 | `AI_KILL` / `CFBD_KILL` | off (`0`) | Worker gate and Flask |
 | Visitor rate limit | 60/min on `/api/*`, 10/min on `/api/agent/*` | Workers Rate Limiting bindings, key = `CF-Connecting-IP` |
 | Preview / dev versions | `AI_MODE=stub`, `CFBD_OFFLINE=1` | Worker, unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` is set |
 
-The first deploy of this change applies migration **`v2`**, which creates the `SpendBudget` Durable Object class, plus the `API_RATE_LIMITER` (`namespace_id` `9301`) and `AGENT_RATE_LIMITER` (`namespace_id` `9302`) bindings. Dev uses `9311` and `9312` so it does not share production counters. Wrangler creates these on deploy. No Cloudflare dashboard rate-limit rule is required for this change.
+This change does not add a Durable Object migration. The global counters use SQLite storage on the existing `CfbApiContainer` class, instance name `spend-budget`, and that fetch returns before the container process starts. Workers Builds on pull requests upload a version (`wrangler versions upload`). A new migration tag is rejected there (`pending Durable Object migration`). The `API_RATE_LIMITER` (`namespace_id` `9301`) and `AGENT_RATE_LIMITER` (`namespace_id` `9302`) bindings are created on deploy. Dev uses `9311` and `9312` so it does not share production counters. No Cloudflare dashboard rate-limit rule is required for this change.
 
 Flask reaches the Durable Object by calling `http://spend.budget/consume`. The container outbound handler (`CfbApiContainer.outboundByHost`, which needs `ContainerProxy` exported from the Worker) turns that into a DO request. If the gate cannot be reached, the live call is refused.
 

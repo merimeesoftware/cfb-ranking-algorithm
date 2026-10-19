@@ -15,14 +15,13 @@ import {
 	type Manifest,
 	type RateLimiter,
 } from './caps.ts';
-import { SpendBudget } from './spend-object.ts';
+import { consumeSpend } from './spend-object.ts';
 
-export { ContainerProxy, SpendBudget };
+export { ContainerProxy };
 
 export interface Env extends CapEnv {
 	ASSETS: Fetcher;
 	CFB_API: DurableObjectNamespace<CfbApiContainer>;
-	SPEND_BUDGET: DurableObjectNamespace;
 	API_RATE_LIMITER: RateLimiter;
 	AGENT_RATE_LIMITER: RateLimiter;
 	CFBD_API_KEY?: string;
@@ -67,6 +66,11 @@ export class CfbApiContainer extends Container<Env> {
 
 	override async fetch(request: Request): Promise<Response> {
 		const hostname = new URL(request.url).hostname;
+		// Named instance `spend-budget` only stores the daily counters. Starting
+		// the container here would boot gunicorn for a bookkeeping request.
+		if (hostname === 'spend.budget') {
+			return consumeSpend(this.ctx, this.env, request);
+		}
 		await this.startAndWaitForPorts({
 			startOptions: { envVars: this.runtimeEnvVars(hostname) },
 			cancellationOptions: { portReadyTimeoutMS: 120_000 },
@@ -99,7 +103,7 @@ CfbApiContainer.outboundByHost = {
 				{ status: 429, headers: { 'cache-control': 'no-store' } },
 			);
 		}
-		const stub = env.SPEND_BUDGET.get(env.SPEND_BUDGET.idFromName('global'));
+		const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
 		return stub.fetch('https://spend.budget/consume', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },

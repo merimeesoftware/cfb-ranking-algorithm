@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, resolveDailyLimit, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
+import { consumeSpend, type SpendState } from '../src/spend-object.ts';
 import {
 	buildRuntimeEnv,
 	checkPublicQuery,
@@ -19,6 +20,23 @@ function load(name: string): Record<string, unknown> {
 	return JSON.parse(readFileSync(new URL(name, FIXTURES), 'utf8')) as Record<string, unknown>;
 }
 
+function spendState(seed: Record<string, number>): SpendState {
+	const data = new Map<string, number>(Object.entries(seed));
+	return {
+		storage: {
+			async get<T = unknown>(key: string) {
+				return data.get(key) as T | undefined;
+			},
+			async put(key: string, value: number) {
+				data.set(key, value);
+			},
+		},
+		async blockConcurrencyWhile<T>(callback: () => Promise<T>) {
+			return callback();
+		},
+	};
+}
+
 function mapStore(seed: Record<string, number>) {
 	const data = new Map<string, number>(Object.entries(seed));
 	return {
@@ -31,6 +49,24 @@ function mapStore(seed: Record<string, number>) {
 		},
 	};
 }
+
+test('spend counter accepts one cfbd consume and rejects an unknown bucket', async () => {
+	const state = spendState({});
+	const first = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ bucket: 'cfbd' }),
+	}));
+	assert.equal(first.status, 200);
+	const body = await first.json() as { ok: boolean; count: number; limit: number };
+	assert.equal(body.ok, true);
+	assert.equal(body.count, 1);
+	assert.equal(body.limit, DEFAULT_CFBD_MAX_CALLS_PER_DAY);
+	const denied = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ bucket: 'nope' }),
+	}));
+	assert.equal(denied.status, 400);
+});
 
 test('unset daily limits fall back to in-code defaults', () => {
 	const fixture = load('unset_defaults.json');

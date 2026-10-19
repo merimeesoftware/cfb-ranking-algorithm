@@ -48,18 +48,13 @@ max_instances = 3
 name = "CFB_API"
 class_name = "CfbApiContainer"
 
-# Global per-day AI and CFBD counters shared by every container instance.
-[[durable_objects.bindings]]
-name = "SPEND_BUDGET"
-class_name = "SpendBudget"
+# Daily AI/CFBD counters live on the existing CfbApiContainer class
+# (instance name spend-budget). Do not add a migration for them: non-production
+# Workers Builds upload a version, and a new migration tag fails that upload.
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
-
-[[migrations]]
-tag = "v2"
-new_sqlite_classes = ["SpendBudget"]
 
 # --- Dev environment ---
 # URL: https://cfb-rankings-dev.<account>.workers.dev
@@ -97,14 +92,6 @@ max_instances = 2
 name = "CFB_API"
 class_name = "CfbApiContainer"
 
-[[env.dev.durable_objects.bindings]]
-name = "SPEND_BUDGET"
-class_name = "SpendBudget"
-
 [[env.dev.migrations]]
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
-
-[[env.dev.migrations]]
-tag = "v2"
-new_sqlite_classes = ["SpendBudget"]
