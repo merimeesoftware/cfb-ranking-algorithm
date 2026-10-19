@@ -18,7 +18,7 @@ On 2026-10-18 Michael set new product direction.
 1. **Thesis (amended).** The best team is the one whose game results show it is strongest, judged by one open formula with no voters. **Plus momentum:** teams that get hot at the right time reach a new level, and Elo was chosen partly to capture that. Momentum becomes an explicit, explainable part of the model.
    - Momentum gets its own visible number per team.
    - It is defined so it cannot reduce to chasing the last game (for example a decay half-life or weighted window, a minimum-games floor and a cap on any one game's share).
-   - It ships only if the repo's own evaluation (leak-free week-by-week backtest, primary metric Brier, split tune 2019–2022 / validate 2023 / holdout 2024) shows no worse fit before vs after. (#96)
+   - It ships only if it passes the gate on #96 (issuecomment-6258649874): Elo plus form is compared against Elo alone, judged by a paired bootstrap by week on the validate (2023) and holdout (2024) Brier, with tuning on 2019–2022 only, point estimate ≤ 0 on both splits. If the result is inconclusive (95% CI upper bound above +0.001), momentum gets weight 0 in the ordering and is still shown as its own number. FRS before/after is reported, not the bar. It's an internal fit check, never presented as a prediction.
 2. **The Drop is out.** `/drop/subscribe`, the signup UI and the email-list goal are removed. (Being built as #93 PR2.)
 3. **Gambling and prediction are out.** The matchup implied spread, the `--ats` / lines code, and any odds, picks or prediction framing are removed and not to return. Michael: "I don't want gambling anywhere near this." (Being built as #93 PR2.)
 4. **Core product.** Engagement comes from fans debating the rankings:
