@@ -4,6 +4,9 @@ export const BRAND_NAME = 'True Rankings';
 export const BRAND_SHORT = 'TR';
 export const RATING_NAME = 'TR+';
 export const TAGLINE = 'How good they actually are.';
+/** Public positioning line. Keep this sentence exact. */
+export const POSITIONING_LINE =
+	'The order you check before you argue — not a poll, not a committee, not the narrative.';
 export const HANDLE = '@TrueCFB';
 
 /** Canonical public origin. Override via PUBLIC_SITE_URL at build time when custom domain is live. */

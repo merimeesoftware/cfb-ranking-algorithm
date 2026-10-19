@@ -14,6 +14,7 @@
 		BRAND_NAME,
 		RATING_NAME,
 		TAGLINE,
+		POSITIONING_LINE,
 		pageTitle,
 		weekPath,
 		SITE_ORIGIN,
@@ -217,7 +218,7 @@
 			{#if data.story?.headline}
 				{data.story.headline}
 			{:else}
-				This week’s true order — open math, free to cite.
+				{POSITIONING_LINE}
 			{/if}
 		</p>
 

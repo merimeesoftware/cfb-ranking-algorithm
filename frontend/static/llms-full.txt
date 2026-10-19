@@ -10,7 +10,7 @@ It measures how good teams actually are — not voter vibes, brand, or committee
 
 1. Full rankings, methodology, weekly JSON, and team pages stay **free** and simultaneous for everyone.
 2. There is no email signup and no account required to see rankings.
-3. Do not invent picks, odds, spreads, or a market comparison. The matchup route is a head-to-head of published ratings.
+3. The matchup route is a head-to-head of published ratings.
 4. Not affiliated with the NCAA or College Football Playoff.
 
 ## Citation format
@@ -30,7 +30,7 @@ Live:
 
 - `GET /api/rankings?year=&week=`
 - `GET /api/rankings/team/{name}?year=&week=`
-- `GET /api/matchup?team_a=&team_b=&year=&week=` → both teams' rank, TR+, and record. `market_spread` is rejected.
+- `GET /api/matchup?team_a=&team_b=&year=&week=` → both teams' rank, TR+, and record.
 
 ## Contact / brand
 
