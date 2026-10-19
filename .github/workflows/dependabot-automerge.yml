@@ -1,35 +1,137 @@
-name: Dependabot auto-merge
+name: Dependabot pair review
 
-# Queues Dependabot PRs for merge once required CI checks pass.
-# Requires: repo Settings → General → Allow auto-merge = ON
-# Requires: branch protection on main with required checks Python + Frontend
+# Never merges. D-20261018-23 and the pair rule: every PR, Dependabot
+# included, merges only after the True Rankings Minicon records an APPROVE,
+# and the True Rankings seat does the merge.
+#
+# There are no required status checks on main, so a merge queue would land
+# before CI (#85 landed 12 seconds after it opened). This job waits instead.
+# When every other check on the head commit has passed, a non-major bump
+# gets the label owner:cfb-minicon and one comment. Major bumps keep the
+# hold note. Anything else exits non-zero and leaves the PR open.
+#
+# Passing = every check run (except this job) concluded success or skipped,
+# CI's Python and Frontend checks are present, and any commit statuses are
+# success.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
+
+concurrency:
+  group: dependabot-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   automerge:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 35
+    permissions:
+      # pull-requests: write adds the label and posts the comment.
+      # issues: write creates owner:cfb-minicon when that label is missing
+      # (GitHub's create-label API). contents is omitted so this job cannot merge.
+      pull-requests: write
+      issues: write
+      checks: read
+      statuses: read
     steps:
       - name: Fetch Dependabot metadata
         id: meta
-        uses: dependabot/fetch-metadata@v3
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-merge non-major updates
+      - name: Wait for checks, then queue non-major update
         if: steps.meta.outputs.update-type != 'version-update:semver-major'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SELF_CHECK: automerge
+          REQUIRED_CHECKS: "Python Frontend"
+          INTERVAL: "20"
+          MAX_WAIT: "1800"
+          LABEL: owner:cfb-minicon
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + MAX_WAIT ))
+          # Give other workflows and apps time to register their checks.
+          sleep "$INTERVAL"
+          while :; do
+            runs=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/check-runs?filter=latest&per_page=100" \
+              --jq "[.check_runs[] | select(.name != \"$SELF_CHECK\")]")
+            pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+            missing=""
+            for name in $REQUIRED_CHECKS; do
+              jq -e --arg n "$name" 'any(.[]; .name == $n)' <<<"$runs" >/dev/null || missing="$missing $name"
+            done
+            status_state=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/status" \
+              --jq 'if .total_count == 0 then "none" else .state end')
+
+            failed=$(jq -r '[.[] | select(.status == "completed" and (.conclusion != "success" and .conclusion != "skipped")) | "\(.name)=\(.conclusion)"] | join(", ")' <<<"$runs")
+            if [ -n "$failed" ]; then
+              echo "::error::Not merging: checks did not pass: $failed"
+              exit 1
+            fi
+            if [ "$status_state" = "failure" ] || [ "$status_state" = "error" ]; then
+              echo "::error::Not merging: commit status is $status_state"
+              exit 1
+            fi
+
+            if [ "$pending" -eq 0 ] && [ -z "$missing" ] && [ "$status_state" != "pending" ]; then
+              break
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::Not merging: timed out (pending=$pending, missing:${missing:- none}, status=$status_state)"
+              exit 1
+            fi
+            echo "Waiting: pending=$pending, missing:${missing:- none}, status=$status_state"
+            sleep "$INTERVAL"
+          done
+
+          echo "All checks passed on $HEAD_SHA:"
+          jq -r '.[] | "  \(.name)=\(.conclusion)"' <<<"$runs"
+
+          label_enc=$(jq -rn --arg n "$LABEL" '$n | @uri')
+          set +e
+          lookup=$(gh api "repos/${GH_REPO}/labels/${label_enc}" --jq .name 2>&1)
+          lookup_status=$?
+          set -e
+          if [ "$lookup_status" -ne 0 ]; then
+            if ! printf '%s\n' "$lookup" | grep -q 'Not Found'; then
+              echo "::error::Could not look up label ${LABEL}: ${lookup}"
+              exit 1
+            fi
+            echo "Creating missing label ${LABEL}"
+            set +e
+            create_out=$(gh api --method POST "repos/${GH_REPO}/labels" \
+              -f name="$LABEL" \
+              -f color="0e8a16" \
+              -f description="Pair review: Minicon APPROVE, then True Rankings merges" 2>&1)
+            create_status=$?
+            set -e
+            if [ "$create_status" -ne 0 ]; then
+              if ! printf '%s\n' "$create_out" | grep -q 'already_exists'; then
+                echo "::error::Could not create label ${LABEL}: ${create_out}"
+                exit 1
+              fi
+              echo "Label ${LABEL} already exists"
+            fi
+          fi
+
+          gh pr edit "$PR_URL" --add-label "$LABEL"
+          comment_body="Checks green on ${HEAD_SHA}. Ready for pair review (Minicon APPROVE, then True Rankings merges)."
+          if gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[].body' \
+              | grep -Fxq "$comment_body"; then
+            echo "Pair-review comment already on PR ${PR_NUMBER} for ${HEAD_SHA}"
+          else
+            gh pr comment "$PR_URL" --body "$comment_body"
+          fi
 
       - name: Note held major bump
         if: >-
