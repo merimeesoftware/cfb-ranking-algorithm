@@ -134,7 +134,7 @@ All data is 2024 W10 unless noted. **Heat values are illustrative** (see "Illust
 | `team.games_played` | derivable | `few-games` |
 | season default | #105 item 3 | `season-unavailable` |
 
-Game lists come from ESPN's public schedule API (`data/games-2024-espn.json`) for Iowa State, Oregon, Colorado, Southern Miss and UTEP. That is a stand-in until #105 lands.
+Game lists are invented (`data/games-synthetic.json`): Fixture North, Fixture South, Fixture East, and Fixture West. That is a stand-in until #105 lands.
 
 ## Assets
 

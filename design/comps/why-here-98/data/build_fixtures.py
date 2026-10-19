@@ -8,7 +8,7 @@ wins are CONTEXT: shown beside the bar, never part of the gap.
 Inputs
 - frontend/static/rankings/2024/week-{1,6,7,9,10}.json  (published static board: Elo, record_score, sos/sov ranks)
 - data/order-config.json                               (ordering parts + weights; illustrative Heat)
-- data/games-2024-espn.json                            (game list + venue stand-in for #105)
+- data/games-synthetic.json                             (invented game list + venue stand-in for #105)
 Output: data/fixtures.json. Field names are the ones #105/#96 are asked to ship
 (prev_rank, resume_rank, sos_rank, sov_rank, heat, parts[], venue, tag).
 """
@@ -19,7 +19,9 @@ REPO = HERE.parents[3]
 STATIC = REPO / 'frontend/static/rankings/2024'
 CFG = json.loads((HERE / 'order-config.json').read_text())
 WINDOW = CFG['heat_window_weeks']
-GAMES = json.loads((HERE / 'games-2024-espn.json').read_text())['teams']
+SYNTHETIC = json.loads((HERE / 'games-synthetic.json').read_text())
+GAMES = SYNTHETIC['teams']
+DEFAULT_GAMES = SYNTHETIC['default']
 
 
 def load(week):
@@ -94,7 +96,7 @@ def games_for(name, week, teams):
     me = fbs[name]
     cupcake = max(pct(p4, 25), p25) if me.get('conference_type') == 'Power 4' else p25
     out = []
-    for g in GAMES.get(name, []):
+    for g in GAMES.get(name, DEFAULT_GAMES):
         if g['week'] > week:
             continue
         opp = fbs.get(g['opponent'])

@@ -448,7 +448,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -456,59 +456,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 53,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 25,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 44,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 55,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 46,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   }
@@ -648,7 +608,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -656,59 +616,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 54,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 28,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 46,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 56,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 44,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   }
@@ -877,7 +797,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -885,59 +805,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 53,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 25,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 44,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 55,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 46,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   },
@@ -1078,7 +958,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -1086,59 +966,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 54,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 28,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 46,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 56,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 44,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   },
@@ -1308,67 +1148,27 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota State",
-     "opponent_rank": 95,
-     "venue": "home",
-     "result": "W",
-     "tag": "cupcake"
+     "opponent": "Fixture East",
+     "opponent_rank": null,
+     "venue": "away",
+     "result": "L",
+     "tag": "bad_loss"
     },
     {
      "week": 2,
-     "opponent": "Nebraska",
-     "opponent_rank": 61,
-     "venue": "away",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 3,
-     "opponent": "Colorado State",
-     "opponent_rank": 51,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 4,
-     "opponent": "Baylor",
-     "opponent_rank": 25,
+     "opponent": "Fixture North",
+     "opponent_rank": null,
      "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 5,
-     "opponent": "UCF",
-     "opponent_rank": 55,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 7,
-     "opponent": "Kansas State",
-     "opponent_rank": 22,
-     "venue": "home",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "Arizona",
-     "opponent_rank": 92,
-     "venue": "away",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 9,
-     "opponent": "Cincinnati",
-     "opponent_rank": 32,
+     "week": 5,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "home",
      "result": "W",
-     "tag": "quality_win"
+     "tag": "cupcake"
     }
    ]
   },
@@ -1434,8 +1234,8 @@
     "url": "{SITE_URL}/teams/oregon?year=2024&week=10",
     "heat": 1561.4212393931955,
     "recent": {
-     "k": 3,
-     "wins": 3,
+     "k": 2,
+     "wins": 2,
      "losses": 0
     }
    },
@@ -1488,75 +1288,19 @@
    "games": [
     {
      "week": 1,
-     "opponent": "Idaho",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 2,
-     "opponent": "Boise State",
-     "opponent_rank": 15,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
      "week": 3,
-     "opponent": "Oregon State",
-     "opponent_rank": 72,
+     "opponent": "Fixture West",
+     "opponent_rank": null,
      "venue": "away",
      "result": "W",
      "tag": "cupcake"
-    },
-    {
-     "week": 5,
-     "opponent": "UCLA",
-     "opponent_rank": 47,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Michigan State",
-     "opponent_rank": 50,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 7,
-     "opponent": "Ohio State",
-     "opponent_rank": 3,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 8,
-     "opponent": "Purdue",
-     "opponent_rank": 107,
-     "venue": "away",
-     "result": "W",
-     "tag": "cupcake"
-    },
-    {
-     "week": 9,
-     "opponent": "Illinois",
-     "opponent_rank": 37,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Michigan",
-     "opponent_rank": 41,
-     "venue": "away",
-     "result": "W",
-     "tag": null
     }
    ]
   }
@@ -1622,8 +1366,8 @@
     "heat": 1499.9016779577946,
     "recent": {
      "k": 3,
-     "wins": 0,
-     "losses": 3
+     "wins": 2,
+     "losses": 1
     }
    },
    "parts": [
@@ -1675,67 +1419,27 @@
    "games": [
     {
      "week": 1,
-     "opponent": "Kentucky",
-     "opponent_rank": 89,
-     "venue": "away",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 2,
-     "opponent": "SE Louisiana",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 3,
-     "opponent": "South Florida",
-     "opponent_rank": 98,
-     "venue": "home",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 4,
-     "opponent": "Jacksonville State",
-     "opponent_rank": 71,
-     "venue": "away",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Louisiana",
-     "opponent_rank": 59,
-     "venue": "home",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 7,
-     "opponent": "UL Monroe",
-     "opponent_rank": 109,
+     "week": 2,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
      "result": "L",
      "tag": "bad_loss"
     },
     {
-     "week": 8,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
+     "week": 3,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
-     "result": "L",
-     "tag": null
-    },
-    {
-     "week": 9,
-     "opponent": "James Madison",
-     "opponent_rank": 70,
-     "venue": "away",
-     "result": "L",
-     "tag": null
+     "result": "W",
+     "tag": "cupcake"
     }
    ]
   }
@@ -1875,7 +1579,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -2235,7 +1939,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -2243,59 +1947,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 53,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 25,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 44,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 55,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 46,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   },
@@ -2465,7 +2129,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -2473,59 +2137,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 53,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 25,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 44,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 55,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 46,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   }
@@ -2665,7 +2289,7 @@
    "games": [
     {
      "week": 1,
-     "opponent": "North Dakota",
+     "opponent": "Fixture North",
      "opponent_rank": null,
      "venue": "home",
      "result": "W",
@@ -2673,59 +2297,19 @@
     },
     {
      "week": 2,
-     "opponent": "Iowa",
-     "opponent_rank": 18,
+     "opponent": "Fixture South",
+     "opponent_rank": null,
      "venue": "away",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 4,
-     "opponent": "Arkansas State",
-     "opponent_rank": 99,
-     "venue": "home",
      "result": "W",
      "tag": "cupcake"
     },
     {
-     "week": 5,
-     "opponent": "Houston",
-     "opponent_rank": 54,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 6,
-     "opponent": "Baylor",
-     "opponent_rank": 28,
-     "venue": "home",
-     "result": "W",
-     "tag": "quality_win"
-    },
-    {
-     "week": 7,
-     "opponent": "West Virginia",
-     "opponent_rank": 46,
-     "venue": "away",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 8,
-     "opponent": "UCF",
-     "opponent_rank": 56,
-     "venue": "home",
-     "result": "W",
-     "tag": null
-    },
-    {
-     "week": 10,
-     "opponent": "Texas Tech",
-     "opponent_rank": 44,
+     "week": 4,
+     "opponent": "Fixture East",
+     "opponent_rank": null,
      "venue": "home",
      "result": "L",
-     "tag": null
+     "tag": "bad_loss"
     }
    ]
   }
