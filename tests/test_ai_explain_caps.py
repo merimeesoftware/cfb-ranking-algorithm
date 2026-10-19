@@ -413,6 +413,12 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded(
         "Oregon's head-to-head edge on Ohio State keeps it ahead.", context,
     )
+    assert not answer_is_grounded(
+        'Oregon sits just ahead of Ohio State. The head-to-head holds.', context,
+    )
+    assert not answer_is_grounded(
+        'Oregon sits just ahead of Ohio State. The edge holds.', context,
+    )
     assert not answer_is_grounded('Oregon stomped Ohio State and sits ahead.', context)
     assert not answer_is_grounded(
         'Oregon sits just ahead of Ohio State. They beat them.', context,
@@ -422,6 +428,12 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     )
     assert not answer_is_grounded(
         'Ohio State, which Oregon crushed, sits behind.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon smashed, sits behind.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon steamrolled, sits behind.', context,
     )
     state = dict(context)
     state['top_quality_wins'] = ['Oregon State']

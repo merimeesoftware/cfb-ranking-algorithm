@@ -318,16 +318,18 @@ _LOSS_WORD = re.compile(
     r'\b(?:losses|loss|lost|losing|fell)\b',
     re.IGNORECASE,
 )
-# A second team is allowed only in this shape. Unlisted verbs fail closed.
+# ^{team} (sits|is ranked|is|holds the next spot) [just|right]
+# (behind|ahead of|above|below|next to) {team}\.?$
 _PLACEMENT_FORM = re.compile(
-    r'^(?P<left>.+?)\s+'
+    r'^(?P<left>.+?) '
     r'(?:sits|is ranked|is|holds the next spot)'
-    r'(?:\s+(?:just|right))?\s+'
-    r'(?:ahead of|next to|above|below|behind)\s+'
-    r'(?P<right>.+?)\s*$',
+    r'(?: (?:just|right))?'
+    r' (?:behind|ahead of|above|below|next to) '
+    r'(?P<right>.+?)\.?$',
     re.IGNORECASE,
 )
 _TOP_WIN_PHRASE = re.compile(r'\bbeat\b|\bwin over\b', re.IGNORECASE)
+# ^{subject}('s)?\s+(beat|got a win over|win over)\s+{opponent}\b
 _AGENT_RESULT = r"(?:beat|got a win over|win over)"
 _NOT_A_TEAM = {
     'the', 'they', 'their', 'this', 'that', 'these', 'those', 'record',
@@ -458,7 +460,7 @@ def _neighbor_placement(
     """
     if len(others) != 1 or not others <= neighbors or not subject:
         return False
-    lowered = sentence.strip().lower().rstrip('.')
+    lowered = sentence.strip().lower()
     match = _PLACEMENT_FORM.match(lowered)
     if match is None:
         return False
@@ -477,8 +479,8 @@ def _subject_is_agent(sentence: str, subject: str, opponent: str) -> bool:
         return False
     lowered = sentence.strip().lower()
     return re.match(
-        rf'^{re.escape(subject)}(?:\'s|\u2019s)?\s+{_AGENT_RESULT}\s+'
-        rf'{re.escape(opponent)}\b',
+        rf"^{re.escape(subject)}(?:'s|\u2019s)?\s+{_AGENT_RESULT}\s+"
+        rf"{re.escape(opponent)}\b",
         lowered,
         re.IGNORECASE,
     ) is not None
