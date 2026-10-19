@@ -669,6 +669,15 @@ test('spoofed api paths never select an internal or production host', () => {
 		assert.equal(routed.ok, false, form.name);
 		if (!routed.ok) assert.equal(routed.status, 400);
 	}
+	const team = routeApiRequest(
+		'https://preview.example.workers.dev/api/rankings/team/Ohio%20State?year=2024&week=15',
+	);
+	assert.equal(team.ok, true);
+	if (team.ok) {
+		assert.equal(team.apiPath, '/rankings/team/Ohio State');
+		assert.equal(team.upstream.pathname, '/rankings/team/Ohio%20State');
+		assert.equal(team.upstream.search, '?year=2024&week=15');
+	}
 	const safe = routeApiRequest(fixture.safe as string);
 	assert.equal(safe.ok, true);
 	if (safe.ok) {
@@ -743,7 +752,13 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 	assert.equal(capture.request.headers.get('x-visitor-host'), 'preview.example.workers.dev');
 	assert.equal(agentHits.n, 1);
 
-	for (const path of ['/api/%2e%2e/agent/explain', '/api/.%2e/agent/explain']) {
+	for (const path of [
+		'/api/%2e%2e/agent/explain',
+		'/api/.%2e/agent/explain',
+		'/api/agent%2fexplain',
+		'/api/agent%2Fexplain',
+		'/api/%61gent/explain',
+	]) {
 		capture.request = null;
 		agentHits.n = 0;
 		const rejected = await worker.fetch(

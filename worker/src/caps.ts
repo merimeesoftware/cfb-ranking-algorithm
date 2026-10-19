@@ -137,22 +137,90 @@ export type ApiRoute =
 	| { ok: false; status: 400 }
 	| { ok: true; upstream: URL; modeHost: string; apiPath: string };
 
-/** Reject spoofed paths before any upstream URL is built. */
-export function routeApiRequest(rawUrl: string): ApiRoute {
-	if (requestPathSpoofed(rawUrl)) return { ok: false, status: 400 };
+/** Bytes encodeURIComponent leaves alone. Encoding them hides a route. */
+const UNRESERVED_ASCII = /[A-Za-z0-9\-._~!*'()]/;
+
+function requestTarget(rawUrl: string): { path: string; search: string; hostname: string } | null {
 	let incoming: URL;
 	try {
 		incoming = new URL(rawUrl);
 	} catch {
-		return { ok: false, status: 400 };
+		return null;
 	}
-	if (!isVisitorApiPath(incoming.pathname)) return { ok: false, status: 400 };
-	if (isInternalHost(incoming.hostname)) return { ok: false, status: 400 };
-	const apiPath = incoming.pathname.replace(/^\/api/, '') || '/';
+	const scheme = rawUrl.indexOf('://');
+	const rest = scheme === -1 ? rawUrl : rawUrl.slice(scheme + 3);
+	const slash = rest.indexOf('/');
+	if (slash === -1) return null;
+	let tail = rest.slice(slash);
+	const hash = tail.indexOf('#');
+	if (hash !== -1) tail = tail.slice(0, hash);
+	const query = tail.indexOf('?');
+	const path = query === -1 ? tail : tail.slice(0, query);
+	const search = query === -1 ? '' : tail.slice(query);
+	if (!path.startsWith('/')) return null;
+	return { path, search, hostname: incoming.hostname };
+}
+
+/**
+ * Decode a visitor path once.
+ * Team names use encodeURIComponent (spaces, accents). An encoded slash,
+ * a backslash, a failed decode, a leftover %, or an encoded unreserved
+ * byte (for example %61) is not a team name.
+ */
+export function decodeVisitorPath(path: string): string | null {
+	if (path.includes('\\') || /%5c/i.test(path) || /%2f/i.test(path)) return null;
+	if (/%(?![0-9A-Fa-f]{2})/.test(path)) return null;
+	for (const token of path.match(/%[0-9A-Fa-f]{2}/g) ?? []) {
+		const byte = Number.parseInt(token.slice(1), 16);
+		if (byte < 0x80 && UNRESERVED_ASCII.test(String.fromCharCode(byte))) return null;
+	}
+	let decoded: string;
+	try {
+		decoded = decodeURIComponent(path);
+	} catch {
+		return null;
+	}
+	if (
+		decoded.includes('%')
+		|| decoded.includes('\\')
+		|| /%2f/i.test(decoded)
+		|| /%5c/i.test(decoded)
+	) return null;
+	return decoded;
+}
+
+/** Collapse dot segments. `//` and `..` are not visitor routes. */
+export function normalizeVisitorPath(path: string): string | null {
+	if (!path.startsWith('/')) return null;
+	const trailing = path.length > 1 && path.endsWith('/');
+	const body = trailing ? path.slice(0, -1) : path;
+	const parts: string[] = [];
+	for (const segment of body.split('/')) {
+		if (segment === '.' || segment === '') {
+			if (segment === '' && parts.length > 0) return null;
+			continue;
+		}
+		if (segment === '..') return null;
+		parts.push(segment);
+	}
+	if (!parts.length) return null;
+	return `/${parts.join('/')}${trailing ? '/' : ''}`;
+}
+
+/** Reject spoofed paths before any upstream URL is built. */
+export function routeApiRequest(rawUrl: string): ApiRoute {
+	if (requestPathSpoofed(rawUrl)) return { ok: false, status: 400 };
+	const target = requestTarget(rawUrl);
+	if (!target || isInternalHost(target.hostname)) return { ok: false, status: 400 };
+	const decoded = decodeVisitorPath(target.path);
+	if (!decoded) return { ok: false, status: 400 };
+	const normalized = normalizeVisitorPath(decoded);
+	if (!normalized || !isVisitorApiPath(normalized)) return { ok: false, status: 400 };
+	const apiPath = normalized.replace(/^\/api/, '') || '/';
 	if (!apiPath.startsWith('/')) return { ok: false, status: 400 };
-	const upstream = upstreamApiUrl(apiPath, incoming.search);
+	const upstream = upstreamApiUrl(apiPath, target.search);
 	if (!upstream) return { ok: false, status: 400 };
-	return { ok: true, upstream, modeHost: incoming.hostname, apiPath };
+	return { ok: true, upstream, modeHost: target.hostname, apiPath };
 }
 
 /** POST /api/spend/kill after the /api prefix is stripped. */

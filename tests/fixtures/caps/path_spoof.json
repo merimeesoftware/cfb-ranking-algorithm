@@ -39,6 +39,18 @@
     {
       "name": "mixed-dot-dot",
       "url": "https://preview.example.workers.dev/api/.%2e/agent/explain"
+    },
+    {
+      "name": "encoded-agent-slash",
+      "url": "https://preview.example.workers.dev/api/agent%2fexplain"
+    },
+    {
+      "name": "encoded-agent-slash-upper",
+      "url": "https://preview.example.workers.dev/api/agent%2Fexplain"
+    },
+    {
+      "name": "encoded-agent-letter",
+      "url": "https://preview.example.workers.dev/api/%61gent/explain"
     }
   ],
   "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10"
