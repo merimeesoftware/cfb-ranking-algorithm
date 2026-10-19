@@ -36,6 +36,7 @@ os.environ.setdefault('CFBD_MAX_CALLS', '24')
 
 from cache import get_cache
 from data_processor import CFBDataProcessor
+from spend_guards import is_cfbd_killed
 from ranking_service import (
     get_or_calculate_rankings,
     slim_rankings_for_list,
@@ -212,13 +213,17 @@ def publish_year(
     return {'fetched': fetch, 'computed': compute}
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description='Precompute static rankings JSON')
     parser.add_argument('--year', type=int)
     parser.add_argument('--week', type=int)
     parser.add_argument('--through-week', type=int, help='Precompute weeks 1..N')
     parser.add_argument('--current', action='store_true', help='Archive weeks for current season')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    if is_cfbd_killed():
+        print('CFBD kill switch is on. Precompute skipped.')
+        return 0
 
     if not os.getenv('CFBD_API_KEY'):
         print('CFBD_API_KEY required', file=sys.stderr)

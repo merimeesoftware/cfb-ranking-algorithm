@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
-import { consumeSpend, type SpendState } from '../src/spend-object.ts';
+import { consumeSpend, publicKillSetBody, type SpendState } from '../src/spend-object.ts';
 import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_MAX_OUTPUT_TOKENS, type GatewayCall } from '../src/providers.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from '../src/xai-usd.ts';
 import {
@@ -12,6 +12,7 @@ import {
 	containerSecrets,
 	enforceVisitorLimit,
 	isNonProductionHostname,
+	isSpendKillRoute,
 	paidCallAllowed,
 	stripPublicCounters,
 	BUSY_MESSAGE,
@@ -554,4 +555,98 @@ test('raising the weekly cap still does not fetch while the daily budget is 0', 
 	assert.equal(response.status, 503);
 	assert.equal(body.error, 'disabled');
 	assert.equal(fetched, false);
+});
+
+function trackedSpend(seed: Record<string, number>) {
+	const data = new Map<string, number>(Object.entries(seed));
+	const state: SpendState = {
+		storage: {
+			async get<T = unknown>(key: string) {
+				return data.get(key) as T | undefined;
+			},
+			async put(key: string, value: number) {
+				data.set(key, value);
+			},
+		},
+		async blockConcurrencyWhile<T>(callback: () => Promise<T>) {
+			return callback();
+		},
+	};
+	return { data, state };
+}
+
+test('durable object kill flags trip after dashboard vars are cleared', async () => {
+	const fixture = load('do_kill.json');
+	const { data, state } = trackedSpend(fixture.storage as Record<string, number>);
+	const before = new Map(data);
+	const env = fixture.env as Record<string, string>;
+	for (const body of fixture.requests as Record<string, unknown>[]) {
+		const response = await consumeSpend(state, env, new Request('https://spend.budget/consume', {
+			method: 'POST',
+			body: JSON.stringify(body),
+		}));
+		assert.equal(response.status, 429);
+		const payload = await response.json() as { ok: boolean; code: string; busy: boolean; message: string };
+		assert.equal(payload.ok, false);
+		assert.equal(payload.busy, true);
+		assert.equal(payload.message, BUSY_MESSAGE);
+		assert.equal(payload.code, fixture.expect_code);
+	}
+	assert.deepEqual([...data.entries()], [...before.entries()]);
+	assert.equal(isSpendKillRoute('POST', (fixture.latch as { route: string }).route), true);
+	assert.equal(isSpendKillRoute('GET', (fixture.latch as { route: string }).route), false);
+});
+
+test('set_kill latches flags that a wiped env cannot clear', async () => {
+	const fixture = load('do_kill.json');
+	const latch = fixture.latch as { secret: string; ai_kill: number; cfbd_kill: number };
+	const { data, state } = trackedSpend({});
+	const denied = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		headers: { 'x-cache-secret': latch.secret },
+		body: JSON.stringify({ action: 'set_kill', ai_kill: latch.ai_kill, cfbd_kill: latch.cfbd_kill }),
+	}));
+	assert.equal(denied.status, 403);
+	assert.equal(data.size, 0);
+	const wrong = await consumeSpend(
+		state,
+		{ CACHE_CLEAR_SECRET: latch.secret },
+		new Request('https://spend.budget/consume', {
+			method: 'POST',
+			headers: { 'x-cache-secret': 'nope' },
+			body: JSON.stringify({ action: 'set_kill', ai_kill: latch.ai_kill }),
+		}),
+	);
+	assert.equal(wrong.status, 401);
+	assert.equal(data.size, 0);
+	const planted = publicKillSetBody({
+		action: 'consume',
+		provider: 'xai',
+		ai_kill: latch.ai_kill,
+		cfbd_kill: latch.cfbd_kill,
+	});
+	assert.deepEqual(planted, { action: 'set_kill', ai_kill: latch.ai_kill, cfbd_kill: latch.cfbd_kill });
+	const set = await consumeSpend(
+		state,
+		{ CACHE_CLEAR_SECRET: latch.secret },
+		new Request('https://spend.budget/consume', {
+			method: 'POST',
+			headers: { 'x-cache-secret': latch.secret },
+			body: JSON.stringify(planted),
+		}),
+	);
+	assert.equal(set.status, 200);
+	assert.equal(data.get('ai_kill'), 1);
+	assert.equal(data.get('cfbd_kill'), 1);
+	const response = await consumeSpend(state, fixture.env as Record<string, string>, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ provider: 'cfbd', source: 'app' }),
+	}));
+	assert.equal(response.status, 429);
+	const payload = await response.json() as { ok: boolean; code: string };
+	assert.equal(payload.ok, false);
+	assert.equal(payload.code, fixture.expect_code);
+	assert.equal(data.get('ai_kill'), 1);
+	assert.equal(data.get('cfbd_kill'), 1);
+	assert.equal([...data.keys()].some((key) => key.startsWith('cfbd:app:')), false);
 });

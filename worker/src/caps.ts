@@ -73,6 +73,11 @@ export function isXaiEnabled(env: CapEnv): boolean {
 	return isKillSwitch(env.XAI_ENABLED);
 }
 
+/** POST /api/spend/kill after the /api prefix is stripped. */
+export function isSpendKillRoute(method: string, pathname: string): boolean {
+	return method.toUpperCase() === 'POST' && pathname === '/spend/kill';
+}
+
 export function paidCallAllowed(env: CapEnv, bucket: SpendBucket): boolean {
 	if (bucket === 'cfbd') return !isKillSwitch(env.CFBD_KILL);
 	if (isKillSwitch(env.AI_KILL)) return false;

@@ -45,6 +45,8 @@ jobs:
       - name: Precompute static rankings
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          # Repo variable. "1" skips the run before any live fetch. Empty is off.
+          CFBD_KILL: ${{ vars.CFBD_KILL }}
           # Per Sunday, after skipping published weeks. Warm runs refetch the
           # latest week only. 24 × 52/12 = 104/month, inside the 700 app ceiling.
           # Provider cfbd, source app. See config/cfbd-month.json.

@@ -9,6 +9,7 @@ import {
 	containerSecrets,
 	enforceVisitorLimit,
 	isCounterEndpoint,
+	isSpendKillRoute,
 	paidCallAllowed,
 	stripPublicCounters,
 	UNPUBLISHED_MESSAGE,
@@ -17,7 +18,7 @@ import {
 	type RateLimiter,
 } from './caps.ts';
 import { completeFromRequest, WORKERS_AI_HOST, XAI_HOST, type WorkersAiBinding } from './providers.ts';
-import { consumeSpend } from './spend-object.ts';
+import { consumeSpend, publicKillSetBody } from './spend-object.ts';
 
 export { ContainerProxy };
 
@@ -231,6 +232,26 @@ export default {
 			agent: env.AGENT_RATE_LIMITER,
 		});
 		if (limit.limited) return busyResponse(limit.code);
+
+		if (isSpendKillRoute(request.method, apiPath)) {
+			let raw: unknown = {};
+			try {
+				raw = await request.json();
+			} catch {
+				return jsonResponse({ ok: false, error: 'json' }, 400);
+			}
+			const body = publicKillSetBody(raw);
+			if (!body) return jsonResponse({ ok: false, error: 'json' }, 400);
+			const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
+			return stub.fetch('https://spend.budget/consume', {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					'x-cache-secret': request.headers.get('x-cache-secret') ?? '',
+				},
+				body: JSON.stringify(body),
+			});
+		}
 
 		const route = boardRoute(apiPath);
 		if (route) {

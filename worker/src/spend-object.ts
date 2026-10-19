@@ -10,6 +10,13 @@ import {
 import { BUSY_MESSAGE } from './caps.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from './xai-usd.ts';
 
+/**
+ * Durable Object keys. A deploy that clears dashboard vars must not clear
+ * these. They are written only by `set_kill`, never copied from env.
+ */
+export const AI_KILL_KEY = 'ai_kill';
+export const CFBD_KILL_KEY = 'cfbd_kill';
+
 /** Storage surface used by the named container instance that holds the counters. */
 export interface SpendState {
 	storage: {
@@ -29,14 +36,101 @@ function asBucket(value: unknown): SpendBucket | null {
  * One global counter for every container instance. Storage keys are
  * `xai:YYYY-MM-DD`, `workers_ai:YYYY-MM-DD`, and `cfbd:{source}:YYYY-MM-DD`
  * in UTC. xAI dollars use `xai:usd:{ISO week}` (`xai:usd:YYYY-Www`), rolling
- * at Monday 00:00 UTC. This app's CFBD budget is provider `cfbd`, source
- * `app`. Source `mcp` is reserved for #115 and is refused here.
+ * at Monday 00:00 UTC. `ai_kill` and `cfbd_kill` are 0 or 1 and are read
+ * inside the same `blockConcurrencyWhile` as the counter they gate.
+ * This app's CFBD budget is provider `cfbd`, source `app`. Source `mcp` is
+ * reserved for #115 and is refused here.
  *
  * This runs on the existing `CfbApiContainer` class (instance name
  * `spend-budget`) so a preview version upload does not add a Durable Object
  * migration. The handler returns before the container process starts.
  */
-type SpendEnv = BudgetEnv & { XAI_WEEKLY_USD_CAP?: string };
+type SpendEnv = BudgetEnv & {
+	XAI_WEEKLY_USD_CAP?: string;
+	CACHE_CLEAR_SECRET?: string;
+};
+
+type SpendPayload = {
+	provider?: string;
+	bucket?: string;
+	source?: string;
+	limit?: number;
+	action?: string;
+	prompt?: string;
+	ai_kill?: unknown;
+	cfbd_kill?: unknown;
+};
+
+function killKeyFor(bucket: SpendBucket): string {
+	return bucket === CFBD_PROVIDER ? CFBD_KILL_KEY : AI_KILL_KEY;
+}
+
+async function killLatched(state: SpendState, key: string): Promise<boolean> {
+	return (await state.storage.get<number>(key)) === 1;
+}
+
+function killBit(value: unknown): 0 | 1 | null {
+	if (value === 0 || value === '0') return 0;
+	if (value === 1 || value === '1') return 1;
+	return null;
+}
+
+function secretsMatch(expected: string, provided: string): boolean {
+	if (!expected || expected.length !== provided.length) return false;
+	let diff = 0;
+	for (let i = 0; i < expected.length; i += 1) {
+		diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
+	}
+	return diff === 0;
+}
+
+/** Public POST /api/spend/kill may only write the two flags. */
+export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?: unknown; cfbd_kill?: unknown } | null {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+	const record = raw as Record<string, unknown>;
+	const body: { action: 'set_kill'; ai_kill?: unknown; cfbd_kill?: unknown } = { action: 'set_kill' };
+	if ('ai_kill' in record) body.ai_kill = record.ai_kill;
+	if ('cfbd_kill' in record) body.cfbd_kill = record.cfbd_kill;
+	return body;
+}
+
+async function setStoredKills(state: SpendState, env: SpendEnv, request: Request, payload: SpendPayload): Promise<Response> {
+	const expected = (env.CACHE_CLEAR_SECRET ?? '').trim();
+	const provided = request.headers.get('x-cache-secret') ?? '';
+	if (!expected) {
+		return Response.json({ ok: false, error: 'auth' }, { status: 403, headers: { 'cache-control': 'no-store' } });
+	}
+	if (!secretsMatch(expected, provided)) {
+		return Response.json({ ok: false, error: 'auth' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+	}
+	const updates: Record<string, 0 | 1> = {};
+	if (payload.ai_kill !== undefined) {
+		const bit = killBit(payload.ai_kill);
+		if (bit === null) {
+			return Response.json({ ok: false, error: 'flags' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+		}
+		updates[AI_KILL_KEY] = bit;
+	}
+	if (payload.cfbd_kill !== undefined) {
+		const bit = killBit(payload.cfbd_kill);
+		if (bit === null) {
+			return Response.json({ ok: false, error: 'flags' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+		}
+		updates[CFBD_KILL_KEY] = bit;
+	}
+	if (!Object.keys(updates).length) {
+		return Response.json({ ok: false, error: 'flags' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+	}
+	await state.blockConcurrencyWhile(async () => {
+		for (const [key, value] of Object.entries(updates)) {
+			await state.storage.put(key, value);
+		}
+	});
+	return Response.json(
+		{ ok: true, ...updates },
+		{ status: 200, headers: { 'cache-control': 'no-store' } },
+	);
+}
 
 async function reserveXaiUsd(
 	state: SpendState,
@@ -48,6 +142,18 @@ async function reserveXaiUsd(
 	const week = isoWeekId();
 	const key = xaiUsdKey();
 	const result = await state.blockConcurrencyWhile(async () => {
+		if (await killLatched(state, AI_KILL_KEY)) {
+			return {
+				ok: false,
+				busy: true,
+				capped: true,
+				message: BUSY_MESSAGE,
+				code: 'kill_switch',
+				spent_micros: 0,
+				cap_micros: cap,
+				week,
+			};
+		}
 		const raw = await state.storage.get<number>(key);
 		const current = typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
 		if (wouldCross(current, add, cap)) {
@@ -79,18 +185,14 @@ async function reserveXaiUsd(
 }
 
 export async function consumeSpend(state: SpendState, env: SpendEnv, request: Request): Promise<Response> {
-	let payload: { provider?: string; bucket?: string; source?: string; limit?: number; action?: string; prompt?: string } = {};
+	let payload: SpendPayload = {};
 	try {
-		payload = (await request.json()) as {
-			provider?: string;
-			bucket?: string;
-			source?: string;
-			limit?: number;
-			action?: string;
-			prompt?: string;
-		};
+		payload = (await request.json()) as SpendPayload;
 	} catch {
 		return Response.json({ ok: false, error: 'json' }, { status: 400 });
+	}
+	if (payload.action === 'set_kill') {
+		return setStoredKills(state, env, request, payload);
 	}
 	const bucket = asBucket(payload.provider ?? payload.bucket);
 	if (!bucket) {
@@ -121,7 +223,23 @@ export async function consumeSpend(state: SpendState, env: SpendEnv, request: Re
 		get: (key: string) => state.storage.get<number>(key),
 		put: (key: string, value: number) => state.storage.put(key, value).then(() => undefined),
 	};
-	const result = await state.blockConcurrencyWhile(() => consumeDaily(store, bucket, limit, new Date(), source));
+	const result = await state.blockConcurrencyWhile(async () => {
+		if (await killLatched(state, killKeyFor(bucket))) {
+			return {
+				ok: false,
+				busy: true,
+				capped: true,
+				message: BUSY_MESSAGE,
+				count: 0,
+				limit,
+				bucket,
+				provider: bucket,
+				...(source ? { source } : {}),
+				code: 'kill_switch',
+			};
+		}
+		return consumeDaily(store, bucket, limit, new Date(), source);
+	});
 	return Response.json(result, {
 		status: result.ok ? 200 : 429,
 		headers: { 'cache-control': 'no-store' },
