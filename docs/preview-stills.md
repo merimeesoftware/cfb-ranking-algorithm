@@ -114,4 +114,4 @@ Capture uses `browserContext.route` for every request, `serviceWorkers: 'block'`
 
 ## Workers preview
 
-`--url` exists for a later check against an allowlisted `*.true-rankings-cfb.merimeesoftware.workers.dev` host. It requires `--sha` and a `/build.json` whose `sha` matches. CI does not pass `--url`. Do not point stills at a preview until preview URLs are confirmed on this issue; those versions use production `AI_MODE`.
+`--url` exists for a later check against an allowlisted preview host. It requires `--sha` and a `/build.json` whose `sha` matches. CI does not pass `--url`. Do not point stills at a preview until preview URLs are confirmed on this issue; those versions use production `AI_MODE`.

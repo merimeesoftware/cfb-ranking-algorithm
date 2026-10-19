@@ -16,8 +16,7 @@
 		RATING_NAME,
 		TAGLINE,
 		pageTitle,
-		weekPath,
-		SITE_ORIGIN,
+		publicUrl,
 	} from '$lib/brand';
 	import {
 		teams,
@@ -82,7 +81,7 @@
 		'@type': 'ItemList',
 		name: `${BRAND_NAME} ${$filterState.year} Week ${$filterState.week}`,
 		description: seoDescription,
-		url: `${SITE_ORIGIN}${weekPath($filterState.year, $filterState.week)}`,
+		url: publicUrl('/'),
 		numberOfItems: Math.min(25, ($teams.length || data.seed?.teams.length || 0)),
 		itemListElement: ($teams.length ? $teams : data.seed?.teams || []).slice(0, 25).map((t, i) => ({
 			'@type': 'ListItem',
@@ -187,7 +186,7 @@
 <SeoHead
 	title={seoTitle}
 	description={seoDescription}
-	canonicalPath={weekPath($filterState.year, $filterState.week)}
+	canonicalPath="/"
 	{jsonLd}
 />
 

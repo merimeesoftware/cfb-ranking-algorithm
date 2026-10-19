@@ -46,7 +46,25 @@ jobs:
 
       - name: Install, check, and build
         working-directory: frontend
+        env:
+          PUBLIC_SITE_URL: ""
         run: |
           npm ci
           npm run check
           npm run build
+
+      - name: Public host guard
+        env:
+          PUBLIC_SITE_URL: ""
+        run: |
+          node scripts/check-public-host.mjs --self-test
+          node scripts/check-public-host.mjs frontend/build worker/src --python --public-docs
+
+      - name: Build with PUBLIC_SITE_URL set
+        working-directory: frontend
+        env:
+          PUBLIC_SITE_URL: https://example.test
+        run: npm run build
+
+      - name: Assert set site URL
+        run: node scripts/check-public-host.mjs --assert-set https://example.test frontend/build

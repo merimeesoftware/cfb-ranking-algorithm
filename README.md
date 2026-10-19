@@ -63,8 +63,8 @@ The frontend calls `/api/*` on the same origin — no `VITE_API_URL` or `API_ORI
 
 ```bash
 npm ci --prefix frontend && npm ci --prefix worker && npm ci
-npm run deploy          # production → true-rankings-cfb.<account>.workers.dev
-npm run deploy:dev      # dev → cfb-rankings-dev.<account>.workers.dev
+npm run deploy          # production Worker true-rankings-cfb
+npm run deploy:dev      # optional dev Worker cfb-rankings-dev
 wrangler secret put CFBD_API_KEY
 ```
 
