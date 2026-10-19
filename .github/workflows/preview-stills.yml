@@ -1,0 +1,126 @@
+name: Preview stills
+
+# Local PR build only. No secrets, no pull_request_target, no Workers preview.
+# Preview versions of true-rankings-cfb use production AI_MODE (see #93, #94).
+#
+# contents: read is the whole permission set. actions/upload-artifact@v7
+# publishes with that token and does not need actions: write. npm caches
+# are not saved here: actions/cache needs actions: write to save a cache.
+# persist-credentials: false so the checkout does not leave a token in
+# .git/config for the PR's scripts to read.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  stills:
+    name: Preview stills
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout base comps
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base-comps
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install pinned Google Chrome
+        run: |
+          set -euo pipefail
+          VERSION=$(node --input-type=module -e "import { CHROME_VERSION } from './scripts/visual/lib/visual-rules.mjs'; process.stdout.write(CHROME_VERSION)")
+          curl -fsSL -o /tmp/chrome.deb "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${VERSION}-1_amd64.deb"
+          sudo apt-get update
+          # Runners may already have a newer Chrome. Stay on the pinned build.
+          sudo apt-get install -y --allow-downgrades /tmp/chrome.deb
+          google-chrome --version | grep -F "$VERSION"
+
+      - name: Install visual-check tools
+        working-directory: scripts/visual
+        run: npm ci
+
+      - name: Self-test planted fixtures
+        working-directory: scripts/visual
+        env:
+          VISUAL_SELF_TEST_OUT: ${{ github.workspace }}/preview-stills-out/self-test
+        run: node test-visual.mjs
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Capture stills
+        working-directory: scripts/visual
+        run: |
+          set -euo pipefail
+          BASE=../../base-comps
+          # The introducing PR's base SHA has no comps file yet. Write an
+          # empty manifest here. Do not copy the PR head's manifest: a pull
+          # request must not be able to sign its own comps. Once the file
+          # exists on the base branch, only that file is read.
+          if [ ! -f "$BASE/design/comps/manifest.json" ]; then
+            mkdir -p "$BASE/design/comps/renders"
+            cat > "$BASE/design/comps/manifest.json" <<'EOF'
+          {
+            "version": 1,
+            "routes": [
+              { "path": "/", "name": "home" },
+              { "path": "/methodology", "name": "methodology" },
+              { "path": "/2024/week/15", "name": "week-2024-15" }
+            ],
+            "comps": []
+          }
+          EOF
+            echo "Base SHA has no design/comps/manifest.json. Wrote a bootstrap manifest with zero signed comps."
+          fi
+          node ci-stills.mjs \
+            --build ../../frontend/build \
+            --base "$BASE" \
+            --out ../../preview-stills-out/app
+
+      - name: Job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## Preview stills"
+            echo
+            for summary in \
+              preview-stills-out/self-test/mismatch/summary.md \
+              preview-stills-out/self-test/nocomp/summary.md \
+              preview-stills-out/self-test/guard/summary.md \
+              preview-stills-out/self-test/pr-signature/summary.md \
+              preview-stills-out/self-test/bootstrap-ci/summary.md \
+              preview-stills-out/self-test/mask/summary.md \
+              preview-stills-out/self-test/path-escape/summary.md \
+              preview-stills-out/self-test/signed-nocomp/summary.md \
+              preview-stills-out/app/summary.md
+            do
+              if [ -f "$summary" ]; then
+                echo
+                cat "$summary"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: preview-stills
+          path: preview-stills-out/
+          if-no-files-found: warn
+          retention-days: 14

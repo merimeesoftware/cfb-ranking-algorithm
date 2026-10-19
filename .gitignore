@@ -67,6 +67,7 @@ ranking_results/
 !frontend/static/rankings/.gitkeep
 !frontend/static/rankings/**/*.json
 !tests/fixtures/**/*.json
+!design/comps/**/*.json
 
 # Security scan reports
 bandit-report.json

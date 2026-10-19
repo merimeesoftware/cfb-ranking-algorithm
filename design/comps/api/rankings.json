@@ -1,0 +1,75 @@
+{
+  "year": 2024,
+  "week": 15,
+  "generated_at": "2024-12-15T00:00:00Z",
+  "conference_rankings": [
+    {
+      "conference_name": "SEC",
+      "conference_type": "Power 4",
+      "average_team_quality": 1601.3,
+      "number_of_teams": 16,
+      "ranked_teams": 12,
+      "record_vs_p4": "21-13",
+      "record_vs_g5": "27-3"
+    },
+    {
+      "conference_name": "Big Ten",
+      "conference_type": "Power 4",
+      "average_team_quality": 1567.1,
+      "number_of_teams": 18,
+      "ranked_teams": 10,
+      "record_vs_p4": "22-16",
+      "record_vs_g5": "16-0"
+    }
+  ],
+  "team_rankings": [
+    {
+      "team_name": "Oregon",
+      "conference": "Big Ten",
+      "conference_type": "Power 4",
+      "final_ranking_score": 1842.2,
+      "team_quality_score": 1710.4,
+      "record_score": 2100.0,
+      "conference_quality_score": 1567.1,
+      "logo": null,
+      "color": "#154733",
+      "records": { "total_wins": 13, "total_losses": 0 }
+    },
+    {
+      "team_name": "Texas",
+      "conference": "SEC",
+      "conference_type": "Power 4",
+      "final_ranking_score": 1810.5,
+      "team_quality_score": 1690.2,
+      "record_score": 2040.0,
+      "conference_quality_score": 1601.3,
+      "logo": null,
+      "color": "#BF5700",
+      "records": { "total_wins": 12, "total_losses": 1 }
+    },
+    {
+      "team_name": "Ohio State",
+      "conference": "Big Ten",
+      "conference_type": "Power 4",
+      "final_ranking_score": 1794.8,
+      "team_quality_score": 1688.0,
+      "record_score": 2010.0,
+      "conference_quality_score": 1567.1,
+      "logo": null,
+      "color": "#BB0000",
+      "records": { "total_wins": 11, "total_losses": 2 }
+    },
+    {
+      "team_name": "Georgia",
+      "conference": "SEC",
+      "conference_type": "Power 4",
+      "final_ranking_score": 1766.1,
+      "team_quality_score": 1660.0,
+      "record_score": 1988.0,
+      "conference_quality_score": 1601.3,
+      "logo": null,
+      "color": "#BA0C2F",
+      "records": { "total_wins": 11, "total_losses": 2 }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "preview-stills",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "check": "node visual-check.mjs",
+    "test": "node test-visual.mjs"
+  },
+  "dependencies": {
+    "pixelmatch": "8.0.0",
+    "playwright-core": "1.64.1",
+    "pngjs": "7.0.0"
+  }
+}
