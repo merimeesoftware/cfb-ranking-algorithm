@@ -1,7 +1,7 @@
 # PURPOSE.md — True Rankings
 
 Status: **LOCKED** — Michael Merimee, 2026-09-28 (America/New_York)
-Amended: 2026-10-18 — proposed, pending Michael's signature
+Amended: 2026-10-18 — signed by Michael Merimee 23:14 ET (America/New_York); momentum named Heat
 Source: PRODUCT.md · docs/specs/2026-08-16-true-rankings-brand-gtm.md · docs/THE-DROP.md · docs/adr/0001-product-direction-2026-10-18.md (amendment)
 Repo: merimeesoftware/cfb-ranking-algorithm
 
