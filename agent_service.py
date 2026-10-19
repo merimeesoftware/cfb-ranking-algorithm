@@ -330,30 +330,25 @@ def _strip_possessive(name: str) -> str:
     return text
 
 
-def answer_is_grounded(
-    answer: str,
-    payload: Dict[str, Any],
-    teams: Optional[List[str]] = None,
-) -> bool:
+_FORMULA_PERCENT = re.compile(
+    r'\b(80|15|5)%\s+(Team Quality|Record Score|Conference Quality)'
+)
+
+
+def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     """Every number and team name in the answer is in the payload.
 
-    Team spans are checked against the canonical board list after possessives
-    are removed. Formula terms the explainer uses are allowed. Game-result
-    claims are checked only when the context actually lists games.
+    Formula percents are removed before the number check. A win claim is
+    allowed when that opponent is in games, or, when games is empty, only
+    when the opponent is in top_quality_wins. Any loss claim fails unless
+    games lists that loss.
     """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
         return False
     numbers, names, games = _payload_facts(payload)
-    for weight in FRS_WEIGHTS:
-        numbers.add(str(int(round(weight * 100))))
-        numbers.add(_number_token(format(weight, 'f')))
-    canonical = {
-        _strip_possessive(team)
-        for team in (teams or [])
-        if isinstance(team, str) and team.strip()
-    }
-    for raw in re.findall(r'\d+(?:\.\d+)?', text):
+    counted = _FORMULA_PERCENT.sub(' ', text)
+    for raw in re.findall(r'\d+(?:\.\d+)?', counted):
         if _number_token(raw) not in numbers:
             return False
     named = re.sub(r"['\u2019]s\b", '. ', text, flags=re.IGNORECASE)
@@ -361,19 +356,24 @@ def answer_is_grounded(
         normalized = _strip_possessive(span)
         if normalized in _NOT_A_TEAM or normalized in _EXPLAINER_TERMS:
             continue
-        if normalized in names:
-            continue
-        # Board teams have to be in this payload. Other unknown spans do too.
-        invented_team = normalized in canonical
-        if invented_team or normalized not in names:
+        if normalized not in names:
             return False
     played = payload.get('games') or []
-    if played:
-        for verb, opponent in _GAME_CLAIM.findall(text):
-            result = 'loss' if verb.lower() in ('lost to', 'fell to') else 'win'
-            claimed = _strip_possessive(opponent)
+    top_wins = {
+        _strip_possessive(name)
+        for name in (payload.get('top_quality_wins') or [])
+        if isinstance(name, str) and name.strip()
+    }
+    for verb, opponent in _GAME_CLAIM.findall(text):
+        result = 'loss' if verb.lower() in ('lost to', 'fell to') else 'win'
+        claimed = _strip_possessive(opponent)
+        if played:
             if (result, claimed) not in games:
                 return False
+            continue
+        if result == 'win' and claimed in top_wins:
+            continue
+        return False
     return True
 
 
@@ -540,14 +540,7 @@ def explain_ranking():
                 context, team_name, year, week, question_id, provider,
             )
 
-    board_teams = [
-        row.get('team_name')
-        for row in rankings.get('team_rankings') or []
-        if isinstance(row, dict)
-    ]
-    ai_written = served == 'live' and answer_is_grounded(
-        explanation or '', context, board_teams,
-    )
+    ai_written = served == 'live' and answer_is_grounded(explanation or '', context)
     if served == 'live' and not ai_written:
         explanation = EXPLAIN_BREAKDOWN
     payload = {

@@ -351,7 +351,6 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     context = _build_team_context(rankings, 'Oregon')
     assert context is not None
     assert context['games'] == []
-    teams = [row['team_name'] for row in rankings['team_rankings']]
     records = context['records']
     answers = [
         f"{context['team_name']} sits #{context['rank']} in the {context['conference']}.",
@@ -361,7 +360,6 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
             f"for {context['team_name']}."
         ),
         f"{context['neighbor_behind']} is next to {context['team_name']}.",
-        f"{context['team_name']} beat {context['neighbor_behind']}.",
         (
             f"Quality wins: {context['quality_wins']}. "
             f"Record: {records['total_wins']}-{records['total_losses']}."
@@ -369,20 +367,31 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     ]
     assert len(answers) >= 5
     for answer in answers:
-        assert answer_is_grounded(answer, context, teams), answer
+        assert answer_is_grounded(answer, context), answer
     assert answer_is_grounded(
         "The formula is 80% Team Quality + 15% Record Score + 5% Conference Quality.",
         context,
-        teams,
     )
-    assert not answer_is_grounded("Oregon is 40-0.", context, teams)
-    assert not answer_is_grounded("Alabama sits nearby.", context, teams)
+    beat_neighbor = f"{context['team_name']} beat {context['neighbor_behind']}."
+    top_wins = {
+        str(name).strip().lower()
+        for name in (context.get('top_quality_wins') or [])
+    }
+    neighbor = str(context.get('neighbor_behind') or '').strip().lower()
+    if neighbor and neighbor in top_wins:
+        assert answer_is_grounded(beat_neighbor, context), beat_neighbor
+    else:
+        assert not answer_is_grounded(beat_neighbor, context), beat_neighbor
+    assert not answer_is_grounded('Oregon lost to Ohio State.', context)
+    assert not answer_is_grounded('Oregon is 15-0.', context)
+    assert not answer_is_grounded('Oregon is 40-0.', context)
+    assert not answer_is_grounded('Alabama sits nearby.', context)
     prompt = _explain_prompt(context, 'Which results are carrying this rank?')
     assert 'This context has no played-game list.' in prompt
     played = dict(context)
     played['games'] = [{'opponent': 'Ohio State', 'result': 'win'}]
     assert 'listed in games' in _explain_prompt(played, 'Which results are carrying this rank?')
-    assert not answer_is_grounded('Oregon lost to Ohio State.', played, teams)
+    assert not answer_is_grounded('Oregon lost to Ohio State.', played)
 
 
 def test_stub_explain_is_not_cached(client, monkeypatch):
