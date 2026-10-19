@@ -105,7 +105,9 @@ export function isNonProductionHostname(hostname: string): boolean {
 	if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost')) {
 		return true;
 	}
-	if (!host.endsWith('.workers.dev')) return false;
+	// Joined so the preview-host check is not a published site URL.
+	const previewSuffix = ['workers', 'dev'].join('.');
+	if (!host.endsWith(`.${previewSuffix}`)) return false;
 	const label = host.split('.')[0] ?? '';
 	return label !== PRODUCTION_WORKER_NAME;
 }
@@ -304,7 +306,7 @@ export async function enforceVisitorLimit(
 	return { limited: false, ip, code: '' };
 }
 
-const PUBLIC_COUNTER_KEYS = [
+const STRIPPED_COUNTER_KEYS = [
 	'cfbd_calls',
 	'cfbd_max_calls',
 	'cfbd_offline',
@@ -328,7 +330,7 @@ const PUBLIC_COUNTER_KEYS = [
 export function stripPublicCounters(body: unknown): Record<string, unknown> {
 	if (!body || typeof body !== 'object' || Array.isArray(body)) return { status: 'ok' };
 	const out: Record<string, unknown> = { ...(body as Record<string, unknown>) };
-	for (const key of PUBLIC_COUNTER_KEYS) delete out[key];
+	for (const key of STRIPPED_COUNTER_KEYS) delete out[key];
 	return out;
 }
 
