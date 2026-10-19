@@ -11,6 +11,7 @@ import {
 	checkPublicQuery,
 	clientIp,
 	containerSecrets,
+	decodeVisitorPath,
 	enforceVisitorLimit,
 	SPEND_GATE_HOST,
 	internalHosts,
@@ -21,6 +22,7 @@ import {
 	routeApiRequest,
 	UPSTREAM_ORIGIN,
 	stripPublicCounters,
+	upstreamApiUrl,
 	BUSY_MESSAGE,
 } from '../src/caps.ts';
 
@@ -719,6 +721,25 @@ test('spoofed api paths never select an internal or production host', () => {
 	}
 });
 
+test('decodeVisitorPath rejects a second decode on its own', () => {
+	assert.equal(decodeVisitorPath('/api/%2561gent/explain'), null);
+	assert.equal(decodeVisitorPath('/api/agent%2509/explain'), null);
+});
+
+test('decodeVisitorPath rejects control characters on its own', () => {
+	assert.equal(decodeVisitorPath('/api/agent%09/explain'), null);
+	assert.equal(decodeVisitorPath('/api/agent\t/explain'), null);
+});
+
+test('upstreamApiUrl rejects a builder rewrite on its own', () => {
+	assert.equal(upstreamApiUrl('/%61gent/explain', ''), null);
+	assert.equal(upstreamApiUrl('/agent%09/explain', ''), null);
+});
+
+test('upstreamApiUrl rejects a control character the builder keeps', () => {
+	assert.equal(upstreamApiUrl('/agent\u0000/explain', ''), null);
+});
+
 test('agent limiter follows the routed path, not a normalized raw URL', async () => {
 	let agentHits = 0;
 	const limiters = {
@@ -800,6 +821,9 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 		'/api/agent%0A/health',
 		'/api/agent%0D/health',
 		'/api/agent%00/health',
+		'/api/%2561gent/explain',
+		'/api/agent%2509/explain',
+		'/api/agent%252f/explain',
 	]) {
 		capture.request = null;
 		agentHits.n = 0;
@@ -883,6 +907,23 @@ test('spend kill fails closed unless SPEND_KILL_SECRET matches the header', asyn
 		body: JSON.stringify({ ai_kill: 1 }),
 	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
 	assert.equal(wrongHeader.status, 401);
+	assert.equal(capture.request, null);
+	capture.request = null;
+	const querySecret = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill?secret=planted', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ ai_kill: 1 }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(querySecret.status, 401);
+	assert.equal(capture.request, null);
+	capture.request = null;
+	const bodySecret = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ ai_kill: 1, secret: 'planted' }),
+	}), { ...env, SPEND_KILL_SECRET: 'planted' } as never);
+	assert.equal(bodySecret.status, 401);
+	assert.equal(capture.request, null);
 	const opened = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill', {
 		method: 'POST',
 		headers: { 'content-type': 'application/json', 'x-spend-kill-secret': 'planted' },

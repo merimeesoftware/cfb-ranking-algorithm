@@ -5,13 +5,13 @@ Visitor requests for `/api/*` hit the edge Worker. Everything else is static.
 ## Request path
 
 1. The Worker (`worker/src/index.ts`) receives the request.
-2. `routeApiRequest` decodes the pathname once and produces one canonical path. A control character (`%00`–`%1F`, `%7F`, raw or decoded), an encoded slash or backslash, a backslash, a failed decode, or a path that changes on a second decode returns 400. Team names stay percent-encoded the way `encodeURIComponent` sends them (`%20`, `&`, accents).
+2. `routeApiRequest` decodes the pathname once and produces one canonical path. A control character (`%00`–`%1F`, `%7F`, raw or decoded), an encoded slash or backslash, a backslash, a failed decode, or a path that changes on a second decode returns 400. That canonical path is the decoded value: a team name sent as `%20` or an accent is the decoded name. The container URL encodes that path again.
 3. That same path is the route classifier, the visitor limiter key, the counter-header strip, and the path on the container URL. The URL builder must reproduce it. A rewrite is a 400.
 4. `/api/*` is limited per `CF-Connecting-IP`. Paths under `/agent/` also take the tighter agent limiter.
 5. Paid calls ask the SpendBudget Durable Object (`spend-budget` on `CfbApiContainer`) before the provider runs. The object stores the daily counters and the `ai_kill` / `cfbd_kill` latch.
-6. The container fetch uses the fixed origin `https://api.internal` plus the canonical path. Flask serves rankings, matchup, and `/agent/explain`.
+6. The Worker serves published `/rankings` and `/weeks` from static JSON. The container fetch uses the fixed origin `https://api.internal` plus the canonical path. Flask serves matchup, team pages, and `/agent/explain`.
 
-`POST /api/spend/kill` is authorized with `SPEND_KILL_SECRET` from header `X-Spend-Kill-Secret` only. Unset, the route returns 403 and does not fall back to `CACHE_CLEAR_SECRET`. The secret stays on the Worker. Release Ops provisions it.
+`POST /api/spend/kill` is authorized with `SPEND_KILL_SECRET` from header `X-Spend-Kill-Secret` only. Unset, the route returns 403 and does not fall back to `CACHE_CLEAR_SECRET`. The secret stays on the Worker. DevSecOps provisions it (ruling D-20261019-174).
 
 `POST /cache/clear` reads `CACHE_CLEAR_SECRET` from header `X-Cache-Secret` only and compares it with `hmac.compare_digest`. A `secret` query parameter is not forwarded to the container.
 

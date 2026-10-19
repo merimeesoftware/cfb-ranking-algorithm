@@ -83,6 +83,18 @@
     {
       "name": "control-nul-health",
       "url": "https://preview.example.workers.dev/api/agent%00/health"
+    },
+    {
+      "name": "double-encoded-agent-letter",
+      "url": "https://preview.example.workers.dev/api/%2561gent/explain"
+    },
+    {
+      "name": "double-encoded-agent-tab",
+      "url": "https://preview.example.workers.dev/api/agent%2509/explain"
+    },
+    {
+      "name": "double-encoded-agent-slash",
+      "url": "https://preview.example.workers.dev/api/agent%252f/explain"
     }
   ],
   "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10"
