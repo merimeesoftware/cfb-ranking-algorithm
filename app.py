@@ -157,7 +157,7 @@ def clear_cache():
     expected_secret = os.environ.get('CACHE_CLEAR_SECRET') or ''
     if not expected_secret:
         return jsonify({"error": "Cache clear disabled; set CACHE_CLEAR_SECRET"}), 403
-    if not hmac.compare_digest(provided, expected_secret):
+    if not hmac.compare_digest(provided.encode('utf-8'), expected_secret.encode('utf-8')):
         return jsonify({"error": "Unauthorized"}), 401
     cache.clear_all()
     return jsonify({"message": "Cache cleared successfully"})

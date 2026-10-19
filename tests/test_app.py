@@ -180,3 +180,8 @@ def test_cache_clear_requires_secret(client, monkeypatch):
     assert body.status_code == 401
     ok = client.post('/cache/clear', headers={'X-Cache-Secret': 'clear-test'})
     assert ok.status_code == 200
+    non_ascii = client.post('/cache/clear', headers={'X-Cache-Secret': 'caf\u00e9'})
+    assert non_ascii.status_code == 401
+    monkeypatch.setenv('CACHE_CLEAR_SECRET', 'cle\u00e1r')
+    matched = client.post('/cache/clear', headers={'X-Cache-Secret': 'cle\u00e1r'})
+    assert matched.status_code == 200
