@@ -12,9 +12,12 @@ from check_cfbd_month import (  # noqa: E402
     main,
     monthly_total,
     production_vars,
+    share_errors,
+    share_total,
 )
 
 FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_month_over_budget.json'
+SHARE_FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_share_sum_over.json'
 
 
 def test_planted_over_budget_fixture_fails():
@@ -35,6 +38,18 @@ def test_planted_over_budget_fixture_fails():
     assert evaluate(spec)
 
 
+def test_planted_share_sum_exceeds_900():
+    spec = json.loads(SHARE_FIXTURE.read_text(encoding='utf-8'))
+    total = share_total(spec)
+    assert spec['provider'] == 'cfbd'
+    assert spec['ceiling'] == 800
+    assert spec['mcp_reserved'] == 150
+    assert spec['margin'] == 50
+    assert total == 1000
+    assert total > 900
+    assert share_errors(spec)
+
+
 def test_live_config_stays_under_700():
     spec = live_spec()
     assert spec['errors'] == []
@@ -43,6 +58,8 @@ def test_live_config_stays_under_700():
     assert spec['ceiling'] == 700
     assert spec['mcp_reserved'] == 150
     assert spec['margin'] == 50
+    assert share_total(spec) == 900
+    assert share_errors(spec) == []
     assert spec['cron_calls_per_run'] == 24
     assert spec['live_cfbd_per_day'] == 4
     total, cron_calls = monthly_total(

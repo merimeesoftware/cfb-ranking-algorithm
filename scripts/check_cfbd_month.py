@@ -5,9 +5,12 @@ The budget is provider `cfbd`, source `app`. Monthly calls = cron calls +
 live daily budget × days. Cron calls = the precompute workflow's per-run cap
 × Sundays per year / months. The live budget is production CFBD_MAX_CALLS.
 
-The free tier is about 1,000 calls a month and is shared. This app's ceiling
-is 700. 150 is reserved for MCP via #115. 50 is margin. This repo does not
-build the MCP wrapper. A planted over-budget fixture must fail.
+The free tier is about 1,000 calls a month and is shared. This app's
+projection must stay at or under 700. The configured shares (app ceiling,
+MCP reserve, margin) must sum to 900 or less, so raising one share means
+lowering another. 150 is reserved for MCP via #115. 50 is margin. This
+repo does not build the MCP wrapper. A planted over-budget fixture must
+fail, and a planted share fixture must break the 900 sum.
 """
 from __future__ import annotations
 
@@ -21,14 +24,15 @@ CONFIG_PATH = ROOT / 'config' / 'cfbd-month.json'
 WRANGLER_PATH = ROOT / 'wrangler.toml'
 WORKFLOW_PATH = ROOT / '.github' / 'workflows' / 'precompute-rankings.yml'
 OVER_FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_month_over_budget.json'
+SHARE_FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_share_sum_over.json'
 
-# App share of the shared CFBD free quota. 150 is reserved for MCP via #115.
+# App projection stays at or under 700. Configured shares sum to 900 or less:
+# app ceiling + MCP reserve + margin. 150 is reserved for MCP via #115.
 # 50 is margin. 700 + 150 + 50 = 900.
 APP_PROVIDER = 'cfbd'
 APP_SOURCE = 'app'
 APP_CEILING = 700
-MCP_RESERVED = 150
-MARGIN = 50
+SHARE_CAP = 900
 
 
 def monthly_total(
@@ -81,6 +85,22 @@ def evaluate(spec: dict) -> list[str]:
     return errors
 
 
+def share_total(spec: dict) -> int:
+    """App ceiling plus the MCP reserve plus margin."""
+    return int(spec['ceiling']) + int(spec['mcp_reserved']) + int(spec['margin'])
+
+
+def share_errors(spec: dict, cap: int = SHARE_CAP) -> list[str]:
+    """Fail when the configured shares sum to more than 900."""
+    total = share_total(spec)
+    if total > cap:
+        return [
+            f'CFBD shares {spec["ceiling"]} + {spec["mcp_reserved"]} + '
+            f'{spec["margin"]} = {total}, cap {cap}'
+        ]
+    return []
+
+
 def live_spec() -> dict:
     formula = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
     wrangler = production_vars(WRANGLER_PATH.read_text(encoding='utf-8'))
@@ -94,12 +114,9 @@ def live_spec() -> dict:
         return {'errors': errors}
     if formula.get('provider') != APP_PROVIDER or formula.get('source') != APP_SOURCE:
         errors.append(f'CFBD budget must be provider {APP_PROVIDER} source {APP_SOURCE}')
-    if int(formula.get('ceiling', -1)) != APP_CEILING:
-        errors.append(f'app CFBD ceiling must be {APP_CEILING}')
-    if int(formula.get('mcp_reserved', -1)) != MCP_RESERVED or int(formula.get('margin', -1)) != MARGIN:
-        errors.append(
-            f'CFBD share must reserve {MCP_RESERVED} for MCP via #115 and keep margin {MARGIN}'
-        )
+    for name in ('ceiling', 'mcp_reserved', 'margin'):
+        if name not in formula:
+            errors.append(f'config/cfbd-month.json missing {name}')
     spec = {
         'provider': formula.get('provider'),
         'source': formula.get('source'),
@@ -127,18 +144,33 @@ def main() -> int:
             months=spec['months'],
             days=spec['days'],
         )
-        print(
-            f'CFBD {spec["provider"]}:{spec["source"]} month {total} = {cron_calls} cron '
-            f'({spec["cron_calls_per_run"]}×{spec["sundays_per_year"]}/{spec["months"]}) '
-            f'+ {spec["live_cfbd_per_day"]}×{spec["days"]} live; ceiling {spec["ceiling"]}; '
-            f'{MCP_RESERVED} reserved for MCP via #115; margin {MARGIN}'
-        )
+        if total > APP_CEILING:
+            errors.append(f'app projection {total} exceeds {APP_CEILING}')
         errors.extend(evaluate(spec))
+        if all(spec.get(name) is not None for name in ('ceiling', 'mcp_reserved', 'margin')):
+            shares = share_total(spec)
+            print(
+                f'CFBD {spec["provider"]}:{spec["source"]} month {total} = {cron_calls} cron '
+                f'({spec["cron_calls_per_run"]}×{spec["sundays_per_year"]}/{spec["months"]}) '
+                f'+ {spec["live_cfbd_per_day"]}×{spec["days"]} live; ceiling {APP_CEILING}; '
+                f'shares {spec["ceiling"]} + {spec["mcp_reserved"]} + {spec["margin"]} = {shares}, '
+                f'cap {SHARE_CAP}'
+            )
+            errors.extend(share_errors(spec))
+        else:
+            print(
+                f'CFBD {spec["provider"]}:{spec["source"]} month {total} = {cron_calls} cron '
+                f'({spec["cron_calls_per_run"]}×{spec["sundays_per_year"]}/{spec["months"]}) '
+                f'+ {spec["live_cfbd_per_day"]}×{spec["days"]} live; ceiling {APP_CEILING}'
+            )
     planted = json.loads(OVER_FIXTURE.read_text(encoding='utf-8'))
     if planted.get('provider') != APP_PROVIDER or planted.get('source') != APP_SOURCE:
         errors.append('cfbd_month_over_budget.json must name provider cfbd source app')
     if int(planted.get('ceiling', -1)) != APP_CEILING or not evaluate(planted):
         errors.append('cfbd_month_over_budget.json should fail the 700 ceiling')
+    shares = json.loads(SHARE_FIXTURE.read_text(encoding='utf-8'))
+    if shares.get('provider') != APP_PROVIDER or not share_errors(shares):
+        errors.append('cfbd_share_sum_over.json should fail the 900 share cap')
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
