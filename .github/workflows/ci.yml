@@ -46,7 +46,16 @@ jobs:
 
       - name: Install, check, and build
         working-directory: frontend
+        env:
+          PUBLIC_SITE_URL: ""
         run: |
           npm ci
           npm run check
           npm run build
+
+      - name: Public host guard
+        env:
+          PUBLIC_SITE_URL: ""
+        run: |
+          node scripts/check-public-host.mjs --self-test
+          node scripts/check-public-host.mjs frontend/build

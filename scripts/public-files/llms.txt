@@ -1,0 +1,30 @@
+# True Rankings
+
+> The order you check before you argue — not a poll, not a committee, not the narrative. Rankings are always free.
+
+## Site
+
+- Home (this week's board): {ORIGIN}/
+- Methodology: {ORIGIN}/methodology
+- Canonical week URLs: {ORIGIN}/{year}/week/{week}
+- Team pages: {ORIGIN}/teams/{slug}
+- Comparisons: {ORIGIN}/games/{team-a}-vs-{team-b}
+
+## Machine-readable rankings
+
+- Manifest: {ORIGIN}/rankings/manifest.json
+- Week JSON: {ORIGIN}/rankings/{year}/week-{week}.json
+- Week story: {ORIGIN}/rankings/{year}/week-{week}.story.json
+- Live API (same origin): {ORIGIN}/api/rankings?year={year}&week={week}
+- Team breakdown: {ORIGIN}/api/rankings/team/{Team%20Name}?year={year}&week={week}
+- Comparison: {ORIGIN}/api/matchup?team_a={A}&team_b={B}&year={year}&week={week}
+
+## How to cite
+
+`True Rankings, {year} Week {week}, {ORIGIN}/{year}/week/{week}`
+
+Rating name: **TR+** (True Rankings plus). Internal formula term FRS is methodology-only.
+
+## Full context
+
+See /llms-full.txt for positioning. Rankings are never paywalled.
