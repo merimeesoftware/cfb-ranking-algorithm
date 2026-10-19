@@ -392,6 +392,17 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded(f'{subject} topped {opponent}.', context)
     assert not answer_is_grounded(f'{subject} edged {opponent}.', context)
     assert not answer_is_grounded(f'{subject} got a win over {opponent}.', context)
+    assert not answer_is_grounded(f'{subject} defeated {opponent}.', context)
+    assert not answer_is_grounded(
+        f'{subject} earned a victory against {opponent}.', context,
+    )
+    assert not answer_is_grounded(f'{subject} routed {opponent}.', context)
+    assert not answer_is_grounded(
+        f'{subject} and {opponent} met in the Big Ten title game.', context,
+    )
+    assert answer_is_grounded(
+        f'{opponent} sits just behind {subject}.', context,
+    )
     assert not answer_is_grounded('Oregon lost to Ohio State.', context)
     assert not answer_is_grounded('Oregon is 12-0.', context)
     assert not answer_is_grounded('Oregon is 12\u20130.', context)

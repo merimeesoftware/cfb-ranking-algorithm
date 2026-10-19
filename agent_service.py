@@ -308,7 +308,9 @@ _EXACT_FORMULA = re.compile(
 )
 _RECORD_PAIR = re.compile(r'\b(\d+)\s*[-\u2010-\u2015]\s*(\d+)\b')
 _RESULT_WORD = re.compile(
-    r'\b(?:wins?|won|winning|losses|loss|lost|losing|results?|'
+    r'\b(?:knocked off|took down|defeat(?:ed|s)?|victory|against|routed|'
+    r'dominated|handled|outlasted|met|played|'
+    r'wins?|won|winning|losses|loss|lost|losing|results?|'
     r'beats?|beating|beaten|fell|topped|edged|upset|over)\b',
     re.IGNORECASE,
 )
@@ -316,8 +318,8 @@ _LOSS_WORD = re.compile(
     r'\b(?:losses|loss|lost|losing|fell)\b',
     re.IGNORECASE,
 )
-_OTHER_RESULT = re.compile(
-    r'\b(?:topped|edged|upset|results?)\b',
+_POSITION_WORD = re.compile(
+    r'\b(?:next to|ahead|behind|above|below|spot|place|ranked|sits)\b',
     re.IGNORECASE,
 )
 _TOP_WIN_PHRASE = re.compile(r'\bbeat\b|\bwin over\b', re.IGNORECASE)
@@ -399,13 +401,32 @@ def _mentioned_teams(text: str, teams: set[str]) -> set[str]:
     return found
 
 
+def _neighbor_names(payload: Dict[str, Any]) -> set[str]:
+    names: set[str] = set()
+    for key in ('neighbor_ahead', 'neighbor_behind'):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            names.add(_strip_possessive(value))
+    return names
+
+
+def _neighbor_placement(sentence: str, others: set[str], neighbors: set[str]) -> bool:
+    """A second team is allowed when the sentence only places neighbors."""
+    if not others or not others <= neighbors:
+        return False
+    if _RESULT_WORD.search(sentence):
+        return False
+    return _POSITION_WORD.search(sentence) is not None
+
+
 def _top_win_exception(sentence: str, others: set[str], top_wins: set[str]) -> bool:
     """beat or win over a top_quality_wins team, with no other result word."""
     if not others or not others <= top_wins:
         return False
-    if _LOSS_WORD.search(sentence) or _OTHER_RESULT.search(sentence):
+    if _TOP_WIN_PHRASE.search(sentence) is None:
         return False
-    return _TOP_WIN_PHRASE.search(sentence) is not None
+    remainder = _TOP_WIN_PHRASE.sub(' ', sentence)
+    return _RESULT_WORD.search(remainder) is None
 
 
 def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
@@ -414,9 +435,11 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     Only the three FRS weight phrases are removed before the number check.
     Any other percent fails. An N-M pair, including a Unicode dash, is
     accepted only when it is the total record or the conference record.
-    With no games list, a sentence that names another payload team and a
-    result word fails, except beat or win over a top_quality_wins team.
-    When games are listed, that result has to be one of them.
+    With no games list, a sentence that names another payload team passes
+    only when every other team is a neighbor, the sentence has a position
+    word, and it has no result word. beat or win over a top_quality_wins
+    team is the exception. When games are listed, that result has to be
+    one of them.
     """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
@@ -447,14 +470,19 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
         if isinstance(name, str) and name.strip()
     }
     played = bool(payload.get('games'))
+    neighbors = _neighbor_names(payload)
     for sentence in _sentences(text):
         others = _mentioned_teams(sentence, roster) - {subject}
-        if not others or _RESULT_WORD.search(sentence) is None:
+        if not others:
             continue
         if not played:
             if _top_win_exception(sentence, others, top_wins):
                 continue
+            if _neighbor_placement(sentence, others, neighbors):
+                continue
             return False
+        if _RESULT_WORD.search(sentence) is None:
+            continue
         kind = 'loss' if _LOSS_WORD.search(sentence) else 'win'
         if any((kind, team) not in games for team in others):
             return False
