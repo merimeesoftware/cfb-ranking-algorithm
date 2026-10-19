@@ -37,7 +37,7 @@ run_worker_first = ["/api/*"]
 # The tier cost is 0 unless CFBD_TIER=1 ($0.23). Do not set CFBD_TIER here.
 # Prices: config/xai-usd.json (verify; https://docs.x.ai/developers/pricing).
 # AI_MAX_CALLS is that daily call cap.
-# Neurons for @cf/meta/llama-3.1-8b-instruct-fast:
+# Neurons for @cf/meta/llama-3.1-8b-instruct-fp8:
 #   13778 per million input tokens, 26128 per million output tokens.
 #   Worst case = ceil((4000*13778 + 80*26128) / 1_000_000) = 58 per call.
 #   100 * 58 = 5800, ceiling 8000, free daily Neurons 10,000.

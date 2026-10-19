@@ -11,7 +11,7 @@ import { weeklyCapMicros, XAI_USD } from './xai-usd.ts';
 export const XAI_HOST = 'ai.xai';
 export const WORKERS_AI_HOST = 'ai.workers';
 export const DEFAULT_XAI_MODEL = 'grok-4';
-export const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct-fast';
+export const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
 export const WORKERS_AI_MAX_INPUT_CHARS = 4000;
 /** Short answer: a few sentences. Kept under the previous 160-token cap. */
 export const WORKERS_AI_MAX_OUTPUT_TOKENS = 80;

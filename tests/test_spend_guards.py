@@ -112,6 +112,21 @@ def test_provider_max_calls_budget(monkeypatch):
     reset_provider_call_counts()
 
 
+def test_workers_ai_cap_of_1000_still_refuses_call_101(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    monkeypatch.setenv('AI_MAX_CALLS', '1000')
+    assert provider_max_calls('workers_ai') == 100
+    for n in range(1, 101):
+        assert register_live_provider_call('workers_ai') == n
+    with pytest.raises(AIBudgetError):
+        register_live_provider_call('workers_ai')
+    assert get_provider_call_count('workers_ai') == 100
+    reset_provider_call_counts()
+
+
 def test_xai_stays_refused_when_the_cap_is_raised(monkeypatch):
     reset_provider_call_counts()
     monkeypatch.delenv('AI_KILL', raising=False)

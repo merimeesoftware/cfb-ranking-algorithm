@@ -385,7 +385,7 @@ test('Workers AI completion passes the gateway id on the binding', async () => {
 	assert.equal(body.ok, true);
 	assert.equal(body.text, 'Stacked wins.');
 	assert.equal(model, DEFAULT_WORKERS_AI_MODEL);
-	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct-fast');
+	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct-fp8');
 	assert.equal(input?.max_tokens, WORKERS_AI_MAX_OUTPUT_TOKENS);
 	assert.equal(input?.tools, undefined);
 	assert.equal(input?.web_search, undefined);
@@ -770,6 +770,55 @@ test('workers ai outbound refuses call 101 before the model runs', async () => {
 	let modelRan = false;
 	const env = {
 		AI_MAX_CALLS: '100',
+		AI_GATEWAY_ID: 'true-rankings',
+		AI: {
+			async run() {
+				modelRan = true;
+				return { response: 'no' };
+			},
+		},
+		CFB_API: {
+			idFromName() { return 'spend-budget'; },
+			get() {
+				return {
+					fetch(request: Request) {
+						return consumeSpend(state, budgetEnv, request);
+					},
+				};
+			},
+		},
+	};
+	const handler = CfbApiContainer.outboundByHost['ai.workers'] as (
+		request: Request,
+		env: typeof env,
+	) => Promise<Response>;
+	const response = await handler(new Request('https://ai.workers/complete', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ messages: [{ role: 'user', content: 'Why is Oregon here?' }] }),
+	}), env);
+	assert.equal(response.status, 429);
+	const body = await response.json() as { ok: boolean; code: string };
+	assert.equal(body.ok, false);
+	assert.equal(body.code, 'workers_ai_budget');
+	assert.equal(modelRan, false);
+});
+
+test('AI_MAX_CALLS of 1000 still refuses workers ai call 101', async () => {
+	const state = spendState({});
+	const budgetEnv = { AI_MAX_CALLS: '1000' };
+	assert.equal(dailyLimitFor('workers_ai', budgetEnv), 100);
+	for (let n = 0; n < 100; n += 1) {
+		const accepted = await consumeSpend(state, budgetEnv, new Request('https://spend.budget/consume', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ provider: 'workers_ai', bucket: 'workers_ai' }),
+		}));
+		assert.equal(accepted.status, 200);
+	}
+	let modelRan = false;
+	const env = {
+		AI_MAX_CALLS: '1000',
 		AI_GATEWAY_ID: 'true-rankings',
 		AI: {
 			async run() {

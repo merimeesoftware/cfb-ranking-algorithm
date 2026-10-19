@@ -2,11 +2,12 @@
  * Global per-UTC-day paid-call budget.
  *
  * Unset configuration uses these defaults. An unset variable is never unlimited.
- * xAI is a hard 0. XAI_MAX_CALLS cannot raise it. Workers AI uses AI_MAX_CALLS
- * and defaults to 100. The named container instance `spend-budget` is the
- * shared counter. Flask keeps a same-number per-process cap as a second gate.
+ * xAI is a hard 0. XAI_MAX_CALLS cannot raise it. Workers AI uses AI_MAX_CALLS,
+ * defaults to 100, and cannot be raised above 100. The named container instance
+ * `spend-budget` is the shared counter. Flask keeps a same-number per-process
+ * cap as a second gate.
  *
- * Workers AI neurons (@cf/meta/llama-3.1-8b-instruct-fast):
+ * Workers AI neurons (@cf/meta/llama-3.1-8b-instruct-fp8):
  *   13778 per million input tokens, 26128 per million output tokens.
  *   Worst case = ceil((4000*13778 + 80*26128) / 1_000_000) = 58 per call.
  *   AI_MAX_CALLS 100 * 58 = 5800, ceiling 8000, free daily Neurons 10000.
@@ -73,7 +74,9 @@ export function resolveDailyLimit(raw: unknown, fallback: number): number {
 export function dailyLimitFor(bucket: SpendBucket, env: BudgetEnv): number {
 	if (bucket === 'xai') return DEFAULT_XAI_MAX_CALLS_PER_DAY;
 	const raw = bucket === 'workers_ai' ? env.AI_MAX_CALLS : env.CFBD_MAX_CALLS;
-	return resolveDailyLimit(raw, FALLBACKS[bucket]);
+	const resolved = resolveDailyLimit(raw, FALLBACKS[bucket]);
+	if (bucket === 'workers_ai') return Math.min(resolved, 100);
+	return resolved;
 }
 
 export function budgetKey(

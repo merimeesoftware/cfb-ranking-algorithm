@@ -123,13 +123,14 @@ def provider_max_calls(provider: str) -> int:
     Max live prompts for one provider this process per UTC day.
 
     Unset, blank, or invalid values use the in-code default.
-    xAI is hard 0. Workers AI defaults to 100.
+    xAI is hard 0. Workers AI defaults to 100 and cannot be raised above 100.
     Never unlimited. Stub/off modes never consume this budget.
     """
     if provider == 'xai':
         return DEFAULT_XAI_MAX_CALLS
     if provider == 'workers_ai':
-        return _parse_cap(os.environ.get('AI_MAX_CALLS', ''), DEFAULT_AI_MAX_CALLS)
+        resolved = _parse_cap(os.environ.get('AI_MAX_CALLS', ''), DEFAULT_AI_MAX_CALLS)
+        return min(resolved, 100)
     return 0
 
 
