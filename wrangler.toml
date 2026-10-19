@@ -17,14 +17,23 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-# Production spend mode. Do not change these without an explicit product decision.
-# Daily caps are NOT set here: unset AI_MAX_CALLS / CFBD_MAX_CALLS fall back to
-# the in-code defaults (100 AI calls/day, 25 CFBD calls/day). Kill switches
-# AI_KILL and CFBD_KILL default off. Preview hostnames force stub/offline
-# unless PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set on that version.
+# Production spend mode. AI_MODE and CFBD_OFFLINE stay live / 0.
+# Kill switches AI_KILL and CFBD_KILL default off. Preview hostnames force
+# stub/offline unless PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
+#
+# Monthly CFBD projection (free tier is about 1,000; ceiling is 900).
+# The formula lives in config/cfbd-month.json:
+#   cron 24 calls/Sunday × 52/12 = 104
+#   live CFBD_MAX_CALLS 4/day × 31 = 124
+#   104 + 124 = 228
+# AI_MAX_CALLS is 0 until Michael sets a dollar figure: stub or cached
+# answers only, no live MiniMax. Unset still falls back to the in-code
+# 100 / 25 defaults. These two lines are the production values.
 [vars]
 AI_MODE = "live"
 CFBD_OFFLINE = "0"
+AI_MAX_CALLS = "0"
+CFBD_MAX_CALLS = "4"
 
 # Per-visitor limits keyed on CF-Connecting-IP. namespace_id is account-unique.
 # Counters are per Cloudflare location; the Durable Object daily budget is global.
@@ -72,6 +81,8 @@ run_worker_first = ["/api/*"]
 [env.dev.vars]
 AI_MODE = "stub"
 CFBD_OFFLINE = "1"
+AI_MAX_CALLS = "0"
+CFBD_MAX_CALLS = "4"
 
 [[env.dev.ratelimits]]
 name = "API_RATE_LIMITER"

@@ -67,6 +67,7 @@ ranking_results/
 !frontend/static/rankings/.gitkeep
 !frontend/static/rankings/**/*.json
 !tests/fixtures/**/*.json
+!config/cfbd-month.json
 !design/comps/**/*.json
 
 # Security scan reports

@@ -6,7 +6,7 @@
 #   open http://localhost:5173
 #
 # Live smoke defaults (override in `.env`):
-#   CFBD_OFFLINE=0  AI_MODE=live  CFBD_MAX_CALLS=25  AI_MAX_CALLS=100
+#   CFBD_OFFLINE=0  AI_MODE=live  CFBD_MAX_CALLS=4  AI_MAX_CALLS=0
 #
 # Stop:
 #   docker compose down
@@ -28,8 +28,8 @@ services:
       STATIC_RANKINGS_DIR: /app/frontend_static_rankings
       CFBD_OFFLINE: ${CFBD_OFFLINE:-0}
       AI_MODE: ${AI_MODE:-live}
-      CFBD_MAX_CALLS: ${CFBD_MAX_CALLS:-25}
-      AI_MAX_CALLS: ${AI_MAX_CALLS:-100}
+      CFBD_MAX_CALLS: ${CFBD_MAX_CALLS:-4}
+      AI_MAX_CALLS: ${AI_MAX_CALLS:-0}
       AGENT_RATE_LIMIT: ${AGENT_RATE_LIMIT:-50}
     volumes:
       - ./.cache:/app/.cache

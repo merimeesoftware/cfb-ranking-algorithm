@@ -83,13 +83,13 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | Variable | Local default | Purpose |
 |----------|---------------|---------|
 | `CFBD_OFFLINE=1` | Yes in development | Block live CFBD HTTP; use `.cache/` + `frontend/static/rankings/` |
-| `CFBD_MAX_CALLS` | **25/day** in code if unset | Hard cap on live CFBD calls. Unset is never unlimited. |
+| `CFBD_MAX_CALLS` | **4/day** in production config; **25/day** in code if unset | Hard cap on live CFBD calls. Unset is never unlimited. |
 | `AI_MODE=stub` | Yes in development | Template explanations; **no MiniMax** |
 | `AI_MODE=off` | Production default | `explanation: null` + structured context only |
 | `AI_MODE=live` | Opt-in | Paygo MiniMax key only — **not** Coding Plan / OpenCode. Production `wrangler.toml` defaults to `live` once keys are set. |
 | `MINIMAX_MODEL` / `MINIMAX_BLURB_MODEL` | `MiniMax-M3` | Product default for explain + blurbs |
 | `MINIMAX_WEB_SEARCH` | `1` when live | MiniMax server `web_search` for media/street cues (not X API / Grok) |
-| `AI_MAX_CALLS` | **100/day** in code if unset | Hard cap on live MiniMax prompts. Unset is never unlimited. |
+| `AI_MAX_CALLS` | **0** in production config; **100/day** in code if unset | Hard cap on live MiniMax prompts. 0 keeps answers stub or cached until a dollar figure is set. |
 | `AGENT_RATE_LIMIT` | 50/hour in development, 30/hour in production | Per-visitor cap on `/agent/*`, keyed on `CF-Connecting-IP` only |
 | `AI_KILL` / `CFBD_KILL` | off | `1` stops every live MiniMax or CFBD call |
 | `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` | stub / `1` on non-production hosts | Explicit override for preview and dev versions |

@@ -32,6 +32,9 @@ jobs:
         env:
           CFBD_API_KEY: test-key-for-unit-tests
 
+      - name: CFBD monthly budget
+        run: python scripts/check_cfbd_month.py
+
   worker:
     name: Worker caps
     runs-on: ubuntu-latest

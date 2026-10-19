@@ -125,8 +125,8 @@ Production `AI_MODE=live` and `CFBD_OFFLINE=0` in `wrangler.toml` stay as they a
 
 | Control | Default when unset | Where it is enforced |
 |---------|--------------------|----------------------|
-| `AI_MAX_CALLS` | **100 calls / UTC day** | named `CfbApiContainer` instance `spend-budget`, then Flask |
-| `CFBD_MAX_CALLS` | **25 calls / UTC day** | same (leaves headroom under the ~1k/month free tier). The weekly precompute workflow sets its own `CFBD_MAX_CALLS=200` and does not use this counter. |
+| `AI_MAX_CALLS` | **0** in production `wrangler.toml` (unset code fallback 100/day) | named `CfbApiContainer` instance `spend-budget`, then Flask. 0 means stub or cached answers until a dollar figure is set. |
+| `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | same. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 900 ceiling. |
 | `AI_KILL` / `CFBD_KILL` | off (`0`) | Worker gate and Flask |
 | Visitor rate limit | 60/min on `/api/*`, 10/min on `/api/agent/*` | Workers Rate Limiting bindings, key = `CF-Connecting-IP` |
 | Preview / dev versions | `AI_MODE=stub`, `CFBD_OFFLINE=1` | Worker, unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` is set |
