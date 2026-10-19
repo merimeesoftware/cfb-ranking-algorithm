@@ -1,6 +1,6 @@
 # True Rankings
 
-> The order you check before you argue — not a poll, not a committee, not the narrative. Rankings are always free.
+> Weekly college football rankings. How good they actually are. The order you check before you argue — not a poll, not a committee, not the narrative. Rankings, methodology, and weekly JSON stay free and simultaneous.
 
 ## Site
 
@@ -27,4 +27,4 @@ Rating name: **TR+** (True Rankings plus). Internal formula term FRS is methodol
 
 ## Full context
 
-See /llms-full.txt for positioning. Rankings are never paywalled.
+See /llms-full.txt for positioning.

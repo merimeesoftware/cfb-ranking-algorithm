@@ -6,6 +6,8 @@ True Rankings (handle @TrueCFB) publishes a weekly college football ranking. The
 
 It measures how good teams actually are — not voter vibes, brand, or committee résumé politics.
 
+A computer power rating, like SP+ and FPI, with an open formula and a 'why here' for every team.
+
 The order you check before you argue — not a poll, not a committee, not the narrative.
 
 ## Hard product rules

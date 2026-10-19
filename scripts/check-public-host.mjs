@@ -92,6 +92,18 @@ function selfTest() {
 		if (/predictive/i.test(llms) || /market/i.test(llms)) {
 			fail('llms.txt still has prediction or market framing');
 		}
+		const lede = 'Weekly college football rankings. How good they actually are. The order you check before you argue — not a poll, not a committee, not the narrative. Rankings, methodology, and weekly JSON stay free and simultaneous.';
+		const closer = 'See /llms-full.txt for positioning.';
+		const rating = "A computer power rating, like SP+ and FPI, with an open formula and a 'why here' for every team.";
+		const llmsLines = llms.trimEnd().split('\n');
+		if (!llmsLines.includes(`> ${lede}`)) fail('llms.txt lede is not the locked sentence');
+		if (llmsLines[llmsLines.length - 1] !== closer || llms.includes('Rankings are never paywalled')) {
+			fail('llms.txt closer is not the locked sentence');
+		}
+		const full = readFileSync(join(unsetDir, 'llms-full.txt'), 'utf8');
+		if (!full.includes(rating) || /Comparable category:/i.test(full)) {
+			fail('llms-full.txt is missing the locked power-rating line');
+		}
 
 		const set = spawnSync(
 			process.execPath,
