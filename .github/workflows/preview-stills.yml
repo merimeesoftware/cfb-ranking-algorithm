@@ -44,14 +44,6 @@ jobs:
           VISUAL_SELF_TEST_OUT: ${{ github.workspace }}/preview-stills-out/self-test
         run: node test-visual.mjs
 
-      # Temporary proof step: the planted mismatch exits 1. Removed once the
-      # red run is on the PR. The self-test above stays and expects that exit.
-      - name: Planted mismatch fails the gate
-        working-directory: scripts/visual
-        env:
-          VISUAL_SELF_TEST_OUT: ${{ github.workspace }}/preview-stills-out/self-test-fail-job
-        run: node test-visual.mjs --fail-job-on-planted-mismatch
-
       - name: Build frontend
         working-directory: frontend
         run: |
