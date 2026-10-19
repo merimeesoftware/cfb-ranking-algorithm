@@ -1,5 +1,5 @@
 {
- "note": "Selectors and guards the #94 stills check should enforce on the built #98 view (app side). Guard ids match check-comps.mjs; the comp-side twin proves each guard with a planted fixture (planted/). Fields marked (#105) are the ones #105 adds; the view must read them, not derive them.",
+ "note": "Selectors and guards the #94 stills check should enforce on the built #98 view (app side), after D-20261018-198: the bar carries only the ordering parts (how they look + Heat, or how they look alone if Heat fails #96); resume, schedule strength and quality of wins are context beside it. Guard ids match check-comps.mjs; the comp-side twin proves each guard with a planted fixture (planted/). Fields marked (#105) are the ones #105 adds; the view must read them, not derive them.",
  "routes": [
   {
    "path": "/2024/week/10?team=Iowa%20State",
@@ -10,6 +10,7 @@
    ],
    "comp_states": [
     "row-open-mid",
+    "row-open-mid-1part",
     "sheet-390"
    ]
   },
@@ -21,7 +22,8 @@
     "1440"
    ],
    "comp_states": [
-    "row-open-mid"
+    "row-open-mid",
+    "row-open-mid-1part"
    ]
   }
  ],
@@ -29,7 +31,7 @@
   {
    "name": "board",
    "selector": "[data-check=board]",
-   "assert": "present; columns Rank/Team/Conference/Record/Δ/TR+ unchanged; only addition is the toggle cell"
+   "assert": "present; columns Rank/Team/Conference/Record/Resume/Δ/TR+; Resume is new (header 'Resume', title + aria-description 'Who they beat, ranked.'); rows ordered by the ordering TR+, never by resume"
   },
   {
    "name": "board-row",
@@ -39,27 +41,27 @@
   {
    "name": "row-toggle",
    "selector": "[data-check=row-toggle]",
-   "assert": "button, aria-expanded true|false, aria-controls → panel id, accessible name (aria-labelledby team name until why.toggle.accessible_name is locked), ≥44×44, :focus-visible outline ≥2px"
+   "assert": "button, aria-expanded true|false, aria-controls → panel id, aria-label == 'Show why {Team} is #{rank}', ≥44×44, :focus-visible outline ≥2px"
   },
   {
    "name": "why-panel",
    "selector": "[data-check=why-panel]",
-   "assert": "data-state in open|loading|error; data-parts == parts.length (#105)"
+   "assert": "data-state in open|negative|heat|loading|error; data-parts == parts.length (2 with Heat, 1 without)"
   },
   {
    "name": "cmp-above",
    "selector": "[data-check=cmp-above]",
-   "assert": "data-gap == team.final_ranking_score − above.final_ranking_score; data-empty=true for rank 1"
+   "assert": "data-gap == team ordering TR+ − above ordering TR+; data-parts == parts.length; caption 'Why they trail #{rank_above} {TeamAbove}'; data-empty=true for rank 1"
   },
   {
    "name": "cmp-below",
    "selector": "[data-check=cmp-below]",
-   "assert": "data-gap == team − below; data-empty=true for the last ranked team"
+   "assert": "data-gap == team − below (ordering TR+); caption 'Why they lead #{rank_below} {TeamBelow}'; data-empty=true for the last ranked team"
   },
   {
    "name": "part",
    "selector": "[data-part]",
-   "assert": "one per parts[] entry, in parts[] order; data-weight == parts[].weight (#105, from DEFAULT_CONFIG); data-contribution == weight × (value_self − value_other); visible [data-part-label] == parts[].name"
+   "assert": "one per ORDERING part in parts[] order (strength, heat); data-weight == parts[].weight from the ordering config (ADR 0002, not literals); data-contribution == weight × (value_self − value_other); visible [data-part-label] == locked part.name.<key> ('how they look', 'Heat')"
   },
   {
    "name": "sum",
@@ -73,13 +75,13 @@
   },
   {
    "name": "stat-sos",
-   "selector": "[data-check=stat-sos] [data-field=sos_rank]",
-   "assert": "== team.sos_rank (#105)"
+   "selector": "[data-check=context] [data-check=stat-sos]",
+   "assert": "outside every [data-gap]; label 'Schedule strength', value '#{sos_rank} of {N} (1 = hardest)' (#105)"
   },
   {
    "name": "stat-sov",
-   "selector": "[data-check=stat-sov] [data-field=sov_rank]",
-   "assert": "== team.sov_rank (#105)"
+   "selector": "[data-check=context] [data-check=stat-sov]",
+   "assert": "outside every [data-gap]; label 'Quality of wins', value '#{sov_rank} of {N} (1 = best)' (#105)"
   },
   {
    "name": "delta",
@@ -99,18 +101,33 @@
   {
    "name": "share-card",
    "selector": "[data-check=share-card]",
-   "assert": "exactly 1200×675; [data-field=url] == team.url without scheme"
+   "assert": "exactly 1200×675; every visible string is locked copy or data (headline '{Team} is #{rank} on TR+.', brand name, tagline); no URL until the domain slot is locked; role=img with aria-label == share.card.alt_text"
   },
   {
    "name": "sheet",
    "selector": "[data-check=sheet]",
    "assert": "390 only: role=dialog, aria-modal, full width, close button ≥44×44"
+  },
+  {
+   "name": "resume-cell",
+   "selector": "[data-check=resume-cell] [data-field=resume_rank]",
+   "assert": "== team.resume_rank (#105; rank by record_score); context only"
+  },
+  {
+   "name": "context",
+   "selector": "[data-check=context]",
+   "assert": "beside the comparisons, not inside a [data-gap]; holds ctx-resume, stat-sos, stat-sov and (2-part only) recent"
+  },
+  {
+   "name": "recent",
+   "selector": "[data-check=recent]",
+   "assert": "2-part only: 'Last {k} games: {wins}-{losses}.' from games over the Heat window"
   }
  ],
  "guards": [
   {
    "id": "parts-sum",
-   "rule": "|Σ data-contribution − data-gap| ≤ 1e-9 per comparison; every shown number is the 1-dp rounding of its data",
+   "rule": "|Σ data-contribution − data-gap| ≤ 1e-9 per comparison, where the gap is the ORDERING TR+ gap and the parts are only the ordering parts; every shown number is the 1-dp rounding of its data",
    "fixture": "planted/parts-sum.html"
   },
   {
@@ -135,13 +152,13 @@
   },
   {
    "id": "no-gambling",
-   "rule": "case-insensitive word match on text, alt/aria-label/title/placeholder/content/data-url/value and title: bet|bets|betting|bettor(s)|odds|market(s)|spread(s)|line(s)|pick(s)|lock of the week",
+   "rule": "case-insensitive word match on text, alt/aria-label/aria-description/title/placeholder/content/data-url/value and title: bet(s)|betting|bettor(s)|odds|market(s)|spread(s)|line(s)|pick(s)|lock(s)|lock of the week|cover(s/ed)|projection(s)|projected (Phil's betting check adds lock/cover/projection)",
    "fixture": "planted/no-gambling.html"
   },
   {
    "id": "copy-slots",
-   "rule": "unlocked slots render no text; locked/existing slots verbatim; no lorem/placeholder/TBD/{{ }}",
-   "fixture": "planted/copy-slots-unlocked.html, planted/copy-slots-placeholder.html"
+   "rule": "unlocked slots render no text; locked/existing slots verbatim, with {fields} filled only from data (data-vars) in text and attributes (data-aslot); no lorem/placeholder/TBD/{{ }}",
+   "fixture": "planted/copy-slots-unlocked.html, planted/copy-slots-template.html, planted/copy-slots-placeholder.html"
   },
   {
    "id": "tokens",
@@ -150,17 +167,17 @@
   },
   {
    "id": "share-card",
-   "rule": "card and document exactly 1200×675; URL rendered; PNG 1200×675",
-   "fixture": "planted/share-card-wrong-size.html"
+   "rule": "card and document exactly 1200×675; both PNGs 1200×675; no unlocked text: every visible string sits in a locked/existing [data-slot] or a [data-field] (URL not required, and absent while unlocked)",
+   "fixture": "planted/share-card-wrong-size.html, planted/share-card-unlocked-text.html"
   },
   {
    "id": "data-driven",
-   "rule": "no literal formula weights in renderer source; rendered data-weight ∈ parts[] for the state",
-   "fixture": "planted/hardcoded-weight.mjs"
+   "rule": "no literal weights in renderer source (old 0.80/0.15/0.05 and illustrative 0.9/0.1); rendered data-weight ∈ parts[] for the state",
+   "fixture": "planted/hardcoded-weight.mjs, planted/hardcoded-weight-2part.mjs"
   },
   {
    "id": "structure",
-   "rule": "each state carries its required selectors (#1 empty above, last empty below, ≥1 negative part, 4-part renders 4)",
+   "rule": "each state carries its required selectors (#1 empty above, last empty below, ≥1 negative part); every comparison renders parts_count parts (2 or 1); context never inside a gap; Heat state shows Heat deciding a comparison",
    "fixture": "planted/structure.html"
   }
  ]

@@ -9,12 +9,15 @@
  *   overflow-390     no horizontal overflow at 390 (document and any element outside a scroller)
  *   tap-44           every interactive element is at least 44×44 CSS px
  *   focus-visible    the row toggle shows a visible outline when focused from the keyboard
- *   no-gambling      no bet/odds/market/spread/line/pick/lock-of-the-week in text, attributes or locked copy
- *   copy-slots       unlocked slots are omitted (no text), locked/existing slots are verbatim, no placeholder text
+ *   no-gambling      no bet/odds/market/spread/line/pick/lock/cover/projection in text, attributes or locked copy
+ *   copy-slots       unlocked slots are omitted (no text); locked/existing slots are verbatim, templates filled
+ *                    only from data (data-vars), attribute slots too (data-aslot); no placeholder text
  *   tokens           every computed colour is an allowed token (tokens.json); team data colours exempt
- *   share-card       share card is exactly 1200×675, carries the URL, PNG is 1200×675
+ *   share-card       share card is exactly 1200×675, PNGs are 1200×675, and it shows no unlocked text: every
+ *                    visible string sits in a locked/existing [data-slot] or a [data-field] (the URL is unlocked → absent)
  *   data-driven      no hard-coded formula weights in the renderer; data-weight matches the fixture parts
- *   structure        each state has the selectors its role needs
+ *   structure        each state has the selectors its role needs; every comparison renders the state's
+ *                    parts_count (2 = how they look + Heat, 1 = how they look); Heat state shows Heat deciding
  *
  * Usage: node check-comps.mjs [--strict] [--json out.json] [file.html ...]
  * Exit 0 all pass, 1 any guard failed, 2 bad input.
@@ -45,9 +48,13 @@ const ALLOWED = new Set(
     .map((h) => h.toLowerCase())
 );
 const FIXTURES = JSON.parse(readFileSync(path.join(HERE, 'data/fixtures.json'), 'utf8'));
-export const GAMBLING_RE = /\b(bet|bets|betting|bettor|bettors|odds|market|markets|spread|spreads|line|lines|pick|picks|lock[\s-]+of[\s-]+the[\s-]+week)\b/i;
+export const GAMBLING_RE = /\b(bet|bets|betting|bettor|bettors|odds|market|markets|spread|spreads|line|lines|pick|picks|lock|locks|lock[\s-]+of[\s-]+the[\s-]+week|cover|covers|covered|projection|projections|projected)\b/i;
+export function fillTemplate(text, vars) {
+  return text.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : m));
+}
 const PLACEHOLDER_RE = /\b(lorem|ipsum|placeholder|tbd|todo|xxx)\b|\{\{|\[\[/i;
-const WEIGHT_LITERAL_RE = /(?<![\d.])0?\.(80|15|05)(?![\w.])|(?<![\d.])(80|15|5)\s*%/;
+// Old published weights (0.80/0.15/0.05) and the illustrative ordering weights (0.9/0.1) must come from data.
+const WEIGHT_LITERAL_RE = /(?<![\d.])0?\.(80|15|05|9|90|1|10)(?![\w.])|(?<![\d.])(80|15|5)\s*%/;
 
 function hexOf(rgb) {
   const m = rgb.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?/);
@@ -148,20 +155,29 @@ async function checkPage(page, file, vp) {
 
   // no-gambling (text + attributes + title)
   const text = await page.evaluate(() => {
-    const attrs = [...document.querySelectorAll('*')].flatMap((el) => ['alt', 'aria-label', 'title', 'placeholder', 'content', 'data-url', 'value'].map((a) => el.getAttribute(a)).filter(Boolean));
+    const attrs = [...document.querySelectorAll('*')].flatMap((el) => ['alt', 'aria-label', 'aria-description', 'title', 'placeholder', 'content', 'data-url', 'value'].map((a) => el.getAttribute(a)).filter(Boolean));
     return [document.title, document.body.innerText, ...attrs].join('\n');
   });
   const g = text.match(GAMBLING_RE);
   add('no-gambling', !g, g ? `found "${g[0]}"` : 'clean');
 
   // copy-slots
-  const slotEls = await page.evaluate(() => [...document.querySelectorAll('[data-slot]')].map((el) => ({ id: el.dataset.slot, text: el.textContent.trim() })));
+  const slotEls = await page.evaluate(() => [
+    ...[...document.querySelectorAll('[data-slot]')].map((el) => ({ id: el.dataset.slot, text: el.textContent.trim(), vars: el.dataset.vars ? JSON.parse(el.dataset.vars) : null, where: 'text' })),
+    ...[...document.querySelectorAll('[data-aslot]')].flatMap((el) => el.dataset.aslot.split(';').map((pair) => {
+      const [attr, id] = pair.split(':');
+      return { id, text: (el.getAttribute(attr) || '').trim(), vars: el.dataset.avars ? JSON.parse(el.dataset.avars) : null, where: attr };
+    })),
+  ]);
   const slotProblems = [];
   for (const s of slotEls) {
     const def = SLOT.get(s.id);
-    if (!def) slotProblems.push(`unknown slot ${s.id}`);
-    else if (def.status === 'unlocked' && s.text) slotProblems.push(`unlocked ${s.id} shows "${s.text}"`);
-    else if ((def.status === 'locked' || def.status === 'existing') && s.text !== def.text) slotProblems.push(`${s.id} not verbatim`);
+    if (!def) { slotProblems.push(`unknown slot ${s.id}`); continue; }
+    if (def.status === 'unlocked') { if (s.text) slotProblems.push(`unlocked ${s.id} shows "${s.text}"`); continue; }
+    if (def.status !== 'locked' && def.status !== 'existing') continue;
+    const want = fillTemplate(def.text, s.vars);
+    if (/\{\w+\}/.test(want)) slotProblems.push(`${s.id} (${s.where}) template not filled from data`);
+    else if (s.text !== want) slotProblems.push(`${s.id} (${s.where}) not verbatim: "${s.text}" ≠ "${want}"`);
   }
   const ph = text.match(PLACEHOLDER_RE);
   if (ph) slotProblems.push(`placeholder text "${ph[0]}"`);
@@ -188,17 +204,29 @@ async function checkPage(page, file, vp) {
   const off = colours.map(hexOf).filter((c) => c && c.a > 0 && !ALLOWED.has(c.hex));
   add('tokens', off.length === 0, off.length ? `off-token ${[...new Set(off.map((c) => c.hex))].join(', ')}` : `${colours.length} colours on token`);
 
-  // share-card
-  if (meta.comp === 'share-card' || (await page.locator('[data-check=share-card]').count())) {
+  // share-card: exact size + no unlocked text (every visible string is locked/existing copy or data)
+  if (meta.comp.startsWith('share-card') || (await page.locator('[data-check=share-card]').count())) {
     const s = await page.evaluate(() => {
       const c = document.querySelector('[data-check=share-card]');
       const r = c.getBoundingClientRect();
-      const url = c.dataset.url || '';
-      const shown = c.querySelector('[data-field=url]')?.textContent.trim() || '';
-      return { w: r.width, h: r.height, sw: document.documentElement.scrollWidth, sh: document.documentElement.scrollHeight, url, shown };
+      const stray = [];
+      const slotsUsed = [];
+      const walker = document.createTreeWalker(c, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const t = n.textContent.trim();
+        if (!t) continue;
+        const el = n.parentElement;
+        if (el.closest('.sr-only')) continue;
+        const owner = el.closest('[data-slot],[data-field]');
+        if (!owner || !c.contains(owner)) stray.push(t);
+        else if (owner.dataset.slot) slotsUsed.push({ id: owner.dataset.slot, t });
+      }
+      return { w: r.width, h: r.height, sw: document.documentElement.scrollWidth, sh: document.documentElement.scrollHeight, stray, slotsUsed };
     });
-    const okUrl = s.url && s.shown && s.url.replace(/^https?:\/\//, '') === s.shown;
-    add('share-card', s.w === 1200 && s.h === 675 && s.sw === 1200 && s.sh === 675 && okUrl, `${s.w}×${s.h} (doc ${s.sw}×${s.sh}) url ${okUrl ? 'ok' : 'missing'}`);
+    const unlocked = s.slotsUsed.filter((u) => SLOT.get(u.id)?.status !== 'locked' && SLOT.get(u.id)?.status !== 'existing');
+    const okSize = s.w === 1200 && s.h === 675 && s.sw === 1200 && s.sh === 675;
+    const okText = s.stray.length === 0 && unlocked.length === 0;
+    add('share-card', okSize && okText, `${s.w}×${s.h} (doc ${s.sw}×${s.sh})` + (okText ? `; ${s.slotsUsed.length} locked strings, no unlocked text` : `; unlocked text: ${[...s.stray, ...unlocked.map((u) => `${u.id}="${u.t}"`)].slice(0, 3).join(' | ')}`));
   }
 
   // data-driven: rendered weights must equal the fixture's parts for this state
@@ -211,29 +239,46 @@ async function checkPage(page, file, vp) {
   }
 
   // structure
+  const open = ['why-panel', 'cmp-above', 'cmp-below', 'chips', 'context', 'stat-sos', 'stat-sov', 'ctx-resume'];
   const need = {
-    'board-closed': ['board', 'board-row', 'row-toggle'],
-    'row-open-mid': ['board', 'row-toggle', 'why-panel', 'cmp-above', 'cmp-below', 'chips', 'stat-sos', 'share-btn'],
-    'row-open-first': ['why-panel', 'cmp-above', 'cmp-below', 'chips'],
-    'row-open-last': ['why-panel', 'cmp-above', 'cmp-below', 'chips'],
-    'negative-part': ['why-panel', 'cmp-above'],
-    'early-week': ['why-panel', 'few-games', 'chips'],
-    'four-part': ['why-panel', 'cmp-above', 'cmp-below'],
+    'board-closed': ['board', 'board-row', 'row-toggle', 'resume-cell'],
+    'row-open-mid': ['board', 'row-toggle', 'resume-cell', 'share-btn', 'recent', ...open],
+    'row-open-mid-1part': ['board', 'row-toggle', 'resume-cell', 'share-btn', ...open],
+    'row-open-first': open,
+    'row-open-last': open,
+    'negative-part': ['why-panel', 'cmp-above', 'context'],
+    'negative-part-1part': ['why-panel', 'cmp-above', 'context'],
+    heat: [...open, 'recent'],
+    'early-week': ['why-panel', 'few-games', 'chips', 'context'],
     loading: ['why-panel'],
     error: ['why-panel', 'error', 'retry'],
     'season-unavailable': ['unavailable'],
-    'sheet-390': ['sheet', 'sheet-close', 'why-panel'],
+    'sheet-390': ['sheet', 'sheet-close', 'why-panel', 'context'],
     'share-card': ['share-card'],
+    'share-card-1part': ['share-card'],
   }[meta.comp];
   if (need) {
     const missing = [];
     for (const n of need) if (!(await page.locator(`[data-check="${n}"]`).count())) missing.push(n);
-    let extra = '';
-    if (meta.comp === 'row-open-first' && !(await page.locator('[data-check=cmp-above][data-empty=true]').count())) extra = '#1 must have an empty above slot';
-    if (meta.comp === 'row-open-last' && !(await page.locator('[data-check=cmp-below][data-empty=true]').count())) extra = 'last team must have an empty below slot';
-    if (meta.comp === 'negative-part' && !(await page.locator('[data-part].neg').count())) extra = 'no negative part rendered';
-    if (meta.comp === 'four-part' && (await page.locator('[data-check=cmp-above] [data-part]').count()) !== 4) extra = 'four-part must render 4 parts';
-    add('structure', missing.length === 0 && !extra, missing.length ? `missing ${missing.join(', ')}` : extra || `${need.length} selectors present`);
+    const extra = [];
+    if (meta.comp === 'row-open-first' && !(await page.locator('[data-check=cmp-above][data-empty=true]').count())) extra.push('#1 must have an empty above slot');
+    if (meta.comp === 'row-open-last' && !(await page.locator('[data-check=cmp-below][data-empty=true]').count())) extra.push('last team must have an empty below slot');
+    if (meta.comp.startsWith('negative-part') && !(await page.locator('[data-part].neg').count())) extra.push('no negative part rendered');
+    const want = state?.parts_count;
+    if (want) {
+      const counts = await page.evaluate(() => [...document.querySelectorAll('[data-gap]')].map((g) => g.querySelectorAll('[data-part]').length));
+      if (counts.some((n) => n !== want)) extra.push(`comparisons render ${counts.join('/')} parts, state needs ${want}`);
+      const ctx = await page.evaluate(() => [...document.querySelectorAll('[data-gap] [data-check^=stat-], [data-gap] [data-check=ctx-resume]')].length);
+      if (ctx) extra.push('context (resume/schedule/quality of wins) is inside the gap');
+    }
+    if (meta.comp === 'heat') {
+      const decided = await page.evaluate(() => [...document.querySelectorAll('[data-gap]')].some((g) => {
+        const s = g.querySelector('[data-part=strength]');
+        return s && Number(s.dataset.contribution) * Number(g.dataset.gap) < 0 && g.querySelector('[data-part=heat]');
+      }));
+      if (!decided) extra.push('Heat state must show a comparison Heat decides');
+    }
+    add('structure', missing.length === 0 && !extra.length, missing.length ? `missing ${missing.join(', ')}` : extra.join('; ') || `${need.length} selectors present${want ? `, ${want}-part` : ''}`);
   }
   return res;
 }
@@ -273,9 +318,11 @@ async function main() {
   if (!explicit.length) {
     const hits = sourceGuard([path.join(HERE, 'render.mjs'), path.join(HERE, 'comp.css')]);
     results.push({ file: 'render.mjs, comp.css', guard: 'data-driven', ok: hits.length === 0, detail: hits.length ? `weight literal at ${hits.join(', ')}` : 'no weight literals' });
-    const share = path.join(HERE, 'renders/share-card-1200x675.png');
-    const s = existsSync(share) ? pngSize(share) : { w: 0, h: 0 };
-    results.push({ file: 'renders/share-card-1200x675.png', guard: 'share-card', ok: s.w === 1200 && s.h === 675, detail: `png ${s.w}×${s.h}` });
+    for (const name of ['share-card-1200x675.png', 'share-card-1part-1200x675.png']) {
+      const share = path.join(HERE, 'renders', name);
+      const s = existsSync(share) ? pngSize(share) : { w: 0, h: 0 };
+      results.push({ file: `renders/${name}`, guard: 'share-card', ok: s.w === 1200 && s.h === 675, detail: `png ${s.w}×${s.h}` });
+    }
     const locked = SLOTS.filter((s) => s.text).map((s) => s.text).join('\n');
     const g = locked.match(GAMBLING_RE);
     results.push({ file: 'copy-slots.json', guard: 'no-gambling', ok: !g, detail: g ? `found "${g[0]}"` : 'locked/existing copy clean' });

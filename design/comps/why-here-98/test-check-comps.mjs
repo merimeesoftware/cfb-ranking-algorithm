@@ -22,10 +22,12 @@ const cases = [
   ['focus-visible.html', 'focus-visible'],
   ['no-gambling.html', 'no-gambling'],
   ['copy-slots-unlocked.html', 'copy-slots'],
+  ['copy-slots-template.html', 'copy-slots'],
   ['copy-slots-placeholder.html', 'copy-slots'],
   ['tokens.html', 'tokens'],
   ['structure.html', 'structure'],
   ['share-card-wrong-size.html', 'share-card'],
+  ['share-card-unlocked-text.html', 'share-card'],
 ];
 const failures = [];
 const rows = [];
@@ -39,13 +41,15 @@ for (const [file, guard] of cases) {
   rows.push(`${ok ? 'ok  ' : 'BAD '} ${file.padEnd(30)} exit ${r.status} failed [${failed.join(', ')}] expected [${want.join(', ')}]`);
   if (!ok) failures.push(file);
 }
-const hits = sourceGuard([P('hardcoded-weight.mjs')]);
-const okSrc = hits.length >= 1;
-rows.push(`${okSrc ? 'ok  ' : 'BAD '} ${'hardcoded-weight.mjs'.padEnd(30)} data-driven hits ${hits.join(', ') || 'none'} expected ≥1`);
-if (!okSrc) failures.push('hardcoded-weight.mjs');
-const words = ['bet', 'odds', 'market', 'spread', 'line', 'pick', 'lock-of-the-week', 'lock of the week', 'Betting', 'PICKS'];
+for (const f of ['hardcoded-weight.mjs', 'hardcoded-weight-2part.mjs']) {
+  const hits = sourceGuard([P(f)]);
+  const okSrc = hits.length >= 1;
+  rows.push(`${okSrc ? 'ok  ' : 'BAD '} ${f.padEnd(30)} data-driven hits ${hits.join(', ') || 'none'} expected ≥1`);
+  if (!okSrc) failures.push(f);
+}
+const words = ['bet', 'odds', 'market', 'spread', 'line', 'pick', 'lock-of-the-week', 'lock of the week', 'Betting', 'PICKS', 'lock', 'cover', 'projection', 'projected'];
 const missed = words.filter((w) => !GAMBLING_RE.test(`x ${w} x`));
-const falsePos = ['headline', 'online', 'outline', 'betterment', 'Alphabet', 'how they look', 'who they beat', 'league strength', 'How good they actually are.'].filter((w) => GAMBLING_RE.test(w));
+const falsePos = ['headline', 'online', 'outline', 'betterment', 'Alphabet', 'how they look', 'Heat', 'Who they beat, ranked.', 'How good they actually are.', 'locked', 'discover', 'blockers', 'Couldn\'t load the breakdown right now.'].filter((w) => GAMBLING_RE.test(w));
 rows.push(`${missed.length + falsePos.length === 0 ? 'ok  ' : 'BAD '} ${'gambling word list'.padEnd(30)} ${words.length} words caught, ${falsePos.length} false positives${missed.length ? ' missed ' + missed.join(',') : ''}`);
 if (missed.length || falsePos.length) failures.push('gambling words');
 const clean = sourceGuard([path.join(HERE, 'render.mjs'), path.join(HERE, 'comp.css')]);

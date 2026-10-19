@@ -1,139 +1,230 @@
 # #98 "why here": design handoff package
 
-Refs #98. Built by the CFB design seat (owner:dean-cfb) on 2026-10-18 (ET). Branched from the head of PR #95 (`cursor/preview-stills-gate-380c` @ `5378550`), then merged forward to #95's `272e491` with GitHub's Update branch (merge `1fe77f9`). That brings in the base-ref comp trust, exit 3, and the signed PURPOSE amendment. PR #95 is **not merged**. This PR is stacked on #95's branch and only ever merges forward, with no rebase and no force-push.
+Refs #98. CFB design seat (owner:dean-cfb), revised 2026-10-18 (ET) for D-20261018-198. PR #108 now targets **main**, since #95 merged as `ab6e20a`. Main was merged forward into this branch with GitHub's Update branch (merge `cf628ca`). No rebase, no force-push.
 
-The board table stays primary and **unchanged**. There are two exceptions. First, a 44 px row toggle cell. Second, a larger hit area on the team-name link: padding and an equal negative margin, so it looks the same, to meet the 44 px rule.
+## What changed in this revision (D-20261018-198 + Phil's copy lock)
 
-## Package map (Autobot list → files)
+- **The bar carries only the ordering parts.**
+  - With Heat (2 parts): **how they look** (Elo) + **Heat**.
+  - Without Heat (1 part): **how they look** alone. This is the order if Heat fails the #96 gate, and the only option before Heat has 3 weeks of history.
+  - Parts still come from `parts[]`. Weights live in `data/order-config.json`, never in the renderer.
+- **Context sits beside the bar, never inside the gap.** This covers resume ("Resume", "Who they beat, ranked."), schedule strength, quality of wins, and the recent-games line in 2-part states. A structure check fails if any of it appears inside a `[data-gap]`.
+- **The board has a new Resume column.** The header reads "Resume", with title and `aria-description` "Who they beat, ranked.". Rows stay ordered by the ordering TR+; resume only sits beside it.
+- **The share card keeps the brand name and the locked tagline.** The footer URL is unlocked, so it is omitted. The share-card check no longer requires a URL. It now requires that every visible string is locked copy or data.
+- **Parts add up to the ordering-score gap.** Fixtures, checks, `check-targets.json` and this file are all updated.
+- **All locked copy renders verbatim.** That is 29 of Phil's strings plus the three names, filled only from data fields.
+
+### Record of D-20261018-198
+
+| Where | Found? |
+|---|---|
+| Issue #98 comment 2026-10-19T03:15:36Z (= 2026-10-18 23:15 ET) | **Yes.** "Decision (Michael, 2026-10-18 23:15 ET, via OS): the board is ordered by Elo plus Heat. Resume is shown as its own column … The 0.15 resume and 0.05 conference weights come out of the ordering blend. Heat ships only if the #96 gate passes … If it fails, the order is Elo alone." The same comment says the bar splits the gap into Elo and Heat, with resume, schedule strength and W/L beside it as context. |
+| Issue #96 comments 03:15:34Z and 03:21:09Z (23:15 / 23:21 ET) | **Yes.** Same decision text. The later comment gives the log id: ADR 0002 in the blend PR cites D-20261018-198. |
+| `PURPOSE.md` on main | **No D-198 record.** The amendment of 2026-10-18 23:14 ET (`740b9bd`, #106) locks "Heat" and the fan language. It does not record the ordering decision. |
+| `IDENTITY.md` on main | **No.** Unchanged. |
+| Commits on main (`git log` + `git grep D-20261018-198 origin/main`) | **No.** Main's latest commits are `ab6e20a` (#95), `740b9bd` (#106) and `b921e83` (ADR 0001). ADR 0002 is not on main yet. |
+
+### Phil's lock vs the owner summary
+
+The #98 comment (2026-10-19T03:30:06Z) was taken as the source of truth. It agrees with the summary, with these differences:
+
+1. **Extra locked strings.** Phil also locked value formats for schedule strength ("#{sos_rank} of {N} (1 = hardest)") and quality of wins ("#{sov_rank} of {N} (1 = best)"). These are slots `stat.sos.value` and `stat.sov.value`.
+2. **League strength was conditional in Phil's text.** He wrote "confirmed if it's still a bar part … if tonight's order folds it away, drop the slot". The owner note drops it, and so does this package.
+3. **Board slot count.** Phil wrote "all seven board.* slots". The board has eight existing slots: the title, 2 legend entries and 5 column headers. All eight are rendered unchanged.
+4. **Wider betting check.** Phil's check also names lock, cover, projection and "will". The `no-gambling` regex now also catches lock, cover and projection. "will" is too common for a word guard, so it stays a manual review item.
+
+## Package map
 
 | Item | Path | Count |
 |---|---|---|
-| Comps at 390 and 1440 | `renders/<state>-390.png`, `renders/<state>-1440.png` (HTML sources in `states/`) | 10 states × 2 widths = 20 PNGs |
-| Open row at 390 as a full-width sheet | `renders/sheet-390-390.png` | 1 |
-| Share card 1200×675 | `renders/share-card-1200x675.png` | 1 |
-| States | table below; `data/fixtures.json` (one object per state) | 12 |
-| Assets | "Assets" below; `assets/fonts/`, inline SVG glyphs in `render.mjs` (`ICON`) | 2 fonts, 14 glyphs |
-| Copy slots | `copy-slots.json` (source of truth), table below | 57 slots: 29 unlocked, 17 data, 8 existing, 3 locked |
-| Assertions (app side, for #94) | `check-targets.json`: routes, 16 selector targets, 11 guards | — |
-| Assertions (comp side, proven) | `check-comps.mjs`, `test-check-comps.mjs`, `planted/` | 11 guards, 12 planted fixtures + 1 planted source |
-| Manifest entries (PR #95 schema) | `manifest.fragment.json` (not merged into `design/comps/manifest.json`, see below) | 2 routes, 4 comp entries |
-| Tokens | `tokens.json`: IDENTITY.md + the main tailwind scale + hexes the board already ships | 0 new token proposals |
-| Rebuild | `./build.sh` (fixtures → states → renders → fragment → checks) | — |
+| Comps at 390 and 1440 | `renders/<state>-390.png`, `renders/<state>-1440.png` (sources in `states/`) | 12 states × 2 widths = 24 PNGs |
+| Open row at 390 as a sheet | `renders/sheet-390-390.png` | 1 |
+| Share cards 1200×675 | `renders/share-card-1200x675.png` (2-part), `renders/share-card-1part-1200x675.png` (1-part) | 2 |
+| Ordering config (illustrative) | `data/order-config.json` | 2 variants |
+| Fixtures | `data/fixtures.json` (`data/build_fixtures.py`) | 15 states |
+| Copy slots | `copy-slots.json` (source of truth), table below | 63 slots: 38 locked, 8 existing, 16 data, 1 unlocked |
+| App assertions (for #94) | `check-targets.json` | 2 routes, 19 targets, 11 guards |
+| Comp assertions, proven | `check-comps.mjs`, `test-check-comps.mjs`, `planted/` | 11 guards, 14 planted HTML + 2 planted sources |
+| Manifest entries (#95 schema) | `manifest.fragment.json` (unsigned, see below) | 2 routes, 4 entries |
+| Tokens | `tokens.json` | 0 new proposals |
+| Rebuild | `./build.sh` | — |
 
 Primary renders:
-- Open row at 1440: `renders/row-open-mid-1440.png`
-- Open row at 390: `renders/row-open-mid-390.png`, and as a sheet, `renders/sheet-390-390.png`
-- Share card: `renders/share-card-1200x675.png`
+- Open row at 1440: `renders/row-open-mid-1440.png` (2-part) and `renders/row-open-mid-1part-1440.png` (1-part)
+- Share card: `renders/share-card-1200x675.png` (2-part) and `renders/share-card-1part-1200x675.png`
 
 ## States
 
-| State | Team / data | What it proves |
-|---|---|---|
-| `board-closed` | 2024 W10 top 25 | Board unchanged, toggle on every row, `aria-expanded=false` |
-| `row-open-mid` | #15 Iowa State (7-1) vs #14 Ole Miss (gap −1.3) and #16 Boise State (+7.0) | Header (rank, TR+, record, Δ −5), two diverging-bar comparisons, game chips, `sos_rank` #45, `sov_rank` #12 |
-| `row-open-first` | #1 Oregon | No team above: the above slot is empty (`data-empty=true`) and its copy slot is omitted |
-| `row-open-last` | #136 UTEP (1-8) | No team below. Three bad-loss chips, including a loss to an FCS team (Southern Utah) |
-| `three-part` | every 3-part state above | Parts come from `DEFAULT_CONFIG` weights (80 / 15 / 5 %, read from `ranking_service.py` with ast) |
-| `four-part` | Iowa State under illustrative Elo-plus-Heat weights (Michael pending) | 4 parts including Heat (named in the 2026-10-18 PURPOSE amendment); re-ranked neighbours |
-| `negative-part` | Iowa State panel alone | Red bars run left of the axis (strength −54.4 vs Ole Miss) |
-| `early-week` | Iowa State, 2024 W1 (1-0, rank 38) | Few-games marker (dashed bars, `games_played` = 1), no previous rank (Δ shows "—") |
-| `loading` | Iowa State | Skeleton, `aria-busy`, no text |
-| `error` | Iowa State | Alert glyph and a 44 px retry button; message slot omitted |
-| `season-unavailable` | 2026 W8 (no static detail yet, #105) | Empty state that shows only the season |
-| `sheet-390` | Iowa State | Full-width bottom sheet, `role=dialog`, close button 44 px |
-| `share-card` | Iowa State | 1200×675, brand plus locked tagline, URL baked in |
+All data is 2024 W10 unless noted. **Heat values are illustrative** (see "Illustrative numbers").
 
-`three-part` is not a separate file. Every 3-part state is a 3-part comp, and `four-part` is the 4-part comp.
+| State | Parts | Team and data | What it shows |
+|---|---|---|---|
+| `board-closed` | 2 | Top 25 under the 2-part order | Resume column (`resume_rank`); order set by the ordering TR+; toggles closed |
+| `row-open-mid` | 2 | #19 Iowa State (7-1, Δ −3). vs #18 Iowa: gap −4.6 = how they look −2.9 + Heat −1.7. vs #20 Minnesota: +7.3 = +21.0 − 13.7 | Heading "Why Iowa State is #19", captions, sum row, context (Resume #11, schedule strength #45 of 136, quality of wins #12 of 136, "Last 3 games: 2-1."), game chips with tag and venue text |
+| `row-open-mid-1part` | 1 | #19 Iowa State under Elo alone. vs #18 Iowa −3.2; vs #20 LSU +13.7 | Same panel without Heat and without the recent-games line; neighbours change with the order |
+| `negative-part` | 2 | Iowa State panel alone | Both parts negative against #18; Heat −13.7 working against a +7.3 lead |
+| `negative-part-1part` | 1 | Iowa State panel alone, Elo order | Single red bar (−3.2 vs #18) |
+| `heat` (was `four-part`) | 2 | #10 Colorado (6-2). vs #11 Penn State: +1.9 = how they look −17.2 + Heat +19.0 | **Heat decides the order** (highlighted); a check requires one comparison where Heat flips the sign |
+| `row-open-first` | 2 | #1 Oregon | Above slot empty: "No one is ranked above them." |
+| `row-open-last` | 2 | #136 Southern Miss (1-7) | Below slot empty: "No one is ranked below them on this board."; bad-loss chips |
+| `early-week` | 1 | Iowa State 2024 W1 (1-0, #38) | Heat unavailable, so 1 part; few-games note; no previous rank (Δ "—") |
+| `loading` | 2 | Iowa State | Skeleton sized to the part count; "Loading the breakdown…" for screen readers |
+| `error` | 2 | Iowa State | "Couldn't load the breakdown right now." and a "Try again" button |
+| `season-unavailable` | — | 2026 W8 | "2026 rankings aren't published yet." |
+| `sheet-390` | 2 | Iowa State | Bottom sheet with a "Close" button |
+| `share-card` / `share-card-1part` | 2 / 1 | Iowa State | Headline "Iowa State is #19 on TR+.", TR+, record, both comparisons, brand name, tagline, no URL; `aria-label` = locked alt text |
 
-## How the bar works (data, not constants)
+## How the bar works
 
-Each comparison lists the parts from `parts[]`. Each part has `key`, `name`, `weight`, `value_self`, `value_other` and `contribution`, where contribution = weight × (value_self − value_other). The contributions add up to the TR+ gap with the neighbour. The renderer does not know how many parts there are or what their weights are. The `data-driven` guard fails if a weight literal appears in `render.mjs` or `comp.css`. Positive (green, `#2d5a45`) means a part works for the open team; negative (red, `#C41E3A`) means it works against. Bars are scaled to the largest |contribution| in the panel. Measured on 2024 W10, all 136 teams: TR+ equals Σ weight × value to 2.3e-13.
+- **Parts.** Each comparison lists the ordering parts from `parts[]` ({key, name, weight, value_self, value_other, contribution}).
+  - contribution = weight × (value_self − value_other).
+  - The contributions add up to the **ordering TR+ gap**, to 1e-9 in fixtures and checks.
+- **Labels.** A part's label is the locked slot `part.name.<key>`. The renderer throws if the engine's `parts[].name` differs from it.
+- **Weights.** Weight shares show as % under Phil's caption ("The % is how much each part counts in TR+.").
+- **Data-driven guard.** No weight literal may appear in `render.mjs` or `comp.css`. That covers the old 0.80/0.15/0.05 and the illustrative 0.9/0.1.
+- **Resume ranks.** `resume_rank` = rank by `record_score`.
+- **Schedule strength and quality of wins.** `sos_rank` and `sov_rank` are re-ranked among the board's teams, so "#x of N" reads true (see question 6).
+
+### Illustrative numbers (not on screen)
+
+- **Heat weight.** It is 0.10 in the 2-part order, with how they look at 0.90, in `data/order-config.json`. It is **illustrative**: ADR 0002 and the #96 gate set the real weight.
+- **Heat value.** It is **illustrative**: 1500 + the change in Elo over the last 3 weeks. Replace it with #96's definition.
+- **Recent-games line.** "Last {k} games" uses k = 3, matching that illustrative Heat window.
+- **Fixed values.** The 1-part order is exactly Elo, at weight 1.0. The resume, schedule and W/L figures are real 2024 data.
 
 ## Check results (`check-report.json`)
 
-- `node check-comps.mjs`: **253/253 checks pass** across 22 files.
-  - parts-sum 24
-  - part-label 76 (0 pending)
-  - overflow-390 11
-  - tap-44 19
-  - focus-visible 17
-  - no-gambling 23
-  - copy-slots 22
-  - tokens 22
-  - share-card 2
-  - data-driven 15
-  - structure 22
-- `node check-comps.mjs --strict` (the app setting, with no pending labels allowed): **253/253**. Heat now has a locked name, so the strict run is clean.
-- `node test-check-comps.mjs`: **16/16 proofs hold**.
-  - Each of the 12 planted fixtures fails exactly its own guard and nothing else.
-  - `base.html` passes everything.
-  - The planted hard-coded-weight source trips `data-driven`.
-  - 10 gambling words are caught with 0 false positives on 9 safe phrases.
-  - The real package passes.
+- **`node check-comps.mjs` and `--strict`:** **276/276** checks pass across 27 files.
+  - parts-sum 34
+  - part-label 54 (0 pending)
+  - overflow-390 13
+  - tap-44 23
+  - focus-visible 19
+  - no-gambling 28
+  - copy-slots 27
+  - tokens 27
+  - share-card 4 (2 cards + 2 PNGs)
+  - data-driven 20
+  - structure 27
+- **`node test-check-comps.mjs`:** **19/19 proofs hold.**
+  - Each of the 14 planted HTML fixtures fails exactly its own guard:
+    - new: `copy-slots-template.html` (a locked template filled with the wrong data) and `share-card-unlocked-text.html` (a stray URL on the card);
+    - updated: `copy-slots-unlocked.html` now plants text in `share.card.url`, which is still unlocked.
+  - `base.html` passes.
+  - Both planted hard-coded sources (old 3-weight and illustrative 2-weight) trip `data-driven`.
+  - 14 gambling words are caught, with 0 false positives on 10 safe phrases, including every new locked string with "locked" or "blockers".
+  - The renderer is clean, and the package passes.
+- **Capture.** Chrome 155.0.8059.84 on the box. The #94/#95 gate pins Chrome 154, so re-sign from that pin.
 
-Captured with Chrome 155.0.8059.84 on the box. The #94 gate pins Chrome 154, so re-sign from that pin.
+## Assertions and the #95 manifest
 
-## Assertions and the PR #95 format
+`manifest.fragment.json` follows #95's schema. It stays **unsigned and is not merged** into `design/comps/manifest.json`. The gate compares stills of the **built** UI, and comps are read from the base ref under `design/comps/renders/`. `_design_ref` hashes `renders/row-open-mid-<w>.png` (2-part), which the built stills should be reviewed against.
 
-PR #95 defines `design/comps/manifest.json` (`route`, `width`, `file`, `sha256`, `signed_by`, `signoff`, `masks`) and a pixel gate. It has **no selector-assertion format**. The assertions therefore live in two places:
-- `check-targets.json` (app side: routes, selectors, guard ids). It follows the marriages-of-grace `check-targets.json` convention that #94 ports from.
-- `check-comps.mjs` (comp side, proven by `planted/`).
-
-`manifest.fragment.json` uses #95's schema exactly but stays **unsigned and unmerged**, for two reasons:
-1. The gate compares stills of the **built** UI at a 0.2% pixel diff. A signed comp has to be captured from the #98 implementation (`visual-check.mjs --capture-only`), not taken from these HTML design renders. `_design_ref` gives the hash of the design render that the built still is reviewed against.
-2. The Minicon REVISE on #95 moves comp lookup to the base ref. A comp counts only once it is on main, under `design/comps/renders/`, which is why the fragment's `file` paths point there.
-
-## Data the view reads (the #105 fields named in the assertions)
+## Data the view reads (#105 / #96 asks)
 
 | Field | Status | Used by |
 |---|---|---|
-| `team.prev_rank` | #105 item 2 | `delta` |
-| `team.sos_rank`, `team.sov_rank` | in static JSON today; #105 item 4 makes them required | `stat-sos`, `stat-sov` |
-| `parts[]` {key, name, weight, value, contribution} and per-neighbour `parts[]` with `contribution` and `gap` | #105 item 5 (parts-add-up test); names are a copy slot | `part`, `parts-sum`, `data-driven` |
-| `games[]` {opponent, opponent_rank, venue, result, tag} | #105 item 1 (win/loss lists). `venue` (home/away/neutral) and `tag` are new: today `wins_details` only has `is_road` | `chips` |
-| `team.games_played` | derivable from `records` | `few-games` |
-| `team.url` | `teamPath(name, year, week)` | `share-card` |
-| season default | #105 item 3 (`/rankings/team` defaults to 2023) | `season-unavailable` |
+| ordering `parts[]` {key, name, weight, value} and per-neighbour `parts[]` {contribution}, `gap` | #105 item 5. The keys are `strength` and `heat` only; weights come from ADR 0002 | `part`, `parts-sum`, `data-driven` |
+| `team.heat` | #96 | the Heat part |
+| `team.resume_rank` | **new ask** (rank by `record_score`) | `resume-cell`, `ctx-resume` |
+| `team.sos_rank`, `team.sov_rank` **among FBS**, plus N | **new ask**: today's ranks run over every division (W10 max 544/662) | `stat-sos`, `stat-sov` |
+| `team.prev_rank` under the same order | #105 item 2 | `delta` |
+| `team.recent` {k, wins, losses} | derivable from `games[]` over the Heat window | `recent` |
+| `games[]` {opponent, opponent_rank, venue, result, tag} | #105 item 1 (`venue` and `tag` are new) | `chips` |
+| `team.games_played` | derivable | `few-games` |
+| season default | #105 item 3 | `season-unavailable` |
 
-Game lists in these comps come from ESPN's public schedule API (`data/games-2024-espn.json`), standing in until #105's precompute lands. Opponent ranks and tags are computed from the 2024 W10 static board using the engine's thresholds (quality win above FBS P75; cupcake and bad loss below the tier P25, or against FCS).
+Game lists come from ESPN's public schedule API (`data/games-2024-espn.json`) for Iowa State, Oregon, Colorado, Southern Miss and UTEP. That is a stand-in until #105 lands.
 
 ## Assets
 
-| Asset | Source | Note |
-|---|---|---|
-| Oswald (variable 500–700), Source Sans 3 (variable 400–700) | Google Fonts latin subset, SIL OFL; `assets/fonts/` | IDENTITY.md faces. See open question 4 |
-| Team logo | CFBD logo URL in the app; comps use the team-colour disc that `TeamRow.svelte` already ships | Colours exempt from the token guard via `[data-team-color]` |
-| Glyphs (inline SVG, `currentColor`) | chevron, up, down, home, away, neutral, star, share, close, alert, retry, calendar, schedule, wins | Venue glyphs stand in while `chip.venue.*` is unlocked |
-| Share card background | existing `field-haze` gradient (tailwind config on main) | — |
+- **Fonts:** Oswald and Source Sans 3 (OFL) in `assets/fonts/`.
+- **Team mark:** a team-colour disc, exempt from the token check via `[data-team-color]`.
+- **Glyphs:** 16 inline SVGs (`currentColor`); new this revision: `heat` and `resume`.
+- **Share background:** field-haze gradient.
 
-## Copy slots (all need Phil's lock or confirmation; unlocked slots are omitted from every render)
+## Copy slots
 
-**Locked (render verbatim):**
-- `brand.name`: "True Rankings"
-- `brand.tagline`: "How good they actually are."
-- `brand.rating`: "TR+"
+Locked and existing slots render verbatim, with `{fields}` filled from data only. Unlocked slots are omitted. Data slots render data. **Dropped:**
+- `part.name.resume`: "who they beat" is no longer a bar label.
+- `part.name.league`: league strength left the order.
 
-**Existing on main, unchanged:** `board.title`, `board.legend.cfp`, `board.legend.bubble`, `board.col.rank|team|conference|record|delta`.
+| Slot | Status | Text rendered | Where |
+|---|---|---|---|
+| `brand.name` | locked | "True Rankings" | share card footer (tagline stays per owner steering) |
+| `brand.tagline` | locked | "How good they actually are." | share card footer (tagline stays per owner steering) |
+| `brand.rating` | locked | "TR+" | board header, panel score, share card |
+| `board.title` | existing | "Top 25 Teams" | board card header |
+| `board.legend.cfp` | existing | "CFP Playoff (1-12)" | board legend |
+| `board.legend.bubble` | existing | "On the Bubble (13-25)" | board legend |
+| `board.col.rank` | existing | "Rank" | board header |
+| `board.col.team` | existing | "Team" | board header |
+| `board.col.conference` | existing | "Conference" | board header |
+| `board.col.record` | existing | "Record" | board header |
+| `board.col.delta` | existing | "Δ" | board header |
+| `board.col.resume` | locked | "Resume" | board header; resume_rank column (context only, does not set the order) |
+| `board.col.resume.description` | locked | "Who they beat, ranked." | Resume header tooltip (title) and accessible description (aria-description); also the Resume context item in the panel |
+| `part.name.strength` | locked | "how they look" | bar label (engine sends parts[].name; must equal this text) |
+| `part.name.heat` | locked | "Heat" | bar label, 2-part order only |
+| `why.toggle.accessible_name` | locked | "Show why {Team} is #{rank}" | row toggle aria-label |
+| `why.heading` | locked | "Why {Team} is #{rank}" | open panel heading |
+| `why.vs_above.caption` | locked | "Why they trail #{rank_above} {TeamAbove}" | comparison vs #N-1 caption |
+| `why.vs_below.caption` | locked | "Why they lead #{rank_below} {TeamBelow}" | comparison vs #N+1 caption |
+| `why.no_above` | locked | "No one is ranked above them." | #1 team, in place of the above comparison |
+| `why.no_below` | locked | "No one is ranked below them on this board." | last team, in place of the below comparison |
+| `why.sum.caption` | locked | "Add the parts and you get the TR+ gap." | sum row under the parts |
+| `why.weight.caption` | locked | "The % is how much each part counts in TR+." | explains the % next to each part |
+| `why.delta.caption` | locked | "Move since the last ranking." | explains the move vs previous rank |
+| `stat.sos.label` | locked | "Schedule strength" | schedule strength stat (value = sos_rank) |
+| `stat.sos.value` | locked | "#{sos_rank} of {N} (1 = hardest)" | schedule strength value (context beside the bar) |
+| `stat.sov.label` | locked | "Quality of wins" | quality of wins stat (value = sov_rank) |
+| `stat.sov.value` | locked | "#{sov_rank} of {N} (1 = best)" | quality of wins value (context beside the bar) |
+| `stat.heat.recent_form_line` | locked | "Last {k} games: {wins}-{losses}." | Heat context, 2-part order only |
+| `chips.heading` | locked | "The games" | game strip heading |
+| `chip.tag.quality_win` | locked | "Quality win" | chip tag text + legend |
+| `chip.tag.cupcake` | locked | "Cupcake" | chip tag text + legend |
+| `chip.tag.bad_loss` | locked | "Bad loss" | chip tag text + legend |
+| `chip.venue.home` | locked | "Home" | chip venue |
+| `chip.venue.away` | locked | "Away" | chip venue |
+| `chip.venue.neutral` | locked | "Neutral site" | chip venue |
+| `early.note` | locked | "Few games played so far, so this rank rests on thin evidence." | few games / early week marker |
+| `loading.label` | locked | "Loading the breakdown…" | screen-reader loading text |
+| `error.message` | locked | "Couldn't load the breakdown right now." | error state |
+| `error.retry.label` | locked | "Try again" | retry button |
+| `unavailable.message` | locked | "{season} rankings aren't published yet." | season data not published |
+| `share.button.label` | locked | "Share" | panel share button |
+| `share.card.headline` | locked | "{Team} is #{rank} on TR+." | share card |
+| `share.card.alt_text` | locked | "{Team} is #{rank} on True Rankings, with a TR+ of {tr_plus} and a {record} record." | share image alt / og:image:alt |
+| `share.post_text` | locked | "{Team} is #{rank} on TR+. Here's why. {url}" | X intent text |
+| `sheet.close.label` | locked | "Close" | 390 sheet close button |
+| `share.card.url` | unlocked | — (omitted) | share card footer; OMITTED from comps |
+| `data.team_name` | data | field `team.team_name` | everywhere |
+| `data.rank` | data | field `team.rank` | disc, header |
+| `data.tr_plus` | data | field `team.final_ranking_score (1 dp)` | header, share card |
+| `data.record` | data | field `team.record` | header, rows |
+| `data.delta` | data | field `team.prev_rank - team.rank (#105)` | header, board Δ |
+| `data.resume_rank` | data | field `team.resume_rank (rank by record_score; #105)` | Resume column, panel context |
+| `data.part.weight` | data | field `parts[].weight as %` | bar row |
+| `data.part.contribution` | data | field `weight × (value_self − value_other), 1 dp signed` | bar row |
+| `data.gap` | data | field `team ordering TR+ − neighbour ordering TR+, 1 dp signed` | comparison header |
+| `data.sos_rank` | data | field `team.sos_rank (#105)` | stat |
+| `data.sov_rank` | data | field `team.sov_rank (#105)` | stat |
+| `data.game` | data | field `games[]: result, opponent, opponent_rank (#105 venue/tag)` | chips |
+| `data.url` | data | field `team.url (teamPath + year/week)` | share.post_text {url} only (not on the card) |
+| `data.season` | data | field `season` | unavailable state |
+| `data.recent` | data | field `team.recent {k,wins,losses} over the Heat window` | stat.heat.recent_form_line |
+| `data.board_size` | data | field `board_size = {N}` | stat.sos.value, stat.sov.value |
 
-**Data:**
-- `part.name.strength`, `part.name.resume`, `part.name.league`, `part.name.heat` (fixture values come from the PURPOSE.md fan-language list: "how they look", "who they beat", "league strength", "Heat")
-- `data.team_name`, `data.rank`, `data.tr_plus`, `data.record`, `data.delta`, `data.part.weight`, `data.part.contribution`, `data.gap`, `data.sos_rank`, `data.sov_rank`, `data.game`, `data.url`, `data.season`
-
-**Unlocked (omitted):**
-- Panel and comparisons: `why.toggle.accessible_name`, `why.heading`, `why.vs_above.caption`, `why.vs_below.caption`, `why.no_above`, `why.no_below`, `why.sum.caption`, `why.weight.caption`, `why.delta.caption`
-- Stats: `stat.sos.label`, `stat.sov.label`, `stat.heat.recent_form_line`
-- Chips: `chips.heading`, `chip.tag.quality_win`, `chip.tag.cupcake`, `chip.tag.bad_loss`, `chip.venue.home`, `chip.venue.away`, `chip.venue.neutral`
-- States: `early.note`, `loading.label`, `error.message`, `error.retry.label`, `unavailable.message`
-- Share and sheet: `share.button.label`, `share.card.headline`, `share.card.alt_text`, `share.post_text`, `sheet.close.label`
+`share.post_text` is locked but not rendered in any comp, because it ends in `{url}` and the URL is still unlocked (question 1).
 
 ## Open questions
 
-1. **Heat**: the name is now locked ("Heat", PURPOSE amendment 2026-10-18 23:14 ET). Still open: its weight, its definition (#96), whether resume moves to its own board column, and the backtest gate PURPOSE sets for shipping it. The 4-part comp uses illustrative weights (70/10/15/5) and an illustrative value (1500 + change in Elo over 3 weeks). Swap both for the engine's numbers when they exist.
-2. **Gambling lines**: resolved in PURPOSE.md by the 2026-10-18 amendment. The live hero still said "…before you argue or bet" on 2026-10-18; removing it is #93 PR2. Nothing in this package uses the old lines.
-3. **Accessible names.** The share, retry and close buttons are icon-only until their label slots are locked. The row toggle uses `aria-labelledby` pointing at the team name in the meantime.
-4. **Fonts in stills.** #95 strips Google Fonts from captured pages, so built stills render fallback faces unless the frontend self-hosts Oswald and Source Sans 3 (these files could be reused). Decide this before signing any comp.
-5. **Few-games threshold.** The comps use fewer than 4 games. Archie or the engine should own the number.
-6. **Data oddities seen in the fixtures.**
-   - Membership is #101: UTEP is "Mountain West" and Boise State is "Pac-12" in 2024, and the comps render these as-is.
-   - 2024 W1 `sos_rank` is 191 on a 135-team board.
-7. **Wiring.** `test-check-comps.mjs` isn't in CI yet, so the #95 workflow under review isn't touched. Add a step after #95 lands.
+1. **Share URL.** `share.post_text` is locked as "{Team} is #{rank} on TR+. Here's why. {url}", but the URL and domain are unlocked (owner note). Should the post go out without a URL until Michael confirms the domain, or should sharing wait?
+2. **Heat weight and definition.** These wait on ADR 0002 and the #96 gate. When they land, update `data/order-config.json` and rebuild. The renderer doesn't change.
+3. **Resume "#x" value.** Phil locked the header and description, but no value format such as "#11 of 136". The comps show "#11" as data.
+4. **Fonts in stills.** #95 strips Google Fonts, so built stills fall back unless the frontend self-hosts these faces.
+5. **Few-games threshold.** The comps use fewer than 4 games. This needs an engine owner.
+6. **Data oddities.**
+   - `sos_rank` and `sov_rank` rank all divisions (see the data table above).
+   - Conference membership is wrong (#101): Boise State is "Pac-12" and UTEP is "Mountain West" in 2024. The comps render these as they are.
+7. **CI wiring.** `test-check-comps.mjs` is not in CI yet. Add a step to the #95 workflow; that needs a token with workflow scope.
