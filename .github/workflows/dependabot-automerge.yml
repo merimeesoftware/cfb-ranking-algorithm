@@ -106,12 +106,10 @@ jobs:
           echo "All checks passed on $HEAD_SHA:"
           jq -r '.[] | "  \(.name)=\(.conclusion)"' <<<"$runs"
 
-          # owner:cfb-minicon already exists. This POST adds it to the PR.
-          # gh pr edit --add-label is GraphQL (list every label, then
-          # addLabelsToLabelable) and is not the pull-requests: write path.
-          gh api --method POST "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" \
-            -f "labels[]=${LABEL}" \
-            --jq '.[].name'
+          # owner:cfb-minicon already exists. gh pr edit --add-label succeeds
+          # with pull-requests: write alone (Actions token: Metadata read,
+          # PullRequests write).
+          gh pr edit "$PR_URL" --add-label "$LABEL"
 
           comment_body="Checks green on ${HEAD_SHA}. Ready for pair review (Minicon APPROVE, then True Rankings merges)."
           if gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[].body' \
