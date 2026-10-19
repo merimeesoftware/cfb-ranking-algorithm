@@ -318,11 +318,17 @@ _LOSS_WORD = re.compile(
     r'\b(?:losses|loss|lost|losing|fell)\b',
     re.IGNORECASE,
 )
-_POSITION_WORD = re.compile(
-    r'\b(?:next to|ahead|behind|above|below|spot|place|ranked|sits)\b',
+# A second team is allowed only in this shape. Unlisted verbs fail closed.
+_PLACEMENT_FORM = re.compile(
+    r'^(?P<left>.+?)\s+'
+    r'(?:sits|is ranked|is|holds the next spot)'
+    r'(?:\s+(?:just|right))?\s+'
+    r'(?:ahead of|next to|above|below|behind)\s+'
+    r'(?P<right>.+?)\s*$',
     re.IGNORECASE,
 )
 _TOP_WIN_PHRASE = re.compile(r'\bbeat\b|\bwin over\b', re.IGNORECASE)
+_AGENT_RESULT = r"(?:beat|got a win over|win over)"
 _NOT_A_TEAM = {
     'the', 'they', 'their', 'this', 'that', 'these', 'those', 'record',
     'quality', 'notable', 'immediately', 'a', 'an', 'after', 'before',
@@ -438,31 +444,44 @@ def _neighbor_names(payload: Dict[str, Any]) -> set[str]:
     return names
 
 
-def _neighbor_placement(sentence: str, others: set[str], neighbors: set[str]) -> bool:
-    """A second team is allowed when the sentence only places neighbors.
+def _neighbor_placement(
+    sentence: str,
+    subject: str,
+    others: set[str],
+    neighbors: set[str],
+) -> bool:
+    """A second team is allowed only in a fixed placement sentence.
 
-    A result word anywhere in the sentence blocks it. A later position
-    word does not split the sentence into a safe clause.
+    The shape is "{team} sits|is ranked|is|holds the next spot [just|right]
+    behind|ahead of|above|below|next to {team}". An unlisted verb does not
+    get in by sitting next to one of those words.
     """
-    if not others or not others <= neighbors:
+    if len(others) != 1 or not others <= neighbors or not subject:
         return False
-    if _RESULT_WORD.search(sentence):
+    lowered = sentence.strip().lower().rstrip('.')
+    match = _PLACEMENT_FORM.match(lowered)
+    if match is None:
         return False
-    return _POSITION_WORD.search(sentence) is not None
+    left = match.group('left').strip()
+    right = match.group('right').strip().rstrip('.')
+    return {left, right} == {subject, next(iter(others))}
 
 
-def _subject_before_phrase(sentence: str, subject: str, roster: set[str]) -> bool:
-    """The team being explained is the one that beat or won over.
+def _subject_is_agent(sentence: str, subject: str, opponent: str) -> bool:
+    """The subject is the team directly before beat or win over.
 
-    The subject has to be the whole team name. ``Ohio`` does not match
-    ``Ohio State``, and ``Oregon`` does not match ``Oregon State``.
+    ``Oregon beat Ohio State`` passes. ``Oregon, who Ohio State beat`` does
+    not, and ``Oregon`` does not match the start of ``Oregon State``.
     """
-    lowered = re.sub(r"['\u2019]s\b", '', sentence, flags=re.IGNORECASE).lower()
-    match = _TOP_WIN_PHRASE.search(lowered)
-    if match is None or not subject:
+    if not subject or not opponent:
         return False
-    prefix = lowered[:match.start()]
-    return bool(_whole_team_spans(prefix, subject, roster))
+    lowered = sentence.strip().lower()
+    return re.match(
+        rf'^{re.escape(subject)}(?:\'s|\u2019s)?\s+{_AGENT_RESULT}\s+'
+        rf'{re.escape(opponent)}\b',
+        lowered,
+        re.IGNORECASE,
+    ) is not None
 
 
 def _top_win_exception(
@@ -472,9 +491,9 @@ def _top_win_exception(
     top_wins: set[str],
 ) -> bool:
     """Subject beat or won over a top_quality_wins team, and nothing else."""
-    if not others or not others <= top_wins:
+    if len(others) != 1 or not others <= top_wins:
         return False
-    if not _subject_before_phrase(sentence, subject, top_wins | {subject} | others):
+    if not _subject_is_agent(sentence, subject, next(iter(others))):
         return False
     remainder = _TOP_WIN_PHRASE.sub(' ', sentence)
     return _RESULT_WORD.search(remainder) is None
@@ -487,10 +506,10 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     Any other percent fails. An N-M pair, including a Unicode dash, is
     accepted only when it is the total record or the conference record.
     With no games list, a sentence that names another payload team passes
-    only when every other team is a neighbor, the sentence has a position
-    word, and it has no result word anywhere in it. The exception is the
-    subject team beating or winning over a top_quality_wins team, matched
-    on the whole team name. A result word in the next sentence fails too.
+    only when it is a fixed placement sentence and every other team is a
+    neighbor. The exception is the subject directly before beat or win
+    over, naming a top_quality_wins team. A result word in the next
+    sentence fails too.
     When games are listed, that result has to be one of them. An N-M pair
     may use a Unicode dash or a minus sign.
     """
@@ -535,7 +554,7 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
         if not played:
             if _top_win_exception(sentence, subject, others, top_wins):
                 continue
-            if _neighbor_placement(sentence, others, neighbors):
+            if _neighbor_placement(sentence, subject, others, neighbors):
                 continue
             return False
         if _RESULT_WORD.search(sentence) is None:

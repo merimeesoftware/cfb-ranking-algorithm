@@ -417,6 +417,12 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded(
         'Oregon sits just ahead of Ohio State. They beat them.', context,
     )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon blanked, sits behind.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon crushed, sits behind.', context,
+    )
     state = dict(context)
     state['top_quality_wins'] = ['Oregon State']
     assert not answer_is_grounded('Oregon State beat Oregon.', state)
@@ -436,6 +442,12 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     listed['top_quality_wins'] = [opponent]
     assert answer_is_grounded(f'{subject} beat {opponent}.', listed)
     assert not answer_is_grounded(f'{opponent} beat {subject}.', listed)
+    assert not answer_is_grounded(
+        f'{subject}, who {opponent} beat, sits #1.', listed,
+    )
+    assert not answer_is_grounded(
+        f'{subject} fans saw {opponent} beat {subject}.', listed,
+    )
     assert answer_is_grounded(f'{subject} got a win over {opponent}.', listed)
     assert not answer_is_grounded(f'{subject} topped {opponent}.', listed)
     assert not answer_is_grounded(f'{subject} edged {opponent}.', listed)
