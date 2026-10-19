@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "pixelmatchThreshold": 0.1,
+  "maxDiffRatio": 0.002,
+  "routes": [
+    { "path": "/", "name": "home" },
+    { "path": "/methodology", "name": "methodology" },
+    { "path": "/2024/week/15", "name": "week-2024-15" }
+  ],
+  "comps": []
+}

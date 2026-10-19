@@ -1,0 +1,94 @@
+name: Preview stills
+
+# Local PR build only. No secrets, no pull_request_target, no Workers preview.
+# Preview versions of true-rankings-cfb use production AI_MODE (see #93, #94).
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  stills:
+    name: Preview stills
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install pinned Google Chrome
+        run: |
+          set -euo pipefail
+          VERSION=$(node --input-type=module -e "import { CHROME_VERSION } from './scripts/visual/lib/visual-rules.mjs'; process.stdout.write(CHROME_VERSION)")
+          curl -fsSL -o /tmp/chrome.deb "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${VERSION}-1_amd64.deb"
+          sudo apt-get update
+          sudo apt-get install -y /tmp/chrome.deb
+          google-chrome --version | grep -F "$VERSION"
+
+      - name: Install visual-check tools
+        working-directory: scripts/visual
+        run: npm ci
+
+      - name: Self-test planted fixtures
+        working-directory: scripts/visual
+        env:
+          VISUAL_SELF_TEST_OUT: ${{ github.workspace }}/preview-stills-out/self-test
+        run: node test-visual.mjs
+
+      # Temporary proof step: the planted mismatch exits 1. Removed once the
+      # red run is on the PR. The self-test above stays and expects that exit.
+      - name: Planted mismatch fails the gate
+        working-directory: scripts/visual
+        env:
+          VISUAL_SELF_TEST_OUT: ${{ github.workspace }}/preview-stills-out/self-test-fail-job
+        run: node test-visual.mjs --fail-job-on-planted-mismatch
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Capture stills
+        working-directory: scripts/visual
+        run: |
+          node visual-check.mjs \
+            --build ../../frontend/build \
+            --manifest ../../design/comps/manifest.json \
+            --out ../../preview-stills-out/app
+
+      - name: Job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## Preview stills"
+            echo
+            for summary in \
+              preview-stills-out/self-test/mismatch/summary.md \
+              preview-stills-out/self-test/nocomp/summary.md \
+              preview-stills-out/self-test/guard/summary.md \
+              preview-stills-out/app/summary.md
+            do
+              if [ -f "$summary" ]; then
+                echo
+                cat "$summary"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: preview-stills
+          path: preview-stills-out/
+          if-no-files-found: warn
+          retention-days: 14
