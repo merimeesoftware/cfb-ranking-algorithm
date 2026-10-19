@@ -2,13 +2,18 @@ name: Preview stills
 
 # Local PR build only. No secrets, no pull_request_target, no Workers preview.
 # Preview versions of true-rankings-cfb use production AI_MODE (see #93, #94).
+#
+# contents: read is the whole permission set. actions/upload-artifact@v7
+# publishes with that token and does not need actions: write. npm caches
+# are not saved here: actions/cache needs actions: write to save a cache.
+# persist-credentials: false so the checkout does not leave a token in
+# .git/config for the PR's scripts to read.
 
 on:
   pull_request:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   stills:
@@ -16,13 +21,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - name: Checkout base comps
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base-comps
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install pinned Google Chrome
         run: |
@@ -53,9 +66,30 @@ jobs:
       - name: Capture stills
         working-directory: scripts/visual
         run: |
-          node visual-check.mjs \
+          set -euo pipefail
+          BASE=../../base-comps
+          # The introducing PR's base SHA has no comps file yet. Write an
+          # empty manifest here. Do not copy the PR head's manifest: a pull
+          # request must not be able to sign its own comps. Once the file
+          # exists on the base branch, only that file is read.
+          if [ ! -f "$BASE/design/comps/manifest.json" ]; then
+            mkdir -p "$BASE/design/comps/renders"
+            cat > "$BASE/design/comps/manifest.json" <<'EOF'
+          {
+            "version": 1,
+            "routes": [
+              { "path": "/", "name": "home" },
+              { "path": "/methodology", "name": "methodology" },
+              { "path": "/2024/week/15", "name": "week-2024-15" }
+            ],
+            "comps": []
+          }
+          EOF
+            echo "Base SHA has no design/comps/manifest.json. Wrote a bootstrap manifest with zero signed comps."
+          fi
+          node ci-stills.mjs \
             --build ../../frontend/build \
-            --manifest ../../design/comps/manifest.json \
+            --base "$BASE" \
             --out ../../preview-stills-out/app
 
       - name: Job summary
@@ -69,6 +103,11 @@ jobs:
               preview-stills-out/self-test/mismatch/summary.md \
               preview-stills-out/self-test/nocomp/summary.md \
               preview-stills-out/self-test/guard/summary.md \
+              preview-stills-out/self-test/pr-signature/summary.md \
+              preview-stills-out/self-test/bootstrap-ci/summary.md \
+              preview-stills-out/self-test/mask/summary.md \
+              preview-stills-out/self-test/path-escape/summary.md \
+              preview-stills-out/self-test/signed-nocomp/summary.md \
               preview-stills-out/app/summary.md
             do
               if [ -f "$summary" ]; then
@@ -78,7 +117,7 @@ jobs:
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: preview-stills

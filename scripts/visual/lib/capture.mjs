@@ -27,6 +27,7 @@ export async function captureViewport(browser, { url, width, height, allowedOrig
     deviceScaleFactor: 1,
     reducedMotion: 'reduce',
     colorScheme: 'light',
+    serviceWorkers: 'block',
   });
   await context.addInitScript(() => {
     try {
@@ -35,8 +36,8 @@ export async function captureViewport(browser, { url, width, height, allowedOrig
       /* private mode */
     }
   });
+  await attachNavGuard(context, { allowedOrigin, violations });
   const page = await context.newPage();
-  await attachNavGuard(page, { allowedOrigin, violations });
   const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 20000 });
   await page.addStyleTag({ content: FREEZE_CSS });
   try {

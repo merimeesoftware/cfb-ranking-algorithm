@@ -1,8 +1,16 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WIDTHS, resolveThresholds } from './lib/visual-rules.mjs';
-import { evaluateComp, findCompEntry } from './lib/comps.mjs';
+import {
+  WIDTHS,
+  MAX_MASK_AREA_RATIO,
+  EXIT_FAIL,
+  EXIT_NO_COMPS,
+  maskAreaRatio,
+  resolveThresholds,
+  exitCodeForReport,
+} from './lib/visual-rules.mjs';
+import { countSignedComps, evaluateComp, findCompEntry } from './lib/comps.mjs';
 import { comparePngBuffers, sideBySidePng } from './lib/compare-stills.mjs';
 import { startFixtureServer } from './lib/fixture-server.mjs';
 import { launchChrome, captureViewport } from './lib/capture.mjs';
@@ -21,7 +29,8 @@ function parseArgs(argv) {
   const args = {
     build: null,
     fixtureDir: null,
-    manifest: path.join(REPO_ROOT, 'design/comps/manifest.json'),
+    manifest: null,
+    base: null,
     out: path.join(REPO_ROOT, 'preview-stills-out'),
     url: null,
     sha: null,
@@ -39,6 +48,7 @@ function parseArgs(argv) {
     if (token === '--build') args.build = next();
     else if (token === '--fixture-dir') args.fixtureDir = next();
     else if (token === '--manifest') args.manifest = next();
+    else if (token === '--base') args.base = next();
     else if (token === '--out') args.out = next();
     else if (token === '--url') args.url = next();
     else if (token === '--sha') args.sha = next();
@@ -50,13 +60,15 @@ function parseArgs(argv) {
 }
 
 function help() {
-  console.log(`usage: node visual-check.mjs --build frontend/build [--manifest design/comps/manifest.json] [--out preview-stills-out]
+  console.log(`usage: node visual-check.mjs --build frontend/build --base <repo-at-base-sha> [--out preview-stills-out]
        node visual-check.mjs --fixture-dir design/comps/planted --manifest <manifest.json> --out <dir>
 
-Compares viewport stills at 390x844 and 1440x900 to signed comps with pixelmatch.
-A route with no signed comp is "no comps", never a pass.
-Any /api/agent request or off-site origin fails the run.
---url is not used in CI.`);
+CI passes --base, a checkout of the PR base SHA. The manifest and renders
+are read only from that tree. A --manifest path is a local preview.
+
+Exit 0 pass, 1 fail, 2 bad input, 3 no comps.
+A mask covering more than 10% of the viewport fails.
+A comp whose realpath leaves design/comps/renders fails.`);
 }
 
 function loadManifest(file) {
@@ -96,10 +108,17 @@ async function main() {
     fail(2, 'pass --build frontend/build or --fixture-dir <dir>');
   }
   if (args.build && args.fixtureDir) fail(2, 'pass only one of --build and --fixture-dir');
+  if (args.base && args.manifest) fail(2, 'pass only one of --base and --manifest');
+  if (!args.base && !args.manifest) {
+    args.manifest = path.join(REPO_ROOT, 'design/comps/manifest.json');
+  }
 
-  const manifestPath = path.resolve(args.manifest);
+  const manifestPath = args.base
+    ? path.join(path.resolve(args.base), 'design/comps/manifest.json')
+    : path.resolve(args.manifest);
   const manifest = loadManifest(manifestPath);
   const manifestDir = path.dirname(manifestPath);
+  const signedCompCount = countSignedComps(manifest, manifestDir);
   const thresholds = resolveThresholds(manifest);
   const outDir = path.resolve(args.out);
   mkdirSync(outDir, { recursive: true });
@@ -198,12 +217,34 @@ async function main() {
 
         const entry = findCompEntry(manifest, route.path, viewport.name);
         const verdict = evaluateComp(entry, manifestDir);
+        if (verdict.hardFail) {
+          results.push({
+            route: route.path,
+            width: viewport.name,
+            status: 'fail',
+            reason: verdict.reason,
+            actual: actualName,
+          });
+          continue;
+        }
         if (!verdict.signed) {
           results.push({
             route: route.path,
             width: viewport.name,
             status: 'no comps',
             reason: verdict.reason,
+            actual: actualName,
+          });
+          continue;
+        }
+
+        const maskRatio = maskAreaRatio(entry.masks, viewport.width, viewport.height);
+        if (maskRatio > MAX_MASK_AREA_RATIO) {
+          results.push({
+            route: route.path,
+            width: viewport.name,
+            status: 'fail',
+            reason: `mask area ${(maskRatio * 100).toFixed(1)}% exceeds 10%`,
             actual: actualName,
           });
           continue;
@@ -248,18 +289,18 @@ async function main() {
     pixelmatchThreshold: thresholds.pixelmatchThreshold,
     maxDiffRatio: thresholds.maxDiffRatio,
     captureOnly: args.captureOnly,
+    manifestSource: args.base ? 'base' : 'manifest',
+    manifestPath,
+    signedCompCount,
     agentHits: server ? server.agentHits.length : 0,
     violations,
     results,
   };
+  report.exitCode = exitCodeForReport(report);
   const summary = writeOutputs(outDir, report);
   console.log(summary);
-
-  const failed =
-    report.agentHits > 0 ||
-    violations.length > 0 ||
-    results.some((row) => row.status === 'fail');
-  if (failed) process.exit(1);
+  if (report.exitCode === EXIT_FAIL) process.exit(EXIT_FAIL);
+  if (report.exitCode === EXIT_NO_COMPS) process.exit(EXIT_NO_COMPS);
 }
 
 main().catch((error) => {

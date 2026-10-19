@@ -37,11 +37,25 @@ export function buildSummary(report) {
   const lines = [
     `## ${headline}`,
     '',
+    `Checker exit \`${report.exitCode ?? ''}\`. Signed comps on the trusted manifest: \`${report.signedCompCount ?? 0}\`.`,
     `Chrome \`${report.chrome || 'unknown'}\`. pixelmatch threshold \`${report.pixelmatchThreshold}\`, max diff ratio \`${report.maxDiffRatio}\`.`,
     '',
-    '| Route | Width | Result | Detail |',
-    '| --- | --- | --- | --- |',
   ];
+  if (report.exitCode === 3 && report.signedCompCount === 0) {
+    lines.push(
+      'Bootstrap: the trusted manifest has zero signed comps. Exit 3 is allowed until a comp is signed on the base branch.',
+      ''
+    );
+  } else if (report.exitCode === 3 && (report.signedCompCount || 0) > 0) {
+    lines.push(
+      'Exit 3 fails this run: the trusted manifest has signed comps, and a route is no comps.',
+      ''
+    );
+  }
+  lines.push(
+    '| Route | Width | Result | Detail |',
+    '| --- | --- | --- | --- |'
+  );
   if (results.length === 0) {
     lines.push('| — | — | no comps | no routes captured |');
   }

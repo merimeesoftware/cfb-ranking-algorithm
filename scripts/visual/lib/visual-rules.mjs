@@ -29,6 +29,14 @@ export const PIXELMATCH_THRESHOLD_CAP = 0.2;
 export const MAX_DIFF_RATIO = 0.002;
 export const MAX_DIFF_RATIO_CAP = 0.02;
 
+/** Total mask rectangle area may not cover more than this fraction of the viewport. */
+export const MAX_MASK_AREA_RATIO = 0.1;
+
+export const EXIT_PASS = 0;
+export const EXIT_FAIL = 1;
+export const EXIT_BAD_INPUT = 2;
+export const EXIT_NO_COMPS = 3;
+
 /**
  * Optional Workers preview hosts. CI does not pass --url. Preview versions
  * of this Worker use prod AI_MODE, so the request guard still applies.
@@ -101,4 +109,38 @@ export function resolveThresholds(manifest = {}) {
 
 function numberOr(value, fallback) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+export function maskAreaRatio(masks, width, height) {
+  const viewport = width * height;
+  if (!viewport || !Array.isArray(masks)) return 0;
+  let area = 0;
+  for (const mask of masks) {
+    const maskWidth = Number(mask?.width);
+    const maskHeight = Number(mask?.height);
+    if (!Number.isFinite(maskWidth) || !Number.isFinite(maskHeight)) continue;
+    if (maskWidth <= 0 || maskHeight <= 0) continue;
+    area += maskWidth * maskHeight;
+  }
+  return area / viewport;
+}
+
+export function exitCodeForReport(report) {
+  const hard =
+    (report.agentHits || 0) > 0 ||
+    (report.violations || []).length > 0 ||
+    (report.results || []).some((row) => row.status === 'fail');
+  if (hard) return EXIT_FAIL;
+  const rows = report.results || [];
+  if (rows.length === 0 || rows.some((row) => row.status === 'no comps')) return EXIT_NO_COMPS;
+  return EXIT_PASS;
+}
+
+/**
+ * Exit 3 is a green CI step only while the trusted manifest has zero signed
+ * comps. Any signed comp makes a later no-comps route a failed check.
+ */
+export function decideCiExit(checkerExit, signedCompCount) {
+  if (checkerExit === EXIT_NO_COMPS && signedCompCount === 0) return EXIT_PASS;
+  return checkerExit;
 }
