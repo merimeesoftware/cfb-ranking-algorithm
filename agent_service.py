@@ -306,12 +306,12 @@ _EXACT_FORMULA = re.compile(
         for weight, label in zip(FRS_WEIGHTS, _FORMULA_LABELS)
     )
 )
-_RECORD_PAIR = re.compile(r'\b(\d+)\s*[-\u2010-\u2015]\s*(\d+)\b')
+_RECORD_PAIR = re.compile(r'\b(\d+)\s*[-\u2010-\u2015\u2212]\s*(\d+)\b')
 _RESULT_WORD = re.compile(
-    r'\b(?:knocked off|took down|defeat(?:ed|s)?|victory|against|routed|'
-    r'dominated|handled|outlasted|met|played|'
+    r'\b(?:head-to-head|knocked off|took down|defeat(?:ed|s)?|victory|against|'
+    r'routed|dominated|handled|outlasted|met|played|stomped|'
     r'wins?|won|winning|losses|loss|lost|losing|results?|'
-    r'beats?|beating|beaten|fell|topped|edged|upset|downed|over)\b',
+    r'beats?|beating|beaten|fell|topped|edged|edge|upset|downed|over)\b',
     re.IGNORECASE,
 )
 _LOSS_WORD = re.compile(
@@ -390,14 +390,42 @@ def _sentences(text: str) -> list[str]:
     return [part.strip() for part in re.split(r'[.!?]+', text) if part.strip()]
 
 
+def _spans_longer_team(text: str, start: int, end: int, roster: set[str]) -> bool:
+    """True when this match is only the start of a longer roster name."""
+    for other in roster:
+        if len(other) <= end - start:
+            continue
+        stop = start + len(other)
+        if stop > len(text) or text[start:stop] != other:
+            continue
+        if stop < len(text) and text[stop].isalnum():
+            continue
+        return True
+    return False
+
+
+def _whole_team_spans(text: str, team: str, roster: set[str]) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    for match in re.finditer(rf'\b{re.escape(team)}\b', text):
+        if _spans_longer_team(text, match.start(), match.end(), roster):
+            continue
+        spans.append((match.start(), match.end()))
+    return spans
+
+
 def _mentioned_teams(text: str, teams: set[str]) -> set[str]:
     lowered = re.sub(r"['\u2019]s\b", '', text, flags=re.IGNORECASE).lower()
     found: set[str] = set()
     for team in sorted(teams, key=len, reverse=True):
-        pattern = re.compile(rf'\b{re.escape(team)}\b')
-        if pattern.search(lowered):
-            found.add(team)
-            lowered = pattern.sub(' ', lowered)
+        spans = _whole_team_spans(lowered, team, teams)
+        if not spans:
+            continue
+        found.add(team)
+        chars = list(lowered)
+        for start, end in spans:
+            for index in range(start, end):
+                chars[index] = ' '
+        lowered = ''.join(chars)
     return found
 
 
@@ -411,7 +439,11 @@ def _neighbor_names(payload: Dict[str, Any]) -> set[str]:
 
 
 def _neighbor_placement(sentence: str, others: set[str], neighbors: set[str]) -> bool:
-    """A second team is allowed when the sentence only places neighbors."""
+    """A second team is allowed when the sentence only places neighbors.
+
+    A result word anywhere in the sentence blocks it. A later position
+    word does not split the sentence into a safe clause.
+    """
     if not others or not others <= neighbors:
         return False
     if _RESULT_WORD.search(sentence):
@@ -419,13 +451,18 @@ def _neighbor_placement(sentence: str, others: set[str], neighbors: set[str]) ->
     return _POSITION_WORD.search(sentence) is not None
 
 
-def _subject_before_phrase(sentence: str, subject: str) -> bool:
-    """The team being explained is the one that beat or won over."""
+def _subject_before_phrase(sentence: str, subject: str, roster: set[str]) -> bool:
+    """The team being explained is the one that beat or won over.
+
+    The subject has to be the whole team name. ``Ohio`` does not match
+    ``Ohio State``, and ``Oregon`` does not match ``Oregon State``.
+    """
     lowered = re.sub(r"['\u2019]s\b", '', sentence, flags=re.IGNORECASE).lower()
     match = _TOP_WIN_PHRASE.search(lowered)
     if match is None or not subject:
         return False
-    return re.search(rf'\b{re.escape(subject)}\b', lowered[:match.start()]) is not None
+    prefix = lowered[:match.start()]
+    return bool(_whole_team_spans(prefix, subject, roster))
 
 
 def _top_win_exception(
@@ -437,7 +474,7 @@ def _top_win_exception(
     """Subject beat or won over a top_quality_wins team, and nothing else."""
     if not others or not others <= top_wins:
         return False
-    if not _subject_before_phrase(sentence, subject):
+    if not _subject_before_phrase(sentence, subject, top_wins | {subject} | others):
         return False
     remainder = _TOP_WIN_PHRASE.sub(' ', sentence)
     return _RESULT_WORD.search(remainder) is None
@@ -451,9 +488,11 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     accepted only when it is the total record or the conference record.
     With no games list, a sentence that names another payload team passes
     only when every other team is a neighbor, the sentence has a position
-    word, and it has no result word. The exception is the subject team
-    beating or winning over a top_quality_wins team. When games are listed,
-    that result has to be one of them.
+    word, and it has no result word anywhere in it. The exception is the
+    subject team beating or winning over a top_quality_wins team, matched
+    on the whole team name. A result word in the next sentence fails too.
+    When games are listed, that result has to be one of them. An N-M pair
+    may use a Unicode dash or a minus sign.
     """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
@@ -485,8 +524,12 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     }
     played = bool(payload.get('games'))
     neighbors = _neighbor_names(payload)
+    previous_named_other = False
     for sentence in _sentences(text):
+        if previous_named_other and _RESULT_WORD.search(sentence):
+            return False
         others = _mentioned_teams(sentence, roster) - {subject}
+        previous_named_other = bool(others)
         if not others:
             continue
         if not played:
