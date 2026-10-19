@@ -27,8 +27,7 @@ class CFBDApiClient:
                 api_key = 'offline-placeholder'
                 if not is_cfbd_offline():
                     raise ValueError(
-                        "API key not found. Set CFBD_API_KEY (slot A) and/or "
-                        "CFBD_API_KEY_B (slot B); choose with CFBD_API_KEY_SLOT=A|B."
+                        "API key not found. Set CFBD_API_KEY."
                     )
         
         self.headers = {
