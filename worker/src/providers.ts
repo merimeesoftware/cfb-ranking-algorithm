@@ -1,3 +1,5 @@
+import { dailyLimitFor } from './budget.ts';
+
 /**
  * Live AI completions through Cloudflare AI Gateway.
  * The gateway only logs. The spend-budget counter remains the budget.
@@ -8,7 +10,10 @@
 export const XAI_HOST = 'ai.xai';
 export const WORKERS_AI_HOST = 'ai.workers';
 export const DEFAULT_XAI_MODEL = 'grok-4';
-export const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+/** Closest current id. llama-3.1-8b-instruct-fast is not in the catalog. */
+export const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
+export const WORKERS_AI_MAX_INPUT_CHARS = 4000;
+export const WORKERS_AI_MAX_OUTPUT_TOKENS = 160;
 export const GATEWAY_ORIGIN = 'https://gateway.ai.cloudflare.com';
 const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
@@ -24,13 +29,14 @@ export interface GatewayRunOptions {
 export interface WorkersAiBinding {
 	run(
 		model: string,
-		input: { messages: ChatMessage[] },
+		input: { messages: ChatMessage[]; max_tokens: number },
 		options: GatewayRunOptions,
 	): Promise<unknown>;
 }
 
 export interface ProviderEnv {
 	XAI_API_KEY?: string;
+	XAI_ENABLED?: string;
 	XAI_MODEL?: string;
 	WORKERS_AI_MODEL?: string;
 	CF_ACCOUNT_ID?: string;
@@ -134,6 +140,23 @@ function jsonResult(body: Record<string, unknown>, status: number): Response {
 	});
 }
 
+export function clipMessages(messages: ChatMessage[], maxChars: number): ChatMessage[] {
+	let remaining = maxChars;
+	const out: ChatMessage[] = [];
+	for (const message of messages) {
+		if (remaining <= 0) break;
+		const content = message.content.slice(0, remaining);
+		remaining -= content.length;
+		if (!content) continue;
+		out.push({ role: message.role, content });
+	}
+	return out;
+}
+
+function xaiEnabled(env: ProviderEnv): boolean {
+	return ['1', 'true', 'yes', 'on'].includes((env.XAI_ENABLED ?? '').trim().toLowerCase());
+}
+
 export async function completeXai(
 	env: ProviderEnv,
 	messages: ChatMessage[],
@@ -141,8 +164,10 @@ export async function completeXai(
 ): Promise<Response> {
 	const key = env.XAI_API_KEY;
 	const url = xaiGatewayUrl(env.CF_ACCOUNT_ID, env.AI_GATEWAY_ID);
-	if (!key || !url || !isGatewayXaiUrl(url)) {
-		return jsonResult({ ok: false, error: 'unconfigured' }, 503);
+	// The gateway URL is computed so the path stays in this file. A hard daily
+	// budget of 0, or the default-off provider, returns before fetch.
+	if (!xaiEnabled(env) || dailyLimitFor('xai', env) === 0 || !key || !url || !isGatewayXaiUrl(url)) {
+		return jsonResult({ ok: false, error: 'disabled' }, 503);
 	}
 	const model = env.XAI_MODEL?.trim() || DEFAULT_XAI_MODEL;
 	let upstream: Response;
@@ -175,9 +200,13 @@ export async function completeWorkersAi(env: ProviderEnv, messages: ChatMessage[
 	const options = workersGatewayOptions(env.AI_GATEWAY_ID);
 	if (!env.AI || !options) return jsonResult({ ok: false, error: 'unconfigured' }, 503);
 	const model = env.WORKERS_AI_MODEL?.trim() || DEFAULT_WORKERS_AI_MODEL;
+	const input = {
+		messages: clipMessages(messages, WORKERS_AI_MAX_INPUT_CHARS),
+		max_tokens: WORKERS_AI_MAX_OUTPUT_TOKENS,
+	};
 	let payload: unknown;
 	try {
-		payload = await env.AI.run(model, { messages }, options);
+		payload = await env.AI.run(model, input, options);
 	} catch {
 		return jsonResult({ ok: false, error: 'upstream' }, 502);
 	}

@@ -64,10 +64,48 @@ def test_unknown_question_id_is_400(client, monkeypatch):
 
 
 def test_planted_open_budgets_fail_and_production_stays_closed():
-    for name in ('xai_budget_open.json', 'workers_ai_budget_open.json'):
-        planted = _load(name)
-        assert closed_budget_errors(planted['limit'])
+    planted = _load('xai_budget_open.json')
+    assert closed_budget_errors(planted['limit'])
     assert evaluate() == []
+
+
+def test_xai_explain_is_refused_when_the_cap_is_raised(client, monkeypatch):
+    fixture = _load('xai_repeat_explain.json')
+    monkeypatch.setenv('AI_MODE', 'live')
+    monkeypatch.setenv('XAI_ENABLED', '1')
+    monkeypatch.setenv('XAI_MAX_CALLS', '5')
+    monkeypatch.setenv('AI_XAI_HOST', 'ai.xai')
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+
+    cache = get_cache()
+    logical = explain_cache_logical(
+        'xai',
+        fixture['year'],
+        fixture['week'],
+        fixture['team_name'],
+        fixture['question_id'],
+        blurb_cache_period(),
+    )
+    cache.invalidate(cache._generate_key('explain', logical))
+    with patch('agent_service.get_or_calculate_rankings', return_value=_rankings()):
+        with patch('agent_service.urllib.request.urlopen') as opened:
+            response = client.post('/agent/explain', json={
+                'team_name': fixture['team_name'],
+                'year': fixture['year'],
+                'week': fixture['week'],
+                'question_id': fixture['question_id'],
+                'provider': 'xai',
+            })
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body['busy'] is True
+    assert body['code'] == 'xai_budget'
+    opened.assert_not_called()
 
 
 def test_retired_name_detector_trips_on_planted_text():
@@ -77,7 +115,6 @@ def test_retired_name_detector_trips_on_planted_text():
 
 
 @pytest.mark.parametrize('fixture_name', [
-    'xai_repeat_explain.json',
     'workers_ai_repeat_explain.json',
 ])
 def test_repeat_explain_makes_one_paid_call(client, monkeypatch, fixture_name):
@@ -85,7 +122,7 @@ def test_repeat_explain_makes_one_paid_call(client, monkeypatch, fixture_name):
     provider = fixture['provider']
     monkeypatch.setenv('AI_MODE', 'live')
     monkeypatch.setenv('XAI_MAX_CALLS', '5')
-    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '5')
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
     monkeypatch.delenv('AI_KILL', raising=False)
     monkeypatch.delenv('XAI_KILL', raising=False)
     monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
@@ -139,7 +176,7 @@ def test_provider_kill_serves_stub_for_each_path(client, monkeypatch):
     monkeypatch.setenv('XAI_KILL', fixture['XAI_KILL'])
     monkeypatch.setenv('WORKERS_AI_KILL', fixture['WORKERS_AI_KILL'])
     monkeypatch.setenv('XAI_MAX_CALLS', '5')
-    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '5')
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
     monkeypatch.setenv('AI_XAI_HOST', 'ai.xai')
     monkeypatch.setenv('AI_WORKERS_HOST', 'ai.workers')
     with patch('agent_service.urllib.request.urlopen') as opened:

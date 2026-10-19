@@ -125,8 +125,8 @@ Production `AI_MODE=stub` and `CFBD_OFFLINE=1` in `wrangler.toml`.
 
 | Control | Default when unset | Where it is enforced |
 |---------|--------------------|----------------------|
-| `XAI_MAX_CALLS` | **0** in production `wrangler.toml` and in code | named `CfbApiContainer` instance `spend-budget`, then Flask. 0 means stub or cached answers. |
-| `WORKERS_AI_MAX_CALLS` | **0** in production `wrangler.toml` and in code | same bucket family, separate counter. |
+| `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI is refused even when `XAI_API_KEY` is set. The gateway path stays in the Worker and is not called. |
+| `AI_MAX_CALLS` | **100/day** | Workers AI on `spend-budget`. `@cf/meta/llama-3.1-8b-instruct-fp8`, max 160 output tokens, 4000 input characters. 100 × 60 Neurons = 6000, ceiling 8000. |
 | `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | same. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 900 ceiling. |
 | `AI_KILL` | off (`0`) | Stops xAI and Workers AI |
 | `XAI_KILL` / `WORKERS_AI_KILL` | off (`0`) | Stops that provider |

@@ -101,23 +101,36 @@ def test_cfbd_max_defaults_in_development(monkeypatch):
 def test_provider_max_calls_budget(monkeypatch):
     reset_provider_call_counts()
     monkeypatch.delenv('AI_KILL', raising=False)
-    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
     monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
-    monkeypatch.setenv('XAI_MAX_CALLS', '2')
-    assert register_live_provider_call('xai') == 1
-    assert register_live_provider_call('xai') == 2
+    monkeypatch.setenv('AI_MAX_CALLS', '2')
+    assert register_live_provider_call('workers_ai') == 1
+    assert register_live_provider_call('workers_ai') == 2
     with pytest.raises(AIBudgetError):
-        register_live_provider_call('xai')
-    assert get_provider_call_count('xai') == 2
+        register_live_provider_call('workers_ai')
+    assert get_provider_call_count('workers_ai') == 2
     reset_provider_call_counts()
 
 
-def test_provider_max_defaults_to_zero(monkeypatch):
+def test_xai_stays_refused_when_the_cap_is_raised(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    monkeypatch.setenv('XAI_ENABLED', '1')
+    monkeypatch.setenv('XAI_MAX_CALLS', '2')
+    with pytest.raises(AIBudgetError):
+        register_live_provider_call('xai')
+    assert get_provider_call_count('xai') == 0
+    reset_provider_call_counts()
+
+
+def test_provider_max_defaults(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
-    monkeypatch.delenv('WORKERS_AI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
     assert provider_max_calls('xai') == 0
-    assert provider_max_calls('workers_ai') == 0
+    assert provider_max_calls('workers_ai') == 100
 
 
 def test_spend_status_shape(monkeypatch):
@@ -126,13 +139,13 @@ def test_spend_status_shape(monkeypatch):
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
     monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
-    monkeypatch.delenv('WORKERS_AI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
     status = spend_status()
     assert status['cfbd_offline'] is True
     assert status['ai_mode'] == 'stub'
     assert status['cfbd_max_calls'] == 25
     assert status['xai_max_calls'] == 0
-    assert status['workers_ai_max_calls'] == 0
+    assert status['workers_ai_max_calls'] == 100
 
 
 def test_make_request_blocked_when_offline(monkeypatch):

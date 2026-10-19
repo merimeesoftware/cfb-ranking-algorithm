@@ -35,7 +35,7 @@ export async function consumeSpend(state: SpendState, env: BudgetEnv, request: R
 		return Response.json({ ok: false, error: 'bucket' }, { status: 400 });
 	}
 	const fallback = dailyLimitFor(bucket, env);
-	const limit = payload.limit === undefined
+	const limit = bucket === 'xai' || payload.limit === undefined
 		? fallback
 		: resolveDailyLimit(payload.limit, fallback);
 	const store = {

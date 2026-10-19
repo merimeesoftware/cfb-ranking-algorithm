@@ -7,7 +7,7 @@
 #   open http://localhost:5173
 #
 # Local defaults (override in `.env`):
-#   CFBD_OFFLINE=1  AI_MODE=stub  CFBD_MAX_CALLS=4  XAI_MAX_CALLS=0  WORKERS_AI_MAX_CALLS=0
+#   CFBD_OFFLINE=1  AI_MODE=stub  CFBD_MAX_CALLS=4  XAI_MAX_CALLS=0  XAI_ENABLED=0  AI_MAX_CALLS=100
 #
 # Stop:
 #   docker compose down
@@ -31,7 +31,8 @@ services:
       AI_MODE: ${AI_MODE:-stub}
       CFBD_MAX_CALLS: ${CFBD_MAX_CALLS:-4}
       XAI_MAX_CALLS: ${XAI_MAX_CALLS:-0}
-      WORKERS_AI_MAX_CALLS: ${WORKERS_AI_MAX_CALLS:-0}
+      XAI_ENABLED: ${XAI_ENABLED:-0}
+      AI_MAX_CALLS: ${AI_MAX_CALLS:-100}
       AGENT_RATE_LIMIT: ${AGENT_RATE_LIMIT:-50}
     volumes:
       - ./.cache:/app/.cache

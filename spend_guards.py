@@ -24,7 +24,7 @@ class AIRateLimitError(RuntimeError):
 # These match the Worker daily budget on the spend-budget instance.
 AI_PROVIDERS = ('xai', 'workers_ai')
 DEFAULT_XAI_MAX_CALLS = 0
-DEFAULT_WORKERS_AI_MAX_CALLS = 0
+DEFAULT_AI_MAX_CALLS = 100
 DEFAULT_CFBD_MAX_CALLS = 25
 
 _call_lock = threading.Lock()
@@ -61,6 +61,11 @@ def _is_development() -> bool:
 def is_ai_killed() -> bool:
     """AI_KILL=1 stops every live xAI and Workers AI call."""
     return _env_flag('AI_KILL', '0')
+
+
+def is_xai_enabled() -> bool:
+    """xAI is off unless XAI_ENABLED is set. The daily budget is also hard 0."""
+    return _env_flag('XAI_ENABLED', '0')
 
 
 def is_provider_killed(provider: str) -> bool:
@@ -108,16 +113,14 @@ def provider_max_calls(provider: str) -> int:
     """
     Max live prompts for one provider this process per UTC day.
 
-    Unset, blank, or invalid values use the in-code default of 0.
+    Unset, blank, or invalid values use the in-code default.
+    xAI is hard 0. Workers AI defaults to 100.
     Never unlimited. Stub/off modes never consume this budget.
     """
     if provider == 'xai':
-        return _parse_cap(os.environ.get('XAI_MAX_CALLS', ''), DEFAULT_XAI_MAX_CALLS)
+        return DEFAULT_XAI_MAX_CALLS
     if provider == 'workers_ai':
-        return _parse_cap(
-            os.environ.get('WORKERS_AI_MAX_CALLS', ''),
-            DEFAULT_WORKERS_AI_MAX_CALLS,
-        )
+        return _parse_cap(os.environ.get('AI_MAX_CALLS', ''), DEFAULT_AI_MAX_CALLS)
     return 0
 
 
@@ -283,6 +286,8 @@ def register_live_provider_call(provider: str) -> int:
     """Increment one provider's live prompt count. Raises if over budget or killed."""
     if provider not in AI_PROVIDERS:
         raise AIBudgetError(f'Unknown AI provider: {provider}')
+    if provider == 'xai' and not is_xai_enabled():
+        raise AIBudgetError('xAI is disabled. Live calls are refused.')
     if is_provider_killed(provider):
         raise AIBudgetError('AI kill switch is on. Live calls are stopped.')
     max_calls = provider_max_calls(provider)

@@ -47,22 +47,22 @@ def test_unset_env_uses_in_code_defaults_not_unlimited(monkeypatch):
     fixture = _load('unset_defaults.json')
     monkeypatch.setenv('FLASK_ENV', fixture['FLASK_ENV'])
     monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
-    monkeypatch.delenv('WORKERS_AI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
     assert provider_max_calls('xai') == fixture['expect_xai']
     assert provider_max_calls('workers_ai') == fixture['expect_workers_ai']
     assert cfbd_max_calls() == fixture['expect_cfbd']
     assert provider_max_calls('xai') == 0
-    assert provider_max_calls('workers_ai') == 0
+    assert provider_max_calls('workers_ai') == 100
 
 
 def test_invalid_cap_env_falls_back_to_default(monkeypatch):
     monkeypatch.setenv('XAI_MAX_CALLS', 'nope')
-    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '')
+    monkeypatch.setenv('AI_MAX_CALLS', '')
     monkeypatch.setenv('CFBD_MAX_CALLS', '')
     monkeypatch.setenv('FLASK_ENV', 'production')
     assert provider_max_calls('xai') == 0
-    assert provider_max_calls('workers_ai') == 0
+    assert provider_max_calls('workers_ai') == 100
     assert cfbd_max_calls() == 25
 
 
@@ -73,7 +73,7 @@ def _trip_provider(monkeypatch, name: str):
     monkeypatch.delenv('AI_KILL', raising=False)
     monkeypatch.delenv('XAI_KILL', raising=False)
     monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
-    env_name = 'XAI_MAX_CALLS' if fixture['bucket'] == 'xai' else 'WORKERS_AI_MAX_CALLS'
+    env_name = 'XAI_MAX_CALLS' if fixture['bucket'] == 'xai' else 'AI_MAX_CALLS'
     monkeypatch.setenv(env_name, str(fixture['limit']))
     for _ in range(fixture['already_used']):
         register_live_provider_call(fixture['bucket'])
@@ -112,7 +112,7 @@ def _gate_denies(monkeypatch, name: str):
     monkeypatch.delenv('XAI_KILL', raising=False)
     monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
     monkeypatch.setenv('XAI_MAX_CALLS', '5')
-    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '5')
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
     monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
     body = json.dumps(fixture).encode()
     error = urllib.error.HTTPError(
@@ -157,7 +157,7 @@ def test_kill_switch_stops_live_calls(monkeypatch):
     monkeypatch.setenv('CFBD_OFFLINE', '0')
     monkeypatch.setenv('CFBD_MAX_CALLS', '25')
     monkeypatch.setenv('XAI_MAX_CALLS', '5')
-    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '5')
+    monkeypatch.setenv('AI_MAX_CALLS', '5')
     monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
     reset_provider_call_counts()
     reset_cfbd_call_count()

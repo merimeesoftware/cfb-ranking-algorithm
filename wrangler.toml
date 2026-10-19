@@ -28,8 +28,16 @@ run_worker_first = ["/api/*"]
 #   cron 24 calls/Sunday × 52/12 = 104
 #   live CFBD_MAX_CALLS 4/day × 31 = 124
 #   104 + 124 = 228
-# XAI_MAX_CALLS and WORKERS_AI_MAX_CALLS are 0 until a dollar figure is set:
-# stub or cached answers only. Unset code fallback is also 0.
+# xAI daily budget is hard 0 and XAI_ENABLED is off. The gateway path stays
+# in the Worker and is not called. Workers AI is the only live provider.
+# AI_MAX_CALLS is that daily call cap.
+# Neurons for @cf/meta/llama-3.1-8b-instruct-fp8 (closest current id;
+# llama-3.1-8b-instruct-fast is not in the catalog):
+#   13778 per million input tokens, 26128 per million output tokens.
+#   Worst case = ceil((4000*13778 + 160*26128) / 1_000_000) = 60 per call.
+#   100 * 60 = 6000, ceiling 8000, free daily Neurons 10,000.
+#   Fin's band for 100 calls is about 500 to 3,800. The output cap holds
+#   the published-rate worst case under 8,000.
 #
 # AI Gateway is logging only. Budgets stay on the spend-budget instance.
 # Release Ops creates AI Gateway true-rankings in the account, then sets
@@ -39,7 +47,8 @@ run_worker_first = ["/api/*"]
 AI_MODE = "stub"
 CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
-WORKERS_AI_MAX_CALLS = "0"
+XAI_ENABLED = "0"
+AI_MAX_CALLS = "100"
 CFBD_MAX_CALLS = "4"
 CF_ACCOUNT_ID = ""
 AI_GATEWAY_ID = "true-rankings"
@@ -95,7 +104,8 @@ run_worker_first = ["/api/*"]
 AI_MODE = "stub"
 CFBD_OFFLINE = "1"
 XAI_MAX_CALLS = "0"
-WORKERS_AI_MAX_CALLS = "0"
+XAI_ENABLED = "0"
+AI_MAX_CALLS = "100"
 CFBD_MAX_CALLS = "4"
 CF_ACCOUNT_ID = ""
 AI_GATEWAY_ID = "true-rankings"

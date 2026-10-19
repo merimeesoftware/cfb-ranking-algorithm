@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { consumeDaily, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
+import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, type SpendState } from '../src/spend-object.ts';
-import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, type GatewayCall } from '../src/providers.ts';
+import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_MAX_OUTPUT_TOKENS, type GatewayCall } from '../src/providers.ts';
 import {
 	buildRuntimeEnv,
 	checkPublicQuery,
@@ -73,10 +73,12 @@ test('spend counter accepts one cfbd consume and rejects an unknown bucket', asy
 test('unset daily limits fall back to in-code defaults', () => {
 	const fixture = load('unset_defaults.json');
 	assert.equal(resolveDailyLimit(undefined, DEFAULT_XAI_MAX_CALLS_PER_DAY), fixture.expect_xai);
-	assert.equal(resolveDailyLimit(undefined, DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY), fixture.expect_workers_ai);
+	assert.equal(resolveDailyLimit(undefined, DEFAULT_AI_MAX_CALLS_PER_DAY), fixture.expect_workers_ai);
 	assert.equal(resolveDailyLimit('', DEFAULT_CFBD_MAX_CALLS_PER_DAY), fixture.expect_cfbd);
 	assert.equal(DEFAULT_XAI_MAX_CALLS_PER_DAY, 0);
-	assert.equal(DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY, 0);
+	assert.equal(DEFAULT_AI_MAX_CALLS_PER_DAY, 100);
+	assert.equal(dailyLimitFor('xai', { XAI_MAX_CALLS: '100' }), 0);
+	assert.equal(dailyLimitFor('workers_ai', {}), 100);
 	assert.notEqual(resolveDailyLimit(undefined, DEFAULT_XAI_MAX_CALLS_PER_DAY), Number.POSITIVE_INFINITY);
 });
 
@@ -219,6 +221,9 @@ test('per-provider kill flags block only that provider', () => {
 	const xaiOnly = { AI_KILL: '0', XAI_KILL: '1', WORKERS_AI_KILL: '0', CFBD_KILL: '0' };
 	assert.equal(paidCallAllowed(xaiOnly, 'xai'), false);
 	assert.equal(paidCallAllowed(xaiOnly, 'workers_ai'), true);
+	const disabled = { AI_KILL: '0', XAI_KILL: '0', WORKERS_AI_KILL: '0', CFBD_KILL: '0' };
+	assert.equal(paidCallAllowed(disabled, 'xai'), false);
+	assert.equal(paidCallAllowed(disabled, 'workers_ai'), true);
 });
 
 test('runtime env forwards caps and keeps preview and unset production stub/offline', () => {
@@ -230,7 +235,8 @@ test('runtime env forwards caps and keeps preview and unset production stub/offl
 	assert.equal(forwarded.AI_MODE, 'stub');
 	assert.equal(forwarded.CFBD_OFFLINE, '1');
 	assert.equal(forwarded.XAI_MAX_CALLS, '0');
-	assert.equal(forwarded.WORKERS_AI_MAX_CALLS, '0');
+	assert.equal(forwarded.XAI_ENABLED, '0');
+	assert.equal(forwarded.AI_MAX_CALLS, '100');
 	assert.equal(forwarded.CFBD_MAX_CALLS, '25');
 	assert.equal(forwarded.AI_KILL, '0');
 	assert.equal(forwarded.XAI_KILL, '0');
@@ -290,61 +296,65 @@ test('public counter strip drops budget fields from a planted health payload', (
 	assert.equal(stripped.cache_dir, undefined);
 });
 
-test('xAI completion uses the gateway URL and does not echo the secret', async () => {
-	const seen: { url?: string; authorization?: string; skipCache?: string } = {};
+test('xAI gateway path stays in code and a key does not reach it', async () => {
+	const fixture = load('xai_disabled_with_key.json');
+	const url = xaiGatewayUrl(
+		fixture.CF_ACCOUNT_ID as string,
+		fixture.AI_GATEWAY_ID as string,
+	);
+	assert.equal(url, 'https://gateway.ai.cloudflare.com/v1/acct-test/true-rankings/grok/v1/chat/completions');
+	assert.equal(isGatewayXaiUrl(url ?? ''), true);
+	assert.equal(gatewayBypassErrors({ provider: 'xai', url, gateway_id: 'true-rankings' }).length, 0);
+	let fetched = false;
 	const response = await completeXai(
-		{ XAI_API_KEY: 'test-token', CF_ACCOUNT_ID: 'acct-test', AI_GATEWAY_ID: 'true-rankings' },
+		{
+			XAI_API_KEY: fixture.XAI_API_KEY as string,
+			CF_ACCOUNT_ID: fixture.CF_ACCOUNT_ID as string,
+			AI_GATEWAY_ID: fixture.AI_GATEWAY_ID as string,
+			XAI_ENABLED: fixture.XAI_ENABLED as string,
+		},
 		[{ role: 'user', content: 'Why is Oregon here?' }],
-		(async (url: string, init?: RequestInit) => {
-			seen.url = String(url);
-			const headers = new Headers(init?.headers);
-			seen.authorization = headers.get('authorization') ?? '';
-			seen.skipCache = headers.get('cf-aig-skip-cache') ?? '';
-			return new Response(JSON.stringify({
-				choices: [{ message: { content: 'The resume.' } }],
-			}), { status: 200 });
+		(async () => {
+			fetched = true;
+			return new Response('{}', { status: 200 });
 		}) as typeof fetch,
 	);
-	const body = await response.json() as { ok: boolean; text: string };
-	assert.equal(response.status, 200);
-	assert.equal(body.ok, true);
-	assert.equal(body.text, 'The resume.');
-	assert.equal(
-		seen.url,
-		'https://gateway.ai.cloudflare.com/v1/acct-test/true-rankings/grok/v1/chat/completions',
-	);
-	assert.equal(isGatewayXaiUrl(seen.url ?? ''), true);
-	assert.equal(gatewayBypassErrors({ provider: 'xai', url: seen.url, gateway_id: 'true-rankings' }).length, 0);
-	assert.equal(seen.authorization, 'Bearer test-token');
-	assert.equal(seen.skipCache, 'true');
-	assert.equal(JSON.stringify(body).includes('test-token'), false);
+	const body = await response.json() as { ok: boolean; error: string };
+	assert.equal(response.status, 503);
+	assert.equal(body.ok, false);
+	assert.equal(body.error, 'disabled');
+	assert.equal(fetched, false);
+	assert.equal(JSON.stringify(body).includes(fixture.XAI_API_KEY as string), false);
 
-	const fetchImpl = (async () => {
-		throw new Error('fetch should not run');
-	}) as typeof fetch;
-	const missing = await completeXai(
-		{ XAI_API_KEY: 'test-token' },
-		[{ role: 'user', content: 'hi' }],
-		fetchImpl,
+	const raised = await consumeSpend(
+		spendState({}),
+		{ XAI_MAX_CALLS: fixture.XAI_MAX_CALLS as string },
+		new Request('https://spend.budget/consume', {
+			method: 'POST',
+			body: JSON.stringify({ bucket: 'xai', limit: 100 }),
+		}),
 	);
-	assert.equal(missing.status, 503);
-	const noKey = await completeXai(
-		{ CF_ACCOUNT_ID: 'acct-test', AI_GATEWAY_ID: 'true-rankings' },
-		[{ role: 'user', content: 'hi' }],
-		fetchImpl,
-	);
-	assert.equal(noKey.status, 503);
+	assert.equal(raised.status, 429);
+	const denied = await raised.json() as { ok: boolean; limit: number };
+	assert.equal(denied.ok, false);
+	assert.equal(denied.limit, 0);
 });
 
 test('Workers AI completion passes the gateway id on the binding', async () => {
 	let model = '';
 	let options: { gateway?: { id?: string; skipCache?: boolean } } | undefined;
+	let input: { messages?: unknown; max_tokens?: number; tools?: unknown; web_search?: unknown } | undefined;
 	const response = await completeWorkersAi(
 		{
 			AI_GATEWAY_ID: 'true-rankings',
 			AI: {
-				async run(next: string, _input: { messages: { role: string; content: string }[] }, gatewayOptions: { gateway: { id: string; skipCache: true } }) {
+				async run(
+					next: string,
+					nextInput: { messages: { role: string; content: string }[]; max_tokens: number },
+					gatewayOptions: { gateway: { id: string; skipCache: true } },
+				) {
 					model = next;
+					input = nextInput;
 					options = gatewayOptions;
 					return { response: 'Stacked wins.' };
 				},
@@ -355,7 +365,11 @@ test('Workers AI completion passes the gateway id on the binding', async () => {
 	const body = await response.json() as { ok: boolean; text: string };
 	assert.equal(body.ok, true);
 	assert.equal(body.text, 'Stacked wins.');
-	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct');
+	assert.equal(model, DEFAULT_WORKERS_AI_MODEL);
+	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct-fp8');
+	assert.equal(input?.max_tokens, WORKERS_AI_MAX_OUTPUT_TOKENS);
+	assert.equal(input?.tools, undefined);
+	assert.equal(input?.web_search, undefined);
 	assert.equal(options?.gateway?.id, 'true-rankings');
 	assert.equal(options?.gateway?.skipCache, true);
 	assert.equal(gatewayBypassErrors({ provider: 'workers_ai', gateway_id: options?.gateway?.id }).length, 0);

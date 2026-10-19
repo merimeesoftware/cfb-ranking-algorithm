@@ -1,6 +1,6 @@
 {
   "FLASK_ENV": "production",
   "expect_xai": 0,
-  "expect_workers_ai": 0,
+  "expect_workers_ai": 100,
   "expect_cfbd": 25
 }

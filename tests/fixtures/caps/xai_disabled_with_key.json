@@ -1,0 +1,7 @@
+{
+  "XAI_API_KEY": "test-token",
+  "CF_ACCOUNT_ID": "acct-test",
+  "AI_GATEWAY_ID": "true-rankings",
+  "XAI_MAX_CALLS": "100",
+  "XAI_ENABLED": "0"
+}

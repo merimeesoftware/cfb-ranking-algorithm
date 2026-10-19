@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Fail unless both AI providers stay closed and the retired vendor name is gone.
+"""Fail unless xAI stays closed and the retired vendor name is gone.
 
-Production daily budgets are 0. A planted open-budget fixture must fail this
-check. `git grep` proves the retired vendor name is absent from the tree.
-History is not scanned.
+xAI's production daily budget is hard 0 and XAI_ENABLED is off. A planted
+open-budget fixture must fail this check. `git grep` proves the retired
+vendor name is absent from the tree. History is not scanned. Workers AI's
+call cap is checked by scripts/check_workers_ai_neurons.py.
 """
 from __future__ import annotations
 
@@ -106,17 +107,21 @@ def evaluate() -> list[str]:
     errors: list[str] = []
     if wrangler.get('AI_MODE') != 'stub' or wrangler.get('CFBD_OFFLINE') != '1':
         errors.append('production AI_MODE must be stub and CFBD_OFFLINE must be 1')
-    for name in ('XAI_MAX_CALLS', 'WORKERS_AI_MAX_CALLS'):
-        raw = wrangler.get(name)
-        if raw is None:
-            errors.append(f'production {name} is missing from wrangler.toml')
-            continue
+    raw_xai = wrangler.get('XAI_MAX_CALLS')
+    if raw_xai is None:
+        errors.append('production XAI_MAX_CALLS is missing from wrangler.toml')
+    else:
         try:
-            limit = int(raw)
+            errors.extend(
+                f'production XAI_MAX_CALLS: {item}'
+                for item in closed_budget_errors(int(raw_xai))
+            )
         except ValueError:
-            errors.append(f'production {name} is not an integer')
-            continue
-        errors.extend(f'production {name}: {item}' for item in closed_budget_errors(limit))
+            errors.append('production XAI_MAX_CALLS is not an integer')
+    if wrangler.get('XAI_ENABLED') != '0':
+        errors.append('production XAI_ENABLED must be 0')
+    if 'AI_MAX_CALLS' not in wrangler:
+        errors.append('production AI_MAX_CALLS is missing from wrangler.toml')
     if wrangler.get('AI_GATEWAY_ID') != GATEWAY_NAME:
         errors.append(f'production AI_GATEWAY_ID must be {GATEWAY_NAME}')
     if 'CF_ACCOUNT_ID' not in wrangler:
@@ -132,10 +137,9 @@ def evaluate() -> list[str]:
     secrets = SECRETS_PATH.read_text(encoding='utf-8')
     if 'XAI_API_KEY' not in secrets or PROVISIONED not in secrets:
         errors.append(f'docs/SECRETS.md must name XAI_API_KEY as {PROVISIONED}')
-    for name in ('xai_budget_open.json', 'workers_ai_budget_open.json'):
-        planted = json.loads((FIXTURES / name).read_text(encoding='utf-8'))
-        if not closed_budget_errors(int(planted['limit'])):
-            errors.append(f'{name} should fail the closed-budget check')
+    planted_xai = json.loads((FIXTURES / 'xai_budget_open.json').read_text(encoding='utf-8'))
+    if not closed_budget_errors(int(planted_xai['limit'])):
+        errors.append('xai_budget_open.json should fail the closed-budget check')
     planted_gateway = json.loads((FIXTURES / 'gateway_bypass.json').read_text(encoding='utf-8'))
     calls = planted_gateway.get('calls') or []
     if len(calls) < 2 or any(not gateway_bypass_errors(call) for call in calls):
@@ -154,7 +158,7 @@ def main() -> int:
         for error in errors:
             print(error, file=sys.stderr)
         return 1
-    print('AI providers closed at 0; gateway route required; retired name absent')
+    print('xAI closed at 0; gateway route required; retired name absent')
     return 0
 
 

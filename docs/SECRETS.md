@@ -88,7 +88,8 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `AI_MODE=stub` | Yes locally, in preview, and in production `wrangler.toml` | Template explanations. No live provider call. |
 | `AI_MODE=off` | Opt-in | `explanation: null` + structured context only |
 | `AI_MODE=live` | Opt-in | xAI or Workers AI, each under its own daily cap |
-| `XAI_MAX_CALLS` / `WORKERS_AI_MAX_CALLS` | **0** in production and in code when unset | Hard cap per provider per UTC day on the `spend-budget` instance. 0 keeps answers stub or cached. |
+| `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI stays refused, including when `XAI_API_KEY` is set. The gateway path is not called. |
+| `AI_MAX_CALLS` | **100/day** | Workers AI call cap. 100 × 60 worst-case Neurons = 6000, under the 8000 ceiling. |
 | `AI_PROVIDER` | `workers_ai` | Live path when a request omits `provider` |
 | `AGENT_RATE_LIMIT` | 50/hour in development, 30/hour in production | Per-visitor cap on `/agent/*`, keyed on `CF-Connecting-IP` only. Applies to both providers. |
 | `AI_KILL` | off | `1` stops both xAI and Workers AI |

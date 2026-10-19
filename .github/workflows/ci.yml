@@ -38,6 +38,9 @@ jobs:
       - name: AI provider caps and retired name
         run: python scripts/check_ai_providers.py
 
+      - name: Workers AI neuron budget
+        run: python scripts/check_workers_ai_neurons.py
+
   worker:
     name: Worker caps
     runs-on: ubuntu-latest

@@ -46,7 +46,8 @@ export interface CapEnv {
 	AI_MODE?: string;
 	CFBD_OFFLINE?: string;
 	XAI_MAX_CALLS?: string;
-	WORKERS_AI_MAX_CALLS?: string;
+	XAI_ENABLED?: string;
+	AI_MAX_CALLS?: string;
 	CFBD_MAX_CALLS?: string;
 	AI_KILL?: string;
 	XAI_KILL?: string;
@@ -67,10 +68,14 @@ export function isKillSwitch(raw: string | undefined): boolean {
 	return ['1', 'true', 'yes', 'on'].includes((raw ?? '').trim().toLowerCase());
 }
 
+export function isXaiEnabled(env: CapEnv): boolean {
+	return isKillSwitch(env.XAI_ENABLED);
+}
+
 export function paidCallAllowed(env: CapEnv, bucket: SpendBucket): boolean {
 	if (bucket === 'cfbd') return !isKillSwitch(env.CFBD_KILL);
 	if (isKillSwitch(env.AI_KILL)) return false;
-	if (bucket === 'xai') return !isKillSwitch(env.XAI_KILL);
+	if (bucket === 'xai') return isXaiEnabled(env) && !isKillSwitch(env.XAI_KILL);
 	return !isKillSwitch(env.WORKERS_AI_KILL);
 }
 
@@ -149,7 +154,8 @@ export function buildRuntimeEnv(
 		AI_XAI_HOST: 'ai.xai',
 		AI_WORKERS_HOST: 'ai.workers',
 		XAI_MAX_CALLS: String(dailyLimitFor('xai', env)),
-		WORKERS_AI_MAX_CALLS: String(dailyLimitFor('workers_ai', env)),
+		XAI_ENABLED: isXaiEnabled(env) ? '1' : '0',
+		AI_MAX_CALLS: String(dailyLimitFor('workers_ai', env)),
 		CFBD_MAX_CALLS: String(dailyLimitFor('cfbd', env)),
 		AI_KILL: isKillSwitch(env.AI_KILL) ? '1' : '0',
 		XAI_KILL: isKillSwitch(env.XAI_KILL) ? '1' : '0',
