@@ -1,0 +1,43 @@
+name: Label permission probe
+
+# Temporary check for issue #120. Runs once with pull-requests: write and
+# no other permission, then this file is removed. It does not merge.
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Probe add-label calls
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set +e
+          echo "=== gh pr edit --add-label ==="
+          edit_out=$(gh pr edit "$PR_URL" --add-label "owner:cfb-minicon" 2>&1)
+          edit_status=$?
+          printf '%s\n' "$edit_out"
+          echo "EDIT_EXIT:${edit_status}"
+
+          echo "=== POST /repos/{owner}/{repo}/issues/{n}/labels ==="
+          post_out=$(gh api --method POST "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=owner:cfb-minicon" 2>&1)
+          post_status=$?
+          printf '%s\n' "$post_out"
+          echo "POST_EXIT:${post_status}"
+
+          echo "=== POST /repos/{owner}/{repo}/labels (must be denied) ==="
+          create_out=$(gh api --method POST "repos/${GH_REPO}/labels" -f name="probe-label-perm-deny" -f color="ededed" -f description="permission probe; delete if created" 2>&1)
+          create_status=$?
+          printf '%s\n' "$create_out"
+          echo "CREATE_EXIT:${create_status}"
+          echo "PROBE_DONE edit=${edit_status} post=${post_status} create=${create_status}"
