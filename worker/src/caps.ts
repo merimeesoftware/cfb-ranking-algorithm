@@ -8,6 +8,22 @@ export const BUSY_MESSAGE = 'Busy right now, try again later.';
 export const FORMULA_MESSAGE = 'Custom formula parameters are not accepted.';
 export const UNPUBLISHED_MESSAGE = "That week isn't on the board yet.";
 export const SPEND_GATE_HOST = 'spend.budget';
+/** Fixed origin for container fetches. The visitor path never chooses this host. */
+export const UPSTREAM_ORIGIN = 'https://api.internal';
+export const VISITOR_HOST_HEADER = 'x-visitor-host';
+
+/**
+ * Control-plane hosts. spend.budget is the spend store. ai.xai and ai.workers
+ * are outbound-only. None of them are reachable from a visitor /api path.
+ */
+export function internalHosts(): readonly string[] {
+	return [SPEND_GATE_HOST, 'ai.xai', 'ai.workers'];
+}
+
+export function isInternalHost(hostname: string): boolean {
+	const host = hostname.trim().toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '');
+	return internalHosts().includes(host);
+}
 
 const PRODUCTION_WORKER_NAME = 'true-rankings-cfb';
 
@@ -71,6 +87,66 @@ export function isKillSwitch(raw: string | undefined): boolean {
 
 export function isXaiEnabled(env: CapEnv): boolean {
 	return isKillSwitch(env.XAI_ENABLED);
+}
+
+function pathOnly(value: string): string {
+	const query = value.indexOf('?');
+	return query === -1 ? value : value.slice(0, query);
+}
+
+/** True when a path uses //, an encoded slash pair, or a backslash. */
+export function pathHasSpoof(path: string): boolean {
+	const value = pathOnly(path);
+	return value.includes('//')
+		|| value.includes('\\')
+		|| /%2f%2f/i.test(value)
+		|| /%5c/i.test(value)
+		|| /%2f\//i.test(value)
+		|| /\/%2f/i.test(value);
+}
+
+/** Check the raw request string. The scheme's :// is not part of the path. */
+export function requestPathSpoofed(rawUrl: string): boolean {
+	const scheme = rawUrl.indexOf('://');
+	const rest = scheme === -1 ? rawUrl : rawUrl.slice(scheme + 3);
+	const slash = rest.indexOf('/');
+	if (slash === -1) return false;
+	return pathHasSpoof(rest.slice(slash));
+}
+
+/**
+ * Container URL from a fixed origin plus a validated path.
+ * Returns null when the path could select a host.
+ */
+export function upstreamApiUrl(pathname: string, search: string): URL | null {
+	if (!pathname.startsWith('/') || pathHasSpoof(pathname)) return null;
+	const target = new URL(UPSTREAM_ORIGIN);
+	target.pathname = pathname;
+	target.search = search;
+	if (target.origin !== UPSTREAM_ORIGIN || isInternalHost(target.hostname)) return null;
+	if (pathHasSpoof(target.pathname)) return null;
+	return target;
+}
+
+export type ApiRoute =
+	| { ok: false; status: 400 }
+	| { ok: true; upstream: URL; modeHost: string; apiPath: string };
+
+/** Reject spoofed paths before any upstream URL is built. */
+export function routeApiRequest(rawUrl: string): ApiRoute {
+	if (requestPathSpoofed(rawUrl)) return { ok: false, status: 400 };
+	let incoming: URL;
+	try {
+		incoming = new URL(rawUrl);
+	} catch {
+		return { ok: false, status: 400 };
+	}
+	if (isInternalHost(incoming.hostname)) return { ok: false, status: 400 };
+	const apiPath = incoming.pathname.replace(/^\/api/, '') || '/';
+	if (!apiPath.startsWith('/')) return { ok: false, status: 400 };
+	const upstream = upstreamApiUrl(apiPath, incoming.search);
+	if (!upstream) return { ok: false, status: 400 };
+	return { ok: true, upstream, modeHost: incoming.hostname, apiPath };
 }
 
 /** POST /api/spend/kill after the /api prefix is stripped. */

@@ -9,8 +9,11 @@ import {
 	containerSecrets,
 	enforceVisitorLimit,
 	isCounterEndpoint,
+	isInternalHost,
 	isSpendKillRoute,
 	paidCallAllowed,
+	routeApiRequest,
+	VISITOR_HOST_HEADER,
 	stripPublicCounters,
 	UNPUBLISHED_MESSAGE,
 	type CapEnv,
@@ -69,11 +72,19 @@ export class CfbApiContainer extends Container<Env> {
 		const hostname = new URL(request.url).hostname;
 		// Named instance `spend-budget` only stores the daily counters. Starting
 		// the container here would boot gunicorn for a bookkeeping request.
+		// ai.xai and ai.workers are outbound hosts, not visitor entry points.
 		if (hostname === 'spend.budget') {
 			return consumeSpend(this.ctx, this.env, request);
 		}
+		if (isInternalHost(hostname)) {
+			return jsonResponse({ ok: false, error: 'path' }, 400);
+		}
+		const visitorHost = request.headers.get(VISITOR_HOST_HEADER)?.trim() || hostname;
+		if (isInternalHost(visitorHost)) {
+			return jsonResponse({ ok: false, error: 'path' }, 400);
+		}
 		await this.startAndWaitForPorts({
-			startOptions: { envVars: this.runtimeEnvVars(hostname) },
+			startOptions: { envVars: this.runtimeEnvVars(visitorHost) },
 			cancellationOptions: { portReadyTimeoutMS: 120_000 },
 		});
 		return super.fetch(request);
@@ -224,8 +235,10 @@ async function sanitizeCounters(pathname: string, response: Response): Promise<R
 /** Invoked for /api/* only (see wrangler.toml run_worker_first). */
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
+		const routed = routeApiRequest(request.url);
+		if (!routed.ok) return jsonResponse({ ok: false, error: 'path' }, routed.status);
 		const incoming = new URL(request.url);
-		const apiPath = incoming.pathname.replace(/^\/api/, '') || '/';
+		const apiPath = routed.apiPath;
 
 		const limit = await enforceVisitorLimit(request, {
 			api: env.API_RATE_LIMITER,
@@ -286,12 +299,13 @@ export default {
 			}
 		}
 
-		const target = new URL(apiPath, incoming.origin);
-		target.search = incoming.search;
+		const target = routed.upstream;
 
 		const headers = new Headers(request.headers);
 		headers.delete('host');
 		headers.delete('x-forwarded-for');
+		headers.delete(VISITOR_HOST_HEADER);
+		headers.set(VISITOR_HOST_HEADER, routed.modeHost);
 		headers.set('CF-Connecting-IP', limit.ip);
 
 		const apiRequest = new Request(target.toString(), {

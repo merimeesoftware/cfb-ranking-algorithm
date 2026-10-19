@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, publicKillSetBody, type SpendState } from '../src/spend-object.ts';
-import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_MAX_OUTPUT_TOKENS, type GatewayCall } from '../src/providers.ts';
+import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_HOST, WORKERS_AI_MAX_OUTPUT_TOKENS, XAI_HOST, type GatewayCall } from '../src/providers.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from '../src/xai-usd.ts';
 import {
 	buildRuntimeEnv,
@@ -11,9 +11,14 @@ import {
 	clientIp,
 	containerSecrets,
 	enforceVisitorLimit,
+	SPEND_GATE_HOST,
+	internalHosts,
+	isInternalHost,
 	isNonProductionHostname,
 	isSpendKillRoute,
 	paidCallAllowed,
+	routeApiRequest,
+	UPSTREAM_ORIGIN,
 	stripPublicCounters,
 	BUSY_MESSAGE,
 } from '../src/caps.ts';
@@ -649,4 +654,30 @@ test('set_kill latches flags that a wiped env cannot clear', async () => {
 	assert.equal(data.get('ai_kill'), 1);
 	assert.equal(data.get('cfbd_kill'), 1);
 	assert.equal([...data.keys()].some((key) => key.startsWith('cfbd:app:')), false);
+});
+
+test('spoofed api paths never select an internal or production host', () => {
+	const fixture = load('path_spoof.json');
+	assert.deepEqual(
+		[...internalHosts()].sort(),
+		[SPEND_GATE_HOST, XAI_HOST, WORKERS_AI_HOST].sort(),
+	);
+	for (const host of internalHosts()) assert.equal(isInternalHost(host), true);
+	for (const form of fixture.forms as { name: string; url: string }[]) {
+		const routed = routeApiRequest(form.url);
+		assert.equal(routed.ok, false, form.name);
+		if (!routed.ok) assert.equal(routed.status, 400);
+	}
+	const safe = routeApiRequest(fixture.safe as string);
+	assert.equal(safe.ok, true);
+	if (safe.ok) {
+		assert.equal(safe.upstream.origin, UPSTREAM_ORIGIN);
+		assert.equal(safe.upstream.hostname, 'api.internal');
+		assert.equal(safe.upstream.pathname, '/rankings');
+		assert.equal(safe.upstream.search, '?year=2024&week=10');
+		assert.equal(safe.modeHost, 'preview.example.workers.dev');
+		assert.equal(isNonProductionHostname(safe.modeHost), true);
+		assert.equal(isInternalHost(safe.upstream.hostname), false);
+		assert.equal(safe.upstream.hostname.includes('spend.budget'), false);
+	}
 });
