@@ -30,7 +30,8 @@ jobs:
           VERSION=$(node --input-type=module -e "import { CHROME_VERSION } from './scripts/visual/lib/visual-rules.mjs'; process.stdout.write(CHROME_VERSION)")
           curl -fsSL -o /tmp/chrome.deb "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${VERSION}-1_amd64.deb"
           sudo apt-get update
-          sudo apt-get install -y /tmp/chrome.deb
+          # Runners may already have a newer Chrome. Stay on the pinned build.
+          sudo apt-get install -y --allow-downgrades /tmp/chrome.deb
           google-chrome --version | grep -F "$VERSION"
 
       - name: Install visual-check tools
