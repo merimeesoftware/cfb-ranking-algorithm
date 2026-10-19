@@ -85,10 +85,10 @@ File: `frontend/static/_headers` → copied to `frontend/build/_headers`.
 
 ### 5. Post-deploy smoke test
 
-Replace `<account>` with the Cloudflare account subdomain:
+Use the public origin once Michael chooses it (`{SITE_URL}`):
 
 ```bash
-WORKER_URL="https://true-rankings-cfb.<account>.workers.dev"
+WORKER_URL="{SITE_URL}"
 curl -sf "${WORKER_URL}/"
 curl -sf --max-time 120 "${WORKER_URL}/api/rankings?year=2024&week=10" \
   | python3 -c "import sys,json; d=json.load(sys.stdin); assert len(d.get('team_rankings',[]))>0"

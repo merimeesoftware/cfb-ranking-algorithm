@@ -67,7 +67,7 @@
    "file": "states/board-closed-1440.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "50 targets ≥ 44",
+   "detail": "16 targets ≥ 44",
    "width": 1440
   },
   {
@@ -88,14 +88,14 @@
    "file": "states/board-closed-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "112 slot elements ok",
+   "detail": "44 slot elements ok",
    "width": 1440
   },
   {
    "file": "states/board-closed-1440.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "24 colours on token",
+   "detail": "25 colours on token",
    "width": 1440
   },
   {
@@ -116,7 +116,7 @@
    "file": "states/board-closed-390.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "50 targets ≥ 44",
+   "detail": "16 targets ≥ 44",
    "width": 390
   },
   {
@@ -137,14 +137,14 @@
    "file": "states/board-closed-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "153 slot elements ok",
+   "detail": "51 slot elements ok",
    "width": 390
   },
   {
    "file": "states/board-closed-390.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "22 colours on token",
+   "detail": "23 colours on token",
    "width": 390
   },
   {
@@ -158,14 +158,14 @@
    "file": "states/early-week-1440.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = -1.087094",
+   "detail": "1 parts = -100.000000",
    "width": 1440
   },
   {
    "file": "states/early-week-1440.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = 32.085076",
+   "detail": "1 parts = 100.000000",
    "width": 1440
   },
   {
@@ -214,7 +214,7 @@
    "file": "states/early-week-1440.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "23 colours on token",
+   "detail": "26 colours on token",
    "width": 1440
   },
   {
@@ -235,14 +235,14 @@
    "file": "states/early-week-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = -1.087094",
+   "detail": "1 parts = -100.000000",
    "width": 390
   },
   {
    "file": "states/early-week-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = 32.085076",
+   "detail": "1 parts = 100.000000",
    "width": 390
   },
   {
@@ -298,7 +298,7 @@
    "file": "states/early-week-390.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "23 colours on token",
+   "detail": "26 colours on token",
    "width": 390
   },
   {
@@ -319,7 +319,7 @@
    "file": "states/error-1440.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "12 targets ≥ 44",
+   "detail": "10 targets ≥ 44",
    "width": 1440
   },
   {
@@ -340,14 +340,14 @@
    "file": "states/error-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "38 slot elements ok",
+   "detail": "34 slot elements ok",
    "width": 1440
   },
   {
    "file": "states/error-1440.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "22 colours on token",
+   "detail": "26 colours on token",
    "width": 1440
   },
   {
@@ -368,7 +368,7 @@
    "file": "states/error-390.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "12 targets ≥ 44",
+   "detail": "10 targets ≥ 44",
    "width": 390
   },
   {
@@ -389,906 +389,906 @@
    "file": "states/error-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "39 slot elements ok",
+   "detail": "33 slot elements ok",
    "width": 390
   },
   {
    "file": "states/error-390.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "21 colours on token",
-   "width": 390
-  },
-  {
-   "file": "states/error-390.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "3 selectors present, 2-part",
-   "width": 390
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = -1.808915",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = 1.880626",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "11 targets ≥ 44",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "67 slot elements ok",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "26 colours on token",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-1440.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "9 selectors present, 2-part",
-   "width": 1440
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = -1.808915",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = 1.880626",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "overflow-390",
-   "ok": true,
-   "detail": "scrollWidth 390 ≤ 390",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "11 targets ≥ 44",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "68 slot elements ok",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "26 colours on token",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 390
-  },
-  {
-   "file": "states/heat-390.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "9 selectors present, 2-part",
-   "width": 390
-  },
-  {
-   "file": "states/loading-1440.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "11 targets ≥ 44",
-   "width": 1440
-  },
-  {
-   "file": "states/loading-1440.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 1440
-  },
-  {
-   "file": "states/loading-1440.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 1440
-  },
-  {
-   "file": "states/loading-1440.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "37 slot elements ok",
-   "width": 1440
-  },
-  {
-   "file": "states/loading-1440.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "22 colours on token",
-   "width": 1440
-  },
-  {
-   "file": "states/loading-1440.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "1 selectors present, 2-part",
-   "width": 1440
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "overflow-390",
-   "ok": true,
-   "detail": "scrollWidth 390 ≤ 390",
-   "width": 390
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "11 targets ≥ 44",
-   "width": 390
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 390
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 390
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "38 slot elements ok",
-   "width": 390
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "21 colours on token",
-   "width": 390
-  },
-  {
-   "file": "states/loading-390.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "1 selectors present, 2-part",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = -4.576534",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = 7.270250",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "1 targets ≥ 44",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "35 slot elements ok",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "15 colours on token",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1440.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "3 selectors present, 2-part",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "1 parts = -3.206906",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "1 parts = 13.688342",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "1 targets ≥ 44",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "32 slot elements ok",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "15 colours on token",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "1 parts from fixture",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-1440.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "3 selectors present, 1-part",
-   "width": 1440
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "1 parts = -3.206906",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "1 parts = 13.688342",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "overflow-390",
-   "ok": true,
-   "detail": "scrollWidth 390 ≤ 390",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "1 targets ≥ 44",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "32 slot elements ok",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "15 colours on token",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "1 parts from fixture",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-1part-390.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "3 selectors present, 1-part",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = -4.576534",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = 7.270250",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "overflow-390",
-   "ok": true,
-   "detail": "scrollWidth 390 ≤ 390",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "1 targets ≥ 44",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "35 slot elements ok",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "15 colours on token",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 390
-  },
-  {
-   "file": "states/negative-part-390.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "3 selectors present, 2-part",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = 22.839807",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "7 targets ≥ 44",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "58 slot elements ok",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "27 colours on token",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-1440.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "8 selectors present, 2-part",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = 22.839807",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "overflow-390",
-   "ok": true,
-   "detail": "scrollWidth 390 ≤ 390",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "7 targets ≥ 44",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "55 slot elements ok",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "26 colours on token",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-first-390.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "8 selectors present, 2-part",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = -10.417121",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "7 targets ≥ 44",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "54 slot elements ok",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "tokens",
-   "ok": true,
-   "detail": "26 colours on token",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "data-driven",
-   "ok": true,
-   "detail": "2 parts from fixture",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-1440.html",
-   "guard": "structure",
-   "ok": true,
-   "detail": "8 selectors present, 2-part",
-   "width": 1440
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "parts-sum",
-   "ok": true,
-   "detail": "2 parts = -10.417121",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "strength: how they look",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "part-label",
-   "ok": true,
-   "detail": "heat: Heat",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "overflow-390",
-   "ok": true,
-   "detail": "scrollWidth 390 ≤ 390",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "tap-44",
-   "ok": true,
-   "detail": "7 targets ≥ 44",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "focus-visible",
-   "ok": true,
-   "detail": "outline solid 3px",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "no-gambling",
-   "ok": true,
-   "detail": "clean",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
-   "guard": "copy-slots",
-   "ok": true,
-   "detail": "51 slot elements ok",
-   "width": 390
-  },
-  {
-   "file": "states/row-open-last-390.html",
    "guard": "tokens",
    "ok": true,
    "detail": "25 colours on token",
    "width": 390
   },
   {
+   "file": "states/error-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present, 2-part",
+   "width": 390
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = -40.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = 5.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "60 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "27 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "9 selectors present, 2-part",
+   "width": 1440
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = -40.000000",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = 5.000000",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "61 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "27 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/heat-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "9 selectors present, 2-part",
+   "width": 390
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "9 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "33 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "26 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present, 2-part",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "9 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "32 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "24 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present, 2-part",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = -90.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = 270.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "1 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "27 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "17 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present, 2-part",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "1 parts = -85.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "1 parts = 300.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "1 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "24 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "17 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "1 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present, 1-part",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "1 parts = -85.000000",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "1 parts = 300.000000",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "1 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "24 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "17 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "1 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1part-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present, 1-part",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = -90.000000",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = 270.000000",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "1 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "27 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "17 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present, 2-part",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = 90.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "48 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "25 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "8 selectors present, 2-part",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = 90.000000",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "45 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "25 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "8 selectors present, 2-part",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = -270.000000",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "48 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "27 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "2 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "8 selectors present, 2-part",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "2 parts = -270.000000",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: Heat",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "45 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "27 colours on token",
+   "width": 390
+  },
+  {
    "file": "states/row-open-last-390.html",
    "guard": "data-driven",
    "ok": true,
@@ -1306,14 +1306,14 @@
    "file": "states/row-open-mid-1440.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = -4.576534",
+   "detail": "2 parts = -90.000000",
    "width": 1440
   },
   {
    "file": "states/row-open-mid-1440.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = 7.270250",
+   "detail": "2 parts = 270.000000",
    "width": 1440
   },
   {
@@ -1348,7 +1348,7 @@
    "file": "states/row-open-mid-1440.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "11 targets ≥ 44",
+   "detail": "9 targets ≥ 44",
    "width": 1440
   },
   {
@@ -1369,14 +1369,14 @@
    "file": "states/row-open-mid-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "67 slot elements ok",
+   "detail": "55 slot elements ok",
    "width": 1440
   },
   {
    "file": "states/row-open-mid-1440.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "23 colours on token",
+   "detail": "27 colours on token",
    "width": 1440
   },
   {
@@ -1397,14 +1397,14 @@
    "file": "states/row-open-mid-1part-1440.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = -3.206906",
+   "detail": "1 parts = -85.000000",
    "width": 1440
   },
   {
    "file": "states/row-open-mid-1part-1440.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = 13.688342",
+   "detail": "1 parts = 300.000000",
    "width": 1440
   },
   {
@@ -1425,7 +1425,7 @@
    "file": "states/row-open-mid-1part-1440.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "11 targets ≥ 44",
+   "detail": "9 targets ≥ 44",
    "width": 1440
   },
   {
@@ -1446,14 +1446,14 @@
    "file": "states/row-open-mid-1part-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "64 slot elements ok",
+   "detail": "52 slot elements ok",
    "width": 1440
   },
   {
    "file": "states/row-open-mid-1part-1440.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "23 colours on token",
+   "detail": "26 colours on token",
    "width": 1440
   },
   {
@@ -1474,14 +1474,14 @@
    "file": "states/row-open-mid-1part-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = -3.206906",
+   "detail": "1 parts = -85.000000",
    "width": 390
   },
   {
    "file": "states/row-open-mid-1part-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = 13.688342",
+   "detail": "1 parts = 300.000000",
    "width": 390
   },
   {
@@ -1509,7 +1509,7 @@
    "file": "states/row-open-mid-1part-390.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "11 targets ≥ 44",
+   "detail": "9 targets ≥ 44",
    "width": 390
   },
   {
@@ -1530,14 +1530,14 @@
    "file": "states/row-open-mid-1part-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "65 slot elements ok",
+   "detail": "51 slot elements ok",
    "width": 390
   },
   {
    "file": "states/row-open-mid-1part-390.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "22 colours on token",
+   "detail": "26 colours on token",
    "width": 390
   },
   {
@@ -1558,14 +1558,14 @@
    "file": "states/row-open-mid-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = -4.576534",
+   "detail": "2 parts = -90.000000",
    "width": 390
   },
   {
    "file": "states/row-open-mid-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = 7.270250",
+   "detail": "2 parts = 270.000000",
    "width": 390
   },
   {
@@ -1607,7 +1607,7 @@
    "file": "states/row-open-mid-390.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "11 targets ≥ 44",
+   "detail": "9 targets ≥ 44",
    "width": 390
   },
   {
@@ -1628,14 +1628,14 @@
    "file": "states/row-open-mid-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "68 slot elements ok",
+   "detail": "54 slot elements ok",
    "width": 390
   },
   {
    "file": "states/row-open-mid-390.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "22 colours on token",
+   "detail": "26 colours on token",
    "width": 390
   },
   {
@@ -1719,14 +1719,14 @@
    "file": "states/share-card-1part.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = -3.206906",
+   "detail": "1 parts = -85.000000",
    "width": 1200
   },
   {
    "file": "states/share-card-1part.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "1 parts = 13.688342",
+   "detail": "1 parts = 300.000000",
    "width": 1200
   },
   {
@@ -1761,7 +1761,7 @@
    "file": "states/share-card-1part.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "21 colours on token",
+   "detail": "22 colours on token",
    "width": 1200
   },
   {
@@ -1789,14 +1789,14 @@
    "file": "states/share-card.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = -4.576534",
+   "detail": "2 parts = -90.000000",
    "width": 1200
   },
   {
    "file": "states/share-card.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = 7.270250",
+   "detail": "2 parts = 270.000000",
    "width": 1200
   },
   {
@@ -1845,7 +1845,7 @@
    "file": "states/share-card.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "21 colours on token",
+   "detail": "22 colours on token",
    "width": 1200
   },
   {
@@ -1873,14 +1873,14 @@
    "file": "states/sheet-390-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = -4.576534",
+   "detail": "2 parts = -90.000000",
    "width": 390
   },
   {
    "file": "states/sheet-390-390.html",
    "guard": "parts-sum",
    "ok": true,
-   "detail": "2 parts = 7.270250",
+   "detail": "2 parts = 270.000000",
    "width": 390
   },
   {
@@ -1922,7 +1922,7 @@
    "file": "states/sheet-390-390.html",
    "guard": "tap-44",
    "ok": true,
-   "detail": "12 targets ≥ 44",
+   "detail": "10 targets ≥ 44",
    "width": 390
   },
   {
@@ -1943,14 +1943,14 @@
    "file": "states/sheet-390-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "69 slot elements ok",
+   "detail": "55 slot elements ok",
    "width": 390
   },
   {
    "file": "states/sheet-390-390.html",
    "guard": "tokens",
    "ok": true,
-   "detail": "24 colours on token",
+   "detail": "28 colours on token",
    "width": 390
   },
   {

@@ -651,7 +651,7 @@ curl -s -H "Authorization: Bearer $CFBD_API_KEY" \
 2. Run validation:
 
    ```bash
-   CF_API_URL="https://cfb-rankings-api.<account>.workers.dev"  # actual URL
+   CF_API_URL="{SITE_URL}"  # public origin, pending Michael's choice
 
    curl -sf "${CF_API_URL}/"
    time curl -sf --max-time 120 "${CF_API_URL}/rankings?year=2024&week=10" -o /dev/null

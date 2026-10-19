@@ -1,0 +1,52 @@
+{
+  "source": "synthetic",
+  "note": "Invented teams, records, and ratings for the design comp. Not a published board.",
+  "open": {"mid": "Fixture Mesa", "heat": "Fixture Harbor"},
+  "teams": [
+    {"team_name": "Fixture North", "conference": "Synthetic East", "conference_type": "Power 4", "color": "#114488"},
+    {"team_name": "Fixture South", "conference": "Synthetic East", "conference_type": "Power 4", "color": "#226644"},
+    {"team_name": "Fixture East", "conference": "Synthetic West", "conference_type": "Power 4", "color": "#553311"},
+    {"team_name": "Fixture West", "conference": "Synthetic West", "conference_type": "Group of 5", "color": "#334455"},
+    {"team_name": "Fixture Harbor", "conference": "Synthetic East", "conference_type": "Power 4", "color": "#772244"},
+    {"team_name": "Fixture Ridge", "conference": "Synthetic West", "conference_type": "Power 4", "color": "#445522"},
+    {"team_name": "Fixture Mesa", "conference": "Synthetic East", "conference_type": "Group of 5", "color": "#663300"},
+    {"team_name": "Fixture Dale", "conference": "Synthetic West", "conference_type": "Group of 5", "color": "#222266"}
+  ],
+  "weeks": {
+    "1": {
+      "quality": {"Fixture North": 1900, "Fixture South": 1800, "Fixture East": 1700, "Fixture West": 1650, "Fixture Harbor": 1400, "Fixture Ridge": 1600, "Fixture Mesa": 1500, "Fixture Dale": 1200},
+      "resume": {"Fixture North": 0.2, "Fixture South": 0.1, "Fixture East": 0.1, "Fixture West": 0.0, "Fixture Harbor": 0.0, "Fixture Ridge": 0.1, "Fixture Mesa": 0.4, "Fixture Dale": 0.0},
+      "sos": {"Fixture North": 2, "Fixture South": 4, "Fixture East": 6, "Fixture West": 3, "Fixture Harbor": 8, "Fixture Ridge": 1, "Fixture Mesa": 5, "Fixture Dale": 7},
+      "sov": {"Fixture North": 1, "Fixture South": 3, "Fixture East": 5, "Fixture West": 2, "Fixture Harbor": 7, "Fixture Ridge": 4, "Fixture Mesa": 6, "Fixture Dale": 8},
+      "records": {"Fixture North": [1, 0], "Fixture South": [1, 0], "Fixture East": [0, 0], "Fixture West": [0, 0], "Fixture Harbor": [0, 0], "Fixture Ridge": [1, 0], "Fixture Mesa": [1, 0], "Fixture Dale": [0, 1]}
+    },
+    "6": {
+      "quality": {"Fixture North": 1900, "Fixture South": 1800, "Fixture East": 1700, "Fixture West": 1650, "Fixture Harbor": 1400, "Fixture Ridge": 1600, "Fixture Mesa": 1500, "Fixture Dale": 1200},
+      "resume": {"Fixture North": 0.9, "Fixture South": 0.7, "Fixture East": 0.6, "Fixture West": 0.5, "Fixture Harbor": 0.4, "Fixture Ridge": 0.8, "Fixture Mesa": 0.3, "Fixture Dale": 0.1},
+      "sos": {"Fixture North": 2, "Fixture South": 4, "Fixture East": 6, "Fixture West": 3, "Fixture Harbor": 8, "Fixture Ridge": 1, "Fixture Mesa": 5, "Fixture Dale": 7},
+      "sov": {"Fixture North": 1, "Fixture South": 3, "Fixture East": 5, "Fixture West": 2, "Fixture Harbor": 7, "Fixture Ridge": 4, "Fixture Mesa": 6, "Fixture Dale": 8},
+      "records": {"Fixture North": [5, 0], "Fixture South": [4, 1], "Fixture East": [3, 2], "Fixture West": [3, 2], "Fixture Harbor": [2, 3], "Fixture Ridge": [4, 1], "Fixture Mesa": [2, 3], "Fixture Dale": [0, 5]}
+    },
+    "7": {
+      "quality": {"Fixture North": 1900, "Fixture South": 1800, "Fixture East": 1700, "Fixture West": 1650, "Fixture Harbor": 1400, "Fixture Ridge": 1600, "Fixture Mesa": 1500, "Fixture Dale": 1200},
+      "resume": {"Fixture North": 0.9, "Fixture South": 0.7, "Fixture East": 0.6, "Fixture West": 0.5, "Fixture Harbor": 0.4, "Fixture Ridge": 0.8, "Fixture Mesa": 0.3, "Fixture Dale": 0.1},
+      "sos": {"Fixture North": 2, "Fixture South": 4, "Fixture East": 6, "Fixture West": 3, "Fixture Harbor": 8, "Fixture Ridge": 1, "Fixture Mesa": 5, "Fixture Dale": 7},
+      "sov": {"Fixture North": 1, "Fixture South": 3, "Fixture East": 5, "Fixture West": 2, "Fixture Harbor": 7, "Fixture Ridge": 4, "Fixture Mesa": 6, "Fixture Dale": 8},
+      "records": {"Fixture North": [6, 0], "Fixture South": [5, 1], "Fixture East": [4, 2], "Fixture West": [4, 2], "Fixture Harbor": [3, 3], "Fixture Ridge": [5, 1], "Fixture Mesa": [3, 3], "Fixture Dale": [1, 5]}
+    },
+    "9": {
+      "quality": {"Fixture North": 1900, "Fixture South": 1800, "Fixture East": 1700, "Fixture West": 1650, "Fixture Harbor": 1500, "Fixture Ridge": 1600, "Fixture Mesa": 1500, "Fixture Dale": 1200},
+      "resume": {"Fixture North": 0.9, "Fixture South": 0.7, "Fixture East": 0.6, "Fixture West": 0.5, "Fixture Harbor": 0.45, "Fixture Ridge": 0.8, "Fixture Mesa": 0.3, "Fixture Dale": 0.1},
+      "sos": {"Fixture North": 2, "Fixture South": 4, "Fixture East": 6, "Fixture West": 3, "Fixture Harbor": 8, "Fixture Ridge": 1, "Fixture Mesa": 5, "Fixture Dale": 7},
+      "sov": {"Fixture North": 1, "Fixture South": 3, "Fixture East": 5, "Fixture West": 2, "Fixture Harbor": 7, "Fixture Ridge": 4, "Fixture Mesa": 6, "Fixture Dale": 8},
+      "records": {"Fixture North": [7, 0], "Fixture South": [6, 1], "Fixture East": [5, 2], "Fixture West": [5, 2], "Fixture Harbor": [4, 3], "Fixture Ridge": [6, 1], "Fixture Mesa": [3, 4], "Fixture Dale": [1, 6]}
+    },
+    "10": {
+      "quality": {"Fixture North": 1900, "Fixture South": 1800, "Fixture East": 1700, "Fixture West": 1650, "Fixture Harbor": 1585, "Fixture Ridge": 1600, "Fixture Mesa": 1500, "Fixture Dale": 1200},
+      "resume": {"Fixture North": 0.95, "Fixture South": 0.7, "Fixture East": 0.6, "Fixture West": 0.5, "Fixture Harbor": 0.45, "Fixture Ridge": 0.85, "Fixture Mesa": 0.3, "Fixture Dale": 0.1},
+      "sos": {"Fixture North": 2, "Fixture South": 4, "Fixture East": 6, "Fixture West": 3, "Fixture Harbor": 8, "Fixture Ridge": 1, "Fixture Mesa": 5, "Fixture Dale": 7},
+      "sov": {"Fixture North": 1, "Fixture South": 3, "Fixture East": 5, "Fixture West": 2, "Fixture Harbor": 7, "Fixture Ridge": 4, "Fixture Mesa": 6, "Fixture Dale": 8},
+      "records": {"Fixture North": [8, 0], "Fixture South": [6, 2], "Fixture East": [5, 3], "Fixture West": [5, 3], "Fixture Harbor": [5, 3], "Fixture Ridge": [7, 1], "Fixture Mesa": [4, 4], "Fixture Dale": [1, 7]}
+    }
+  }
+}

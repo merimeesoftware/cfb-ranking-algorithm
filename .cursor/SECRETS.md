@@ -25,23 +25,16 @@ Secrets for this project are configured on the **Cloud Agents Secrets** page (us
 
 | Secret name | Scope | Purpose |
 |-------------|-------|---------|
-| `CFBD_API_KEY` | **Personal** (you) or **Team** (shared) | Live CFBD pulls when `CFBD_OFFLINE=0` (slot **A**) |
-| `CFBD_API_KEY_B` | Same | Optional second CFBD account (slot **B**) — separate 1k/mo quota |
+| `CFBD_API_KEY` | **Personal** (you) or **Team** (shared) | Live CFBD pulls when `CFBD_OFFLINE=0`. One key only. |
 | `XAI_API_KEY` | Not a Cursor secret | provisioned by DevSecOps on Michael's yes, on the Worker only |
 
-### Dual CFBD accounts (2× 1k calls/month)
-
-CollegeFootballData quotas are **per account**. Store both keys as secrets, then pick which one the process uses:
+One CollegeFootballData account. Do not add a second key to get around the monthly quota.
 
 ```bash
-# Default — account A
-CFBD_API_KEY_SLOT=A CFBD_OFFLINE=0 ./venv/bin/python scripts/warm_cfbd_cache.py 2019 2020
-
-# Switch to account B for more pulls the same month
-CFBD_API_KEY_SLOT=B CFBD_OFFLINE=0 ./venv/bin/python scripts/warm_cfbd_cache.py 2021 2022
+CFBD_OFFLINE=0 ./venv/bin/python scripts/warm_cfbd_cache.py 2019 2020
 ```
 
-`cfbd_key_slot_status()` still reports which slot is active for local scripts. The public `GET /agent/health` route does not include that block or any budget counters.
+The public `GET /agent/health` route does not include a key block or any budget counters.
 
 3. **Start a new Cloud Agent** (or restart this one). Secrets inject at **VM boot**, not when you restart Flask alone.
 

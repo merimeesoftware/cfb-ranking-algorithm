@@ -8,7 +8,7 @@
 | Rating | **TR+** (consumer name for Final Ranking Score / FRS) |
 | Handle | **@TrueCFB** |
 | Tagline | **How good they actually are.** |
-| Primary domain (target) | `truerankings.com` (fallbacks: `truecfb.com`, `truerankings.football`) |
+| Primary domain (target) | pending Michael's choice |
 | Worker | `true-rankings-cfb` |
 
 ## Positioning
@@ -79,7 +79,7 @@ Compliance when lines are shown: 21+ (18+ where required), state geo, affiliate 
 
 ## Custom domain
 
-Attach `truerankings.com` (or fallback) to Worker `true-rankings-cfb` in Cloudflare → Custom Domains. Keep `PUBLIC_SITE_URL` / canonical meta aligned with the live hostname.
+Custom domain: pending Michael's choice. When one is chosen, attach it to Worker `true-rankings-cfb` and set `PUBLIC_SITE_URL={SITE_URL}` for the frontend build.
 
 ## Implementation checklist
 

@@ -34,7 +34,7 @@ One `wrangler deploy` uploads **both** the frontend build and the API container 
 |---|------------------------|----------------|
 | **When** | Live site on `main` | Staging / testing before prod |
 | **Worker name** | `true-rankings-cfb` | `cfb-rankings-dev` |
-| **URL** | `https://true-rankings-cfb.<account>.workers.dev` | `https://cfb-rankings-dev.<account>.workers.dev` |
+| **Public URL** | Custom domain: pending Michael's choice | Custom domain: pending Michael's choice |
 | **How** | Workers Builds on `main` (automatic) or `npm run deploy` | Manual `npm run deploy:dev` only if you want a second Worker |
 
 **Workers Builds (recommended):**
@@ -45,16 +45,16 @@ You do **not** need two Workers unless you want a permanently separate staging U
 
 ---
 
-## Custom domain (True Rankings)
+## Custom domain
 
-Public brand hostname target: **`truerankings.com`** (fallbacks: `truecfb.com`, `truerankings.football`).
+Custom domain: pending Michael's choice. Do not name a hostname in the repo.
 
-1. Buy/DNS the domain at your registrar (or Cloudflare Registrar).
-2. Cloudflare dashboard → **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Domains & Routes** → **Add** → Custom Domain → `truerankings.com` (+ `www` if desired).
-3. Set frontend build var / secret `PUBLIC_SITE_URL=https://truerankings.com` so canonical, OG, sitemap, and citation links match.
-4. Optional runtime secrets: `DROP_WEBHOOK_URL` (The Drop ESP), affiliate IDs when you replace placeholder book URLs.
+When a domain is chosen:
 
-Keep `robots.txt` Sitemap line and `scripts/generate-sitemap.mjs` aligned with `PUBLIC_SITE_URL`.
+1. Attach it to Worker `true-rankings-cfb` in Cloudflare → **Domains & Routes**.
+2. Set the frontend build variable `PUBLIC_SITE_URL={SITE_URL}` (absolute `http(s)` origin, no trailing slash).
+
+Until `PUBLIC_SITE_URL` is set, the build uses same-origin relative links, omits the absolute canonical and `og:url`, and does not ship `sitemap.xml` or a robots `Sitemap:` line. `scripts/generate-public-files.mjs` writes `robots.txt`, `llms.txt`, `llms-full.txt`, and the sitemap at build time. Vite exposes `PUBLIC_*` to the client, so that prefix is not for secrets. CI checks an unset build and a build with `PUBLIC_SITE_URL=https://example.test`, and scans `frontend/build`, `worker/src`, the Python sources, and the public Markdown docs for a hard-coded public host.
 
 ---
 
@@ -170,12 +170,12 @@ First deploy builds the Docker image and can take several minutes. The Worker ma
 ### Verify
 
 ```bash
-WORKER_URL="https://true-rankings-cfb.<account>.workers.dev"
+WORKER_URL="{SITE_URL}"
 curl -sf "${WORKER_URL}/"
 curl -sf --max-time 120 "${WORKER_URL}/api/rankings?year=2024&week=10" | head -c 200
 ```
 
-Open the Worker URL in a browser — rankings for 2024 should load.
+Open `{SITE_URL}` in a browser once the domain is chosen — rankings for 2024 should load.
 
 ### 5. Connect GitHub (optional CI deploy)
 
@@ -183,7 +183,7 @@ Open the Worker URL in a browser — rankings for 2024 should load.
 
 Repository variables:
 - `ENABLE_CLOUDFLARE_DEPLOY` = `true`
-- `WORKER_URL` = your production Worker URL (for smoke tests)
+- `WORKER_URL` = `{SITE_URL}` once the custom domain is chosen (for smoke tests)
 
 Repository secrets:
 - `CLOUDFLARE_API_TOKEN`
@@ -227,7 +227,7 @@ cd frontend && npm run dev                              # :5173, proxies /api
 
 ### Planned
 
-- Playwright E2E against `cfb-rankings-dev.*.workers.dev`
+- Playwright E2E against `{SITE_URL}` after the custom domain is chosen
 - Impeccable frontend audit in CI
 - Auto-promote dev → prod after tests pass
 

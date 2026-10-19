@@ -41,13 +41,12 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 
 | Secret | Required? | Purpose |
 |--------|-----------|---------|
-| `CFBD_API_KEY` | **Yes** | Fetch game data from College Football Data (slot A) |
-| `CFBD_API_KEY_B` | No | Optional second CFBD account (slot B); select with `CFBD_API_KEY_SLOT=B` |
+| `CFBD_API_KEY` | **Yes** | Fetch game data from CollegeFootballData.com. One key only. |
 | `XAI_API_KEY` | When live xAI is enabled | provisioned by DevSecOps on Michael's yes. The Worker reads this name only to authorize the AI Gateway grok path. Do not put a value in the repo. Workers AI uses the `[ai]` binding, not a key. |
 | `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
 | `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
 | `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
-| `PUBLIC_SITE_URL` | Optional (build) | Canonical origin for OG/sitemap/citations (default `https://truerankings.com`) |
+| `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. No `PUBLIC_*` name may hold a key, token, or password. |
 
 Or via CLI (after `wrangler login` once on your machine):
 
