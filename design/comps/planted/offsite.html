@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Planted guard</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #10261c;
+      }
+      h1 {
+        margin: 0;
+        padding: 16px;
+        color: #f4f1ea;
+        font: 24px/1.2 Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <main data-check="board">
+      <h1 data-check="title">True Rankings</h1>
+    </main>
+    <script>
+      window.__agentReached = 'pending';
+      window.__offsiteReached = 'pending';
+      fetch('/api/agent/explain', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      })
+        .then((response) => {
+          window.__agentReached = String(response.status);
+        })
+        .catch(() => {
+          window.__agentReached = 'blocked';
+        });
+      fetch('https://api.collegefootballdata.com/games?year=2024')
+        .then(() => {
+          window.__offsiteReached = 'loaded';
+        })
+        .catch(() => {
+          window.__offsiteReached = 'blocked';
+        });
+      window.__wsReached = 'pending';
+      try {
+        const socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`);
+        socket.addEventListener('open', () => {
+          window.__wsReached = 'open';
+        });
+        socket.addEventListener('error', () => {
+          window.__wsReached = 'blocked';
+        });
+        socket.addEventListener('close', () => {
+          if (window.__wsReached === 'pending') window.__wsReached = 'blocked';
+        });
+      } catch {
+        window.__wsReached = 'blocked';
+      }
+    </script>
+  </body>
+</html>

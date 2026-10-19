@@ -11,7 +11,7 @@
 		pageTitle,
 		teamPath,
 		weekPath,
-		SITE_ORIGIN,
+		publicUrl,
 		formatSpread,
 		findTeamBySlug,
 		impliedSpread,
@@ -78,7 +78,7 @@
 		'@type': 'SportsEvent',
 		name: `${teamA.team_name} vs ${teamB.team_name}`,
 		description,
-		url: `${SITE_ORIGIN}${path}`,
+		url: publicUrl(path),
 		homeTeam: teamA.team_name,
 		awayTeam: teamB.team_name,
 	};

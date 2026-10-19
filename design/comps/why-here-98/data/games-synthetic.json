@@ -1,0 +1,30 @@
+{
+  "source": "synthetic",
+  "note": "Invented opponents and results for the design comp. Not a season and not a feed.",
+  "default": [
+    {"week": 1, "opponent": "Fixture Dale", "venue": "home", "result": "W"},
+    {"week": 2, "opponent": "Fixture Mesa", "venue": "away", "result": "L"},
+    {"week": 3, "opponent": "Fixture West", "venue": "home", "result": "W"}
+  ],
+  "teams": {
+    "Fixture Mesa": [
+      {"week": 1, "opponent": "Fixture Dale", "venue": "home", "result": "W"},
+      {"week": 4, "opponent": "Fixture North", "venue": "away", "result": "L"},
+      {"week": 8, "opponent": "Fixture Harbor", "venue": "home", "result": "W"}
+    ],
+    "Fixture Harbor": [
+      {"week": 2, "opponent": "Fixture Ridge", "venue": "away", "result": "L"},
+      {"week": 5, "opponent": "Fixture North", "venue": "home", "result": "W"},
+      {"week": 9, "opponent": "Fixture Dale", "venue": "home", "result": "W"}
+    ],
+    "Fixture North": [
+      {"week": 1, "opponent": "Fixture Dale", "venue": "home", "result": "W"},
+      {"week": 3, "opponent": "Fixture Mesa", "venue": "away", "result": "W"}
+    ],
+    "Fixture Dale": [
+      {"week": 1, "opponent": "Fixture North", "venue": "away", "result": "L"},
+      {"week": 4, "opponent": "Fixture West", "venue": "home", "result": "L"},
+      {"week": 8, "opponent": "Fixture Mesa", "venue": "away", "result": "L"}
+    ]
+  }
+}

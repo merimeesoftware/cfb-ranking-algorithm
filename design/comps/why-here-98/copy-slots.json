@@ -1,0 +1,503 @@
+{
+ "note": "Copy slots for #98, after Phil's lock (#98 comment 2026-10-19T03:30:06Z) and D-20261018-198. locked/existing render verbatim (templates fill {fields} from data, nothing else changes); unlocked slots are omitted from every comp; data slots render data. Dropped: part.name.resume (no longer a bar label; Resume is a column) and part.name.league (league strength left the order). Phil's manual forward-looking read ('will' etc.) is CONFIRMED clean for every locked string (#98, 2026-10-19T03:42:10Z); every new slot needs that read before it ships.",
+ "slots": [
+  {
+   "id": "brand.name",
+   "status": "locked",
+   "text": "True Rankings",
+   "source": "PURPOSE.md (What it is); frontend/src/lib/brand.ts BRAND_NAME; confirmed in Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "share card footer (tagline stays per owner steering)",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "brand.tagline",
+   "status": "locked",
+   "text": "How good they actually are.",
+   "source": "PURPOSE.md locked public lines; confirmed in Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "share card footer (tagline stays per owner steering)",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "brand.rating",
+   "status": "locked",
+   "text": "TR+",
+   "source": "PURPOSE.md; brand.ts RATING_NAME; confirmed in Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "board header, panel score, share card",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.title",
+   "status": "existing",
+   "text": "Top 25 Teams",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board card header",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.legend.cfp",
+   "status": "existing",
+   "text": "CFP Playoff (1-12)",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board legend",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.legend.bubble",
+   "status": "existing",
+   "text": "On the Bubble (13-25)",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board legend",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.col.rank",
+   "status": "existing",
+   "text": "Rank",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.col.team",
+   "status": "existing",
+   "text": "Team",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.col.conference",
+   "status": "existing",
+   "text": "Conference",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.col.record",
+   "status": "existing",
+   "text": "Record",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.col.delta",
+   "status": "existing",
+   "text": "Δ",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "no (confirmed by Phil)"
+  },
+  {
+   "id": "board.col.resume",
+   "status": "locked",
+   "text": "Resume",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "board header; resume_rank column (context only, does not set the order)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "board.col.resume.description",
+   "status": "locked",
+   "text": "Who they beat, ranked.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "Resume header tooltip (title) and accessible description (aria-description); also the Resume context item in the panel",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "board.resume.cell",
+   "status": "locked",
+   "text": "#{resume_rank}",
+   "source": "Phil copy lock follow-up for #108, #98 comment 2026-10-19T03:42:10Z",
+   "where": "Resume cell value on every board row (390 and 1440)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "board.resume.cell.accessible",
+   "status": "locked",
+   "text": "Resume: #{resume_rank} of {N}. Who they beat, ranked.",
+   "source": "Phil copy lock follow-up for #108, #98 comment 2026-10-19T03:42:10Z",
+   "where": "Resume cell tooltip (title) and accessible name (aria-label); N = board size",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.resume.value",
+   "status": "locked",
+   "text": "#{n} of {N} (1 = best)",
+   "source": "Phil copy lock follow-up for #108, #98 comment 2026-10-19T03:42:10Z",
+   "where": "panel Resume stat value (context beside the bar); n = resume_rank, N = board size",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "part.name.strength",
+   "status": "locked",
+   "text": "how they look",
+   "field": "parts[key=strength].name",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b); PURPOSE.md fan language",
+   "where": "bar label (engine sends parts[].name; must equal this text)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "part.name.heat",
+   "status": "locked",
+   "text": "Heat",
+   "field": "parts[key=heat].name",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b); PURPOSE.md amendment 2026-10-18 23:14 ET",
+   "where": "bar label, 2-part order only",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.toggle.accessible_name",
+   "status": "locked",
+   "text": "Show why {Team} is #{rank}",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "row toggle aria-label",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.heading",
+   "status": "locked",
+   "text": "Why {Team} is #{rank}",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "open panel heading",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.vs_above.caption",
+   "status": "locked",
+   "text": "Why they trail #{rank_above} {TeamAbove}",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "comparison vs #N-1 caption",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.vs_below.caption",
+   "status": "locked",
+   "text": "Why they lead #{rank_below} {TeamBelow}",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "comparison vs #N+1 caption",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.no_above",
+   "status": "locked",
+   "text": "No one is ranked above them.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "#1 team, in place of the above comparison",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.no_below",
+   "status": "locked",
+   "text": "No one is ranked below them on this board.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "last team, in place of the below comparison",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.sum.caption",
+   "status": "locked",
+   "text": "Add the parts and you get the TR+ gap.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "sum row under the parts",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.weight.caption",
+   "status": "locked",
+   "text": "The % is how much each part counts in TR+.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "explains the % next to each part",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "why.delta.caption",
+   "status": "locked",
+   "text": "Move since the last ranking.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "explains the move vs previous rank",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.sos.label",
+   "status": "locked",
+   "text": "Schedule strength",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "schedule strength stat (value = sos_rank)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.sos.value",
+   "status": "locked",
+   "text": "#{sos_rank} of {N} (1 = hardest)",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "schedule strength value (context beside the bar)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.sov.label",
+   "status": "locked",
+   "text": "Quality of wins",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "quality of wins stat (value = sov_rank)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.sov.value",
+   "status": "locked",
+   "text": "#{sov_rank} of {N} (1 = best)",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "quality of wins value (context beside the bar)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.heat.recent_form_line",
+   "status": "locked",
+   "text": "Last {k} games: {wins}-{losses}.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "Heat context, 2-part order only",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chips.heading",
+   "status": "locked",
+   "text": "The games",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "game strip heading",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chip.tag.quality_win",
+   "status": "locked",
+   "text": "Quality win",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "chip tag text + legend",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chip.tag.cupcake",
+   "status": "locked",
+   "text": "Cupcake",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "chip tag text + legend",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chip.tag.bad_loss",
+   "status": "locked",
+   "text": "Bad loss",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "chip tag text + legend",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chip.venue.home",
+   "status": "locked",
+   "text": "Home",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "chip venue",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chip.venue.away",
+   "status": "locked",
+   "text": "Away",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "chip venue",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "chip.venue.neutral",
+   "status": "locked",
+   "text": "Neutral site",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "chip venue",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "early.note",
+   "status": "locked",
+   "text": "Few games played so far, so this rank rests on thin evidence.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "few games / early week marker",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "loading.label",
+   "status": "locked",
+   "text": "Loading the breakdown…",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "screen-reader loading text",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "error.message",
+   "status": "locked",
+   "text": "Couldn't load the breakdown right now.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "error state",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "error.retry.label",
+   "status": "locked",
+   "text": "Try again",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "retry button",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "unavailable.message",
+   "status": "locked",
+   "text": "{season} rankings aren't published yet.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "season data not published",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "share.button.label",
+   "status": "locked",
+   "text": "Share",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "panel share button",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "share.card.headline",
+   "status": "locked",
+   "text": "{Team} is #{rank} on TR+.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "share card",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "share.card.alt_text",
+   "status": "locked",
+   "text": "{Team} is #{rank} on True Rankings, with a TR+ of {tr_plus} and a {record} record.",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "share image alt / og:image:alt",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "share.post_text",
+   "status": "locked",
+   "text": "{Team} is #{rank} on TR+. Here's why. {url}",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "UNRENDERED: owner decision 2026-10-18, sharing ships image-only (no URL, no post text) until Michael picks the domain",
+   "needs_phil_lock": "no",
+   "rendered": false
+  },
+  {
+   "id": "sheet.close.label",
+   "status": "locked",
+   "text": "Close",
+   "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
+   "where": "390 sheet close button",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "share.card.url",
+   "status": "unlocked",
+   "source": "owner note on #98: unlocked until Michael confirms the domain",
+   "where": "share card footer; OMITTED (image-only sharing until Michael picks the domain)",
+   "needs_phil_lock": "yes (domain)"
+  },
+  {
+   "id": "data.team_name",
+   "status": "data",
+   "field": "team.team_name",
+   "where": "everywhere"
+  },
+  {
+   "id": "data.rank",
+   "status": "data",
+   "field": "team.rank",
+   "where": "disc, header"
+  },
+  {
+   "id": "data.tr_plus",
+   "status": "data",
+   "field": "team.final_ranking_score (1 dp)",
+   "where": "header, share card"
+  },
+  {
+   "id": "data.record",
+   "status": "data",
+   "field": "team.record",
+   "where": "header, rows"
+  },
+  {
+   "id": "data.delta",
+   "status": "data",
+   "field": "team.prev_rank - team.rank (#105)",
+   "where": "header, board Δ"
+  },
+  {
+   "id": "data.resume_rank",
+   "status": "data",
+   "field": "team.resume_rank (rank by record_score; #105)",
+   "where": "board.resume.cell, board.resume.cell.accessible, stat.resume.value"
+  },
+  {
+   "id": "data.part.weight",
+   "status": "data",
+   "field": "parts[].weight as %",
+   "where": "bar row"
+  },
+  {
+   "id": "data.part.contribution",
+   "status": "data",
+   "field": "weight × (value_self − value_other), 1 dp signed",
+   "where": "bar row"
+  },
+  {
+   "id": "data.gap",
+   "status": "data",
+   "field": "team ordering TR+ − neighbour ordering TR+, 1 dp signed",
+   "where": "comparison header"
+  },
+  {
+   "id": "data.sos_rank",
+   "status": "data",
+   "field": "team.sos_rank (#105)",
+   "where": "stat"
+  },
+  {
+   "id": "data.sov_rank",
+   "status": "data",
+   "field": "team.sov_rank (#105)",
+   "where": "stat"
+  },
+  {
+   "id": "data.game",
+   "status": "data",
+   "field": "games[]: result, opponent, opponent_rank (#105 venue/tag)",
+   "where": "chips"
+  },
+  {
+   "id": "data.url",
+   "status": "data",
+   "field": "team.url (teamPath + year/week)",
+   "where": "share.post_text {url} only (not on the card)"
+  },
+  {
+   "id": "data.season",
+   "status": "data",
+   "field": "season",
+   "where": "unavailable state"
+  },
+  {
+   "id": "data.recent",
+   "status": "data",
+   "field": "team.recent {k,wins,losses} over the Heat window",
+   "where": "stat.heat.recent_form_line"
+  },
+  {
+   "id": "data.board_size",
+   "status": "data",
+   "field": "board_size = {N}",
+   "where": "stat.sos.value, stat.sov.value"
+  }
+ ]
+}
