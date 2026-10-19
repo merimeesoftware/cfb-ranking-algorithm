@@ -1,0 +1,167 @@
+{
+ "note": "Selectors and guards the #94 stills check should enforce on the built #98 view (app side). Guard ids match check-comps.mjs; the comp-side twin proves each guard with a planted fixture (planted/). Fields marked (#105) are the ones #105 adds; the view must read them, not derive them.",
+ "routes": [
+  {
+   "path": "/2024/week/10?team=Iowa%20State",
+   "name": "why-here-board-open",
+   "widths": [
+    "390",
+    "1440"
+   ],
+   "comp_states": [
+    "row-open-mid",
+    "sheet-390"
+   ]
+  },
+  {
+   "path": "/teams/iowa-state?year=2024&week=10",
+   "name": "why-here-team-page",
+   "widths": [
+    "390",
+    "1440"
+   ],
+   "comp_states": [
+    "row-open-mid"
+   ]
+  }
+ ],
+ "targets": [
+  {
+   "name": "board",
+   "selector": "[data-check=board]",
+   "assert": "present; columns Rank/Team/Conference/Record/Δ/TR+ unchanged; only addition is the toggle cell"
+  },
+  {
+   "name": "board-row",
+   "selector": "[data-check=board-row]",
+   "assert": "one per ranked team in rank order"
+  },
+  {
+   "name": "row-toggle",
+   "selector": "[data-check=row-toggle]",
+   "assert": "button, aria-expanded true|false, aria-controls → panel id, accessible name (aria-labelledby team name until why.toggle.accessible_name is locked), ≥44×44, :focus-visible outline ≥2px"
+  },
+  {
+   "name": "why-panel",
+   "selector": "[data-check=why-panel]",
+   "assert": "data-state in open|loading|error; data-parts == parts.length (#105)"
+  },
+  {
+   "name": "cmp-above",
+   "selector": "[data-check=cmp-above]",
+   "assert": "data-gap == team.final_ranking_score − above.final_ranking_score; data-empty=true for rank 1"
+  },
+  {
+   "name": "cmp-below",
+   "selector": "[data-check=cmp-below]",
+   "assert": "data-gap == team − below; data-empty=true for the last ranked team"
+  },
+  {
+   "name": "part",
+   "selector": "[data-part]",
+   "assert": "one per parts[] entry, in parts[] order; data-weight == parts[].weight (#105, from DEFAULT_CONFIG); data-contribution == weight × (value_self − value_other); visible [data-part-label] == parts[].name"
+  },
+  {
+   "name": "sum",
+   "selector": "[data-check=sum] [data-field=gap-total]",
+   "assert": "text == round(gap, 1)"
+  },
+  {
+   "name": "chips",
+   "selector": "[data-check=chips] [data-check=chip]",
+   "assert": "one per game; data-tag in quality_win|cupcake|bad_loss|none (#105 tag); data-venue in home|away|neutral (#105 venue); opponent_rank shown when ranked"
+  },
+  {
+   "name": "stat-sos",
+   "selector": "[data-check=stat-sos] [data-field=sos_rank]",
+   "assert": "== team.sos_rank (#105)"
+  },
+  {
+   "name": "stat-sov",
+   "selector": "[data-check=stat-sov] [data-field=sov_rank]",
+   "assert": "== team.sov_rank (#105)"
+  },
+  {
+   "name": "delta",
+   "selector": "[data-field=delta]",
+   "assert": "== team.prev_rank − team.rank (#105 prev_rank); '—' when prev_rank is null"
+  },
+  {
+   "name": "few-games",
+   "selector": "[data-check=few-games]",
+   "assert": "present iff games_played < threshold (threshold: open question, comps use 4)"
+  },
+  {
+   "name": "share-btn",
+   "selector": "[data-check=share-btn]",
+   "assert": "≥44×44; produces the 1200×675 card for the same team+week URL"
+  },
+  {
+   "name": "share-card",
+   "selector": "[data-check=share-card]",
+   "assert": "exactly 1200×675; [data-field=url] == team.url without scheme"
+  },
+  {
+   "name": "sheet",
+   "selector": "[data-check=sheet]",
+   "assert": "390 only: role=dialog, aria-modal, full width, close button ≥44×44"
+  }
+ ],
+ "guards": [
+  {
+   "id": "parts-sum",
+   "rule": "|Σ data-contribution − data-gap| ≤ 1e-9 per comparison; every shown number is the 1-dp rounding of its data",
+   "fixture": "planted/parts-sum.html"
+  },
+  {
+   "id": "part-label",
+   "rule": "every [data-part] has a visible label (app: strict, no pending labels)",
+   "fixture": "planted/part-label.html"
+  },
+  {
+   "id": "overflow-390",
+   "rule": "documentElement.scrollWidth ≤ 390 and no element outside a scroll container crosses the viewport",
+   "fixture": "planted/overflow-390.html"
+  },
+  {
+   "id": "tap-44",
+   "rule": "every button, a[href], [role=button], input, select, [tabindex≥0] is ≥44×44",
+   "fixture": "planted/tap-44.html"
+  },
+  {
+   "id": "focus-visible",
+   "rule": "row toggle reached by Tab matches :focus-visible and shows outline ≥2px (or box-shadow)",
+   "fixture": "planted/focus-visible.html"
+  },
+  {
+   "id": "no-gambling",
+   "rule": "case-insensitive word match on text, alt/aria-label/title/placeholder/content/data-url/value and title: bet|bets|betting|bettor(s)|odds|market(s)|spread(s)|line(s)|pick(s)|lock of the week",
+   "fixture": "planted/no-gambling.html"
+  },
+  {
+   "id": "copy-slots",
+   "rule": "unlocked slots render no text; locked/existing slots verbatim; no lorem/placeholder/TBD/{{ }}",
+   "fixture": "planted/copy-slots-unlocked.html, planted/copy-slots-placeholder.html"
+  },
+  {
+   "id": "tokens",
+   "rule": "computed colours ⊂ tokens.json (team data colours exempt via [data-team-color])",
+   "fixture": "planted/tokens.html"
+  },
+  {
+   "id": "share-card",
+   "rule": "card and document exactly 1200×675; URL rendered; PNG 1200×675",
+   "fixture": "planted/share-card-wrong-size.html"
+  },
+  {
+   "id": "data-driven",
+   "rule": "no literal formula weights in renderer source; rendered data-weight ∈ parts[] for the state",
+   "fixture": "planted/hardcoded-weight.mjs"
+  },
+  {
+   "id": "structure",
+   "rule": "each state carries its required selectors (#1 empty above, last empty below, ≥1 negative part, 4-part renders 4)",
+   "fixture": "planted/structure.html"
+  }
+ ]
+}

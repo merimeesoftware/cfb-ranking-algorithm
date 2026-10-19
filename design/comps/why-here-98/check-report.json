@@ -1,0 +1,1839 @@
+{
+ "strict": false,
+ "files": 22,
+ "checks": 253,
+ "passed": 253,
+ "failed": 0,
+ "byGuard": {
+  "tap-44": {
+   "pass": 19,
+   "fail": 0,
+   "pending": 0
+  },
+  "focus-visible": {
+   "pass": 17,
+   "fail": 0,
+   "pending": 0
+  },
+  "no-gambling": {
+   "pass": 23,
+   "fail": 0,
+   "pending": 0
+  },
+  "copy-slots": {
+   "pass": 22,
+   "fail": 0,
+   "pending": 0
+  },
+  "tokens": {
+   "pass": 22,
+   "fail": 0,
+   "pending": 0
+  },
+  "structure": {
+   "pass": 22,
+   "fail": 0,
+   "pending": 0
+  },
+  "overflow-390": {
+   "pass": 11,
+   "fail": 0,
+   "pending": 0
+  },
+  "parts-sum": {
+   "pass": 24,
+   "fail": 0,
+   "pending": 0
+  },
+  "part-label": {
+   "pass": 76,
+   "fail": 0,
+   "pending": 4
+  },
+  "data-driven": {
+   "pass": 15,
+   "fail": 0,
+   "pending": 0
+  },
+  "share-card": {
+   "pass": 2,
+   "fail": 0,
+   "pending": 0
+  }
+ },
+ "failures": [],
+ "results": [
+  {
+   "file": "states/board-closed-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "50 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/board-closed-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/board-closed-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/board-closed-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/board-closed-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "25 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/board-closed-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "50 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "22 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/board-closed-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -10.959410",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.702727",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "23 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -10.959410",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.702727",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "22 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/early-week-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/error-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "12 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/error-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/error-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/error-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/error-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "21 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/error-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "12 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "20 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/error-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "4 parts = -4.697600",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "4 parts = 1.742640",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: label pending (part.name.heat)",
+   "width": 1440,
+   "pending": true
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: label pending (part.name.heat)",
+   "width": 1440,
+   "pending": true
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "2 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "22 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "4 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "4 parts = -4.697600",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "4 parts = 1.742640",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: label pending (part.name.heat)",
+   "width": 390,
+   "pending": true
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "heat: label pending (part.name.heat)",
+   "width": 390,
+   "pending": true
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "2 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "21 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "4 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/four-part-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "21 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "20 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/loading-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.285909",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.038509",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "1 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "15 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "2 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.285909",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.038509",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "1 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "15 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/negative-part-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "2 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 46.315124",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "26 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "4 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 46.315124",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "24 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-first-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "4 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.791564",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "26 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "4 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.791564",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "7 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "24 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-last-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "4 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.285909",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.038509",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "23 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "8 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.285909",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.038509",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "11 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "21 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/row-open-mid-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "8 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/season-unavailable-1440.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1440
+  },
+  {
+   "file": "states/season-unavailable-1440.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1440
+  },
+  {
+   "file": "states/season-unavailable-1440.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "10 colours on token",
+   "width": 1440
+  },
+  {
+   "file": "states/season-unavailable-1440.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present",
+   "width": 1440
+  },
+  {
+   "file": "states/season-unavailable-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/season-unavailable-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/season-unavailable-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/season-unavailable-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "10 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/season-unavailable-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present",
+   "width": 390
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.285909",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.038509",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "20 colours on token",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "share-card",
+   "ok": true,
+   "detail": "1200×675 (doc 1200×675) url ok",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 1200
+  },
+  {
+   "file": "states/share-card.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "1 selectors present",
+   "width": 1200
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = -1.285909",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "parts-sum",
+   "ok": true,
+   "detail": "3 parts = 7.038509",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "strength: how they look",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "resume: who they beat",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "part-label",
+   "ok": true,
+   "detail": "league: league strength",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "overflow-390",
+   "ok": true,
+   "detail": "scrollWidth 390 ≤ 390",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "tap-44",
+   "ok": true,
+   "detail": "12 targets ≥ 44",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "focus-visible",
+   "ok": true,
+   "detail": "outline solid 3px",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "clean",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "copy-slots",
+   "ok": true,
+   "detail": "0 slot elements ok",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "tokens",
+   "ok": true,
+   "detail": "23 colours on token",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "3 parts from fixture",
+   "width": 390
+  },
+  {
+   "file": "states/sheet-390-390.html",
+   "guard": "structure",
+   "ok": true,
+   "detail": "3 selectors present",
+   "width": 390
+  },
+  {
+   "file": "render.mjs, comp.css",
+   "guard": "data-driven",
+   "ok": true,
+   "detail": "no weight literals"
+  },
+  {
+   "file": "renders/share-card-1200x675.png",
+   "guard": "share-card",
+   "ok": true,
+   "detail": "png 1200×675"
+  },
+  {
+   "file": "copy-slots.json",
+   "guard": "no-gambling",
+   "ok": true,
+   "detail": "locked/existing copy clean"
+  }
+ ]
+}

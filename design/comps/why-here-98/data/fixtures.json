@@ -1,0 +1,2082 @@
+{
+ "board-closed": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 1,
+    "prev_rank": 1,
+    "team_name": "Oregon",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "9-0",
+    "final_ranking_score": 1873.3564615380244,
+    "color": "#007030"
+   },
+   {
+    "rank": 2,
+    "prev_rank": 8,
+    "team_name": "Ohio State",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1827.0413371730858,
+    "color": "#ba0c2f"
+   },
+   {
+    "rank": 3,
+    "prev_rank": 5,
+    "team_name": "Indiana",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "9-0",
+    "final_ranking_score": 1802.1434153574546,
+    "color": "#990000"
+   },
+   {
+    "rank": 4,
+    "prev_rank": 3,
+    "team_name": "BYU",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "8-0",
+    "final_ranking_score": 1780.9444484687203,
+    "color": "#003da5"
+   },
+   {
+    "rank": 5,
+    "prev_rank": 7,
+    "team_name": "Miami",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "9-0",
+    "final_ranking_score": 1780.0234831801386,
+    "color": "#f47321"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 4,
+    "team_name": "Georgia",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1768.5860123961506,
+    "color": "#ba0c2f"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 16,
+    "team_name": "SMU",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "8-1",
+    "final_ranking_score": 1752.7175593942172,
+    "color": "#d70000"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 6,
+    "team_name": "Notre Dame",
+    "conference": "FBS Independents",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1742.6805736674514,
+    "color": "#0c2340"
+   },
+   {
+    "rank": 9,
+    "prev_rank": 2,
+    "team_name": "Penn State",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1716.0596952603382,
+    "color": "#001e44"
+   },
+   {
+    "rank": 10,
+    "prev_rank": 13,
+    "team_name": "Alabama",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1706.0571734128694,
+    "color": "#9e1b32"
+   },
+   {
+    "rank": 11,
+    "prev_rank": 12,
+    "team_name": "Texas",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1703.0014663225695,
+    "color": "#bf5700"
+   },
+   {
+    "rank": 12,
+    "prev_rank": 17,
+    "team_name": "Tennessee",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1686.497471430809,
+    "color": "#ff8200"
+   },
+   {
+    "rank": 13,
+    "prev_rank": 18,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1668.0487286982002,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": 21,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1664.141961711653,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1662.8560526562371,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": 19,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1655.8175438859498,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": 33,
+    "team_name": "Louisville",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1632.6746588392807,
+    "color": "#c9001f"
+   },
+   {
+    "rank": 18,
+    "prev_rank": 20,
+    "team_name": "LSU",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1631.2440471899868,
+    "color": "#461d7c"
+   },
+   {
+    "rank": 19,
+    "prev_rank": 30,
+    "team_name": "South Carolina",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1629.1696121811449,
+    "color": "#73000a"
+   },
+   {
+    "rank": 20,
+    "prev_rank": 14,
+    "team_name": "Pittsburgh",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1622.828423363002,
+    "color": "#003594"
+   },
+   {
+    "rank": 21,
+    "prev_rank": 11,
+    "team_name": "Kansas State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1597.659023705819,
+    "color": "#512888"
+   },
+   {
+    "rank": 22,
+    "prev_rank": 22,
+    "team_name": "Washington State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.6867306990289,
+    "color": "#a60f2d"
+   },
+   {
+    "rank": 23,
+    "prev_rank": 9,
+    "team_name": "Texas A&M",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1581.6672909681124,
+    "color": "#500000"
+   },
+   {
+    "rank": 24,
+    "prev_rank": 23,
+    "team_name": "UNLV",
+    "conference": "Mountain West",
+    "conference_type": "Group of 5",
+    "record": "6-2",
+    "final_ranking_score": 1575.380866632081,
+    "color": "#cf0a2c"
+   },
+   {
+    "rank": 25,
+    "prev_rank": 29,
+    "team_name": "Iowa",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1572.3835568580191,
+    "color": "#000000"
+   }
+  ],
+  "open": null
+ },
+ "row-open-mid": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 13,
+    "prev_rank": 18,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1668.0487286982002,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": 21,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1664.141961711653,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1662.8560526562371,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": 19,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1655.8175438859498,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": 33,
+    "team_name": "Louisville",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1632.6746588392807,
+    "color": "#c9001f"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1662.8560526562371,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1627.7721263002218,
+     "contribution": 1302.2177010401774
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 1863.4470674856493,
+     "contribution": 279.5170601228474
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1622.4258298642458,
+     "contribution": 81.1212914932123
+    }
+   ],
+   "above": {
+    "team_name": "Ole Miss",
+    "rank": 14,
+    "final_ranking_score": 1664.141961711653,
+    "gap": -1.2859090554159138,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1695.8046639918207,
+      "contribution": -54.426030153279136
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1511.4390559354324,
+      "contribution": 52.80120173253253
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1615.6474425576284,
+      "contribution": 0.33891936533086664
+     }
+    ]
+   },
+   "below": {
+    "team_name": "Boise State",
+    "rank": 16,
+    "final_ranking_score": 1655.8175438859498,
+    "gap": 7.038508770287308,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1652.371140012388,
+      "contribution": -19.67921096973296
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1791.4438738323306,
+      "contribution": 10.800479047997806
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1304.0810160237975,
+      "contribution": 15.917240692022416
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "North Dakota",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 2,
+     "opponent": "Iowa",
+     "opponent_rank": 25,
+     "venue": "away",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 4,
+     "opponent": "Arkansas State",
+     "opponent_rank": 91,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 5,
+     "opponent": "Houston",
+     "opponent_rank": 58,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Baylor",
+     "opponent_rank": 35,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 7,
+     "opponent": "West Virginia",
+     "opponent_rank": 49,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "UCF",
+     "opponent_rank": 62,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 10,
+     "opponent": "Texas Tech",
+     "opponent_rank": 38,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    }
+   ]
+  }
+ },
+ "row-open-first": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 1,
+    "prev_rank": 1,
+    "team_name": "Oregon",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "9-0",
+    "final_ranking_score": 1873.3564615380244,
+    "color": "#007030"
+   },
+   {
+    "rank": 2,
+    "prev_rank": 8,
+    "team_name": "Ohio State",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1827.0413371730858,
+    "color": "#ba0c2f"
+   },
+   {
+    "rank": 3,
+    "prev_rank": 5,
+    "team_name": "Indiana",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "9-0",
+    "final_ranking_score": 1802.1434153574546,
+    "color": "#990000"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 1,
+    "prev_rank": 1,
+    "team_name": "Oregon",
+    "conference": "Big Ten",
+    "record": "9-0",
+    "games_played": 9,
+    "final_ranking_score": 1873.3564615380244,
+    "sos_rank": 27,
+    "sov_rank": 4,
+    "color": "#007030",
+    "url": "https://truerankings.com/teams/oregon?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1820.6706387994302,
+     "contribution": 1456.5365110395442
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 2263.842985677906,
+     "contribution": 339.57644785168594
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1544.8700529358844,
+     "contribution": 77.24350264679423
+    }
+   ],
+   "above": null,
+   "below": {
+    "team_name": "Ohio State",
+    "rank": 2,
+    "final_ranking_score": 1827.0413371730858,
+    "gap": 46.31512436493858,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1820.6706387994302,
+      "value_other": 1777.300089812145,
+      "contribution": 34.6964391898282
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 2263.842985677906,
+      "value_other": 2186.3850845105044,
+      "contribution": 11.618685175110272
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1544.8700529358844,
+      "value_other": 1544.8700529358844,
+      "contribution": 0.0
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Idaho",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 2,
+     "opponent": "Boise State",
+     "opponent_rank": 16,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 3,
+     "opponent": "Oregon State",
+     "opponent_rank": 81,
+     "venue": "away",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 5,
+     "opponent": "UCLA",
+     "opponent_rank": 50,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Michigan State",
+     "opponent_rank": 54,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 7,
+     "opponent": "Ohio State",
+     "opponent_rank": 2,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 8,
+     "opponent": "Purdue",
+     "opponent_rank": 112,
+     "venue": "away",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 9,
+     "opponent": "Illinois",
+     "opponent_rank": 37,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 10,
+     "opponent": "Michigan",
+     "opponent_rank": 32,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  }
+ },
+ "row-open-last": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 134,
+    "prev_rank": 135,
+    "team_name": "Southern Miss",
+    "conference": "Sun Belt",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 804.6243520351543,
+    "color": "#ffc72c"
+   },
+   {
+    "rank": 135,
+    "prev_rank": 136,
+    "team_name": "Kent State",
+    "conference": "Mid-American",
+    "conference_type": "Group of 5",
+    "record": "0-8",
+    "final_ranking_score": 801.5152611540846,
+    "color": "#002664"
+   },
+   {
+    "rank": 136,
+    "prev_rank": 134,
+    "team_name": "UTEP",
+    "conference": "Mountain West",
+    "conference_type": "Group of 5",
+    "record": "1-8",
+    "final_ranking_score": 799.7236975301342,
+    "color": "#ff8200"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 136,
+    "prev_rank": 134,
+    "team_name": "UTEP",
+    "conference": "Mountain West",
+    "record": "1-8",
+    "games_played": 9,
+    "final_ranking_score": 799.7236975301342,
+    "sos_rank": 103,
+    "sov_rank": 74,
+    "color": "#ff8200",
+    "url": "https://truerankings.com/teams/utep?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1021.7562243183012,
+     "contribution": 817.404979454641
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": -496.75427641526267,
+     "contribution": -74.5131414622894
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1136.6371907556538,
+     "contribution": 56.83185953778269
+    }
+   ],
+   "above": {
+    "team_name": "Kent State",
+    "rank": 135,
+    "final_ranking_score": 801.5152611540846,
+    "gap": -1.79156362395031,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1021.7562243183012,
+      "value_other": 991.9075166759719,
+      "contribution": 23.87896611386341
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": -496.75427641526267,
+      "value_other": -298.74004477800344,
+      "contribution": -29.702134745588882
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1136.6371907556538,
+      "value_other": 1056.0050906001497,
+      "contribution": 4.031605007775204
+     }
+    ]
+   },
+   "below": null,
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Nebraska",
+     "opponent_rank": 57,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 2,
+     "opponent": "Southern Utah",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "L",
+     "tag": "bad_loss"
+    },
+    {
+     "week": 3,
+     "opponent": "Liberty",
+     "opponent_rank": 78,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 4,
+     "opponent": "Colorado State",
+     "opponent_rank": 55,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Sam Houston",
+     "opponent_rank": 60,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 7,
+     "opponent": "Western Kentucky",
+     "opponent_rank": 51,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Florida International",
+     "opponent_rank": 119,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 9,
+     "opponent": "Louisiana Tech",
+     "opponent_rank": 117,
+     "venue": "away",
+     "result": "L",
+     "tag": "bad_loss"
+    },
+    {
+     "week": 10,
+     "opponent": "Middle Tennessee",
+     "opponent_rank": 122,
+     "venue": "home",
+     "result": "L",
+     "tag": "bad_loss"
+    }
+   ]
+  }
+ },
+ "negative-part": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 13,
+    "prev_rank": 18,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1668.0487286982002,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": 21,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1664.141961711653,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1662.8560526562371,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": 19,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1655.8175438859498,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": 33,
+    "team_name": "Louisville",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1632.6746588392807,
+    "color": "#c9001f"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1662.8560526562371,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1627.7721263002218,
+     "contribution": 1302.2177010401774
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 1863.4470674856493,
+     "contribution": 279.5170601228474
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1622.4258298642458,
+     "contribution": 81.1212914932123
+    }
+   ],
+   "above": {
+    "team_name": "Ole Miss",
+    "rank": 14,
+    "final_ranking_score": 1664.141961711653,
+    "gap": -1.2859090554159138,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1695.8046639918207,
+      "contribution": -54.426030153279136
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1511.4390559354324,
+      "contribution": 52.80120173253253
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1615.6474425576284,
+      "contribution": 0.33891936533086664
+     }
+    ]
+   },
+   "below": {
+    "team_name": "Boise State",
+    "rank": 16,
+    "final_ranking_score": 1655.8175438859498,
+    "gap": 7.038508770287308,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1652.371140012388,
+      "contribution": -19.67921096973296
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1791.4438738323306,
+      "contribution": 10.800479047997806
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1304.0810160237975,
+      "contribution": 15.917240692022416
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "North Dakota",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 2,
+     "opponent": "Iowa",
+     "opponent_rank": 25,
+     "venue": "away",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 4,
+     "opponent": "Arkansas State",
+     "opponent_rank": 91,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 5,
+     "opponent": "Houston",
+     "opponent_rank": 58,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Baylor",
+     "opponent_rank": 35,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 7,
+     "opponent": "West Virginia",
+     "opponent_rank": 49,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "UCF",
+     "opponent_rank": 62,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 10,
+     "opponent": "Texas Tech",
+     "opponent_rank": 38,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    }
+   ]
+  },
+  "focus": "negative"
+ },
+ "early-week": {
+  "season": 2024,
+  "week": 1,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 36,
+    "prev_rank": null,
+    "team_name": "Kentucky",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "1-0",
+    "final_ranking_score": 1505.6644498204932,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 37,
+    "prev_rank": null,
+    "team_name": "Texas Tech",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "1-0",
+    "final_ranking_score": 1502.3017012161529,
+    "color": "#c30020"
+   },
+   {
+    "rank": 38,
+    "prev_rank": null,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "1-0",
+    "final_ranking_score": 1491.3422915615038,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 39,
+    "prev_rank": null,
+    "team_name": "Northwestern",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "1-0",
+    "final_ranking_score": 1483.6395644303834,
+    "color": "#582c83"
+   },
+   {
+    "rank": 40,
+    "prev_rank": null,
+    "team_name": "Wisconsin",
+    "conference": "Big Ten",
+    "conference_type": "Power 4",
+    "record": "1-0",
+    "final_ranking_score": 1479.9445875416873,
+    "color": "#a00000"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 38,
+    "prev_rank": null,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "1-0",
+    "games_played": 1,
+    "final_ranking_score": 1491.3422915615038,
+    "sos_rank": 191,
+    "sov_rank": 66,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=1"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1440.948996462755,
+     "contribution": 1152.759197170204
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 1726.4312089971784,
+     "contribution": 258.9646813495767
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1592.3682608344607,
+     "contribution": 79.61841304172304
+    }
+   ],
+   "above": {
+    "team_name": "Texas Tech",
+    "rank": 37,
+    "final_ranking_score": 1502.3017012161529,
+    "gap": -10.959409654649107,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1440.948996462755,
+      "value_other": 1458.6704760812977,
+      "contribution": -14.177183694834094
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1726.4312089971784,
+      "value_other": 1704.9793820626105,
+      "contribution": 3.217774040185179
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1592.3682608344607,
+      "value_other": 1592.3682608344607,
+      "contribution": 0.0
+     }
+    ]
+   },
+   "below": {
+    "team_name": "Northwestern",
+    "rank": 39,
+    "final_ranking_score": 1483.6395644303834,
+    "gap": 7.702727131120355,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1440.948996462755,
+      "value_other": 1386.902569567333,
+      "contribution": 43.23714151633758
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1726.4312089971784,
+      "value_other": 1936.3907548339769,
+      "contribution": -31.493931875519774
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1592.3682608344607,
+      "value_other": 1673.1779110284074,
+      "contribution": -4.040482509697336
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "North Dakota",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    }
+   ]
+  }
+ },
+ "four-part": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "fixture: illustrative Elo-plus-form weights (Michael pending)",
+   "parts": 4
+  },
+  "board": [
+   {
+    "rank": 13,
+    "prev_rank": null,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1666.376180431987,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": null,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1654.2890172193004,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": null,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1649.5914174037948,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": null,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1647.8487776802328,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": null,
+    "team_name": "South Carolina",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1636.5588517531055,
+    "color": "#73000a"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": null,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1649.5914174037948,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.7,
+     "value": 1627.7721263002218,
+     "contribution": 1139.4404884101552
+    },
+    {
+     "key": "heat",
+     "name": null,
+     "weight": 0.1,
+     "value": 1495.125773775799,
+     "contribution": 149.5125773775799
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 1863.4470674856493,
+     "contribution": 279.5170601228474
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1622.4258298642458,
+     "contribution": 81.1212914932123
+    }
+   ],
+   "above": {
+    "team_name": "Ole Miss",
+    "rank": 14,
+    "final_ranking_score": 1654.2890172193004,
+    "gap": -4.697599815505555,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.7,
+      "value_self": 1627.7721263002218,
+      "value_other": 1695.8046639918207,
+      "contribution": -47.62277638411924
+     },
+     {
+      "key": "heat",
+      "name": null,
+      "weight": 0.1,
+      "value_self": 1495.125773775799,
+      "value_other": 1597.2752190682963,
+      "contribution": -10.214944529249738
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1511.4390559354324,
+      "contribution": 52.80120173253253
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1615.6474425576284,
+      "contribution": 0.33891936533086664
+     }
+    ]
+   },
+   "below": {
+    "team_name": "Boise State",
+    "rank": 16,
+    "final_ranking_score": 1647.8487776802328,
+    "gap": 1.7426397235619788,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.7,
+      "value_self": 1627.7721263002218,
+      "value_other": 1652.371140012388,
+      "contribution": -17.219309598516336
+     },
+     {
+      "key": "heat",
+      "name": null,
+      "weight": 0.1,
+      "value_self": 1495.125773775799,
+      "value_other": 1572.6834779552185,
+      "contribution": -7.7557704179419495
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1791.4438738323306,
+      "contribution": 10.800479047997806
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1304.0810160237975,
+      "contribution": 15.917240692022416
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "North Dakota",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 2,
+     "opponent": "Iowa",
+     "opponent_rank": 25,
+     "venue": "away",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 4,
+     "opponent": "Arkansas State",
+     "opponent_rank": 88,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 5,
+     "opponent": "Houston",
+     "opponent_rank": 57,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Baylor",
+     "opponent_rank": 33,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 7,
+     "opponent": "West Virginia",
+     "opponent_rank": 50,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "UCF",
+     "opponent_rank": 60,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 10,
+     "opponent": "Texas Tech",
+     "opponent_rank": 40,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    }
+   ]
+  },
+  "illustrative": true
+ },
+ "loading": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 13,
+    "prev_rank": 18,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1668.0487286982002,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": 21,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1664.141961711653,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1662.8560526562371,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": 19,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1655.8175438859498,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": 33,
+    "team_name": "Louisville",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1632.6746588392807,
+    "color": "#c9001f"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1662.8560526562371,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "status": "loading"
+  }
+ },
+ "error": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 13,
+    "prev_rank": 18,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1668.0487286982002,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": 21,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1664.141961711653,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1662.8560526562371,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": 19,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1655.8175438859498,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": 33,
+    "team_name": "Louisville",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1632.6746588392807,
+    "color": "#c9001f"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1662.8560526562371,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "status": "error"
+  }
+ },
+ "season-unavailable": {
+  "season": 2026,
+  "week": 8,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": null,
+  "open": null,
+  "status": "unavailable"
+ },
+ "sheet-390": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "board": [
+   {
+    "rank": 13,
+    "prev_rank": 18,
+    "team_name": "Colorado",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1668.0487286982002,
+    "color": "#cfb87c"
+   },
+   {
+    "rank": 14,
+    "prev_rank": 21,
+    "team_name": "Ole Miss",
+    "conference": "SEC",
+    "conference_type": "Power 4",
+    "record": "7-2",
+    "final_ranking_score": 1664.141961711653,
+    "color": "#13294b"
+   },
+   {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1662.8560526562371,
+    "color": "#c8102e"
+   },
+   {
+    "rank": 16,
+    "prev_rank": 19,
+    "team_name": "Boise State",
+    "conference": "Pac-12",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1655.8175438859498,
+    "color": "#0033a0"
+   },
+   {
+    "rank": 17,
+    "prev_rank": 33,
+    "team_name": "Louisville",
+    "conference": "ACC",
+    "conference_type": "Power 4",
+    "record": "6-3",
+    "final_ranking_score": 1632.6746588392807,
+    "color": "#c9001f"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1662.8560526562371,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1627.7721263002218,
+     "contribution": 1302.2177010401774
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 1863.4470674856493,
+     "contribution": 279.5170601228474
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1622.4258298642458,
+     "contribution": 81.1212914932123
+    }
+   ],
+   "above": {
+    "team_name": "Ole Miss",
+    "rank": 14,
+    "final_ranking_score": 1664.141961711653,
+    "gap": -1.2859090554159138,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1695.8046639918207,
+      "contribution": -54.426030153279136
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1511.4390559354324,
+      "contribution": 52.80120173253253
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1615.6474425576284,
+      "contribution": 0.33891936533086664
+     }
+    ]
+   },
+   "below": {
+    "team_name": "Boise State",
+    "rank": 16,
+    "final_ranking_score": 1655.8175438859498,
+    "gap": 7.038508770287308,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1652.371140012388,
+      "contribution": -19.67921096973296
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1791.4438738323306,
+      "contribution": 10.800479047997806
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1304.0810160237975,
+      "contribution": 15.917240692022416
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "North Dakota",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 2,
+     "opponent": "Iowa",
+     "opponent_rank": 25,
+     "venue": "away",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 4,
+     "opponent": "Arkansas State",
+     "opponent_rank": 91,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 5,
+     "opponent": "Houston",
+     "opponent_rank": 58,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Baylor",
+     "opponent_rank": 35,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 7,
+     "opponent": "West Virginia",
+     "opponent_rank": 49,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "UCF",
+     "opponent_rank": 62,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 10,
+     "opponent": "Texas Tech",
+     "opponent_rank": 38,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    }
+   ]
+  },
+  "sheet": true
+ },
+ "share-card": {
+  "season": 2024,
+  "week": 10,
+  "formula": {
+   "source": "ranking_service.DEFAULT_CONFIG",
+   "parts": 3
+  },
+  "open": {
+   "team": {
+    "rank": 15,
+    "prev_rank": 10,
+    "team_name": "Iowa State",
+    "conference": "Big 12",
+    "record": "7-1",
+    "games_played": 8,
+    "final_ranking_score": 1662.8560526562371,
+    "sos_rank": 45,
+    "sov_rank": 12,
+    "color": "#c8102e",
+    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.8,
+     "value": 1627.7721263002218,
+     "contribution": 1302.2177010401774
+    },
+    {
+     "key": "resume",
+     "name": "who they beat",
+     "weight": 0.15,
+     "value": 1863.4470674856493,
+     "contribution": 279.5170601228474
+    },
+    {
+     "key": "league",
+     "name": "league strength",
+     "weight": 0.05,
+     "value": 1622.4258298642458,
+     "contribution": 81.1212914932123
+    }
+   ],
+   "above": {
+    "team_name": "Ole Miss",
+    "rank": 14,
+    "final_ranking_score": 1664.141961711653,
+    "gap": -1.2859090554159138,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1695.8046639918207,
+      "contribution": -54.426030153279136
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1511.4390559354324,
+      "contribution": 52.80120173253253
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1615.6474425576284,
+      "contribution": 0.33891936533086664
+     }
+    ]
+   },
+   "below": {
+    "team_name": "Boise State",
+    "rank": 16,
+    "final_ranking_score": 1655.8175438859498,
+    "gap": 7.038508770287308,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.8,
+      "value_self": 1627.7721263002218,
+      "value_other": 1652.371140012388,
+      "contribution": -19.67921096973296
+     },
+     {
+      "key": "resume",
+      "name": "who they beat",
+      "weight": 0.15,
+      "value_self": 1863.4470674856493,
+      "value_other": 1791.4438738323306,
+      "contribution": 10.800479047997806
+     },
+     {
+      "key": "league",
+      "name": "league strength",
+      "weight": 0.05,
+      "value_self": 1622.4258298642458,
+      "value_other": 1304.0810160237975,
+      "contribution": 15.917240692022416
+     }
+    ]
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "North Dakota",
+     "opponent_rank": null,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 2,
+     "opponent": "Iowa",
+     "opponent_rank": 25,
+     "venue": "away",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 4,
+     "opponent": "Arkansas State",
+     "opponent_rank": 91,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 5,
+     "opponent": "Houston",
+     "opponent_rank": 58,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 6,
+     "opponent": "Baylor",
+     "opponent_rank": 35,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 7,
+     "opponent": "West Virginia",
+     "opponent_rank": 49,
+     "venue": "away",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "UCF",
+     "opponent_rank": 62,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    },
+    {
+     "week": 10,
+     "opponent": "Texas Tech",
+     "opponent_rank": 38,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    }
+   ]
+  }
+ }
+}
