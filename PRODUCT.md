@@ -32,7 +32,7 @@
 
 Use: board, rankings, TR+, who they beat, how they look, league strength, take, climb, The Drop, how good they actually are.
 
-Keep off the primary path: Elo, TQ, CQ, FRS, `AI_MODE`, stub, MiniMax (methodology deep dive only).
+Keep off the primary path: Elo, TQ, CQ, FRS, `AI_MODE`, stub (methodology deep dive only).
 
 ## Surfaces
 

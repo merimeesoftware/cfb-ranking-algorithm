@@ -1,4 +1,4 @@
-"""Spend / offline controls for CFBD and AI providers."""
+"""Spend / offline controls for CFBD, xAI, and Workers AI."""
 from __future__ import annotations
 
 import os
@@ -13,7 +13,7 @@ class CFBDOfflineError(RuntimeError):
 
 
 class AIBudgetError(RuntimeError):
-    """Raised when the live MiniMax prompt budget is exhausted."""
+    """Raised when a live xAI or Workers AI prompt is refused."""
 
 
 class AIRateLimitError(RuntimeError):
@@ -21,15 +21,17 @@ class AIRateLimitError(RuntimeError):
 
 
 # In-code defaults. Unset env must never mean unlimited.
-# These match the Worker Durable Object daily budget (defense in depth, per process).
-DEFAULT_AI_MAX_CALLS = 100
+# These match the Worker daily budget on the spend-budget instance.
+AI_PROVIDERS = ('xai', 'workers_ai')
+DEFAULT_XAI_MAX_CALLS = 0
+DEFAULT_WORKERS_AI_MAX_CALLS = 0
 DEFAULT_CFBD_MAX_CALLS = 25
 
 _call_lock = threading.Lock()
 _live_call_count = 0
 _live_call_day = ''
-_ai_call_count = 0
-_ai_call_day = ''
+_provider_counts = {'xai': 0, 'workers_ai': 0}
+_provider_days = {'xai': '', 'workers_ai': ''}
 _ai_rate_events: Dict[str, list] = defaultdict(list)
 
 
@@ -57,8 +59,19 @@ def _is_development() -> bool:
 
 
 def is_ai_killed() -> bool:
-    """AI_KILL=1 stops every live MiniMax call, in every environment."""
+    """AI_KILL=1 stops every live xAI and Workers AI call."""
     return _env_flag('AI_KILL', '0')
+
+
+def is_provider_killed(provider: str) -> bool:
+    """AI_KILL covers both providers. Each provider also has its own flag."""
+    if is_ai_killed():
+        return True
+    if provider == 'xai':
+        return _env_flag('XAI_KILL', '0')
+    if provider == 'workers_ai':
+        return _env_flag('WORKERS_AI_KILL', '0')
+    return True
 
 
 def is_cfbd_killed() -> bool:
@@ -91,14 +104,30 @@ def cfbd_max_calls() -> int:
     return _parse_cap(os.environ.get('CFBD_MAX_CALLS', ''), DEFAULT_CFBD_MAX_CALLS)
 
 
-def ai_max_calls() -> int:
+def provider_max_calls(provider: str) -> int:
     """
-    Max live MiniMax prompts this process per UTC day.
+    Max live prompts for one provider this process per UTC day.
 
-    Unset, blank, or invalid AI_MAX_CALLS uses DEFAULT_AI_MAX_CALLS (100).
+    Unset, blank, or invalid values use the in-code default of 0.
     Never unlimited. Stub/off modes never consume this budget.
     """
-    return _parse_cap(os.environ.get('AI_MAX_CALLS', ''), DEFAULT_AI_MAX_CALLS)
+    if provider == 'xai':
+        return _parse_cap(os.environ.get('XAI_MAX_CALLS', ''), DEFAULT_XAI_MAX_CALLS)
+    if provider == 'workers_ai':
+        return _parse_cap(
+            os.environ.get('WORKERS_AI_MAX_CALLS', ''),
+            DEFAULT_WORKERS_AI_MAX_CALLS,
+        )
+    return 0
+
+
+def resolve_ai_provider(explicit: Optional[str] = None) -> str:
+    """AI_PROVIDER selects the live path. Unknown values fall back to workers_ai."""
+    raw = (explicit if explicit is not None else os.environ.get('AI_PROVIDER', ''))
+    provider = (raw or 'workers_ai').strip().lower()
+    if provider not in AI_PROVIDERS:
+        return 'workers_ai'
+    return provider
 
 
 def agent_rate_limit_per_hour() -> int:
@@ -159,11 +188,12 @@ def reset_cfbd_call_count() -> None:
         _live_call_day = _utc_day()
 
 
-def reset_ai_call_count() -> None:
-    global _ai_call_count, _ai_call_day
+def reset_provider_call_counts() -> None:
     with _call_lock:
-        _ai_call_count = 0
-        _ai_call_day = _utc_day()
+        today = _utc_day()
+        for provider in AI_PROVIDERS:
+            _provider_counts[provider] = 0
+            _provider_days[provider] = today
         _ai_rate_events.clear()
 
 
@@ -172,9 +202,9 @@ def get_cfbd_call_count() -> int:
         return _live_call_count
 
 
-def get_ai_call_count() -> int:
+def get_provider_call_count(provider: str) -> int:
     with _call_lock:
-        return _ai_call_count
+        return _provider_counts.get(provider, 0)
 
 
 def _consume_global_budget(bucket: str) -> None:
@@ -198,7 +228,7 @@ def _consume_global_budget(bucket: str) -> None:
         headers={'content-type': 'application/json'},
         method='POST',
     )
-    error_cls = AIBudgetError if bucket == 'ai' else CFBDOfflineError
+    error_cls = CFBDOfflineError if bucket == 'cfbd' else AIBudgetError
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
             body = json.loads(resp.read().decode() or '{}')
@@ -249,35 +279,36 @@ def register_live_cfbd_call() -> int:
         return _live_call_count
 
 
-def register_live_ai_call() -> int:
-    """Increment live MiniMax prompt count. Raises if over budget."""
-    global _ai_call_count, _ai_call_day
-    if is_ai_killed():
+def register_live_provider_call(provider: str) -> int:
+    """Increment one provider's live prompt count. Raises if over budget or killed."""
+    if provider not in AI_PROVIDERS:
+        raise AIBudgetError(f'Unknown AI provider: {provider}')
+    if is_provider_killed(provider):
         raise AIBudgetError('AI kill switch is on. Live calls are stopped.')
-    max_calls = ai_max_calls()
+    max_calls = provider_max_calls(provider)
     with _call_lock:
         today = _utc_day()
-        if _ai_call_day != today:
-            _ai_call_count = 0
-            _ai_call_day = today
-        if _ai_call_count >= max_calls:
+        if _provider_days[provider] != today:
+            _provider_counts[provider] = 0
+            _provider_days[provider] = today
+        if _provider_counts[provider] >= max_calls:
             raise AIBudgetError(
-                f'AI live prompt budget exhausted ({max_calls}). '
-                'Raise AI_MAX_CALLS or use AI_MODE=stub|off for free template/null responses.'
+                f'{provider} live prompt budget exhausted ({max_calls}). '
+                'Raise the provider cap or use AI_MODE=stub.'
             )
-    _consume_global_budget('ai')
+    _consume_global_budget(provider)
     with _call_lock:
         today = _utc_day()
-        if _ai_call_day != today:
-            _ai_call_count = 0
-            _ai_call_day = today
-        if _ai_call_count >= max_calls:
+        if _provider_days[provider] != today:
+            _provider_counts[provider] = 0
+            _provider_days[provider] = today
+        if _provider_counts[provider] >= max_calls:
             raise AIBudgetError(
-                f'AI live prompt budget exhausted ({max_calls}). '
-                'Raise AI_MAX_CALLS or use AI_MODE=stub|off for free template/null responses.'
+                f'{provider} live prompt budget exhausted ({max_calls}). '
+                'Raise the provider cap or use AI_MODE=stub.'
             )
-        _ai_call_count += 1
-        return _ai_call_count
+        _provider_counts[provider] += 1
+        return _provider_counts[provider]
 
 
 def check_agent_rate_limit(client_key: str) -> None:
@@ -321,8 +352,11 @@ def spend_status() -> Dict[str, Any]:
         'cfbd_max_calls': cfbd_max_calls(),
         'cfbd_key': cfbd_key_slot_status(),
         'ai_mode': resolve_ai_mode(),
-        'ai_live_calls': get_ai_call_count(),
-        'ai_max_calls': ai_max_calls(),
+        'ai_provider': resolve_ai_provider(),
+        'xai_live_calls': get_provider_call_count('xai'),
+        'xai_max_calls': provider_max_calls('xai'),
+        'workers_ai_live_calls': get_provider_call_count('workers_ai'),
+        'workers_ai_max_calls': provider_max_calls('workers_ai'),
         'agent_rate_limit_per_hour': agent_rate_limit_per_hour(),
         'development': _is_development(),
     }

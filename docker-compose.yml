@@ -1,12 +1,13 @@
 # Local Docker Compose — API (:5001) + Vite frontend (:5173)
 #
-# Prerequisites: Docker Desktop, `.env` with CFBD_API_KEY (and MINIMAX_API_KEY for live AI).
+# Prerequisites: Docker Desktop and a `.env` with CFBD_API_KEY.
+# XAI_API_KEY is not read here. It is provisioned by DevSecOps on Michael's yes.
 #
 #   docker compose up --build
 #   open http://localhost:5173
 #
-# Live smoke defaults (override in `.env`):
-#   CFBD_OFFLINE=0  AI_MODE=live  CFBD_MAX_CALLS=4  AI_MAX_CALLS=0
+# Local defaults (override in `.env`):
+#   CFBD_OFFLINE=1  AI_MODE=stub  CFBD_MAX_CALLS=4  XAI_MAX_CALLS=0  WORKERS_AI_MAX_CALLS=0
 #
 # Stop:
 #   docker compose down
@@ -26,10 +27,11 @@ services:
       PORT: "8080"
       CACHE_DIR: /app/.cache
       STATIC_RANKINGS_DIR: /app/frontend_static_rankings
-      CFBD_OFFLINE: ${CFBD_OFFLINE:-0}
-      AI_MODE: ${AI_MODE:-live}
+      CFBD_OFFLINE: ${CFBD_OFFLINE:-1}
+      AI_MODE: ${AI_MODE:-stub}
       CFBD_MAX_CALLS: ${CFBD_MAX_CALLS:-4}
-      AI_MAX_CALLS: ${AI_MAX_CALLS:-0}
+      XAI_MAX_CALLS: ${XAI_MAX_CALLS:-0}
+      WORKERS_AI_MAX_CALLS: ${WORKERS_AI_MAX_CALLS:-0}
       AGENT_RATE_LIMIT: ${AGENT_RATE_LIMIT:-50}
     volumes:
       - ./.cache:/app/.cache

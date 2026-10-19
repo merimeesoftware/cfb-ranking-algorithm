@@ -9,18 +9,18 @@ import pytest
 from spend_guards import (
     AIBudgetError,
     CFBDOfflineError,
-    get_ai_call_count,
     get_cfbd_call_count,
+    get_provider_call_count,
     is_cfbd_offline,
-    register_live_ai_call,
     register_live_cfbd_call,
-    reset_ai_call_count,
+    register_live_provider_call,
     reset_cfbd_call_count,
+    reset_provider_call_counts,
     resolve_ai_mode,
     resolve_cfbd_api_key,
     cfbd_key_slot_status,
     spend_status,
-    ai_max_calls,
+    provider_max_calls,
     cfbd_max_calls,
 )
 from ai_stub import stub_explain_from_context
@@ -98,21 +98,26 @@ def test_cfbd_max_defaults_in_development(monkeypatch):
     assert cfbd_max_calls() == 25
 
 
-def test_ai_max_calls_budget(monkeypatch):
-    reset_ai_call_count()
-    monkeypatch.setenv('AI_MAX_CALLS', '2')
-    assert register_live_ai_call() == 1
-    assert register_live_ai_call() == 2
+def test_provider_max_calls_budget(monkeypatch):
+    reset_provider_call_counts()
+    monkeypatch.delenv('AI_KILL', raising=False)
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    monkeypatch.setenv('XAI_MAX_CALLS', '2')
+    assert register_live_provider_call('xai') == 1
+    assert register_live_provider_call('xai') == 2
     with pytest.raises(AIBudgetError):
-        register_live_ai_call()
-    assert get_ai_call_count() == 2
-    reset_ai_call_count()
+        register_live_provider_call('xai')
+    assert get_provider_call_count('xai') == 2
+    reset_provider_call_counts()
 
 
-def test_ai_max_defaults_in_development(monkeypatch):
+def test_provider_max_defaults_to_zero(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
-    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
-    assert ai_max_calls() == 100
+    monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('WORKERS_AI_MAX_CALLS', raising=False)
+    assert provider_max_calls('xai') == 0
+    assert provider_max_calls('workers_ai') == 0
 
 
 def test_spend_status_shape(monkeypatch):
@@ -120,12 +125,14 @@ def test_spend_status_shape(monkeypatch):
     monkeypatch.setenv('CFBD_OFFLINE', '1')
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
-    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('WORKERS_AI_MAX_CALLS', raising=False)
     status = spend_status()
     assert status['cfbd_offline'] is True
     assert status['ai_mode'] == 'stub'
     assert status['cfbd_max_calls'] == 25
-    assert status['ai_max_calls'] == 100
+    assert status['xai_max_calls'] == 0
+    assert status['workers_ai_max_calls'] == 0
 
 
 def test_make_request_blocked_when_offline(monkeypatch):
@@ -178,7 +185,7 @@ def test_stub_explain_from_fixture():
     assert '#1' in text or 'board' in text.lower()
     # Fan-visible explanation must not leak stub/AI mode language
     assert 'AI_MODE' not in text
-    assert 'MiniMax' not in text
+    assert 'xAI' not in text
     assert 'stub' not in text.lower()
     assert 'TQ' not in text
     assert 'CQ' not in text
@@ -187,13 +194,15 @@ def test_stub_explain_from_fixture():
 
 def test_agent_explain_stub_mode(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'stub')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
+    monkeypatch.delenv('AI_WORKERS_HOST', raising=False)
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
     with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
         response = client.post('/agent/explain', json={
             'team_name': 'Oregon',
             'year': 2024,
             'week': 10,
+            'question_id': 'why_here',
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -201,20 +210,29 @@ def test_agent_explain_stub_mode(client, monkeypatch):
         assert data['explanation']
         assert 'Oregon' in data['explanation']
         assert 'AI_MODE' not in data['explanation']
-        assert 'MiniMax' not in data['explanation']
+        assert 'xAI' not in data['explanation']
         assert 'stub' not in data['explanation'].lower()
 
 
 def test_agent_explain_stub_expanded_context(client, monkeypatch):
     """Phase 4: context includes formula, path_to_climb, neighbors, top quality wins."""
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+
+    cache = get_cache()
+    logical = explain_cache_logical('stub', 2024, 10, 'Ohio State', 'why_here', blurb_cache_period())
+    cache.invalidate(cache._generate_key('explain', logical))
     monkeypatch.setenv('AI_MODE', 'stub')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
+    monkeypatch.delenv('AI_WORKERS_HOST', raising=False)
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
     with patch('agent_service.get_or_calculate_rankings', return_value=mock_data) as mock_get:
         response = client.post('/agent/explain', json={
             'team_name': 'Ohio State',
             'year': 2024,
             'week': 10,
+            'question_id': 'why_here',
         })
         assert response.status_code == 200
         # Offline-first default in tests: prefer_static should be True
@@ -258,6 +276,7 @@ def test_agent_explain_off_mode(client, monkeypatch):
             'team_name': 'Georgia',
             'year': 2024,
             'week': 10,
+            'question_id': 'why_here',
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -271,6 +290,13 @@ def test_agent_explain_off_mode(client, monkeypatch):
 
 def test_agent_explain_prefer_static_online(client, monkeypatch):
     """Agent path always prefers static/slim rankings (no cold solver on explain)."""
+    from agent_service import explain_cache_logical
+    from cache import get_cache
+    from shareable_blurb import blurb_cache_period
+
+    cache = get_cache()
+    logical = explain_cache_logical('stub', 2024, 10, 'Oregon', 'results', blurb_cache_period())
+    cache.invalidate(cache._generate_key('explain', logical))
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.setenv('CFBD_OFFLINE', '0')
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
@@ -279,22 +305,24 @@ def test_agent_explain_prefer_static_online(client, monkeypatch):
             'team_name': 'Oregon',
             'year': 2024,
             'week': 10,
+            'question_id': 'results',
         })
         assert response.status_code == 200
         assert mock_get.call_args.kwargs.get('prefer_static') is True
 
 
-def test_agent_explain_live_falls_back_without_key(client, monkeypatch):
+def test_agent_explain_live_falls_back_without_host(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'live')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
-    # Module captured MINIMAX_API_KEY at import — patch the module attr
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
+    monkeypatch.delenv('AI_WORKERS_HOST', raising=False)
     mock_data = json.loads((FIXTURES / 'sample_rankings_slim.json').read_text())
-    with patch('agent_service.MINIMAX_API_KEY', ''):
-        with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
+    with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
             response = client.post('/agent/explain', json={
                 'team_name': 'Oregon',
                 'year': 2024,
                 'week': 10,
+                'question_id': 'why_here',
+                'provider': 'workers_ai',
             })
             assert response.status_code == 200
             data = response.get_json()
@@ -302,7 +330,7 @@ def test_agent_explain_live_falls_back_without_key(client, monkeypatch):
             assert data['explanation']
             assert 'Oregon' in data['explanation']
             assert 'AI_MODE' not in data['explanation']
-            assert 'MiniMax' not in data['explanation']
+            assert 'xAI' not in data['explanation']
 
 
 def test_agent_health_hides_spend_counters(client, monkeypatch):
@@ -314,7 +342,8 @@ def test_agent_health_hides_spend_counters(client, monkeypatch):
     for key in (
         'ai_mode',
         'ai_live_calls',
-        'ai_max_calls',
+        'xai_max_calls',
+        'workers_ai_max_calls',
         'cfbd_calls',
         'cfbd_max_calls',
         'cfbd_key',
@@ -330,5 +359,5 @@ def test_stub_uses_path_to_climb_and_neighbors():
     assert '#1' in text or 'Oregon' in text
     assert 'Ohio State' in text  # neighbor_behind / top win
     assert 'AI_MODE' not in text
-    assert 'MiniMax' not in text
+    assert 'xAI' not in text
     assert 'board' in text.lower()

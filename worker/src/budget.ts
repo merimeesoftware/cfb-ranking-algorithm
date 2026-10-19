@@ -2,13 +2,21 @@
  * Global per-UTC-day paid-call budget.
  *
  * Unset configuration uses these defaults. An unset variable is never unlimited.
- * The Durable Object is the shared counter across container instances. Flask
+ * xAI and Workers AI default to 0 so a live prompt is refused until a cap is set.
+ * The named container instance `spend-budget` is the shared counter. Flask
  * keeps a same-number per-process cap as a second gate.
  */
-export const DEFAULT_AI_MAX_CALLS_PER_DAY = 100;
+export const DEFAULT_XAI_MAX_CALLS_PER_DAY = 0;
+export const DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY = 0;
 export const DEFAULT_CFBD_MAX_CALLS_PER_DAY = 25;
 
-export type SpendBucket = 'ai' | 'cfbd';
+export type SpendBucket = 'xai' | 'workers_ai' | 'cfbd';
+
+export interface BudgetEnv {
+	XAI_MAX_CALLS?: string;
+	WORKERS_AI_MAX_CALLS?: string;
+	CFBD_MAX_CALLS?: string;
+}
 
 export interface BudgetStore {
 	get(key: string): Promise<number | undefined>;
@@ -23,6 +31,12 @@ export interface ConsumeResult {
 	bucket: SpendBucket;
 	code?: string;
 }
+
+const FALLBACKS: Record<SpendBucket, number> = {
+	xai: DEFAULT_XAI_MAX_CALLS_PER_DAY,
+	workers_ai: DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY,
+	cfbd: DEFAULT_CFBD_MAX_CALLS_PER_DAY,
+};
 
 export function utcDay(now: Date = new Date()): string {
 	return now.toISOString().slice(0, 10);
@@ -39,14 +53,13 @@ export function resolveDailyLimit(raw: unknown, fallback: number): number {
 	return parsed;
 }
 
-export function dailyLimitFor(
-	bucket: SpendBucket,
-	env: { AI_MAX_CALLS?: string; CFBD_MAX_CALLS?: string },
-): number {
-	if (bucket === 'ai') {
-		return resolveDailyLimit(env.AI_MAX_CALLS, DEFAULT_AI_MAX_CALLS_PER_DAY);
-	}
-	return resolveDailyLimit(env.CFBD_MAX_CALLS, DEFAULT_CFBD_MAX_CALLS_PER_DAY);
+export function dailyLimitFor(bucket: SpendBucket, env: BudgetEnv): number {
+	const raw = bucket === 'xai'
+		? env.XAI_MAX_CALLS
+		: bucket === 'workers_ai'
+			? env.WORKERS_AI_MAX_CALLS
+			: env.CFBD_MAX_CALLS;
+	return resolveDailyLimit(raw, FALLBACKS[bucket]);
 }
 
 export function budgetKey(bucket: SpendBucket, now: Date = new Date()): string {
@@ -55,7 +68,8 @@ export function budgetKey(bucket: SpendBucket, now: Date = new Date()): string {
 
 /**
  * Increment the day's counter when it is still under the limit.
- * A planted count equal to the limit makes the next call return ok: false.
+ * A limit of 0 refuses the first call. A planted count equal to the limit
+ * makes the next call return ok: false.
  */
 export async function consumeDaily(
 	store: BudgetStore,

@@ -2,8 +2,8 @@
 """
 Precompute shareable + climb blurbs (stub/static by default).
 
-GitHub Actions always runs AI_MODE=stub — no MiniMax key in CI.
-Live MiniMax-M3 + web_search is Cloudflare-only (AI_MODE=live on cache miss).
+GitHub Actions always runs AI_MODE=stub. Live xAI or Workers AI runs only on
+Cloudflare when AI_MODE=live and the static file or cache misses.
 
 Cadence (by design):
   - In-season current week: run daily; period = YYYY-MM-DD; skip teams already
@@ -38,7 +38,6 @@ from dotenv import load_dotenv
 load_dotenv(ROOT / '.env')
 
 from agent_service import (  # noqa: E402
-    MINIMAX_BLURB_MODEL,
     _build_team_context,
     _resolve_blurb,
 )
@@ -46,9 +45,8 @@ from shareable_blurb import (  # noqa: E402
     blurb_cache_period,
     is_in_season,
     lookback_cache_period,
-    minimax_web_search_enabled,
 )
-from spend_guards import resolve_ai_mode  # noqa: E402
+from spend_guards import resolve_ai_mode, resolve_ai_provider  # noqa: E402
 from static_rankings import (  # noqa: E402
     DEFAULT_ROOT,
     read_climb_blurbs,
@@ -148,8 +146,7 @@ def precompute_kind(
         'kind': kind,
         'period': period,
         'top_n': top_n,
-        'model': MINIMAX_BLURB_MODEL if resolve_ai_mode() == 'live' else 'stub',
-        'web_search': minimax_web_search_enabled() if resolve_ai_mode() == 'live' else False,
+        'provider': resolve_ai_provider() if resolve_ai_mode() == 'live' else 'stub',
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'blurbs': blurbs,
     }
@@ -197,7 +194,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     mode = resolve_ai_mode()
     print(
         f'Precompute blurbs year={args.year} week={args.week} period={period} '
-        f'mode={mode} web_search={minimax_web_search_enabled()} '
+        f'mode={mode} provider={resolve_ai_provider() if mode == "live" else "stub"} '
         f'lookback={args.lookback} force={args.force}'
     )
 

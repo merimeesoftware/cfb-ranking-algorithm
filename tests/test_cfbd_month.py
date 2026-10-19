@@ -32,7 +32,7 @@ def test_planted_over_budget_fixture_fails():
     assert evaluate(spec)
 
 
-def test_live_config_stays_under_900_and_minimax_is_zero():
+def test_live_config_stays_under_900():
     spec = live_spec()
     assert spec['errors'] == []
     assert spec['cron_calls_per_run'] == 24
@@ -53,9 +53,9 @@ def test_live_config_stays_under_900_and_minimax_is_zero():
 def test_production_vars_ignore_env_dev():
     text = """
 [vars]
-AI_MODE = "live"
-CFBD_OFFLINE = "0"
-AI_MAX_CALLS = "0"
+AI_MODE = "stub"
+CFBD_OFFLINE = "1"
+XAI_MAX_CALLS = "0"
 CFBD_MAX_CALLS = "4"
 
 [env.dev.vars]
@@ -64,7 +64,7 @@ CFBD_OFFLINE = "1"
 CFBD_MAX_CALLS = "99"
 """
     found = production_vars(text)
-    assert found['AI_MODE'] == 'live'
-    assert found['CFBD_OFFLINE'] == '0'
-    assert found['AI_MAX_CALLS'] == '0'
+    assert found['AI_MODE'] == 'stub'
+    assert found['CFBD_OFFLINE'] == '1'
+    assert found['XAI_MAX_CALLS'] == '0'
     assert found['CFBD_MAX_CALLS'] == '4'

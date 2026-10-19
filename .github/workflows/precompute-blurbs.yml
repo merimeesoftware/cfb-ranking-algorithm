@@ -1,5 +1,5 @@
-# Precompute shareable + climb blurbs as stub/static artifacts (no MiniMax).
-# Live MiniMax + web_search runs only on Cloudflare when AI_MODE=live and cache misses.
+# Precompute shareable + climb blurbs as stub/static artifacts.
+# Live xAI or Workers AI runs only on Cloudflare when AI_MODE=live and cache misses.
 # Daily in-season + quarterly lookback; skip-if-exists unless force=true.
 
 name: Precompute Blurbs
@@ -139,7 +139,7 @@ jobs:
               print(f"require_in_season={'false' if lookback else 'true'}")
           PY
 
-      - name: Precompute stub blurbs (no MiniMax)
+      - name: Precompute stub blurbs
         if: steps.params.outputs.skip != 'true'
         env:
           CFBD_OFFLINE: "1"

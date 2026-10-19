@@ -11,7 +11,7 @@ Cloudflare      →  deployed API (production)   ← source of truth for live tr
 ## Do not put secrets in `environment.json`
 
 `.cursor/environment.json` is committed to git. It configures install/start/terminals only.  
-**Never** put `CFBD_API_KEY` / `MINIMAX_API_KEY` (or any credential) in that file.
+**Never** put `CFBD_API_KEY` or `XAI_API_KEY` (or any credential) in that file.
 
 ## Where secrets actually live
 
@@ -27,7 +27,7 @@ Secrets for this project are configured on the **Cloud Agents Secrets** page (us
 |-------------|-------|---------|
 | `CFBD_API_KEY` | **Personal** (you) or **Team** (shared) | Live CFBD pulls when `CFBD_OFFLINE=0` (slot **A**) |
 | `CFBD_API_KEY_B` | Same | Optional second CFBD account (slot **B**) — separate 1k/mo quota |
-| `MINIMAX_API_KEY` | Same as CFBD | Paygo MiniMax for `AI_MODE=live` only |
+| `XAI_API_KEY` | Not a Cursor secret | provisioned by DevSecOps on Michael's yes, on the Worker only |
 
 ### Dual CFBD accounts (2× 1k calls/month)
 
@@ -67,7 +67,7 @@ You can keep `.cursor/environment.json` for install/start so the team still gets
 
 ## Local spend defaults
 
-Use `.env.example`: `CFBD_OFFLINE=1`, `AI_MODE=stub`. Browse committed `frontend/static/rankings/2024/` without burning CFBD or MiniMax.
+Use `.env.example`: `CFBD_OFFLINE=1`, `AI_MODE=stub`. Browse committed `frontend/static/rankings/2024/` without burning CFBD or a live provider.
 
 ## After you deploy
 
@@ -78,7 +78,7 @@ Cursor and Cloudflare do not sync automatically — that is intentional (dev vs 
 
 ```bash
 cp .env.example .env
-# edit CFBD_API_KEY / MINIMAX_API_KEY
+# edit CFBD_API_KEY only. Do not put an XAI_API_KEY value here.
 ```
 
 ## Not needed in Cursor

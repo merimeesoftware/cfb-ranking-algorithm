@@ -5,11 +5,12 @@ compatibility_date = "2026-03-01"
 # Unified Workers deploy: SvelteKit static frontend + Flask API container.
 #   npm run build --prefix frontend && npx wrangler deploy
 #
-# Secrets (set once per environment):
+# Secrets (set once per environment, outside this file):
 #   wrangler secret put CFBD_API_KEY
-#   wrangler secret put MINIMAX_API_KEY      # optional
 #   wrangler secret put CACHE_CLEAR_SECRET   # optional
-# See docs/DEPLOY-CLOUDFLARE.md
+# XAI_API_KEY is a secret name only. It is provisioned by DevSecOps on
+# Michael's yes. Do not assign it in this file.
+# See docs/SECRETS.md and docs/DEPLOY-CLOUDFLARE.md
 
 [assets]
 directory = "./frontend/build"
@@ -17,23 +18,28 @@ not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-# Production spend mode. AI_MODE and CFBD_OFFLINE stay live / 0.
-# Kill switches AI_KILL and CFBD_KILL default off. Preview hostnames force
-# stub/offline unless PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
+# Production spend mode. AI_MODE=stub and CFBD_OFFLINE=1.
+# Kill switches AI_KILL (both providers), XAI_KILL, WORKERS_AI_KILL, and
+# CFBD_KILL default off. Preview hostnames also stay stub/offline unless
+# PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
 #
 # Monthly CFBD projection (free tier is about 1,000; ceiling is 900).
 # The formula lives in config/cfbd-month.json:
 #   cron 24 calls/Sunday × 52/12 = 104
 #   live CFBD_MAX_CALLS 4/day × 31 = 124
 #   104 + 124 = 228
-# AI_MAX_CALLS is 0 until Michael sets a dollar figure: stub or cached
-# answers only, no live MiniMax. Unset still falls back to the in-code
-# 100 / 25 defaults. These two lines are the production values.
+# XAI_MAX_CALLS and WORKERS_AI_MAX_CALLS are 0 until a dollar figure is set:
+# stub or cached answers only. Unset code fallback is also 0.
 [vars]
-AI_MODE = "live"
-CFBD_OFFLINE = "0"
-AI_MAX_CALLS = "0"
+AI_MODE = "stub"
+CFBD_OFFLINE = "1"
+XAI_MAX_CALLS = "0"
+WORKERS_AI_MAX_CALLS = "0"
 CFBD_MAX_CALLS = "4"
+
+# Workers AI. One binding, available as env.AI. Not a secret.
+[ai]
+binding = "AI"
 
 # Per-visitor limits keyed on CF-Connecting-IP. namespace_id is account-unique.
 # Counters are per Cloudflare location; the Durable Object daily budget is global.
@@ -81,8 +87,12 @@ run_worker_first = ["/api/*"]
 [env.dev.vars]
 AI_MODE = "stub"
 CFBD_OFFLINE = "1"
-AI_MAX_CALLS = "0"
+XAI_MAX_CALLS = "0"
+WORKERS_AI_MAX_CALLS = "0"
 CFBD_MAX_CALLS = "4"
+
+[env.dev.ai]
+binding = "AI"
 
 [[env.dev.ratelimits]]
 name = "API_RATE_LIMITER"

@@ -361,7 +361,7 @@ async function fetchStaticKindBlurb(
 	}
 }
 
-/** Client wait budget for live MiniMax+web_search (server up to ~120s × retries). */
+/** Client wait budget for a live provider completion. */
 const LIVE_BLURB_TIMEOUT_MS = 200_000;
 
 /** AI/stub shareable blurb (≤280 chars), cached daily in-season / monthly offseason. */
@@ -389,7 +389,12 @@ export async function fetchShareableBlurb(
 			message?: string;
 		};
 		if (response.status === 429 || data.busy) {
-			return { blurb: '', ai_mode: 'capped', busy: true, message: data.message || BUSY_MESSAGE };
+			return {
+				blurb: data.blurb || '',
+				ai_mode: 'capped',
+				busy: true,
+				message: data.message || BUSY_MESSAGE,
+			};
 		}
 		if (!response.ok) return null;
 		if (!data.blurb) return null;
@@ -427,7 +432,12 @@ export async function fetchClimbBlurb(
 			message?: string;
 		};
 		if (response.status === 429 || data.busy) {
-			return { blurb: '', ai_mode: 'capped', busy: true, message: data.message || BUSY_MESSAGE };
+			return {
+				blurb: data.blurb || '',
+				ai_mode: 'capped',
+				busy: true,
+				message: data.message || BUSY_MESSAGE,
+			};
 		}
 		if (!response.ok) return null;
 		if (!data.blurb) return null;
@@ -441,12 +451,12 @@ export async function explainRanking(
 	teamName: string,
 	year: number,
 	week: number,
-	question?: string
+	questionId: string
 ): Promise<{ explanation: string; context: Record<string, unknown>; busy?: boolean; message?: string }> {
 	const response = await fetch(`${API_BASE}/agent/explain`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ team_name: teamName, year, week, question }),
+		body: JSON.stringify({ team_name: teamName, year, week, question_id: questionId }),
 	});
 	const data = (await response.json().catch(() => ({}))) as {
 		explanation?: string;
@@ -457,7 +467,7 @@ export async function explainRanking(
 	};
 	if (response.status === 429 || data.busy) {
 		return {
-			explanation: '',
+			explanation: data.explanation || '',
 			context: data.context || {},
 			busy: true,
 			message: data.message || BUSY_MESSAGE,

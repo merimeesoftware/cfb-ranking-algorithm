@@ -19,7 +19,7 @@
 | Break it down / Why here? | Ask AI |
 | How it works | Methodology |
 
-**Never in fan-visible copy:** `AI_MODE`, stub, MiniMax, TQ, CQ, Elo (unless inside methodology deep dive).
+**Never in fan-visible copy:** `AI_MODE`, stub, xAI, TQ, CQ, Elo (unless inside methodology deep dive).
 
 ---
 
@@ -135,4 +135,4 @@
 - [ ] Week story: what shook this week  
 - [ ] Team modal: why here + share take before formula  
 - [ ] Methodology: how board decides before math  
-- [ ] No AI_MODE / MiniMax / TQ / CQ on primary path  
+- [ ] No AI_MODE / xAI / TQ / CQ on primary path  

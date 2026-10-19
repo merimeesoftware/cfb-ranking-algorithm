@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { consumeDaily, resolveDailyLimit, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
+import { consumeDaily, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, type SpendState } from '../src/spend-object.ts';
+import { completeWorkersAi, completeXai } from '../src/providers.ts';
 import {
 	buildRuntimeEnv,
 	checkPublicQuery,
 	clientIp,
+	containerSecrets,
 	enforceVisitorLimit,
 	isNonProductionHostname,
 	paidCallAllowed,
@@ -70,25 +72,41 @@ test('spend counter accepts one cfbd consume and rejects an unknown bucket', asy
 
 test('unset daily limits fall back to in-code defaults', () => {
 	const fixture = load('unset_defaults.json');
-	assert.equal(resolveDailyLimit(undefined, DEFAULT_AI_MAX_CALLS_PER_DAY), fixture.expect_ai);
+	assert.equal(resolveDailyLimit(undefined, DEFAULT_XAI_MAX_CALLS_PER_DAY), fixture.expect_xai);
+	assert.equal(resolveDailyLimit(undefined, DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY), fixture.expect_workers_ai);
 	assert.equal(resolveDailyLimit('', DEFAULT_CFBD_MAX_CALLS_PER_DAY), fixture.expect_cfbd);
-	assert.equal(resolveDailyLimit('nope', DEFAULT_AI_MAX_CALLS_PER_DAY), fixture.expect_ai);
-	assert.notEqual(resolveDailyLimit(undefined, DEFAULT_AI_MAX_CALLS_PER_DAY), Number.POSITIVE_INFINITY);
+	assert.equal(DEFAULT_XAI_MAX_CALLS_PER_DAY, 0);
+	assert.equal(DEFAULT_WORKERS_AI_MAX_CALLS_PER_DAY, 0);
+	assert.notEqual(resolveDailyLimit(undefined, DEFAULT_XAI_MAX_CALLS_PER_DAY), Number.POSITIVE_INFINITY);
 });
 
-test('AI daily budget trips on the planted counter', async () => {
-	const fixture = load('ai_daily_at_cap.json');
+test('xAI daily budget trips on the planted zero cap', async () => {
+	const fixture = load('xai_daily_at_cap.json');
 	const store = mapStore(fixture.counts as Record<string, number>);
 	const result = await consumeDaily(
 		store,
-		'ai',
+		'xai',
 		fixture.limit as number,
 		new Date(fixture.now as string),
 	);
 	assert.equal(result.ok, false);
-	assert.equal(result.code, 'ai_budget');
-	assert.equal(result.count, fixture.limit);
-	assert.equal(store.data.get('ai:2026-10-19'), fixture.limit);
+	assert.equal(result.code, 'xai_budget');
+	assert.equal(result.count, fixture.already_used);
+	assert.equal(store.data.has('xai:2026-10-19'), false);
+});
+
+test('Workers AI daily budget trips on the planted zero cap', async () => {
+	const fixture = load('workers_ai_daily_at_cap.json');
+	const store = mapStore(fixture.counts as Record<string, number>);
+	const result = await consumeDaily(
+		store,
+		'workers_ai',
+		fixture.limit as number,
+		new Date(fixture.now as string),
+	);
+	assert.equal(result.ok, false);
+	assert.equal(result.code, 'workers_ai_budget');
+	assert.equal(result.count, fixture.already_used);
 });
 
 test('CFBD daily budget trips on the planted counter', async () => {
@@ -173,30 +191,63 @@ test('manifest allowlist rejects formula params and unlisted weeks', () => {
 	}
 });
 
-test('kill switch blocks both paid buckets', () => {
+test('kill switch blocks both AI providers and CFBD', () => {
 	const fixture = load('kill_switch.json');
 	const env = {
 		AI_KILL: fixture.AI_KILL as string,
+		XAI_KILL: fixture.XAI_KILL as string,
+		WORKERS_AI_KILL: fixture.WORKERS_AI_KILL as string,
 		CFBD_KILL: fixture.CFBD_KILL as string,
 	};
-	assert.equal(paidCallAllowed(env, 'ai'), false);
+	assert.equal(paidCallAllowed(env, 'xai'), false);
+	assert.equal(paidCallAllowed(env, 'workers_ai'), false);
 	assert.equal(paidCallAllowed(env, 'cfbd'), false);
 	assert.equal(BUSY_MESSAGE, 'Busy right now, try again later.');
 });
 
-test('runtime env forwards caps and keeps preview stub/offline', () => {
+test('per-provider kill flags block only that provider', () => {
+	const fixture = load('provider_kill.json');
+	const env = {
+		AI_KILL: fixture.AI_KILL as string,
+		XAI_KILL: fixture.XAI_KILL as string,
+		WORKERS_AI_KILL: fixture.WORKERS_AI_KILL as string,
+		CFBD_KILL: fixture.CFBD_KILL as string,
+	};
+	assert.equal(paidCallAllowed(env, 'xai'), false);
+	assert.equal(paidCallAllowed(env, 'workers_ai'), false);
+	assert.equal(paidCallAllowed(env, 'cfbd'), true);
+	const xaiOnly = { AI_KILL: '0', XAI_KILL: '1', WORKERS_AI_KILL: '0', CFBD_KILL: '0' };
+	assert.equal(paidCallAllowed(xaiOnly, 'xai'), false);
+	assert.equal(paidCallAllowed(xaiOnly, 'workers_ai'), true);
+});
+
+test('runtime env forwards caps and keeps preview and unset production stub/offline', () => {
 	const forwarded = buildRuntimeEnv(
-		{ PORT: '8080', AI_MODE: 'live', CFBD_OFFLINE: '0' },
-		{ AI_MODE: 'live', CFBD_OFFLINE: '0' },
+		{ PORT: '8080', AI_MODE: 'stub', CFBD_OFFLINE: '1' },
+		{ AI_MODE: 'stub', CFBD_OFFLINE: '1' },
 		'true-rankings-cfb.example.workers.dev',
 	);
-	assert.equal(forwarded.AI_MODE, 'live');
-	assert.equal(forwarded.CFBD_OFFLINE, '0');
-	assert.equal(forwarded.AI_MAX_CALLS, '100');
+	assert.equal(forwarded.AI_MODE, 'stub');
+	assert.equal(forwarded.CFBD_OFFLINE, '1');
+	assert.equal(forwarded.XAI_MAX_CALLS, '0');
+	assert.equal(forwarded.WORKERS_AI_MAX_CALLS, '0');
 	assert.equal(forwarded.CFBD_MAX_CALLS, '25');
 	assert.equal(forwarded.AI_KILL, '0');
+	assert.equal(forwarded.XAI_KILL, '0');
+	assert.equal(forwarded.WORKERS_AI_KILL, '0');
 	assert.equal(forwarded.CFBD_KILL, '0');
 	assert.equal(forwarded.SPEND_GATE_HOST, 'spend.budget');
+	assert.equal(forwarded.AI_XAI_HOST, 'ai.xai');
+	assert.equal(forwarded.AI_WORKERS_HOST, 'ai.workers');
+	assert.equal('XAI_API_KEY' in forwarded, false);
+
+	const unset = buildRuntimeEnv(
+		{ PORT: '8080', AI_MODE: 'live', CFBD_OFFLINE: '0' },
+		{},
+		'true-rankings-cfb.example.workers.dev',
+	);
+	assert.equal(unset.AI_MODE, 'stub');
+	assert.equal(unset.CFBD_OFFLINE, '1');
 
 	const preview = buildRuntimeEnv(
 		{ PORT: '8080', AI_MODE: 'live', CFBD_OFFLINE: '0' },
@@ -219,20 +270,94 @@ test('runtime env forwards caps and keeps preview stub/offline', () => {
 test('public counter strip drops budget fields from a planted health payload', () => {
 	const stripped = stripPublicCounters({
 		status: 'ok',
-		ai_max_calls: 100,
+		xai_max_calls: 0,
+		workers_ai_max_calls: 0,
 		cfbd_max_calls: 25,
-		ai_live_calls: 4,
+		xai_live_calls: 4,
 		cfbd_calls: 9,
 		cfbd_key: { slot: 'A' },
 		agent_rate_limit_per_hour: 30,
-		spend: { ai_max_calls: 100 },
+		spend: { xai_max_calls: 0 },
 		memory_entries: 12,
 		cache_dir: '/tmp/cfb-cache',
 	});
 	assert.equal(stripped.status, 'ok');
-	assert.equal(stripped.ai_max_calls, undefined);
+	assert.equal(stripped.xai_max_calls, undefined);
+	assert.equal(stripped.workers_ai_max_calls, undefined);
 	assert.equal(stripped.cfbd_calls, undefined);
 	assert.equal(stripped.spend, undefined);
 	assert.equal(stripped.memory_entries, undefined);
 	assert.equal(stripped.cache_dir, undefined);
+});
+
+test('xAI completion uses the secret name and does not echo it', async () => {
+	const seen: { url?: string; authorization?: string } = {};
+	const response = await completeXai(
+		{ XAI_API_KEY: 'test-token' },
+		[{ role: 'user', content: 'Why is Oregon here?' }],
+		(async (url: string, init?: RequestInit) => {
+			seen.url = String(url);
+			seen.authorization = new Headers(init?.headers).get('authorization') ?? '';
+			return new Response(JSON.stringify({
+				choices: [{ message: { content: 'The resume.' } }],
+			}), { status: 200 });
+		}) as typeof fetch,
+	);
+	const body = await response.json() as { ok: boolean; text: string };
+	assert.equal(response.status, 200);
+	assert.equal(body.ok, true);
+	assert.equal(body.text, 'The resume.');
+	assert.equal(seen.url, 'https://api.x.ai/v1/chat/completions');
+	assert.equal(seen.authorization, 'Bearer test-token');
+	assert.equal(JSON.stringify(body).includes('test-token'), false);
+
+	const missing = await completeXai({}, [{ role: 'user', content: 'hi' }], (async () => {
+		throw new Error('fetch should not run');
+	}) as typeof fetch);
+	assert.equal(missing.status, 503);
+});
+
+test('Workers AI completion uses the binding', async () => {
+	let model = '';
+	const response = await completeWorkersAi(
+		{
+			AI: {
+				async run(next: string) {
+					model = next;
+					return { response: 'Stacked wins.' };
+				},
+			},
+		},
+		[{ role: 'user', content: 'What moves them up?' }],
+	);
+	const body = await response.json() as { ok: boolean; text: string };
+	assert.equal(body.ok, true);
+	assert.equal(body.text, 'Stacked wins.');
+	assert.equal(model, '@cf/meta/llama-3.1-8b-instruct');
+	const unbound = await completeWorkersAi({}, [{ role: 'user', content: 'hi' }]);
+	assert.equal(unbound.status, 503);
+});
+
+test('container secrets do not forward the xAI credential', () => {
+	const forwarded = containerSecrets({
+		CFBD_API_KEY: 'cfbd-test',
+		XAI_API_KEY: 'test-token',
+		CACHE_CLEAR_SECRET: 'clear-test',
+	});
+	assert.equal(forwarded.CFBD_API_KEY, 'cfbd-test');
+	assert.equal(forwarded.CACHE_CLEAR_SECRET, 'clear-test');
+	assert.equal('XAI_API_KEY' in forwarded, false);
+});
+
+test('spend counter refuses xAI when the default cap is zero', async () => {
+	const state = spendState({});
+	const denied = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ bucket: 'xai' }),
+	}));
+	assert.equal(denied.status, 429);
+	const body = await denied.json() as { ok: boolean; limit: number; code: string };
+	assert.equal(body.ok, false);
+	assert.equal(body.limit, 0);
+	assert.equal(body.code, 'xai_budget');
 });

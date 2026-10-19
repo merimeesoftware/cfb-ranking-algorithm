@@ -11,20 +11,24 @@ from public_board import BUSY_MESSAGE
 from spend_guards import (
     AIBudgetError,
     CFBDOfflineError,
-    ai_max_calls,
     cfbd_max_calls,
-    get_ai_call_count,
     get_cfbd_call_count,
-    register_live_ai_call,
+    get_provider_call_count,
+    provider_max_calls,
     register_live_cfbd_call,
-    reset_ai_call_count,
+    register_live_provider_call,
     reset_cfbd_call_count,
+    reset_provider_call_counts,
 )
 
 FIXTURES = Path(__file__).parent / 'fixtures' / 'caps'
 COUNTER_KEYS = {
     'ai_live_calls',
     'ai_max_calls',
+    'xai_live_calls',
+    'xai_max_calls',
+    'workers_ai_live_calls',
+    'workers_ai_max_calls',
     'cfbd_calls',
     'cfbd_max_calls',
     'cfbd_key',
@@ -42,34 +46,49 @@ def _load(name: str) -> dict:
 def test_unset_env_uses_in_code_defaults_not_unlimited(monkeypatch):
     fixture = _load('unset_defaults.json')
     monkeypatch.setenv('FLASK_ENV', fixture['FLASK_ENV'])
-    monkeypatch.delenv('AI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('XAI_MAX_CALLS', raising=False)
+    monkeypatch.delenv('WORKERS_AI_MAX_CALLS', raising=False)
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
-    assert ai_max_calls() == fixture['expect_ai']
+    assert provider_max_calls('xai') == fixture['expect_xai']
+    assert provider_max_calls('workers_ai') == fixture['expect_workers_ai']
     assert cfbd_max_calls() == fixture['expect_cfbd']
-    assert ai_max_calls() is not None
-    assert cfbd_max_calls() is not None
+    assert provider_max_calls('xai') == 0
+    assert provider_max_calls('workers_ai') == 0
 
 
 def test_invalid_cap_env_falls_back_to_default(monkeypatch):
-    monkeypatch.setenv('AI_MAX_CALLS', 'nope')
+    monkeypatch.setenv('XAI_MAX_CALLS', 'nope')
+    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '')
     monkeypatch.setenv('CFBD_MAX_CALLS', '')
     monkeypatch.setenv('FLASK_ENV', 'production')
-    assert ai_max_calls() == 100
+    assert provider_max_calls('xai') == 0
+    assert provider_max_calls('workers_ai') == 0
     assert cfbd_max_calls() == 25
 
 
-def test_ai_daily_budget_trips_from_planted_fixture(monkeypatch):
-    fixture = _load('ai_daily_at_cap.json')
-    reset_ai_call_count()
+def _trip_provider(monkeypatch, name: str):
+    fixture = _load(name)
+    reset_provider_call_counts()
     monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
     monkeypatch.delenv('AI_KILL', raising=False)
-    monkeypatch.setenv('AI_MAX_CALLS', str(fixture['limit']))
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    env_name = 'XAI_MAX_CALLS' if fixture['bucket'] == 'xai' else 'WORKERS_AI_MAX_CALLS'
+    monkeypatch.setenv(env_name, str(fixture['limit']))
     for _ in range(fixture['already_used']):
-        register_live_ai_call()
+        register_live_provider_call(fixture['bucket'])
     with pytest.raises(AIBudgetError):
-        register_live_ai_call()
-    assert get_ai_call_count() == fixture['already_used']
-    reset_ai_call_count()
+        register_live_provider_call(fixture['bucket'])
+    assert get_provider_call_count(fixture['bucket']) == fixture['already_used']
+    reset_provider_call_counts()
+
+
+def test_xai_daily_budget_trips_from_planted_fixture(monkeypatch):
+    _trip_provider(monkeypatch, 'xai_daily_at_cap.json')
+
+
+def test_workers_ai_daily_budget_trips_from_planted_fixture(monkeypatch):
+    _trip_provider(monkeypatch, 'workers_ai_daily_at_cap.json')
 
 
 def test_cfbd_daily_budget_trips_from_planted_fixture(monkeypatch):
@@ -86,11 +105,14 @@ def test_cfbd_daily_budget_trips_from_planted_fixture(monkeypatch):
     reset_cfbd_call_count()
 
 
-def test_ai_global_gate_denies_planted_fixture(monkeypatch):
-    fixture = _load('ai_gate_denied.json')
-    reset_ai_call_count()
+def _gate_denies(monkeypatch, name: str):
+    fixture = _load(name)
+    reset_provider_call_counts()
     monkeypatch.delenv('AI_KILL', raising=False)
-    monkeypatch.setenv('AI_MAX_CALLS', '100')
+    monkeypatch.delenv('XAI_KILL', raising=False)
+    monkeypatch.delenv('WORKERS_AI_KILL', raising=False)
+    monkeypatch.setenv('XAI_MAX_CALLS', '5')
+    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '5')
     monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
     body = json.dumps(fixture).encode()
     error = urllib.error.HTTPError(
@@ -98,9 +120,17 @@ def test_ai_global_gate_denies_planted_fixture(monkeypatch):
     )
     with patch('urllib.request.urlopen', side_effect=error):
         with pytest.raises(AIBudgetError):
-            register_live_ai_call()
-    assert get_ai_call_count() == 0
-    reset_ai_call_count()
+            register_live_provider_call(fixture['bucket'])
+    assert get_provider_call_count(fixture['bucket']) == 0
+    reset_provider_call_counts()
+
+
+def test_xai_global_gate_denies_planted_fixture(monkeypatch):
+    _gate_denies(monkeypatch, 'xai_gate_denied.json')
+
+
+def test_workers_ai_global_gate_denies_planted_fixture(monkeypatch):
+    _gate_denies(monkeypatch, 'workers_ai_gate_denied.json')
 
 
 def test_cfbd_global_gate_denies_planted_fixture(monkeypatch):
@@ -126,15 +156,19 @@ def test_kill_switch_stops_live_calls(monkeypatch):
     monkeypatch.setenv('CFBD_KILL', fixture['CFBD_KILL'])
     monkeypatch.setenv('CFBD_OFFLINE', '0')
     monkeypatch.setenv('CFBD_MAX_CALLS', '25')
-    monkeypatch.setenv('AI_MAX_CALLS', '100')
+    monkeypatch.setenv('XAI_MAX_CALLS', '5')
+    monkeypatch.setenv('WORKERS_AI_MAX_CALLS', '5')
     monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
-    reset_ai_call_count()
+    reset_provider_call_counts()
     reset_cfbd_call_count()
     with pytest.raises(AIBudgetError):
-        register_live_ai_call()
+        register_live_provider_call('xai')
+    with pytest.raises(AIBudgetError):
+        register_live_provider_call('workers_ai')
     with pytest.raises(CFBDOfflineError):
         register_live_cfbd_call()
-    assert get_ai_call_count() == 0
+    assert get_provider_call_count('xai') == 0
+    assert get_provider_call_count('workers_ai') == 0
     assert get_cfbd_call_count() == 0
 
     from api_integration import CFBDApiClient
@@ -144,39 +178,44 @@ def test_kill_switch_stops_live_calls(monkeypatch):
         with pytest.raises(CFBDOfflineError):
             api._make_request('/games', {'year': 2024})
         mock_get.assert_not_called()
-    reset_ai_call_count()
+    reset_provider_call_counts()
     reset_cfbd_call_count()
 
 
-def test_explain_kill_switch_returns_busy_not_minimax(client, monkeypatch):
+def test_explain_kill_switch_returns_stub_and_makes_no_provider_call(client, monkeypatch):
     fixture = _load('kill_switch.json')
     monkeypatch.setenv('AI_MODE', 'live')
     monkeypatch.setenv('AI_KILL', fixture['AI_KILL'])
+    monkeypatch.setenv('XAI_MAX_CALLS', '5')
+    monkeypatch.setenv('AI_XAI_HOST', 'ai.xai')
     mock_data = json.loads(
         (Path(__file__).parent / 'fixtures' / 'sample_rankings_slim.json').read_text()
     )
-    with patch('agent_service.MINIMAX_API_KEY', 'paygo-test'):
-        with patch('agent_service.requests.post') as mock_post:
-            with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
-                response = client.post('/agent/explain', json={
-                    'team_name': 'Oregon',
-                    'year': 2024,
-                    'week': 10,
-                })
-    assert response.status_code == 429
+    with patch('agent_service.urllib.request.urlopen') as mock_open:
+        with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
+            response = client.post('/agent/explain', json={
+                'team_name': 'Oregon',
+                'year': 2024,
+                'week': 10,
+                'question_id': 'why_here',
+                'provider': 'xai',
+            })
+    assert response.status_code == 200
     body = response.get_json()
     assert body['code'] == 'kill_switch'
     assert body['message'] == BUSY_MESSAGE
     assert body['busy'] is True
+    assert body['explanation']
+    assert 'Oregon' in body['explanation']
     assert COUNTER_KEYS.isdisjoint(body)
-    mock_post.assert_not_called()
+    mock_open.assert_not_called()
 
 
 def test_rate_limit_keys_on_cf_connecting_ip(client, monkeypatch):
     fixture = _load('rate_limit_ip.json')
     monkeypatch.setenv('AI_MODE', 'stub')
     monkeypatch.setenv('AGENT_RATE_LIMIT', str(fixture['limit']))
-    reset_ai_call_count()
+    reset_provider_call_counts()
     mock_data = json.loads(
         (Path(__file__).parent / 'fixtures' / 'sample_rankings_slim.json').read_text()
     )
@@ -192,18 +231,13 @@ def test_rate_limit_keys_on_cf_connecting_ip(client, monkeypatch):
         'X-Forwarded-For': fixture['x_forwarded_for'],
     }
     with patch('agent_service.get_or_calculate_rankings', return_value=mock_data):
-        first = client.post('/agent/explain', json={
-            'team_name': 'Oregon', 'year': 2024, 'week': 10,
-        }, headers=capped_headers)
-        second = client.post('/agent/explain', json={
-            'team_name': 'Oregon', 'year': 2024, 'week': 10,
-        }, headers=capped_headers)
-        spoofed = client.post('/agent/explain', json={
-            'team_name': 'Oregon', 'year': 2024, 'week': 10,
-        }, headers=spoof_headers)
-        other = client.post('/agent/explain', json={
-            'team_name': 'Oregon', 'year': 2024, 'week': 10,
-        }, headers=other_headers)
+        payload = {
+            'team_name': 'Oregon', 'year': 2024, 'week': 10, 'question_id': 'why_here',
+        }
+        first = client.post('/agent/explain', json=payload, headers=capped_headers)
+        second = client.post('/agent/explain', json=payload, headers=capped_headers)
+        spoofed = client.post('/agent/explain', json=payload, headers=spoof_headers)
+        other = client.post('/agent/explain', json=payload, headers=other_headers)
     assert first.status_code == 200
     assert second.status_code == 429
     tripped = second.get_json()
@@ -213,7 +247,7 @@ def test_rate_limit_keys_on_cf_connecting_ip(client, monkeypatch):
     # Same X-Forwarded-For does not share the capped visitor's bucket.
     assert spoofed.status_code == 200
     assert other.status_code == 200
-    reset_ai_call_count()
+    reset_provider_call_counts()
 
 
 def test_param_allowlist_rejects_formula_and_unlisted_week(client, monkeypatch):

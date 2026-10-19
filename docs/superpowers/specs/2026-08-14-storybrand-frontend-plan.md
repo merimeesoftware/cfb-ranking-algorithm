@@ -83,7 +83,7 @@ Apply to **every page and major component**. Fail any question → rewrite hiera
 
 - If a non-stats fan cannot grunt it, rewrite.  
 - Primary path language: **board, rankings, who they beat, how they look, league, take, climb, debate.**  
-- Keep off primary path: Elo, TQ, CQ, FRS, AI_MODE, stub, MiniMax, “methodology” as the hero word.  
+- Keep off primary path: Elo, TQ, CQ, FRS, AI_MODE, stub, xAI, “methodology” as the hero word.  
 - Methodology / score breakdown = progressive disclosure for the nerd cave.
 
 ---

@@ -73,12 +73,10 @@ def live_spec() -> dict:
     formula = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
     wrangler = production_vars(WRANGLER_PATH.read_text(encoding='utf-8'))
     errors = []
-    if wrangler.get('AI_MODE') != 'live' or wrangler.get('CFBD_OFFLINE') != '0':
+    if wrangler.get('AI_MODE') != 'stub' or wrangler.get('CFBD_OFFLINE') != '1':
         errors.append(
-            'production AI_MODE and CFBD_OFFLINE must stay live and 0'
+            'production AI_MODE must be stub and CFBD_OFFLINE must be 1'
         )
-    if wrangler.get('AI_MAX_CALLS') != '0':
-        errors.append('production AI_MAX_CALLS must be 0 until a dollar figure is set')
     if 'CFBD_MAX_CALLS' not in wrangler:
         errors.append('production CFBD_MAX_CALLS is missing from wrangler.toml')
         return {'errors': errors}

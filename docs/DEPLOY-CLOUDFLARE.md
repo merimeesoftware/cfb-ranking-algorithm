@@ -65,7 +65,7 @@ Keep `robots.txt` Sitemap line and `scripts/generate-sitemap.mjs` aligned with `
 1. **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Variables and Secrets**
 2. **Add** → type **Secret** → name `CFBD_API_KEY` → paste value → **Encrypt** → **Deploy**
 
-Repeat for `MINIMAX_API_KEY` / `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again.
+Repeat for `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. Do not create or paste it from this repo.
 
 For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Worker, or use `wrangler secret put CFBD_API_KEY --env dev` once.
 
@@ -116,18 +116,21 @@ Confirm Workers **Paid** is enabled — Containers are Paid-only.
 | Secret | Required |
 |--------|----------|
 | `CFBD_API_KEY` | Yes (live rankings) |
-| `MINIMAX_API_KEY` | Optional (`AI_MODE=live`) |
+| `XAI_API_KEY` | provisioned by DevSecOps on Michael's yes. Not a var. Workers AI uses the `[ai]` binding. |
 | `CACHE_CLEAR_SECRET` | Optional (protects `POST /api/cache/clear`) |
 
 ### Paid-call caps (deploy migration)
 
-Production `AI_MODE=live` and `CFBD_OFFLINE=0` in `wrangler.toml` stay as they are. Caps do not depend on those two values.
+Production `AI_MODE=stub` and `CFBD_OFFLINE=1` in `wrangler.toml`.
 
 | Control | Default when unset | Where it is enforced |
 |---------|--------------------|----------------------|
-| `AI_MAX_CALLS` | **0** in production `wrangler.toml` (unset code fallback 100/day) | named `CfbApiContainer` instance `spend-budget`, then Flask. 0 means stub or cached answers until a dollar figure is set. |
+| `XAI_MAX_CALLS` | **0** in production `wrangler.toml` and in code | named `CfbApiContainer` instance `spend-budget`, then Flask. 0 means stub or cached answers. |
+| `WORKERS_AI_MAX_CALLS` | **0** in production `wrangler.toml` and in code | same bucket family, separate counter. |
 | `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | same. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 900 ceiling. |
-| `AI_KILL` / `CFBD_KILL` | off (`0`) | Worker gate and Flask |
+| `AI_KILL` | off (`0`) | Stops xAI and Workers AI |
+| `XAI_KILL` / `WORKERS_AI_KILL` | off (`0`) | Stops that provider |
+| `CFBD_KILL` | off (`0`) | Worker gate and Flask |
 | Visitor rate limit | 60/min on `/api/*`, 10/min on `/api/agent/*` | Workers Rate Limiting bindings, key = `CF-Connecting-IP` |
 | Preview / dev versions | `AI_MODE=stub`, `CFBD_OFFLINE=1` | Worker, unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` is set |
 
@@ -135,7 +138,7 @@ This change does not add a Durable Object migration. The global counters use SQL
 
 Flask reaches the Durable Object by calling `http://spend.budget/consume`. The container outbound handler (`CfbApiContainer.outboundByHost`, which needs `ContainerProxy` exported from the Worker) turns that into a DO request. If the gate cannot be reached, the live call is refused.
 
-`/api/rankings`, `/api/matchup`, and `/api/weeks` serve the precomputed manifest only. Custom formula parameters return `400` JSON. A cap or kill switch returns `429` with `{"busy": true, "message": "Busy right now, try again later."}`.
+`/api/rankings`, `/api/matchup`, and `/api/weeks` serve the precomputed manifest only. Custom formula parameters return `400` JSON. A visitor rate limit returns `429` with `{"busy": true, "message": "Busy right now, try again later."}`. An explain cap or kill switch returns that same busy flag with the stub explanation. `/agent/explain` accepts an allowlisted `question_id` only.
 
 ---
 

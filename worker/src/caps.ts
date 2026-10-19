@@ -2,12 +2,7 @@
  * Edge caps for the public API: visitor identity, rate limits, query allowlist,
  * preview spend defaults, and the env block forwarded into the Flask container.
  */
-import {
-	DEFAULT_AI_MAX_CALLS_PER_DAY,
-	DEFAULT_CFBD_MAX_CALLS_PER_DAY,
-	dailyLimitFor,
-	type SpendBucket,
-} from './budget.ts';
+import { dailyLimitFor, type SpendBucket } from './budget.ts';
 
 export const BUSY_MESSAGE = 'Busy right now, try again later.';
 export const FORMULA_MESSAGE = 'Custom formula parameters are not accepted.';
@@ -50,9 +45,12 @@ export interface RateLimiter {
 export interface CapEnv {
 	AI_MODE?: string;
 	CFBD_OFFLINE?: string;
-	AI_MAX_CALLS?: string;
+	XAI_MAX_CALLS?: string;
+	WORKERS_AI_MAX_CALLS?: string;
 	CFBD_MAX_CALLS?: string;
 	AI_KILL?: string;
+	XAI_KILL?: string;
+	WORKERS_AI_KILL?: string;
 	CFBD_KILL?: string;
 	PREVIEW_AI_MODE?: string;
 	PREVIEW_CFBD_OFFLINE?: string;
@@ -70,7 +68,10 @@ export function isKillSwitch(raw: string | undefined): boolean {
 }
 
 export function paidCallAllowed(env: CapEnv, bucket: SpendBucket): boolean {
-	return !isKillSwitch(bucket === 'ai' ? env.AI_KILL : env.CFBD_KILL);
+	if (bucket === 'cfbd') return !isKillSwitch(env.CFBD_KILL);
+	if (isKillSwitch(env.AI_KILL)) return false;
+	if (bucket === 'xai') return !isKillSwitch(env.XAI_KILL);
+	return !isKillSwitch(env.WORKERS_AI_KILL);
 }
 
 /** CF-Connecting-IP only. X-Forwarded-For is never a visitor key. */
@@ -99,8 +100,8 @@ export function isNonProductionHostname(hostname: string): boolean {
 }
 
 /**
- * Production keeps wrangler AI_MODE / CFBD_OFFLINE.
- * Every other hostname defaults to stub + offline unless PREVIEW_* is set.
+ * Unset production mode is stub + offline. Preview hostnames are the same
+ * unless PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
  */
 export function resolveContainerModes(
 	env: CapEnv,
@@ -108,8 +109,8 @@ export function resolveContainerModes(
 ): { AI_MODE: string; CFBD_OFFLINE: string } {
 	if (!isNonProductionHostname(hostname)) {
 		return {
-			AI_MODE: env.AI_MODE?.trim() || 'live',
-			CFBD_OFFLINE: env.CFBD_OFFLINE?.trim() || '0',
+			AI_MODE: env.AI_MODE?.trim() || 'stub',
+			CFBD_OFFLINE: env.CFBD_OFFLINE?.trim() || '1',
 		};
 	}
 	const previewAi = env.PREVIEW_AI_MODE?.trim();
@@ -117,6 +118,20 @@ export function resolveContainerModes(
 	return {
 		AI_MODE: previewAi || 'stub',
 		CFBD_OFFLINE: previewOffline || '1',
+	};
+}
+
+/** Secrets forwarded into the container. The xAI credential stays on the Worker. */
+export function containerSecrets(env: {
+	CFBD_API_KEY?: string;
+	XAI_API_KEY?: string;
+	CACHE_CLEAR_SECRET?: string;
+	CORS_ORIGINS?: string;
+}): Record<string, string> {
+	return {
+		...(env.CFBD_API_KEY ? { CFBD_API_KEY: env.CFBD_API_KEY } : {}),
+		...(env.CACHE_CLEAR_SECRET ? { CACHE_CLEAR_SECRET: env.CACHE_CLEAR_SECRET } : {}),
+		...(env.CORS_ORIGINS ? { CORS_ORIGINS: env.CORS_ORIGINS } : {}),
 	};
 }
 
@@ -131,9 +146,14 @@ export function buildRuntimeEnv(
 		AI_MODE: modes.AI_MODE,
 		CFBD_OFFLINE: modes.CFBD_OFFLINE,
 		SPEND_GATE_HOST,
-		AI_MAX_CALLS: String(dailyLimitFor('ai', env)),
+		AI_XAI_HOST: 'ai.xai',
+		AI_WORKERS_HOST: 'ai.workers',
+		XAI_MAX_CALLS: String(dailyLimitFor('xai', env)),
+		WORKERS_AI_MAX_CALLS: String(dailyLimitFor('workers_ai', env)),
 		CFBD_MAX_CALLS: String(dailyLimitFor('cfbd', env)),
 		AI_KILL: isKillSwitch(env.AI_KILL) ? '1' : '0',
+		XAI_KILL: isKillSwitch(env.XAI_KILL) ? '1' : '0',
+		WORKERS_AI_KILL: isKillSwitch(env.WORKERS_AI_KILL) ? '1' : '0',
 		CFBD_KILL: isKillSwitch(env.CFBD_KILL) ? '1' : '0',
 	};
 	if (env.AGENT_RATE_LIMIT?.trim()) {
@@ -278,6 +298,10 @@ const PUBLIC_COUNTER_KEYS = [
 	'cfbd_key',
 	'ai_live_calls',
 	'ai_max_calls',
+	'xai_live_calls',
+	'xai_max_calls',
+	'workers_ai_live_calls',
+	'workers_ai_max_calls',
 	'agent_rate_limit_per_hour',
 	'development',
 	'spend',

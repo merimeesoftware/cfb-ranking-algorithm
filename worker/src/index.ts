@@ -6,6 +6,7 @@ import {
 	busyResponse,
 	checkPublicQuery,
 	clientIp,
+	containerSecrets,
 	enforceVisitorLimit,
 	isCounterEndpoint,
 	paidCallAllowed,
@@ -15,6 +16,7 @@ import {
 	type Manifest,
 	type RateLimiter,
 } from './caps.ts';
+import { completeFromRequest, WORKERS_AI_HOST, XAI_HOST, type WorkersAiBinding } from './providers.ts';
 import { consumeSpend } from './spend-object.ts';
 
 export { ContainerProxy };
@@ -25,9 +27,10 @@ export interface Env extends CapEnv {
 	API_RATE_LIMITER: RateLimiter;
 	AGENT_RATE_LIMITER: RateLimiter;
 	CFBD_API_KEY?: string;
-	MINIMAX_API_KEY?: string;
+	XAI_API_KEY?: string;
 	CACHE_CLEAR_SECRET?: string;
 	CORS_ORIGINS?: string;
+	AI?: WorkersAiBinding;
 }
 
 /** Flask API container (gunicorn on port 8080). */
@@ -41,26 +44,20 @@ export class CfbApiContainer extends Container<Env> {
 		FLASK_ENV: 'production',
 		CACHE_BACKEND: 'file',
 		CACHE_DIR: '/tmp/cfb-cache',
-		AI_MODE: 'live',
-		CFBD_OFFLINE: '0',
+		AI_MODE: 'stub',
+		CFBD_OFFLINE: '1',
 	};
 
 	/**
 	 * Paid-call caps and kill switches are forwarded even when unset, using the
-	 * in-code defaults from caps.ts / budget.ts. Preview hostnames force
-	 * AI_MODE=stub and CFBD_OFFLINE=1 unless PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE
-	 * are set. Production wrangler values are left as-is.
+	 * in-code defaults from caps.ts / budget.ts. Unset and preview hostnames
+	 * use AI_MODE=stub and CFBD_OFFLINE=1 unless PREVIEW_* overrides a preview.
+	 * XAI_API_KEY is not forwarded. The ai.xai outbound host reads that secret.
 	 */
 	private runtimeEnvVars(hostname: string): Record<string, string> {
-		const forwarded = buildRuntimeEnv(this.envVars, this.env, hostname);
 		return {
-			...forwarded,
-			...(this.env.CFBD_API_KEY ? { CFBD_API_KEY: this.env.CFBD_API_KEY } : {}),
-			...(this.env.MINIMAX_API_KEY ? { MINIMAX_API_KEY: this.env.MINIMAX_API_KEY } : {}),
-			...(this.env.CACHE_CLEAR_SECRET
-				? { CACHE_CLEAR_SECRET: this.env.CACHE_CLEAR_SECRET }
-				: {}),
-			...(this.env.CORS_ORIGINS ? { CORS_ORIGINS: this.env.CORS_ORIGINS } : {}),
+			...buildRuntimeEnv(this.envVars, this.env, hostname),
+			...containerSecrets(this.env),
 		};
 	}
 
@@ -80,8 +77,8 @@ export class CfbApiContainer extends Container<Env> {
 }
 
 /**
- * Container → Durable Object. Flask calls http://spend.budget/consume just
- * before a live MiniMax or CFBD request. No visitor can reach this host.
+ * Container outbound hosts. spend.budget is the shared daily counter.
+ * ai.xai and ai.workers perform the live completion. No visitor can reach them.
  */
 CfbApiContainer.outboundByHost = {
 	'spend.budget': async (request: Request, env: Env): Promise<Response> => {
@@ -92,7 +89,7 @@ CfbApiContainer.outboundByHost = {
 			return Response.json({ ok: false, error: 'json' }, { status: 400 });
 		}
 		const bucket = payload.bucket;
-		if (bucket !== 'ai' && bucket !== 'cfbd') {
+		if (bucket !== 'xai' && bucket !== 'workers_ai' && bucket !== 'cfbd') {
 			return Response.json({ ok: false, error: 'bucket' }, { status: 400 });
 		}
 		const spendBucket = bucket as SpendBucket;
@@ -109,6 +106,24 @@ CfbApiContainer.outboundByHost = {
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ bucket, limit }),
 		});
+	},
+	[XAI_HOST]: async (request: Request, env: Env): Promise<Response> => {
+		if (!paidCallAllowed(env, 'xai')) {
+			return Response.json(
+				{ ok: false, code: 'kill_switch' },
+				{ status: 429, headers: { 'cache-control': 'no-store' } },
+			);
+		}
+		return completeFromRequest('xai', env, request);
+	},
+	[WORKERS_AI_HOST]: async (request: Request, env: Env): Promise<Response> => {
+		if (!paidCallAllowed(env, 'workers_ai')) {
+			return Response.json(
+				{ ok: false, code: 'kill_switch' },
+				{ status: 429, headers: { 'cache-control': 'no-store' } },
+			);
+		}
+		return completeFromRequest('workers_ai', env, request);
 	},
 };
 

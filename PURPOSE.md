@@ -44,7 +44,7 @@ Use these verbatim in UI and share copy. Do not paraphrase.
 
 board, rankings, TR+, who they beat, how they look, league strength, Heat, take, climb, how good they actually are
 
-Keep off the primary path (methodology deep dive only): Elo, TQ, CQ, FRS, AI_MODE, stub, MiniMax, Lean Pure
+Keep off the primary path (methodology deep dive only): Elo, TQ, CQ, FRS, AI_MODE, stub, Lean Pure
 
 ## Non-goals (2026)
 

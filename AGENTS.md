@@ -27,14 +27,14 @@ Impeccable / OpenCode are fine to install **locally or via Cursor plugins** for 
 
 ### Secrets
 
-- **Production (deployed app):** store `CFBD_API_KEY` / optional paygo `MINIMAX_API_KEY` in **Cloudflare**. See [docs/SECRETS.md](docs/SECRETS.md).
+- **Production (deployed app):** store `CFBD_API_KEY` in **Cloudflare**. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. See [docs/SECRETS.md](docs/SECRETS.md).
 - **This Cloud Agent VM only:** Cursor Secrets tab — [.cursor/SECRETS.md](.cursor/SECRETS.md). Cursor secrets do not sync to Cloudflare.
 
 ### Local spend guards (prefer over live APIs)
 
 - Free CFBD tier is **1,000 calls/month**. Local default: `CFBD_OFFLINE=1` (also default when `FLASK_ENV=development` if unset) — no live CFBD; use `.cache/` and `frontend/static/rankings/`.
-- `AI_MODE=stub` (dev default) returns template explanations with **no MiniMax** call. `off` returns `explanation: null`. `live` needs a paygo MiniMax key (not Coding Plan).
-- **Hard caps when the vars are unset:** `AI_MAX_CALLS` **100/day**, `CFBD_MAX_CALLS` **25/day**. Unset is never unlimited. Production `wrangler.toml` sets `AI_MAX_CALLS=0` and `CFBD_MAX_CALLS=4` so the free CFBD tier stays under 900 calls/month. The Worker stores that global counter on the `CfbApiContainer` instance `spend-budget`; Flask repeats the same numbers per process.
+- `AI_MODE=stub` (local, preview, and production default) returns template explanations with no live provider call. `off` returns `explanation: null`. `live` uses xAI (`XAI_API_KEY`, Worker-only) or Workers AI (the `[ai]` binding).
+- **Hard caps when the vars are unset:** `XAI_MAX_CALLS` and `WORKERS_AI_MAX_CALLS` **0/day**, `CFBD_MAX_CALLS` **25/day**. Unset is never unlimited. Production `wrangler.toml` sets both AI caps to `0` and `CFBD_MAX_CALLS=4` so the free CFBD tier stays under 900 calls/month. The Worker stores that global counter on the `CfbApiContainer` instance `spend-budget`; Flask repeats the same numbers per process. `AI_KILL` stops both providers. `XAI_KILL` and `WORKERS_AI_KILL` stop one.
 - `AI_KILL=1` / `CFBD_KILL=1` stop live paid calls. Preview hostnames use `AI_MODE=stub` and `CFBD_OFFLINE=1` unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` are set.
 - `AGENT_RATE_LIMIT` caps `/agent/*` per `CF-Connecting-IP` (default 50/hour in dev, 30/hour in production). The edge limiter is separate and also ignores `X-Forwarded-For`.
 - `GET /agent/health` and `GET /cache/stats` do not expose budgets or counters.

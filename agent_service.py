@@ -1,5 +1,8 @@
 """Agent endpoints for ranking explanations and CFBD MCP proxy."""
+import json
 import os
+import urllib.error
+import urllib.request
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
@@ -20,7 +23,6 @@ from shareable_blurb import (
     clean_blurb_candidate,
     extract_blurb_text,
     is_in_season,
-    minimax_web_search_enabled,
     stub_climb_blurb,
     stub_shareable_blurb,
 )
@@ -29,9 +31,10 @@ from spend_guards import (
     AIBudgetError,
     AIRateLimitError,
     check_agent_rate_limit,
-    is_ai_killed,
-    register_live_ai_call,
+    is_provider_killed,
+    register_live_provider_call,
     resolve_ai_mode,
+    resolve_ai_provider,
 )
 from static_rankings import (
     DEFAULT_ROOT,
@@ -58,18 +61,24 @@ def set_data_processor(processor) -> None:
 
 
 CFBD_MCP_URL = os.environ.get('CFBD_MCP_URL', '')
-MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
-MINIMAX_BASE_URL = os.environ.get('MINIMAX_BASE_URL', 'https://api.minimax.io/anthropic')
-MINIMAX_MODEL = os.environ.get('MINIMAX_MODEL', 'MiniMax-M3')
-# Blurbs default to the same M3 model (override separately if needed)
-MINIMAX_BLURB_MODEL = os.environ.get('MINIMAX_BLURB_MODEL', MINIMAX_MODEL)
-MINIMAX_WEB_SEARCH_TIMEOUT = int(os.environ.get('MINIMAX_WEB_SEARCH_TIMEOUT', '120'))
-MINIMAX_PLAIN_TIMEOUT = int(os.environ.get('MINIMAX_PLAIN_TIMEOUT', '60'))
-WEB_SEARCH_TOOL = {'type': 'web_search_20250305', 'name': 'web_search'}
+PROVIDER_TIMEOUT = int(os.environ.get('AI_PROVIDER_TIMEOUT', '60'))
+
+# Fixed prompts. Free-text questions are rejected.
+EXPLAIN_QUESTIONS = {
+    'why_here': 'Why is this team ranked here?',
+    'who_mad': 'Who should argue with this spot?',
+    'path_up': 'What would move this team up?',
+    'results': 'Which results are carrying this rank?',
+    'neighbors': 'Why this team and not the ones next to it?',
+}
+
+
+class ProviderUnconfigured(RuntimeError):
+    """The Worker host for this provider is not set."""
 
 
 def _require_agent_route(f):
-    """Allow stub/off without MiniMax; live/MCP still need config when used."""
+    """Allow stub/off without a live provider; live still needs the Worker host."""
     @wraps(f)
     def decorated(*args, **kwargs):
         return f(*args, **kwargs)
@@ -141,108 +150,75 @@ def _build_team_context(rankings: Dict[str, Any], team_name: str) -> Optional[Di
     return None
 
 
-def _call_minimax(
-    prompt: str,
-    *,
-    max_tokens: int = 1024,
-    model: Optional[str] = None,
-    disable_thinking: bool = False,
-    use_web_search: Optional[bool] = None,
+def explain_cache_logical(
+    provider: str,
+    year: int,
+    week: Optional[int],
+    team_name: str,
+    question_id: str,
+    period: str,
 ) -> str:
-    """Call MiniMax via Anthropic-compatible API (paygo key — not Coding Plan)."""
-    if not MINIMAX_API_KEY:
-        return 'MiniMax API key not configured. Structured ranking context is available in the response.'
+    """explain:{provider}:{year}:{week}:{team}:{question_id}:{period}"""
+    week_part = 'none' if week is None else str(week)
+    team = team_name.strip().lower()
+    return f'explain:{provider}:{year}:{week_part}:{team}:{question_id}:{period}'
 
-    search_on = minimax_web_search_enabled() if use_web_search is None else use_web_search
-    call_n = register_live_ai_call()
-    print(
-        f'AI LIVE prompt #{call_n} model={model or MINIMAX_MODEL} '
-        f'web_search={search_on} (budget {ai_max_display()})'
+
+def _provider_host(provider: str) -> str:
+    name = 'AI_XAI_HOST' if provider == 'xai' else 'AI_WORKERS_HOST'
+    return os.environ.get(name, '').strip()
+
+
+def _call_provider(provider: str, prompt: str) -> str:
+    """Ask the Worker host for one completion. The credential stays on the Worker."""
+    if provider not in ('xai', 'workers_ai'):
+        raise AIBudgetError(f'Unknown AI provider: {provider}')
+    if is_provider_killed(provider):
+        raise AIBudgetError('AI kill switch is on.')
+    host = _provider_host(provider)
+    if not host:
+        raise ProviderUnconfigured(provider)
+    call_n = register_live_provider_call(provider)
+    print(f'AI LIVE prompt #{call_n} provider={provider}')
+    payload = json.dumps({
+        'messages': [{'role': 'user', 'content': prompt}],
+    }).encode()
+    req = urllib.request.Request(
+        f'http://{host}/complete',
+        data=payload,
+        headers={'content-type': 'application/json'},
+        method='POST',
     )
     try:
-        payload: Dict[str, Any] = {
-            'model': model or MINIMAX_MODEL,
-            'max_tokens': max_tokens,
-            'messages': [{'role': 'user', 'content': prompt}],
-        }
-        if disable_thinking:
-            payload['thinking'] = {'type': 'disabled'}
-        if search_on:
-            payload['tools'] = [WEB_SEARCH_TOOL]
-        timeout = MINIMAX_WEB_SEARCH_TIMEOUT if search_on else MINIMAX_PLAIN_TIMEOUT
-        # MiniMax Anthropic-compatible route prefers Authorization: Bearer;
-        # keep x-api-key as a secondary Anthropic-style header.
-        response = requests.post(
-            f"{MINIMAX_BASE_URL}/v1/messages",
-            headers={
-                'Authorization': f'Bearer {MINIMAX_API_KEY}',
-                'x-api-key': MINIMAX_API_KEY,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json',
-            },
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-        data = response.json()
-        content = data.get('content', [])
-        if isinstance(content, list) and content:
-            texts = [
-                block.get('text', '').strip()
-                for block in content
-                if isinstance(block, dict)
-                and block.get('type', 'text') == 'text'
-                and block.get('text')
-            ]
-            if texts:
-                return '\n'.join(texts)
-            # Fallback: any block with a text field (some MiniMax payloads omit type)
-            texts = [
-                block.get('text', '').strip()
-                for block in content
-                if isinstance(block, dict) and block.get('text')
-            ]
-            if texts:
-                return '\n'.join(texts)
-        return 'LLM explanation unavailable: empty text content'
+        with urllib.request.urlopen(req, timeout=PROVIDER_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode() or '{}')
     except AIBudgetError:
         raise
-    except Exception as e:
-        return f'LLM explanation unavailable: {e}'
+    except urllib.error.HTTPError as exc:
+        try:
+            data = json.loads(exc.read().decode() or '{}')
+        except (json.JSONDecodeError, OSError):
+            data = {}
+        if data.get('code') == 'kill_switch' or exc.code == 429:
+            raise AIBudgetError('AI kill switch or budget denied the live call.') from exc
+        return 'LLM explanation unavailable: upstream'
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
+        return f'LLM explanation unavailable: {exc}'
+    text = (data.get('text') or '').strip() if isinstance(data, dict) else ''
+    if data.get('ok') and text:
+        return text
+    return 'LLM explanation unavailable: empty text content'
 
 
-def ai_max_display() -> str:
-    from spend_guards import ai_max_calls
-    return str(ai_max_calls())
-
-
-def _resolve_explanation(context: Dict[str, Any], question: str) -> tuple[Optional[str], str]:
-    """Return (explanation, ai_mode)."""
-    mode = resolve_ai_mode()
-    if mode == 'off':
-        return None, mode
-    if mode == 'stub':
-        return stub_explain_from_context(context, question), mode
-    if is_ai_killed():
-        raise AIBudgetError('AI kill switch is on.')
-    if not MINIMAX_API_KEY:
-        return stub_explain_from_context(context, question), 'stub'
-    search_on = minimax_web_search_enabled()
-    search_note = (
-        'You may use web_search for brief media/street context; '
-        'for scores, records, and games use ONLY the Team context JSON — never invent those.\n'
-        if search_on
-        else 'Use ONLY the Team context JSON for scores, records, and games. Do not invent social buzz.\n'
-    )
+def _explain_prompt(context: Dict[str, Any], question: str) -> str:
     w_tq, w_rec, w_cq = FRS_WEIGHTS
-    prompt = (
-        f"You are a college football ranking analyst. Answer concisely.\n"
-        f"{search_note}"
-        f"Question: {question}\n\n"
-        f"Team context (JSON): {context}\n\n"
-        f"Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality."
+    return (
+        'You are a college football ranking analyst. Answer concisely.\n'
+        'Use ONLY the Team context JSON for scores, records, and games. Do not invent them.\n'
+        f'Question: {question}\n\n'
+        f'Team context (JSON): {context}\n\n'
+        f'Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality.'
     )
-    return _call_minimax(prompt, model=MINIMAX_MODEL), mode
 
 
 @agent_bp.route('/health', methods=['GET'])
@@ -251,34 +227,106 @@ def agent_health():
     return jsonify({'status': 'ok'})
 
 
+def _reject_question(body: Dict[str, Any]):
+    if body.get('question'):
+        return jsonify({
+            'error': 'question is not accepted. Send an allowlisted question_id.',
+            'code': 'question_id',
+        }), 400
+    question_id = body.get('question_id')
+    if not isinstance(question_id, str) or question_id not in EXPLAIN_QUESTIONS:
+        return jsonify({
+            'error': 'question_id must be an allowlisted prompt.',
+            'code': 'question_id',
+        }), 400
+    return None
+
+
+def _reject_provider(body: Dict[str, Any], mode: str):
+    raw = body.get('provider')
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        if mode == 'live':
+            return resolve_ai_provider(), None
+        return 'stub', None
+    if not isinstance(raw, str) or raw.strip().lower() not in ('xai', 'workers_ai'):
+        return None, (jsonify({
+            'error': 'provider must be xai or workers_ai.',
+            'code': 'provider',
+        }), 400)
+    if mode != 'live':
+        return 'stub', None
+    return raw.strip().lower(), None
+
+
+def _capped_explain(
+    code: str,
+    context: Dict[str, Any],
+    team_name: str,
+    year: int,
+    week: Optional[int],
+    question_id: str,
+    provider: str,
+):
+    return jsonify({
+        **busy_body(code),
+        'team_name': team_name,
+        'year': year,
+        'week': week,
+        'context': context,
+        'explanation': stub_explain_from_context(context, EXPLAIN_QUESTIONS[question_id]),
+        'ai_mode': 'stub',
+        'question_id': question_id,
+        'provider': provider,
+        'cached': False,
+        'formula': DEFAULT_CONFIG,
+    })
+
+
 @agent_bp.route('/explain', methods=['POST'])
 @_require_agent_route
 def explain_ranking():
     """
     Explain why a team is ranked where it is.
 
-    Body: { "team_name": "Georgia", "year": 2024, "week": 10, "question": "optional" }
-    AI_MODE=off → explanation null + context; stub → template; live → MiniMax (budgeted).
+    Body: question_id (allowlisted), optional provider xai|workers_ai.
+    Stub and off do not call a provider. Live calls are budgeted per provider.
+    A repeat of the same cache key does not make another paid call.
     """
     if _data_processor is None:
         return jsonify({'error': 'Data processor not initialized'}), 503
+
+    body = request.get_json(silent=True) or {}
+    rejected = _reject_question(body)
+    if rejected:
+        return rejected
+    question_id = body['question_id']
+    mode = resolve_ai_mode()
+    provider, provider_error = _reject_provider(body, mode)
+    if provider_error:
+        return provider_error
 
     try:
         check_agent_rate_limit(_client_key())
     except AIRateLimitError:
         return _busy('agent_rate_limit')
 
-    body = request.get_json(silent=True) or {}
     team_name = body.get('team_name') or request.args.get('team_name')
     year = int(body.get('year') or request.args.get('year', 2024))
-    week = body.get('week') or request.args.get('week')
-    week = int(week) if week is not None else None
-    question = body.get('question', f'Why is {team_name} ranked where they are?')
-
+    week = body.get('week') if 'week' in body else request.args.get('week')
+    week = int(week) if week is not None and week != '' else None
     if not team_name:
         return jsonify({'error': 'team_name is required'}), 400
 
-    # Static files only — a visitor question must not start a CFBD recompute.
+    period = blurb_cache_period()
+    cache = get_cache()
+    logical = explain_cache_logical(provider, year, week, team_name, question_id, period)
+    cache_key = cache._generate_key('explain', logical)
+    killed = mode == 'live' and provider in ('xai', 'workers_ai') and is_provider_killed(provider)
+    if not killed:
+        cached = cache.get(cache_key)
+        if isinstance(cached, dict) and 'explanation' in cached:
+            return jsonify({**cached, 'cached': True})
+
     rankings = get_or_calculate_rankings(
         _data_processor,
         year,
@@ -294,20 +342,40 @@ def explain_ranking():
     if not context:
         return jsonify({'error': f"Team '{team_name}' not found in rankings"}), 404
 
-    try:
-        explanation, mode = _resolve_explanation(context, question)
-    except AIBudgetError:
-        return _busy('kill_switch' if is_ai_killed() else 'ai_budget')
+    question = EXPLAIN_QUESTIONS[question_id]
+    if killed:
+        return _capped_explain(
+            'kill_switch', context, team_name, year, week, question_id, provider,
+        )
+    if mode == 'off':
+        explanation, served = None, 'off'
+    elif mode == 'stub' or provider == 'stub':
+        explanation, served = stub_explain_from_context(context, question), 'stub'
+    else:
+        try:
+            explanation = _call_provider(provider, _explain_prompt(context, question))
+            served = 'live'
+        except ProviderUnconfigured:
+            explanation, served = stub_explain_from_context(context, question), 'stub'
+        except AIBudgetError:
+            code = 'kill_switch' if is_provider_killed(provider) else f'{provider}_budget'
+            return _capped_explain(code, context, team_name, year, week, question_id, provider)
 
-    return jsonify({
+    payload = {
         'team_name': team_name,
         'year': year,
         'week': week,
         'context': context,
         'explanation': explanation,
-        'ai_mode': mode,
+        'ai_mode': served,
+        'question_id': question_id,
+        'provider': provider if served == 'live' else 'stub',
+        'cached': False,
         'formula': DEFAULT_CONFIG,
-    })
+    }
+    ttl = TTL_BLURB_IN_SEASON if is_in_season() else TTL_BLURB_OFFSEASON
+    cache.set(cache_key, payload, ttl, prefix='explain')
+    return jsonify(payload)
 
 
 BLURB_MAX_ATTEMPTS = 3
@@ -317,7 +385,7 @@ def _resolve_blurb(context: Dict[str, Any], kind: str = 'share') -> tuple[str, s
     """
     Return (blurb, ai_mode) for kind share|climb.
 
-    Live MiniMax must produce ≤280 chars as-authored. Over-length drafts are
+    Live text must be ≤280 chars as-authored. Over-length drafts are
     rejected and rewritten (never chopped). Exhausted retries → stub.
     """
     stub_fn = stub_climb_blurb if kind == 'climb' else stub_shareable_blurb
@@ -326,9 +394,10 @@ def _resolve_blurb(context: Dict[str, Any], kind: str = 'share') -> tuple[str, s
     mode = resolve_ai_mode()
     if mode != 'live':
         return stub_fn(context), mode
-    if is_ai_killed():
+    provider = resolve_ai_provider()
+    if is_provider_killed(provider):
         raise AIBudgetError('AI kill switch is on.')
-    if not MINIMAX_API_KEY:
+    if not _provider_host(provider):
         return stub_fn(context), 'stub'
 
     previous = ''
@@ -338,12 +407,7 @@ def _resolve_blurb(context: Dict[str, Any], kind: str = 'share') -> tuple[str, s
                 prompt = prompt_fn(context)
             else:
                 prompt = build_blurb_rewrite_prompt(previous, context, kind=kind)
-            raw = _call_minimax(
-                prompt,
-                max_tokens=400,
-                model=MINIMAX_BLURB_MODEL,
-                disable_thinking=True,
-            )
+            raw = _call_provider(provider, prompt)
             text = extract_blurb_text(raw)
             if text:
                 return text, mode
@@ -455,11 +519,20 @@ def _blurb_http(kind: str):
     try:
         blurb, mode = _resolve_blurb(context, kind=kind)
     except AIBudgetError:
+        provider = resolve_ai_provider()
+        code = 'kill_switch' if is_provider_killed(provider) else f'{provider}_budget'
+        stub = stub_climb_blurb(context) if kind == 'climb' else stub_shareable_blurb(context)
         return jsonify({
-            **busy_body('kill_switch' if is_ai_killed() else 'ai_budget'),
+            **busy_body(code),
+            'team_name': context['team_name'],
+            'year': year,
+            'week': week,
             'kind': kind,
-            'blurb': None,
-        }), 429
+            'blurb': stub,
+            'ai_mode': 'stub',
+            'provider': provider,
+            'max_chars': BLURB_MAX_CHARS,
+        })
     if len(blurb) > BLURB_MAX_CHARS:
         # Invariant: never serve a chopped or over-limit blurb
         blurb = stub_climb_blurb(context) if kind == 'climb' else stub_shareable_blurb(context)
@@ -476,8 +549,7 @@ def _blurb_http(kind: str):
         'refresh': 'daily' if is_in_season() else 'monthly',
         'cached': False,
         'source': 'live' if mode == 'live' else 'stub',
-        'model': MINIMAX_BLURB_MODEL if mode == 'live' else None,
-        'web_search': minimax_web_search_enabled() if mode == 'live' else False,
+        'provider': resolve_ai_provider() if mode == 'live' else None,
     }
     ttl = TTL_BLURB_IN_SEASON if is_in_season() else TTL_BLURB_OFFSEASON
     cache.set(

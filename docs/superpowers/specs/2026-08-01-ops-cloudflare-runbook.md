@@ -505,7 +505,7 @@ Weekly agentic workflow (`.github/workflows/security-audit.md`) checks CORS, cac
 | `CACHE_CLEAR_SECRET` | Production cache ops (not in frontend build) | B+ | Random 32+ char string |
 | `R2_ACCESS_KEY_ID` | R2 cache backend | B+ | If not injected solely via wrangler bindings |
 | `R2_SECRET_ACCESS_KEY` | R2 cache backend | B+ | Store only in CF secrets / GH secrets |
-| `MINIMAX_API_KEY` | Agentic workflows (opencode engine) | Optional | For gh-aw scheduled agents |
+| `XAI_API_KEY` | Agentic workflows (opencode engine) | Optional | For gh-aw scheduled agents |
 
 ### 5.2 Repository variables (Settings → Secrets and variables → Actions → Variables)
 

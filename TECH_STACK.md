@@ -26,7 +26,7 @@ Cursor + MCP + skills → GitHub Actions → Cloudflare (Pages/Workers) when pra
 
 ## Notes
 
-- Production runtime secrets belong in the Cloudflare Worker dashboard (`CFBD_API_KEY`, optional `MINIMAX_API_KEY` / `CACHE_CLEAR_SECRET`), not GitHub or `.cursor/environment.json` — see `docs/DEPLOY-CLOUDFLARE.md` and `.cursor/SECRETS.md`.
+- Production runtime secrets belong in the Cloudflare Worker dashboard (`CFBD_API_KEY`, optional `CACHE_CLEAR_SECRET`). `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. Do not put them in GitHub or `.cursor/environment.json` — see `docs/DEPLOY-CLOUDFLARE.md` and `.cursor/SECRETS.md`.
 - Root `package.json` requires Node ≥22 and ships `wrangler` with `deploy` / `deploy:dev` scripts.
 - CI uses Python 3.11 and Node 22; deploy workflow runs only after successful CI on `main`.
 - Worker routes static SPA paths to `frontend/build` and proxies `/api/*` to the Flask container class `CfbApiContainer`.

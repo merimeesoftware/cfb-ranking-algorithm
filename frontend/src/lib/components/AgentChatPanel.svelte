@@ -4,19 +4,27 @@
 	import { filterState } from '$lib/stores/rankings';
 
 	export let teamName: string;
+	export let year: number | null = null;
+	export let week: number | null = null;
 	export let open = false;
 
 	const dispatch = createEventDispatcher<{ close: void }>();
 
-	let question = '';
 	let explanation = '';
 	let loading = false;
 	let busy = false;
 	let error: string | null = null;
 
 	const FRIENDLY_ERROR = 'Couldn’t break down this ranking right now.';
+	const QUESTIONS = [
+		{ id: 'why_here', label: 'Why is this team here?' },
+		{ id: 'who_mad', label: 'Who should argue with this spot?' },
+		{ id: 'path_up', label: 'What would move them up?' },
+		{ id: 'results', label: 'Which results are carrying this?' },
+		{ id: 'neighbors', label: 'Why not the teams next to them?' },
+	];
 
-	async function ask() {
+	async function ask(questionId: string) {
 		loading = true;
 		error = null;
 		busy = false;
@@ -24,15 +32,12 @@
 		try {
 			const result = await explainRanking(
 				teamName,
-				$filterState.year,
-				$filterState.week,
-				question || `Why is ${teamName} here — and who should be mad?`
+				year ?? $filterState.year,
+				week ?? $filterState.week,
+				questionId
 			);
-			if (result.busy) {
-				busy = true;
-			} else {
-				explanation = result.explanation;
-			}
+			if (result.busy) busy = true;
+			if (result.explanation) explanation = result.explanation;
 		} catch {
 			error = FRIENDLY_ERROR;
 		} finally {
@@ -67,24 +72,19 @@
 				</button>
 			</div>
 
-			<label class="block text-sm text-gray-600 dark:text-gray-400 mb-2" for="agent-question">
-				Ask anything (optional)
-			</label>
-			<input
-				id="agent-question"
-				bind:value={question}
-				placeholder={`Why is ${teamName} here — and who should be mad?`}
-				class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-			/>
-
-			<button
-				type="button"
-				on:click={ask}
-				disabled={loading}
-				class="btn btn-primary mt-3 w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50"
-			>
-				{loading ? 'Breaking it down…' : 'Break it down'}
-			</button>
+			<p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Pick a question</p>
+			<div class="flex flex-col gap-2">
+				{#each QUESTIONS as item}
+					<button
+						type="button"
+						on:click={() => ask(item.id)}
+						disabled={loading}
+						class="btn btn-secondary w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50"
+					>
+						{item.label}
+					</button>
+				{/each}
+			</div>
 
 			{#if busy}
 				<p class="mt-3 text-sm text-gray-700 dark:text-gray-300" role="status">{BUSY_MESSAGE}</p>

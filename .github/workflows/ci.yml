@@ -35,6 +35,9 @@ jobs:
       - name: CFBD monthly budget
         run: python scripts/check_cfbd_month.py
 
+      - name: AI provider caps and retired name
+        run: python scripts/check_ai_providers.py
+
   worker:
     name: Worker caps
     runs-on: ubuntu-latest
