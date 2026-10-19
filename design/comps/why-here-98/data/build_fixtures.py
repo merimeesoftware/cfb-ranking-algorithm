@@ -126,13 +126,13 @@ def open_state(week, variant, name):
             'final_ranking_score': t['_score'], 'resume_rank': t['resume_rank'], 'sos_rank': t.get('sos_rank'),
             'sov_rank': t.get('sov_rank'), 'sos_rank_all_divisions': t.get('sos_rank_all'),
             'sov_rank_all_divisions': t.get('sov_rank_all'), 'board_size': len(teams), 'color': t.get('color'),
-            'url': f"https://truerankings.com/teams/{name.lower().replace(' ', '-')}?year=2024&week={week}"}
+            'url': f"{{SITE_URL}}/teams/{name.lower().replace(' ', '-')}?year=2024&week={week}"}
     if any(p['key'] == 'heat' for p in parts):
         team['heat'] = t['heat']
         team['recent'] = {'k': len(last), 'wins': sum(g['result'] == 'W' for g in last), 'losses': sum(g['result'] == 'L' for g in last)}
     rows = [row(x, prev) for x in teams]
     return {
-        'season': 2024, 'week': week, 'variant': variant, 'parts_count': len(parts),
+        'season': 2024, 'week': week, 'variant': variant, 'parts_count': len(parts), 'board_size': len(teams),
         'board': rows[max(0, idx - 2): idx + 3],
         'open': {'team': team,
                  'parts': [{'key': p['key'], 'name': p['name'], 'weight': p['weight'], 'value': t[p['field']],
@@ -147,7 +147,7 @@ def main():
     S = {}
     teams = board(10, 'elo_heat')
     prev = prev_ranks(10, 'elo_heat')
-    S['board-closed'] = {'season': 2024, 'week': 10, 'variant': 'elo_heat', 'parts_count': 2,
+    S['board-closed'] = {'season': 2024, 'week': 10, 'variant': 'elo_heat', 'parts_count': 2, 'board_size': len(teams),
                          'board': [row(x, prev) for x in teams[:25]], 'open': None}
     mid, heat_team = 'Iowa State', 'Colorado'
     S['row-open-mid'] = open_state(10, 'elo_heat', mid)

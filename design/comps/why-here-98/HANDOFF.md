@@ -1,6 +1,6 @@
 # #98 "why here": design handoff package
 
-Refs #98. CFB design seat (owner:dean-cfb), revised 2026-10-18 (ET) for D-20261018-198. PR #108 now targets **main**, since #95 merged as `ab6e20a`. Main was merged forward into this branch with GitHub's Update branch (merge `cf628ca`). No rebase, no force-push.
+Refs #98. CFB design seat (owner:dean-cfb), revised 2026-10-18 (ET) for D-20261018-198, plus Phil's Resume follow-up lock, image-only sharing, the `{SITE_URL}` token and the font licenses (23:4x ET). PR #108 now targets **main**, since #95 merged as `ab6e20a`. Main was merged forward into this branch with GitHub's Update branch (merge `cf628ca`). No rebase, no force-push.
 
 ## What changed in this revision (D-20261018-198 + Phil's copy lock)
 
@@ -31,7 +31,7 @@ The #98 comment (2026-10-19T03:30:06Z) was taken as the source of truth. It agre
 1. **Extra locked strings.** Phil also locked value formats for schedule strength ("#{sos_rank} of {N} (1 = hardest)") and quality of wins ("#{sov_rank} of {N} (1 = best)"). These are slots `stat.sos.value` and `stat.sov.value`.
 2. **League strength was conditional in Phil's text.** He wrote "confirmed if it's still a bar part … if tonight's order folds it away, drop the slot". The owner note drops it, and so does this package.
 3. **Board slot count.** Phil wrote "all seven board.* slots". The board has eight existing slots: the title, 2 legend entries and 5 column headers. All eight are rendered unchanged.
-4. **Wider betting check.** Phil's check also names lock, cover, projection and "will". The `no-gambling` regex now also catches lock, cover and projection. "will" is too common for a word guard, so it stays a manual review item.
+4. **Wider betting check.** Phil's check also names lock, cover, projection and "will". The `no-gambling` regex now also catches lock, cover and projection. "will" stays a manual read: Phil **confirmed it clean** for all locked strings plus the Resume tooltip and accessible name (2026-10-19T03:42:10Z), and every new slot gets that read before it ships.
 
 ## Package map
 
@@ -42,7 +42,7 @@ The #98 comment (2026-10-19T03:30:06Z) was taken as the source of truth. It agre
 | Share cards 1200×675 | `renders/share-card-1200x675.png` (2-part), `renders/share-card-1part-1200x675.png` (1-part) | 2 |
 | Ordering config (illustrative) | `data/order-config.json` | 2 variants |
 | Fixtures | `data/fixtures.json` (`data/build_fixtures.py`) | 15 states |
-| Copy slots | `copy-slots.json` (source of truth), table below | 63 slots: 38 locked, 8 existing, 16 data, 1 unlocked |
+| Copy slots | `copy-slots.json` (source of truth), table below | 66 slots: 41 locked, 8 existing, 16 data, 1 unlocked |
 | App assertions (for #94) | `check-targets.json` | 2 routes, 19 targets, 11 guards |
 | Comp assertions, proven | `check-comps.mjs`, `test-check-comps.mjs`, `planted/` | 11 guards, 14 planted HTML + 2 planted sources |
 | Manifest entries (#95 schema) | `manifest.fragment.json` (unsigned, see below) | 2 routes, 4 entries |
@@ -59,8 +59,8 @@ All data is 2024 W10 unless noted. **Heat values are illustrative** (see "Illust
 
 | State | Parts | Team and data | What it shows |
 |---|---|---|---|
-| `board-closed` | 2 | Top 25 under the 2-part order | Resume column (`resume_rank`); order set by the ordering TR+; toggles closed |
-| `row-open-mid` | 2 | #19 Iowa State (7-1, Δ −3). vs #18 Iowa: gap −4.6 = how they look −2.9 + Heat −1.7. vs #20 Minnesota: +7.3 = +21.0 − 13.7 | Heading "Why Iowa State is #19", captions, sum row, context (Resume #11, schedule strength #45 of 136, quality of wins #12 of 136, "Last 3 games: 2-1."), game chips with tag and venue text |
+| `board-closed` | 2 | Top 25 under the 2-part order | Resume column: cell "#{resume_rank}", tooltip/accessible name "Resume: #… of 136. Who they beat, ranked."; order set by the ordering TR+; toggles closed |
+| `row-open-mid` | 2 | #19 Iowa State (7-1, Δ −3). vs #18 Iowa: gap −4.6 = how they look −2.9 + Heat −1.7. vs #20 Minnesota: +7.3 = +21.0 − 13.7 | Heading "Why Iowa State is #19", captions, sum row, context (Resume #11 of 136 (1 = best), schedule strength #45 of 136, quality of wins #12 of 136, "Last 3 games: 2-1."), game chips with tag and venue text |
 | `row-open-mid-1part` | 1 | #19 Iowa State under Elo alone. vs #18 Iowa −3.2; vs #20 LSU +13.7 | Same panel without Heat and without the recent-games line; neighbours change with the order |
 | `negative-part` | 2 | Iowa State panel alone | Both parts negative against #18; Heat −13.7 working against a +7.3 lead |
 | `negative-part-1part` | 1 | Iowa State panel alone, Elo order | Single red bar (−3.2 vs #18) |
@@ -138,7 +138,7 @@ Game lists come from ESPN's public schedule API (`data/games-2024-espn.json`) fo
 
 ## Assets
 
-- **Fonts:** Oswald and Source Sans 3 (OFL) in `assets/fonts/`.
+- **Fonts:** Oswald and Source Sans 3 in `assets/fonts/`, with upstream SIL OFL 1.1 licenses `OFL-Oswald.txt` (google/fonts `ofl/oswald/OFL.txt`) and `OFL-SourceSans3.txt` (adobe-fonts/source-sans `LICENSE.md`), copied verbatim.
 - **Team mark:** a team-colour disc, exempt from the token check via `[data-team-color]`.
 - **Glyphs:** 16 inline SVGs (`currentColor`); new this revision: `heat` and `resume`.
 - **Share background:** field-haze gradient.
@@ -164,6 +164,9 @@ Locked and existing slots render verbatim, with `{fields}` filled from data only
 | `board.col.delta` | existing | "Δ" | board header |
 | `board.col.resume` | locked | "Resume" | board header; resume_rank column (context only, does not set the order) |
 | `board.col.resume.description` | locked | "Who they beat, ranked." | Resume header tooltip (title) and accessible description (aria-description); also the Resume context item in the panel |
+| `board.resume.cell` | locked | "#{resume_rank}" | Resume cell value on every board row (390 and 1440) |
+| `board.resume.cell.accessible` | locked | "Resume: #{resume_rank} of {N}. Who they beat, ranked." | Resume cell tooltip (title) and accessible name (aria-label); N = board size |
+| `stat.resume.value` | locked | "#{n} of {N} (1 = best)" | panel Resume stat value (context beside the bar); n = resume_rank, N = board size |
 | `part.name.strength` | locked | "how they look" | bar label (engine sends parts[].name; must equal this text) |
 | `part.name.heat` | locked | "Heat" | bar label, 2-part order only |
 | `why.toggle.accessible_name` | locked | "Show why {Team} is #{rank}" | row toggle aria-label |
@@ -195,15 +198,15 @@ Locked and existing slots render verbatim, with `{fields}` filled from data only
 | `share.button.label` | locked | "Share" | panel share button |
 | `share.card.headline` | locked | "{Team} is #{rank} on TR+." | share card |
 | `share.card.alt_text` | locked | "{Team} is #{rank} on True Rankings, with a TR+ of {tr_plus} and a {record} record." | share image alt / og:image:alt |
-| `share.post_text` | locked | "{Team} is #{rank} on TR+. Here's why. {url}" | X intent text |
+| `share.post_text` | locked | "{Team} is #{rank} on TR+. Here's why. {url}" | UNRENDERED: owner decision 2026-10-18, sharing ships image-only (no URL, no post text) until Michael picks the domain |
 | `sheet.close.label` | locked | "Close" | 390 sheet close button |
-| `share.card.url` | unlocked | — (omitted) | share card footer; OMITTED from comps |
+| `share.card.url` | unlocked | — (omitted) | share card footer; OMITTED (image-only sharing until Michael picks the domain) |
 | `data.team_name` | data | field `team.team_name` | everywhere |
 | `data.rank` | data | field `team.rank` | disc, header |
 | `data.tr_plus` | data | field `team.final_ranking_score (1 dp)` | header, share card |
 | `data.record` | data | field `team.record` | header, rows |
 | `data.delta` | data | field `team.prev_rank - team.rank (#105)` | header, board Δ |
-| `data.resume_rank` | data | field `team.resume_rank (rank by record_score; #105)` | Resume column, panel context |
+| `data.resume_rank` | data | field `team.resume_rank (rank by record_score; #105)` | board.resume.cell, board.resume.cell.accessible, stat.resume.value |
 | `data.part.weight` | data | field `parts[].weight as %` | bar row |
 | `data.part.contribution` | data | field `weight × (value_self − value_other), 1 dp signed` | bar row |
 | `data.gap` | data | field `team ordering TR+ − neighbour ordering TR+, 1 dp signed` | comparison header |
@@ -215,13 +218,13 @@ Locked and existing slots render verbatim, with `{fields}` filled from data only
 | `data.recent` | data | field `team.recent {k,wins,losses} over the Heat window` | stat.heat.recent_form_line |
 | `data.board_size` | data | field `board_size = {N}` | stat.sos.value, stat.sov.value |
 
-`share.post_text` is locked but not rendered in any comp, because it ends in `{url}` and the URL is still unlocked (question 1).
+`share.post_text` is locked but **unrendered** (`"rendered": false` in `copy-slots.json`). Owner decision (2026-10-18): **sharing ships image-only** — the 1200×675 card only, with no URL and no post text — until Michael picks the domain. `share.card.url` stays unlocked and omitted.
 
 ## Open questions
 
-1. **Share URL.** `share.post_text` is locked as "{Team} is #{rank} on TR+. Here's why. {url}", but the URL and domain are unlocked (owner note). Should the post go out without a URL until Michael confirms the domain, or should sharing wait?
+1. **Share URL — decided.** Sharing ships image-only (no URL, no post text) until Michael picks the domain. The previously assumed domain belongs to someone else, so every URL in fixtures and planted files is the literal token `{SITE_URL}`; nothing renders it.
 2. **Heat weight and definition.** These wait on ADR 0002 and the #96 gate. When they land, update `data/order-config.json` and rebuild. The renderer doesn't change.
-3. **Resume "#x" value.** Phil locked the header and description, but no value format such as "#11 of 136". The comps show "#11" as data.
+3. **Resume value — locked** (Phil, #98 2026-10-19T03:42:10Z). Board cell `board.resume.cell` "#{resume_rank}"; its tooltip and accessible name `board.resume.cell.accessible` "Resume: #{resume_rank} of {N}. Who they beat, ranked." (N = board size, like sos/sov); panel stat `stat.resume.value` "#{n} of {N} (1 = best)". Comps put the accessible name in `title` + `aria-label` on the cell; some screen readers ignore `aria-label` on a plain `td`/`span`, so the app may prefer visually hidden text with the same string.
 4. **Fonts in stills.** #95 strips Google Fonts, so built stills fall back unless the frontend self-hosts these faces.
 5. **Few-games threshold.** The comps use fewer than 4 games. This needs an engine owner.
 6. **Data oddities.**

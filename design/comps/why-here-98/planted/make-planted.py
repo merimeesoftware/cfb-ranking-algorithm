@@ -35,13 +35,13 @@ files = {
     'tap-44.html': page(f'<button class="icon-btn" style="min-width:30px;width:30px;height:30px;padding:0">{CHEV}</button>'),
     'focus-visible.html': page(extra_head='<style>.row-toggle:focus-visible{outline:none}</style>'),
     'no-gambling.html': page('<p class="muted">Best bet</p>'),
-    'copy-slots-unlocked.html': page('<span class="muted" data-slot="share.card.url">truerankings.com/teams/iowa-state</span>'),
+    'copy-slots-unlocked.html': page('<span class="muted" data-slot="share.card.url">{SITE_URL}/teams/iowa-state</span>'),
     'copy-slots-template.html': page('<h2 class="p-team" data-slot="why.heading" data-vars=\'{"Team":"Iowa State","rank":19}\'>Why Iowa State is #1</h2>'),
     'copy-slots-placeholder.html': page('<p class="muted">Lorem ipsum</p>'),
     'tokens.html': page('<div style="height:8px;background:#3b82f6"></div>'),
     'structure.html': page(comp='row-open-first', parts=[]),
     'share-card-wrong-size.html': SC.format(style=' style="height:630px"', extra=''),
-    'share-card-unlocked-text.html': SC.format(style='', extra='<span class="sc-brand">truerankings.com</span>'),
+    'share-card-unlocked-text.html': SC.format(style='', extra='<span class="sc-brand">{SITE_URL}</span>'),
 }
 for name, html in files.items():
     (HERE / name).write_text(html)

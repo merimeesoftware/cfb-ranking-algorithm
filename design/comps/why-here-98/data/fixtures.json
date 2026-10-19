@@ -4,6 +4,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 1,
@@ -288,6 +289,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -361,7 +363,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10",
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10",
     "heat": 1495.125773775799,
     "recent": {
      "k": 3,
@@ -516,6 +518,7 @@
   "week": 10,
   "variant": "elo_only",
   "parts_count": 1,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -589,7 +592,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10"
    },
    "parts": [
     {
@@ -715,6 +718,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -788,7 +792,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10",
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10",
     "heat": 1495.125773775799,
     "recent": {
      "k": 3,
@@ -944,6 +948,7 @@
   "week": 10,
   "variant": "elo_only",
   "parts_count": 1,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -1017,7 +1022,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10"
    },
    "parts": [
     {
@@ -1144,6 +1149,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 8,
@@ -1217,7 +1223,7 @@
     "sov_rank_all_divisions": 5,
     "board_size": 136,
     "color": "#cfb87c",
-    "url": "https://truerankings.com/teams/colorado?year=2024&week=10",
+    "url": "{SITE_URL}/teams/colorado?year=2024&week=10",
     "heat": 1669.0898705429433,
     "recent": {
      "k": 3,
@@ -1373,6 +1379,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 1,
@@ -1424,7 +1431,7 @@
     "sov_rank_all_divisions": 4,
     "board_size": 136,
     "color": "#007030",
-    "url": "https://truerankings.com/teams/oregon?year=2024&week=10",
+    "url": "{SITE_URL}/teams/oregon?year=2024&week=10",
     "heat": 1561.4212393931955,
     "recent": {
      "k": 3,
@@ -1559,6 +1566,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 134,
@@ -1610,7 +1618,7 @@
     "sov_rank_all_divisions": 215,
     "board_size": 136,
     "color": "#ffc72c",
-    "url": "https://truerankings.com/teams/southern-miss?year=2024&week=10",
+    "url": "{SITE_URL}/teams/southern-miss?year=2024&week=10",
     "heat": 1499.9016779577946,
     "recent": {
      "k": 3,
@@ -1737,6 +1745,7 @@
   "week": 1,
   "variant": "elo_only",
   "parts_count": 1,
+  "board_size": 135,
   "board": [
    {
     "rank": 36,
@@ -1810,7 +1819,7 @@
     "sov_rank_all_divisions": 66,
     "board_size": 135,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=1"
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=1"
    },
    "parts": [
     {
@@ -1880,6 +1889,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -1953,7 +1963,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10",
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10",
     "heat": 1495.125773775799,
     "recent": {
      "k": 3,
@@ -1969,6 +1979,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -2042,7 +2053,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10",
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10",
     "heat": 1495.125773775799,
     "recent": {
      "k": 3,
@@ -2065,6 +2076,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -2138,7 +2150,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10",
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10",
     "heat": 1495.125773775799,
     "recent": {
      "k": 3,
@@ -2294,6 +2306,7 @@
   "week": 10,
   "variant": "elo_heat",
   "parts_count": 2,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -2367,7 +2380,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10",
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10",
     "heat": 1495.125773775799,
     "recent": {
      "k": 3,
@@ -2522,6 +2535,7 @@
   "week": 10,
   "variant": "elo_only",
   "parts_count": 1,
+  "board_size": 136,
   "board": [
    {
     "rank": 17,
@@ -2595,7 +2609,7 @@
     "sov_rank_all_divisions": 12,
     "board_size": 136,
     "color": "#c8102e",
-    "url": "https://truerankings.com/teams/iowa-state?year=2024&week=10"
+    "url": "{SITE_URL}/teams/iowa-state?year=2024&week=10"
    },
    "parts": [
     {

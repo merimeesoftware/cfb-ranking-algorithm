@@ -16,8 +16,10 @@ const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 
 const browser = await chromium.launch({ executablePath: CHROME });
 mkdirSync(path.join(HERE, 'renders'), { recursive: true });
-for (const f of readdirSync(path.join(HERE, 'renders'))) if (f.endsWith('.png')) rmSync(path.join(HERE, 'renders', f));
-const files = readdirSync(path.join(HERE, 'states')).filter((f) => f.endsWith('.html')).sort();
+// Optional args: state file names to re-render (e.g. board-closed-1440.html); default = all, after clearing renders/.
+const only = process.argv.slice(2);
+if (!only.length) for (const f of readdirSync(path.join(HERE, 'renders'))) if (f.endsWith('.png')) rmSync(path.join(HERE, 'renders', f));
+const files = only.length ? only : readdirSync(path.join(HERE, 'states')).filter((f) => f.endsWith('.html')).sort();
 for (const f of files) {
   const name = f.replace(/\.html$/, '');
   const share = name.startsWith('share-card');

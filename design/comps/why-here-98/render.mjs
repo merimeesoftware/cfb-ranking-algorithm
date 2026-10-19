@@ -89,6 +89,8 @@ function teamMark(t, size = 24) {
 }
 
 const RESUME_HEAD = [['title', 'board.col.resume.description'], ['aria-description', 'board.col.resume.description']];
+const resumeCell = (r, cls = '') => slotEl('span', 'board.resume.cell', cls, { resume_rank: r.resume_rank });
+const resumeCellName = (r, state) => slotAttrs([['title', 'board.resume.cell.accessible'], ['aria-label', 'board.resume.cell.accessible']], { resume_rank: r.resume_rank, N: state.board_size });
 const toggleName = (r) => slotAttrs([['aria-label', 'why.toggle.accessible_name']], { Team: r.team_name, rank: r.rank });
 
 /* ---------- board: existing columns + Resume (context; the order is the ordering TR+) ---------- */
@@ -109,7 +111,7 @@ function boardDesktop(state, openName) {
       <td><div class="team-cell">${teamMark(r)}<a class="team-link" id="${id}" href="#">${esc(r.team_name)}</a></div></td>
       <td><span class="badge ${confClass(r.conference_type)}">${esc(r.conference)}</span></td>
       <td class="c ink-700">${esc(r.record)}</td>
-      <td class="c ink-700" data-check="resume-cell"><span data-field="resume_rank">#${r.resume_rank}</span></td>
+      <td class="c ink-700" data-check="resume-cell"${resumeCellName(r, state)}>${resumeCell(r)}</td>
       <td class="c small">${delta(r)}</td>
       <td class="r"><span class="score" data-field="tr_plus">${fmt1(r.final_ranking_score)}</span></td>
       <td class="toggle-cell"><button class="row-toggle" data-check="row-toggle" aria-expanded="${open}" aria-controls="why-${slug(r.team_name)}"${toggleName(r)}>${ICON.chevron}</button></td>
@@ -127,7 +129,7 @@ function boardMobile(state, openName, sheet) {
       ${disc(r.rank)}${teamMark(r, 32)}
       <div class="m-info"><a class="team-link" id="${id}" href="#">${esc(r.team_name)}</a>
         <div class="m-meta"><span class="badge ${confClass(r.conference_type)}">${esc(r.conference)}</span><span class="ink-500 small">${esc(r.record)}</span>
-        <span class="m-resume small" data-check="resume-cell"${slotAttrs(RESUME_HEAD)}>${slotEl('span', 'board.col.resume', 'ink-500')} <span class="ink-700" data-field="resume_rank">#${r.resume_rank}</span></span></div></div>
+        <span class="m-resume small" data-check="resume-cell"${resumeCellName(r, state)}>${slotEl('span', 'board.col.resume', 'ink-500')} ${resumeCell(r, 'ink-700')}</span></div></div>
       <div class="m-score"><div class="score lg" data-field="tr_plus">${fmt1(r.final_ranking_score)}</div><div class="ink-500 xs">${slotEl('span', 'brand.rating')}</div></div>
       <button class="row-toggle" data-check="row-toggle" aria-expanded="${r.team_name === openName}" aria-controls="why-${slug(r.team_name)}"${toggleName(r)}>${ICON.chevron}</button>
     </div>`;
@@ -189,7 +191,7 @@ function context(t) {
     ? `<div class="ctx" data-check="recent">${ICON.heat}${slotEl('span', 'stat.heat.recent_form_line', 'ctx-line', t.recent)}</div>`
     : '';
   return `<aside class="context" data-check="context">
-    <div class="ctx" data-check="ctx-resume"${slotAttrs([['title', 'board.col.resume.description']])}>${ICON.resume}${slotEl('span', 'board.col.resume', 'ctx-lab')}<span class="ctx-val" data-field="resume_rank">#${t.resume_rank}</span>${slotEl('span', 'board.col.resume.description', 'ctx-note')}</div>
+    <div class="ctx" data-check="ctx-resume"${slotAttrs([['title', 'board.col.resume.description']])}>${ICON.resume}${slotEl('span', 'board.col.resume', 'ctx-lab')}${slotEl('span', 'stat.resume.value', 'ctx-val', { n: t.resume_rank, N })}${slotEl('span', 'board.col.resume.description', 'ctx-note')}</div>
     <div class="ctx" data-check="stat-sos">${ICON.schedule}${slotEl('span', 'stat.sos.label', 'ctx-lab')}${slotEl('span', 'stat.sos.value', 'ctx-val', { sos_rank: t.sos_rank, N })}</div>
     <div class="ctx" data-check="stat-sov">${ICON.wins}${slotEl('span', 'stat.sov.label', 'ctx-lab')}${slotEl('span', 'stat.sov.value', 'ctx-val', { sov_rank: t.sov_rank, N })}</div>
     ${recent}
@@ -266,7 +268,7 @@ function shareCard(name, state) {
   const all = [...(o.above?.parts || []), ...(o.below?.parts || [])].map((p) => Math.abs(p.contribution));
   const scale = Math.max(...all, 1);
   const alt = { Team: t.team_name, rank: t.rank, tr_plus: fmt1(t.final_ranking_score), record: t.record };
-  // Footer URL is unlocked (owner note on #98) → omitted. Tagline is locked and stays.
+  // Sharing ships image-only (owner, 2026-10-18): no URL, no post text until Michael picks the domain. Tagline is locked and stays.
   const body = `<div class="share" data-check="share-card" role="img"${slotAttrs([['aria-label', 'share.card.alt_text']], alt)} data-parts="${o.parts.length}">
     <div class="sc-left">
       <div class="sc-rankline">${disc(t.rank)}${delta(t)}</div>

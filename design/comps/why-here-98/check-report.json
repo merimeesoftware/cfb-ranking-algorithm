@@ -88,7 +88,7 @@
    "file": "states/board-closed-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "37 slot elements ok",
+   "detail": "112 slot elements ok",
    "width": 1440
   },
   {
@@ -137,7 +137,7 @@
    "file": "states/board-closed-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "128 slot elements ok",
+   "detail": "153 slot elements ok",
    "width": 390
   },
   {
@@ -207,7 +207,7 @@
    "file": "states/early-week-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "39 slot elements ok",
+   "detail": "55 slot elements ok",
    "width": 1440
   },
   {
@@ -291,7 +291,7 @@
    "file": "states/early-week-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "50 slot elements ok",
+   "detail": "56 slot elements ok",
    "width": 390
   },
   {
@@ -340,7 +340,7 @@
    "file": "states/error-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "23 slot elements ok",
+   "detail": "38 slot elements ok",
    "width": 1440
   },
   {
@@ -389,7 +389,7 @@
    "file": "states/error-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "34 slot elements ok",
+   "detail": "39 slot elements ok",
    "width": 390
   },
   {
@@ -473,7 +473,7 @@
    "file": "states/heat-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "51 slot elements ok",
+   "detail": "67 slot elements ok",
    "width": 1440
   },
   {
@@ -571,7 +571,7 @@
    "file": "states/heat-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "62 slot elements ok",
+   "detail": "68 slot elements ok",
    "width": 390
   },
   {
@@ -620,7 +620,7 @@
    "file": "states/loading-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "22 slot elements ok",
+   "detail": "37 slot elements ok",
    "width": 1440
   },
   {
@@ -669,7 +669,7 @@
    "file": "states/loading-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "33 slot elements ok",
+   "detail": "38 slot elements ok",
    "width": 390
   },
   {
@@ -746,7 +746,7 @@
    "file": "states/negative-part-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "34 slot elements ok",
+   "detail": "35 slot elements ok",
    "width": 1440
   },
   {
@@ -816,7 +816,7 @@
    "file": "states/negative-part-1part-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "31 slot elements ok",
+   "detail": "32 slot elements ok",
    "width": 1440
   },
   {
@@ -893,7 +893,7 @@
    "file": "states/negative-part-1part-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "31 slot elements ok",
+   "detail": "32 slot elements ok",
    "width": 390
   },
   {
@@ -984,7 +984,7 @@
    "file": "states/negative-part-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "34 slot elements ok",
+   "detail": "35 slot elements ok",
    "width": 390
   },
   {
@@ -1054,7 +1054,7 @@
    "file": "states/row-open-first-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "48 slot elements ok",
+   "detail": "58 slot elements ok",
    "width": 1440
   },
   {
@@ -1131,7 +1131,7 @@
    "file": "states/row-open-first-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "51 slot elements ok",
+   "detail": "55 slot elements ok",
    "width": 390
   },
   {
@@ -1201,7 +1201,7 @@
    "file": "states/row-open-last-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "44 slot elements ok",
+   "detail": "54 slot elements ok",
    "width": 1440
   },
   {
@@ -1278,7 +1278,7 @@
    "file": "states/row-open-last-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "47 slot elements ok",
+   "detail": "51 slot elements ok",
    "width": 390
   },
   {
@@ -1369,7 +1369,7 @@
    "file": "states/row-open-mid-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "51 slot elements ok",
+   "detail": "67 slot elements ok",
    "width": 1440
   },
   {
@@ -1446,7 +1446,7 @@
    "file": "states/row-open-mid-1part-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "48 slot elements ok",
+   "detail": "64 slot elements ok",
    "width": 1440
   },
   {
@@ -1530,7 +1530,7 @@
    "file": "states/row-open-mid-1part-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "59 slot elements ok",
+   "detail": "65 slot elements ok",
    "width": 390
   },
   {
@@ -1628,7 +1628,7 @@
    "file": "states/row-open-mid-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "62 slot elements ok",
+   "detail": "68 slot elements ok",
    "width": 390
   },
   {
@@ -1943,7 +1943,7 @@
    "file": "states/sheet-390-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "63 slot elements ok",
+   "detail": "69 slot elements ok",
    "width": 390
   },
   {

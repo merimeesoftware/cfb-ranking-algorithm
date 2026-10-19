@@ -96,12 +96,12 @@
   {
    "name": "share-btn",
    "selector": "[data-check=share-btn]",
-   "assert": "≥44×44; produces the 1200×675 card for the same team+week URL"
+   "assert": "≥44×44; label 'Share'; shares the 1200×675 image only (no URL, no post text) until the domain is picked"
   },
   {
    "name": "share-card",
    "selector": "[data-check=share-card]",
-   "assert": "exactly 1200×675; every visible string is locked copy or data (headline '{Team} is #{rank} on TR+.', brand name, tagline); no URL until the domain slot is locked; role=img with aria-label == share.card.alt_text"
+   "assert": "exactly 1200×675; every visible string is locked copy or data (headline '{Team} is #{rank} on TR+.', brand name, tagline); image-only: no URL and no post text until Michael picks the domain; role=img with aria-label == share.card.alt_text"
   },
   {
    "name": "sheet",
@@ -111,12 +111,12 @@
   {
    "name": "resume-cell",
    "selector": "[data-check=resume-cell] [data-field=resume_rank]",
-   "assert": "== team.resume_rank (#105; rank by record_score); context only"
+   "assert": "text == '#{resume_rank}'; title and aria-label == 'Resume: #{resume_rank} of {N}. Who they beat, ranked.' (N = board size); resume_rank from #105 (rank by record_score); context only"
   },
   {
    "name": "context",
    "selector": "[data-check=context]",
-   "assert": "beside the comparisons, not inside a [data-gap]; holds ctx-resume, stat-sos, stat-sov and (2-part only) recent"
+   "assert": "beside the comparisons, not inside a [data-gap]; holds ctx-resume ('#{n} of {N} (1 = best)'), stat-sos, stat-sov and (2-part only) recent"
   },
   {
    "name": "recent",

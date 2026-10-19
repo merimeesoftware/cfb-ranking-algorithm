@@ -1,5 +1,5 @@
 {
- "note": "Copy slots for #98, after Phil's lock (#98 comment 2026-10-19T03:30:06Z) and D-20261018-198. locked/existing render verbatim (templates fill {fields} from data, nothing else changes); unlocked slots are omitted from every comp; data slots render data. Dropped: part.name.resume (no longer a bar label; Resume is a column) and part.name.league (league strength left the order).",
+ "note": "Copy slots for #98, after Phil's lock (#98 comment 2026-10-19T03:30:06Z) and D-20261018-198. locked/existing render verbatim (templates fill {fields} from data, nothing else changes); unlocked slots are omitted from every comp; data slots render data. Dropped: part.name.resume (no longer a bar label; Resume is a column) and part.name.league (league strength left the order). Phil's manual forward-looking read ('will' etc.) is CONFIRMED clean for every locked string (#98, 2026-10-19T03:42:10Z); every new slot needs that read before it ships.",
  "slots": [
   {
    "id": "brand.name",
@@ -103,6 +103,30 @@
    "text": "Who they beat, ranked.",
    "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
    "where": "Resume header tooltip (title) and accessible description (aria-description); also the Resume context item in the panel",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "board.resume.cell",
+   "status": "locked",
+   "text": "#{resume_rank}",
+   "source": "Phil copy lock follow-up for #108, #98 comment 2026-10-19T03:42:10Z",
+   "where": "Resume cell value on every board row (390 and 1440)",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "board.resume.cell.accessible",
+   "status": "locked",
+   "text": "Resume: #{resume_rank} of {N}. Who they beat, ranked.",
+   "source": "Phil copy lock follow-up for #108, #98 comment 2026-10-19T03:42:10Z",
+   "where": "Resume cell tooltip (title) and accessible name (aria-label); N = board size",
+   "needs_phil_lock": "no"
+  },
+  {
+   "id": "stat.resume.value",
+   "status": "locked",
+   "text": "#{n} of {N} (1 = best)",
+   "source": "Phil copy lock follow-up for #108, #98 comment 2026-10-19T03:42:10Z",
+   "where": "panel Resume stat value (context beside the bar); n = resume_rank, N = board size",
    "needs_phil_lock": "no"
   },
   {
@@ -360,8 +384,9 @@
    "status": "locked",
    "text": "{Team} is #{rank} on TR+. Here's why. {url}",
    "source": "Phil copy lock, #98 comment 2026-10-19T03:30:06Z (read at 16d7e8b)",
-   "where": "X intent text",
-   "needs_phil_lock": "no"
+   "where": "UNRENDERED: owner decision 2026-10-18, sharing ships image-only (no URL, no post text) until Michael picks the domain",
+   "needs_phil_lock": "no",
+   "rendered": false
   },
   {
    "id": "sheet.close.label",
@@ -375,7 +400,7 @@
    "id": "share.card.url",
    "status": "unlocked",
    "source": "owner note on #98: unlocked until Michael confirms the domain",
-   "where": "share card footer; OMITTED from comps",
+   "where": "share card footer; OMITTED (image-only sharing until Michael picks the domain)",
    "needs_phil_lock": "yes (domain)"
   },
   {
@@ -412,7 +437,7 @@
    "id": "data.resume_rank",
    "status": "data",
    "field": "team.resume_rank (rank by record_score; #105)",
-   "where": "Resume column, panel context"
+   "where": "board.resume.cell, board.resume.cell.accessible, stat.resume.value"
   },
   {
    "id": "data.part.weight",
