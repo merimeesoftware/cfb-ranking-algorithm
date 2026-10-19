@@ -21,8 +21,6 @@ DEFAULT_CONFIG = {
     'conference_weight': 0.05,
     'record_weight': 0.15,
     'prior_strength': 0.15,
-    'use_ats': False,
-    'ats_bonus': 10.0,
     # A/B on 2019–2024: reference ranks hurt pooled Brier; keep off by default.
     'use_reference_ranks': False,
 }
@@ -45,8 +43,6 @@ _PRIORS_CONFIG_KEYS = (
     'team_quality_weight',
     'conference_weight',
     'record_weight',
-    'use_ats',
-    'ats_bonus',
     'use_reference_ranks',
 )
 

@@ -698,7 +698,7 @@
 					<h4 class="font-medium text-gray-900 dark:text-white">Balance Power & Resume</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
 						How they look (65%) answers "How good are you?" while who they beat (27%) answers "What have you actually done?"
-						Neither pure predictive nor pure résumé — a hybrid that rewards both.
+						Neither strength alone nor résumé alone — a hybrid that uses both.
 					</p>
 				</div>
 			</div>

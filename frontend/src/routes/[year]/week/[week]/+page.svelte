@@ -2,7 +2,6 @@
 	import RankingsTable from '$lib/components/RankingsTable.svelte';
 	import ConferenceTable from '$lib/components/ConferenceTable.svelte';
 	import BoardActions from '$lib/components/BoardActions.svelte';
-	import DropSignup from '$lib/components/DropSignup.svelte';
 	import SeoHead from '$lib/components/SeoHead.svelte';
 	import {
 		BRAND_NAME,
@@ -108,10 +107,6 @@
 	{:else}
 		<ConferenceTable conferences={data.conferences} />
 	{/if}
-
-	<div class="mt-8">
-		<DropSignup />
-	</div>
 
 	<p class="mt-6 text-sm">
 		<a href="/" class="text-primary-700 dark:text-cfb-gold-bright hover:underline">← Live board</a>

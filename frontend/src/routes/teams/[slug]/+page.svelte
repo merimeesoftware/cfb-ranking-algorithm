@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import SeoHead from '$lib/components/SeoHead.svelte';
-	import DropSignup from '$lib/components/DropSignup.svelte';
 	import AgentChatPanel from '$lib/components/AgentChatPanel.svelte';
 	import {
 		BRAND_NAME,
@@ -148,10 +147,6 @@
 	<p class="mt-6 text-xs text-primary-600 dark:text-primary-400">
 		{citationText(year, week)}
 	</p>
-
-	<div class="mt-8">
-		<DropSignup compact />
-	</div>
 </div>
 
 <AgentChatPanel teamName={t.team_name} open={askOpen} on:close={() => (askOpen = false)} />

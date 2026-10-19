@@ -2,8 +2,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import SeoHead from '$lib/components/SeoHead.svelte';
-	import MatchupLines from '$lib/components/MatchupLines.svelte';
-	import DropSignup from '$lib/components/DropSignup.svelte';
 	import {
 		BRAND_NAME,
 		RATING_NAME,
@@ -12,9 +10,7 @@
 		teamPath,
 		weekPath,
 		SITE_ORIGIN,
-		formatSpread,
 		findTeamBySlug,
-		impliedSpread,
 		teamSlug,
 		matchupSlug,
 	} from '$lib/brand';
@@ -26,10 +22,6 @@
 		week: number;
 		teamA: Team & { rank: number };
 		teamB: Team & { rank: number };
-		favoriteName: string;
-		impliedSpread: number;
-		marketSpread: number | null;
-		delta: number | null;
 		canonicalSlug: string;
 	};
 
@@ -37,10 +29,6 @@
 	let week = data.week;
 	let teamA = data.teamA;
 	let teamB = data.teamB;
-	let favoriteName = data.favoriteName;
-	let spread = data.impliedSpread;
-	let marketSpread = data.marketSpread;
-	let delta = data.delta;
 	let canonicalSlug = data.canonicalSlug;
 
 	onMount(async () => {
@@ -54,24 +42,18 @@
 			if (!a || !b) return;
 			const rankA = rankings.teams.findIndex((t) => t.team_name === a.team_name) + 1;
 			const rankB = rankings.teams.findIndex((t) => t.team_name === b.team_name) + 1;
-			const aFav = a.final_ranking_score >= b.final_ranking_score;
-			const favorite = aFav ? a : b;
-			const underdog = aFav ? b : a;
 			year = y;
 			week = w;
 			teamA = { ...a, rank: rankA };
 			teamB = { ...b, rank: rankB };
-			favoriteName = favorite.team_name;
-			spread = impliedSpread(favorite.final_ranking_score, underdog.final_ranking_score);
-			delta = marketSpread == null ? null : spread - Math.abs(marketSpread);
 			canonicalSlug = matchupSlug(a.team_name, b.team_name);
 		} catch {
 			/* keep SSR seed */
 		}
 	});
 
-	$: title = pageTitle([`${teamA.team_name} vs ${teamB.team_name}`, `${RATING_NAME} line`]);
-	$: description = `${teamA.team_name} (#${teamA.rank}) vs ${teamB.team_name} (#${teamB.rank}) — TR+ implies ${formatSpread(spread, favoriteName)}. ${TAGLINE}`;
+	$: title = pageTitle([`${teamA.team_name} vs ${teamB.team_name}`, RATING_NAME]);
+	$: description = `${teamA.team_name} (#${teamA.rank}, ${RATING_NAME} ${teamA.final_ranking_score.toFixed(1)}) and ${teamB.team_name} (#${teamB.rank}, ${RATING_NAME} ${teamB.final_ranking_score.toFixed(1)}). ${TAGLINE}`;
 	$: path = `/games/${canonicalSlug}`;
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -88,7 +70,7 @@
 
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
 	<p class="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-cfb-gold-bright">
-		{BRAND_NAME} matchup · {year} Week {week}
+		{BRAND_NAME} comparison · {year} Week {week}
 	</p>
 	<h1 class="mt-2 font-display text-3xl sm:text-4xl text-primary-900 dark:text-white">
 		{teamA.team_name}
@@ -96,8 +78,7 @@
 		{teamB.team_name}
 	</h1>
 	<p class="mt-2 text-primary-700 dark:text-primary-300">
-		TR+ favorite: <strong>{favoriteName}</strong>
-		({formatSpread(spread, favoriteName)})
+		Side by side on the published {RATING_NAME} board.
 	</p>
 
 	<div class="mt-6 grid sm:grid-cols-2 gap-4">
@@ -114,22 +95,6 @@
 				</p>
 			</a>
 		{/each}
-	</div>
-
-	<MatchupLines
-		{favoriteName}
-		impliedSpread={spread}
-		{marketSpread}
-		{delta}
-	/>
-
-	<p class="mt-6 text-sm text-primary-700 dark:text-primary-300">
-		Rankings stay free. This page exists so you can see where {RATING_NAME} disagrees with the market
-		before you risk a dollar.
-	</p>
-
-	<div class="mt-8">
-		<DropSignup compact />
 	</div>
 
 	<p class="mt-6 text-sm">

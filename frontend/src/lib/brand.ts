@@ -5,7 +5,6 @@ export const BRAND_SHORT = 'TR';
 export const RATING_NAME = 'TR+';
 export const TAGLINE = 'How good they actually are.';
 export const HANDLE = '@TrueCFB';
-export const DROP_NAME = 'The Drop';
 
 /** Canonical public origin. Override via PUBLIC_SITE_URL at build time when custom domain is live. */
 export const SITE_ORIGIN =
@@ -72,20 +71,4 @@ export function citationText(year: number, week: number, url?: string): string {
 
 export function pageTitle(parts: string[]): string {
 	return [...parts, BRAND_NAME].join(' | ');
-}
-
-/**
- * Convert TR+ (FRS) differential into an implied point spread.
- * ~25 TR+ points ≈ 1 spread point (Elo-scale scores ~900–1900).
- */
-export const TR_PLUS_PER_POINT = 25;
-
-export function impliedSpread(favoriteTrPlus: number, underdogTrPlus: number): number {
-	const raw = (favoriteTrPlus - underdogTrPlus) / TR_PLUS_PER_POINT;
-	return Math.round(raw * 2) / 2; // nearest half-point
-}
-
-export function formatSpread(points: number, favoriteName: string): string {
-	if (points === 0) return 'Pick\'em';
-	return `${favoriteName} -${points.toFixed(1)}`;
 }

@@ -133,7 +133,6 @@ class CFBDataProcessor:
                 'away_conference': away_conf,
                 'home_conference_type': home_conf_type,
                 'away_conference_type': away_conf_type,
-                'spread_info': None 
             }
             processed_games.append(processed_game)
 
@@ -159,61 +158,6 @@ class CFBDataProcessor:
                 continue
             filtered.append(game)
         return filtered
-
-    def get_betting_lines(self, year: int, week: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Fetch betting lines from API."""
-        return self.api_client.get_betting_lines(year, week)
-
-    def enrich_games_with_betting_lines(self, games: List[Dict[str, Any]], betting_lines: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Match betting lines to games and add spread info.
-        """
-        # Create a lookup for betting lines to optimize
-        # Key: (home_team, away_team, week) -> line
-        lines_map = {}
-        for line in betting_lines:
-            # Ensure we have necessary attributes
-            if isinstance(line, dict):
-                 key = (line.get('home_team'), line.get('away_team'), line.get('week'))
-                 lines_map[key] = line
-            # Fallback for object-like access if needed (though type hint says Dict)
-            elif hasattr(line, 'home_team') and hasattr(line, 'away_team') and hasattr(line, 'week'):
-                 key = (line.home_team, line.away_team, line.week)
-                 lines_map[key] = line
-
-        for game in games:
-            key = (game['home_team_name'], game['away_team_name'], game['week'])
-            line = lines_map.get(key)
-            
-            if line:
-                # Extract spread
-                # Assuming line structure matches CFBD API response
-                lines_data = line.lines if hasattr(line, 'lines') else line.get('lines', [])
-                if lines_data and len(lines_data) > 0:
-                    # Get first provider's line
-                    game_line = lines_data[0]
-                    spread = game_line.spread if hasattr(game_line, 'spread') else game_line.get('spread')
-                    
-                    if spread is not None:
-                        # CFBD spread is usually negative for favorite?
-                        # Let's store it as: favorite team and absolute spread
-                        # If spread is -7 for Home, Home is favorite by 7.
-                        # If spread is 7 for Home, Away is favorite by 7.
-                        
-                        # Actually CFBD documentation says: "Spread for the home team"
-                        # -7 means Home is favored by 7.
-                        
-                        is_home_fav = spread < 0
-                        favorite = game['home_team_name'] if is_home_fav else game['away_team_name']
-                        abs_spread = abs(spread)
-                        
-                        game['spread_info'] = {
-                            'favorite': favorite,
-                            'spread': abs_spread,
-                            'raw_spread': spread
-                        }
-
-        return games
 
     def organize_games_by_week(self, games: List[Dict[str, Any]]) -> Dict[int, List[Dict[str, Any]]]:
         """Group games by week number."""

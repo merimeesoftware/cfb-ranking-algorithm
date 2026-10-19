@@ -7,8 +7,7 @@
 
 	const navItems = [
 		{ href: '/', label: 'The Board' },
-		{ href: '/methodology', label: 'How it works' },
-		{ href: '/#the-drop', label: 'The Drop' }
+		{ href: '/methodology', label: 'How it works' }
 	];
 
 	$: darkMode = isDarkMode($theme);

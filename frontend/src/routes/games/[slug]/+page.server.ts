@@ -1,13 +1,7 @@
 import type { EntryGenerator, PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { latestPublishedWeek, loadWeekRankings } from '$lib/staticRankings';
-import {
-	findTeamBySlug,
-	impliedSpread,
-	matchupSlug,
-	parseMatchupSlug,
-	teamSlug,
-} from '$lib/brand';
+import { findTeamBySlug, matchupSlug, parseMatchupSlug, teamSlug } from '$lib/brand';
 
 export const prerender = true;
 
@@ -44,23 +38,11 @@ export const load: PageServerLoad = async ({ params }) => {
 	const rankA = data.teams.findIndex((t) => t.team_name === teamA.team_name) + 1;
 	const rankB = data.teams.findIndex((t) => t.team_name === teamB.team_name) + 1;
 
-	const aFav = teamA.final_ranking_score >= teamB.final_ranking_score;
-	const favorite = aFav ? teamA : teamB;
-	const underdog = aFav ? teamB : teamA;
-	const spread = impliedSpread(favorite.final_ranking_score, underdog.final_ranking_score);
-
-	const marketSpread: number | null = null;
-	const delta = marketSpread == null ? null : spread - Math.abs(marketSpread);
-
 	return {
 		year: latest.year,
 		week: latest.week,
 		teamA: { ...teamA, rank: rankA },
 		teamB: { ...teamB, rank: rankB },
-		favoriteName: favorite.team_name,
-		impliedSpread: spread,
-		marketSpread,
-		delta,
 		canonicalSlug: matchupSlug(teamA.team_name, teamB.team_name),
 		altSlug: `${teamSlug(teamB.team_name)}-vs-${teamSlug(teamA.team_name)}`,
 	};

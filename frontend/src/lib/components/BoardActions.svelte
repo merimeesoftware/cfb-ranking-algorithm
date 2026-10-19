@@ -59,9 +59,6 @@
 	<button type="button" class="btn btn-secondary" on:click={copyCitation}>
 		Copy citation
 	</button>
-	<a href="#the-drop" class="btn btn-secondary">
-		Get The Drop
-	</a>
 	{#if copyStatus}
 		<span class="text-xs text-primary-600 dark:text-cfb-gold-bright" role="status">{copyStatus}</span>
 	{/if}

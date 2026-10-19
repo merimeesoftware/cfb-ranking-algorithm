@@ -43,7 +43,6 @@ class TeamStat(TypedDict):
     conf_wins: int
     conf_losses: int
     away_wins: int
-    ats_record: Record
     inter_conf_records: InterConfRecords
     wins_details: List[WinDetail]
     losses_details: List[LossDetail]
@@ -87,7 +86,6 @@ class TeamQualityRanker:
             'conf_wins': 0,
             'conf_losses': 0,
             'away_wins': 0,
-            'ats_record': {'wins': 0, 'losses': 0},
             'inter_conf_records': {'p4': {'w': 0, 'l': 0}, 'g5': {'w': 0, 'l': 0}, 'fcs': {'w': 0, 'l': 0}},
             'wins_details': [],
             'losses_details': [],
@@ -996,15 +994,13 @@ class TeamQualityRanker:
         return dict(priors)
 
 # Legacy wrapper for backward compatibility
-def calculate_rankings(processed_games, initial_scores, alpha, alpha_away_win_home_loss, k_conf_weight, use_ats_bonus, ats_bonus):
+def calculate_rankings(processed_games, initial_scores, alpha, alpha_away_win_home_loss, k_conf_weight):
     config = {
         'power_conf_initial': initial_scores.get('Power 4', 100),
         'group5_initial': initial_scores.get('Group of 5', 80),
         'fcs_initial': initial_scores.get('FCS', 60),
         'base_factor': 20.0,
         'conference_weight': k_conf_weight,
-        'use_ats': use_ats_bonus,
-        'ats_bonus': ats_bonus
     }
     ranker = TeamQualityRanker(config)
     for game in processed_games:
