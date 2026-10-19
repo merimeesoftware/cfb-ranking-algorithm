@@ -47,7 +47,7 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 | `CACHE_CLEAR_SECRET` | Optional | Enable admin `POST /cache/clear` |
 | `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
 | `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
-| `PUBLIC_SITE_URL` | Optional (build) | Public origin, written `{SITE_URL}`. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. |
+| `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. No `PUBLIC_*` name may hold a key, token, or password. |
 
 Or via CLI (after `wrangler login` once on your machine):
 

@@ -54,7 +54,7 @@ When a domain is chosen:
 1. Attach it to Worker `true-rankings-cfb` in Cloudflare → **Domains & Routes**.
 2. Set the frontend build variable `PUBLIC_SITE_URL={SITE_URL}` (absolute `http(s)` origin, no trailing slash).
 
-Until `PUBLIC_SITE_URL` is set, the build uses same-origin relative links, omits the absolute canonical and `og:url`, and does not ship `sitemap.xml` or a robots `Sitemap:` line. `scripts/generate-public-files.mjs` writes `robots.txt`, `llms.txt`, `llms-full.txt`, and the sitemap at build time. CI scans an unset build and fails if a hard-coded public host is present.
+Until `PUBLIC_SITE_URL` is set, the build uses same-origin relative links, omits the absolute canonical and `og:url`, and does not ship `sitemap.xml` or a robots `Sitemap:` line. `scripts/generate-public-files.mjs` writes `robots.txt`, `llms.txt`, `llms-full.txt`, and the sitemap at build time. Vite exposes `PUBLIC_*` to the client, so that prefix is not for secrets. CI checks an unset build and a build with `PUBLIC_SITE_URL=https://example.test`, and scans `frontend/build`, `worker/src`, the Python sources, and the public Markdown docs for a hard-coded public host.
 
 ---
 
