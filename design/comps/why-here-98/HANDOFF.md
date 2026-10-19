@@ -55,24 +55,24 @@ Primary renders:
 
 ## States
 
-All data is 2024 W10 unless noted. **Heat values are illustrative** (see "Illustrative numbers").
+The roster, records, ratings, colors, and games are synthetic (`data/roster-synthetic.json` and `data/games-synthetic.json`). Nothing is copied from a published board. Week labels (week 10, week 1) only name the comp states. **Heat values are illustrative** (see "Illustrative numbers").
 
 | State | Parts | Team and data | What it shows |
 |---|---|---|---|
-| `board-closed` | 2 | Top 25 under the 2-part order | Resume column: cell "#{resume_rank}", tooltip/accessible name "Resume: #… of 136. Who they beat, ranked."; order set by the ordering TR+; toggles closed |
-| `row-open-mid` | 2 | #19 Iowa State (7-1, Δ −3). vs #18 Iowa: gap −4.6 = how they look −2.9 + Heat −1.7. vs #20 Minnesota: +7.3 = +21.0 − 13.7 | Heading "Why Iowa State is #19", captions, sum row, context (Resume #11 of 136 (1 = best), schedule strength #45 of 136, quality of wins #12 of 136, "Last 3 games: 2-1."), game chips with tag and venue text |
-| `row-open-mid-1part` | 1 | #19 Iowa State under Elo alone. vs #18 Iowa −3.2; vs #20 LSU +13.7 | Same panel without Heat and without the recent-games line; neighbours change with the order |
-| `negative-part` | 2 | Iowa State panel alone | Both parts negative against #18; Heat −13.7 working against a +7.3 lead |
-| `negative-part-1part` | 1 | Iowa State panel alone, Elo order | Single red bar (−3.2 vs #18) |
-| `heat` (was `four-part`) | 2 | #10 Colorado (6-2). vs #11 Penn State: +1.9 = how they look −17.2 + Heat +19.0 | **Heat decides the order** (highlighted); a check requires one comparison where Heat flips the sign |
-| `row-open-first` | 2 | #1 Oregon | Above slot empty: "No one is ranked above them." |
-| `row-open-last` | 2 | #136 Southern Miss (1-7) | Below slot empty: "No one is ranked below them on this board."; bad-loss chips |
-| `early-week` | 1 | Iowa State 2024 W1 (1-0, #38) | Heat unavailable, so 1 part; few-games note; no previous rank (Δ "—") |
-| `loading` | 2 | Iowa State | Skeleton sized to the part count; "Loading the breakdown…" for screen readers |
-| `error` | 2 | Iowa State | "Couldn't load the breakdown right now." and a "Try again" button |
+| `board-closed` | 2 | All 8 invented teams under the 2-part order | Resume column: cell "#{resume_rank}", tooltip/accessible name "Resume: #… of 8. Who they beat, ranked."; order set by the seeded TR+; toggles closed |
+| `row-open-mid` | 2 | #7 Fixture Mesa (4-4). vs #6 Fixture Ridge: gap −90 = how they look −90 + Heat 0. vs #8 Fixture Dale: +270 = +270 + 0 | Heading "Why Fixture Mesa is #7", captions, sum row, context on a board of 8, game chips with tag and venue text |
+| `row-open-mid-1part` | 1 | #7 Fixture Mesa under the seeded rating alone. vs #6 Fixture Harbor −85; vs #8 Fixture Dale +300 | Same panel without Heat and without the recent-games line; neighbours change with the order |
+| `negative-part` | 2 | Fixture Mesa panel alone | How they look is negative against #6 Fixture Ridge |
+| `negative-part-1part` | 1 | Fixture Mesa panel alone, rating-only order | Single red bar (−85 vs #6 Fixture Harbor) |
+| `heat` (was `four-part`) | 2 | #5 Fixture Harbor (5-3). vs #6 Fixture Ridge: +5 = how they look −13.5 + Heat +18.5 | **Heat decides the order** (highlighted); a check requires one comparison where Heat flips the sign |
+| `row-open-first` | 2 | #1 Fixture North (8-0) | Above slot empty: "No one is ranked above them." |
+| `row-open-last` | 2 | #8 Fixture Dale (1-7) | Below slot empty: "No one is ranked below them on this board." |
+| `early-week` | 1 | Fixture Mesa week 1 (1-0, #6) | Heat unavailable, so 1 part; few-games note; no previous rank (Δ "—") |
+| `loading` | 2 | Fixture Mesa | Skeleton sized to the part count; "Loading the breakdown…" for screen readers |
+| `error` | 2 | Fixture Mesa | "Couldn't load the breakdown right now." and a "Try again" button |
 | `season-unavailable` | — | 2026 W8 | "2026 rankings aren't published yet." |
-| `sheet-390` | 2 | Iowa State | Bottom sheet with a "Close" button |
-| `share-card` / `share-card-1part` | 2 / 1 | Iowa State | Headline "Iowa State is #19 on TR+.", TR+, record, both comparisons, brand name, tagline, no URL; `aria-label` = locked alt text |
+| `sheet-390` | 2 | Fixture Mesa | Bottom sheet with a "Close" button |
+| `share-card` / `share-card-1part` | 2 / 1 | Fixture Mesa | Headline "Fixture Mesa is #7 on TR+.", TR+, record, both comparisons, brand name, tagline, no URL; `aria-label` = locked alt text |
 
 ## How the bar works
 
@@ -90,7 +90,7 @@ All data is 2024 W10 unless noted. **Heat values are illustrative** (see "Illust
 - **Heat weight.** It is 0.10 in the 2-part order, with how they look at 0.90, in `data/order-config.json`. It is **illustrative**: ADR 0002 and the #96 gate set the real weight.
 - **Heat value.** It is **illustrative**: 1500 + the change in Elo over the last 3 weeks. Replace it with #96's definition.
 - **Recent-games line.** "Last {k} games" uses k = 3, matching that illustrative Heat window.
-- **Fixed values.** The 1-part order is exactly Elo, at weight 1.0. The resume, schedule and W/L figures are real 2024 data.
+- **Fixed values.** The 1-part order is the seeded rating alone, at weight 1.0. Resume, schedule, records, colors, and games are the invented roster, not a published week.
 
 ## Check results (`check-report.json`)
 
@@ -127,14 +127,14 @@ All data is 2024 W10 unless noted. **Heat values are illustrative** (see "Illust
 | ordering `parts[]` {key, name, weight, value} and per-neighbour `parts[]` {contribution}, `gap` | #105 item 5. The keys are `strength` and `heat` only; weights come from ADR 0002 | `part`, `parts-sum`, `data-driven` |
 | `team.heat` | #96 | the Heat part |
 | `team.resume_rank` | **new ask** (rank by `record_score`) | `resume-cell`, `ctx-resume` |
-| `team.sos_rank`, `team.sov_rank` **among FBS**, plus N | **new ask**: today's ranks run over every division (W10 max 544/662) | `stat-sos`, `stat-sov` |
+| `team.sos_rank`, `team.sov_rank` **on this roster**, plus N | seeded, then re-ranked among the 8 invented teams | `stat-sos`, `stat-sov` |
 | `team.prev_rank` under the same order | #105 item 2 | `delta` |
 | `team.recent` {k, wins, losses} | derivable from `games[]` over the Heat window | `recent` |
 | `games[]` {opponent, opponent_rank, venue, result, tag} | #105 item 1 (`venue` and `tag` are new) | `chips` |
 | `team.games_played` | derivable | `few-games` |
 | season default | #105 item 3 | `season-unavailable` |
 
-Game lists are invented (`data/games-synthetic.json`): Fixture North, Fixture South, Fixture East, and Fixture West. That is a stand-in until #105 lands.
+Teams, ratings, records, colors, and games are invented (`data/roster-synthetic.json`, `data/games-synthetic.json`). The names are Fixture North, South, East, West, Harbor, Ridge, Mesa, and Dale. That roster is a stand-in until #105 lands. It is not the published 2024 board.
 
 ## Assets
 
@@ -228,6 +228,6 @@ Locked and existing slots render verbatim, with `{fields}` filled from data only
 4. **Fonts in stills.** #95 strips Google Fonts, so built stills fall back unless the frontend self-hosts these faces.
 5. **Few-games threshold.** The comps use fewer than 4 games. This needs an engine owner.
 6. **Data oddities.**
-   - `sos_rank` and `sov_rank` rank all divisions (see the data table above).
-   - Conference membership is wrong (#101): Boise State is "Pac-12" and UTEP is "Mountain West" in 2024. The comps render these as they are.
+   - `sos_rank` and `sov_rank` are re-ranked on this 8-team synthetic roster (see the data table above).
+   - Conferences are "Synthetic East" and "Synthetic West". They are not school conferences.
 7. **CI wiring.** `test-check-comps.mjs` is not in CI yet. Add a step to the #95 workflow; that needs a token with workflow scope.
