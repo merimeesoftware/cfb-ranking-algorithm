@@ -311,7 +311,7 @@ _RESULT_WORD = re.compile(
     r'\b(?:knocked off|took down|defeat(?:ed|s)?|victory|against|routed|'
     r'dominated|handled|outlasted|met|played|'
     r'wins?|won|winning|losses|loss|lost|losing|results?|'
-    r'beats?|beating|beaten|fell|topped|edged|upset|over)\b',
+    r'beats?|beating|beaten|fell|topped|edged|upset|downed|over)\b',
     re.IGNORECASE,
 )
 _LOSS_WORD = re.compile(
@@ -419,11 +419,25 @@ def _neighbor_placement(sentence: str, others: set[str], neighbors: set[str]) ->
     return _POSITION_WORD.search(sentence) is not None
 
 
-def _top_win_exception(sentence: str, others: set[str], top_wins: set[str]) -> bool:
-    """beat or win over a top_quality_wins team, with no other result word."""
+def _subject_before_phrase(sentence: str, subject: str) -> bool:
+    """The team being explained is the one that beat or won over."""
+    lowered = re.sub(r"['\u2019]s\b", '', sentence, flags=re.IGNORECASE).lower()
+    match = _TOP_WIN_PHRASE.search(lowered)
+    if match is None or not subject:
+        return False
+    return re.search(rf'\b{re.escape(subject)}\b', lowered[:match.start()]) is not None
+
+
+def _top_win_exception(
+    sentence: str,
+    subject: str,
+    others: set[str],
+    top_wins: set[str],
+) -> bool:
+    """Subject beat or won over a top_quality_wins team, and nothing else."""
     if not others or not others <= top_wins:
         return False
-    if _TOP_WIN_PHRASE.search(sentence) is None:
+    if not _subject_before_phrase(sentence, subject):
         return False
     remainder = _TOP_WIN_PHRASE.sub(' ', sentence)
     return _RESULT_WORD.search(remainder) is None
@@ -437,9 +451,9 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     accepted only when it is the total record or the conference record.
     With no games list, a sentence that names another payload team passes
     only when every other team is a neighbor, the sentence has a position
-    word, and it has no result word. beat or win over a top_quality_wins
-    team is the exception. When games are listed, that result has to be
-    one of them.
+    word, and it has no result word. The exception is the subject team
+    beating or winning over a top_quality_wins team. When games are listed,
+    that result has to be one of them.
     """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
@@ -476,7 +490,7 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
         if not others:
             continue
         if not played:
-            if _top_win_exception(sentence, others, top_wins):
+            if _top_win_exception(sentence, subject, others, top_wins):
                 continue
             if _neighbor_placement(sentence, others, neighbors):
                 continue

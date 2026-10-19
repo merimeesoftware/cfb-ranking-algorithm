@@ -393,6 +393,7 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded(f'{subject} edged {opponent}.', context)
     assert not answer_is_grounded(f'{subject} got a win over {opponent}.', context)
     assert not answer_is_grounded(f'{subject} defeated {opponent}.', context)
+    assert not answer_is_grounded(f'{subject} downed {opponent}.', context)
     assert not answer_is_grounded(
         f'{subject} earned a victory against {opponent}.', context,
     )
@@ -417,6 +418,7 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     listed = dict(context)
     listed['top_quality_wins'] = [opponent]
     assert answer_is_grounded(f'{subject} beat {opponent}.', listed)
+    assert not answer_is_grounded(f'{opponent} beat {subject}.', listed)
     assert answer_is_grounded(f'{subject} got a win over {opponent}.', listed)
     assert not answer_is_grounded(f'{subject} topped {opponent}.', listed)
     assert not answer_is_grounded(f'{subject} edged {opponent}.', listed)
