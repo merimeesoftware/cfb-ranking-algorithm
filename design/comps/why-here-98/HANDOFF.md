@@ -118,7 +118,7 @@ The roster, records, ratings, colors, and games are synthetic (`data/roster-synt
 
 ## Assertions and the #95 manifest
 
-`manifest.fragment.json` follows #95's schema. It stays **unsigned and is not merged** into `design/comps/manifest.json`. The gate compares stills of the **built** UI, and comps are read from the base ref under `design/comps/renders/`. `_design_ref` hashes `renders/row-open-mid-<w>.png` (2-part), which the built stills should be reviewed against.
+`manifest.fragment.json` follows #95's schema. It stays **unsigned and is not merged** into `design/comps/manifest.json`. The gate compares stills of the **built** UI, and comps are read from the base ref under `design/comps/renders/`. `_design_ref` hashes `renders/row-open-mid-<w>.png` (2-part), which the built stills should be reviewed against. `check-targets.json` names app routes. The comp fixtures are the invented roster, not those schools.
 
 ## Data the view reads (#105 / #96 asks)
 
