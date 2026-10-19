@@ -18,6 +18,14 @@ export const DEFAULT_XAI_MAX_CALLS_PER_DAY = 0;
 export const DEFAULT_AI_MAX_CALLS_PER_DAY = 100;
 export const DEFAULT_CFBD_MAX_CALLS_PER_DAY = 25;
 
+/**
+ * CFBD free quota is shared. This app is provider `cfbd`, source `app`.
+ * A later source can use the same provider. Source `mcp` is reserved for
+ * #115 and is not accepted here.
+ */
+export const CFBD_PROVIDER = 'cfbd' as const;
+export const CFBD_APP_SOURCE = 'app';
+
 export type SpendBucket = 'xai' | 'workers_ai' | 'cfbd';
 
 export interface BudgetEnv {
@@ -37,6 +45,8 @@ export interface ConsumeResult {
 	limit: number;
 	day: string;
 	bucket: SpendBucket;
+	provider: SpendBucket;
+	source?: string;
 	code?: string;
 }
 
@@ -67,8 +77,14 @@ export function dailyLimitFor(bucket: SpendBucket, env: BudgetEnv): number {
 	return resolveDailyLimit(raw, FALLBACKS[bucket]);
 }
 
-export function budgetKey(bucket: SpendBucket, now: Date = new Date()): string {
-	return `${bucket}:${utcDay(now)}`;
+export function budgetKey(
+	bucket: SpendBucket,
+	now: Date = new Date(),
+	source?: string,
+): string {
+	const day = utcDay(now);
+	if (bucket === CFBD_PROVIDER) return `${CFBD_PROVIDER}:${source || CFBD_APP_SOURCE}:${day}`;
+	return `${bucket}:${day}`;
 }
 
 /**
@@ -81,14 +97,17 @@ export async function consumeDaily(
 	bucket: SpendBucket,
 	limit: number,
 	now: Date = new Date(),
+	source?: string,
 ): Promise<ConsumeResult> {
 	const day = utcDay(now);
-	const key = `${bucket}:${day}`;
+	const named = bucket === CFBD_PROVIDER ? (source || CFBD_APP_SOURCE) : undefined;
+	const key = budgetKey(bucket, now, named);
 	const current = (await store.get(key)) ?? 0;
+	const base = { limit, day, bucket, provider: bucket, source: named };
 	if (current >= limit) {
-		return { ok: false, count: current, limit, day, bucket, code: `${bucket}_budget` };
+		return { ok: false, count: current, ...base, code: `${bucket}_budget` };
 	}
 	const next = current + 1;
 	await store.put(key, next);
-	return { ok: true, count: next, limit, day, bucket };
+	return { ok: true, count: next, ...base };
 }

@@ -92,6 +92,24 @@ def test_cfbd_max_calls_budget(monkeypatch):
     reset_cfbd_call_count()
 
 
+def test_cfbd_gate_names_provider_and_app_source(monkeypatch):
+    reset_cfbd_call_count()
+    monkeypatch.setenv('CFBD_MAX_CALLS', '2')
+    monkeypatch.setenv('SPEND_GATE_HOST', 'spend.budget')
+    response = MagicMock()
+    response.read.return_value = b'{"ok": true, "count": 1}'
+    response.__enter__.return_value = response
+    with patch('urllib.request.urlopen', return_value=response) as opened:
+        assert register_live_cfbd_call() == 1
+    request = opened.call_args.args[0]
+    body = json.loads(request.data.decode())
+    assert body['provider'] == 'cfbd'
+    assert body['bucket'] == 'cfbd'
+    assert body['source'] == 'app'
+    assert request.full_url == 'http://spend.budget/consume'
+    reset_cfbd_call_count()
+
+
 def test_cfbd_max_defaults_in_development(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)

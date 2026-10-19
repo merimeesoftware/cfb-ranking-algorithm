@@ -127,7 +127,7 @@ Production `AI_MODE=stub` and `CFBD_OFFLINE=1` in `wrangler.toml`.
 |---------|--------------------|----------------------|
 | `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI is refused even when `XAI_API_KEY` is set. The gateway path stays in the Worker and is not called. |
 | `AI_MAX_CALLS` | **100/day** | Workers AI on `spend-budget`. `@cf/meta/llama-3.1-8b-instruct-fp8`, max 160 output tokens, 4000 input characters. 100 × 60 Neurons = 6000, ceiling 8000. |
-| `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | same. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 900 ceiling. |
+| `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day) | provider `cfbd`, source `app`. Cron is 24/Sunday. 24×52/12 + 4×31 = 228, under the 700 app ceiling. 150 is reserved for MCP via #115. 50 is margin. |
 | `AI_KILL` | off (`0`) | Stops xAI and Workers AI |
 | `XAI_KILL` / `WORKERS_AI_KILL` | off (`0`) | Stops that provider |
 | `CFBD_KILL` | off (`0`) | Worker gate and Flask |

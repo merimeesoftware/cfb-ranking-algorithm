@@ -26,15 +26,23 @@ def test_planted_over_budget_fixture_fails():
         months=spec['months'],
         days=spec['days'],
     )
+    assert spec['provider'] == 'cfbd'
+    assert spec['source'] == 'app'
+    assert spec['ceiling'] == 700
     assert cron_calls == 200 * 52 // 12
     assert total == cron_calls + 25 * 31
     assert total > spec['ceiling']
     assert evaluate(spec)
 
 
-def test_live_config_stays_under_900():
+def test_live_config_stays_under_700():
     spec = live_spec()
     assert spec['errors'] == []
+    assert spec['provider'] == 'cfbd'
+    assert spec['source'] == 'app'
+    assert spec['ceiling'] == 700
+    assert spec['mcp_reserved'] == 150
+    assert spec['margin'] == 50
     assert spec['cron_calls_per_run'] == 24
     assert spec['live_cfbd_per_day'] == 4
     total, cron_calls = monthly_total(

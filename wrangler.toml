@@ -23,11 +23,13 @@ run_worker_first = ["/api/*"]
 # CFBD_KILL default off. Preview hostnames also stay stub/offline unless
 # PREVIEW_AI_MODE / PREVIEW_CFBD_OFFLINE are set.
 #
-# Monthly CFBD projection (free tier is about 1,000; ceiling is 900).
+# Monthly CFBD projection. The free tier is about 1,000 and is shared.
+# This app is provider cfbd, source app. Ceiling is 700.
+# 150 is reserved for MCP via #115. 50 is margin. 700 + 150 + 50 = 900.
 # The formula lives in config/cfbd-month.json:
 #   cron 24 calls/Sunday × 52/12 = 104
 #   live CFBD_MAX_CALLS 4/day × 31 = 124
-#   104 + 124 = 228
+#   104 + 124 = 228, under the 700 app ceiling.
 # xAI daily budget is hard 0 and XAI_ENABLED is off. The gateway path stays
 # in the Worker and is not called. Workers AI is the only live provider.
 # AI_MAX_CALLS is that daily call cap.

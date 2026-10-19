@@ -1,5 +1,9 @@
 {
-  "ceiling": 900,
+  "provider": "cfbd",
+  "source": "app",
+  "ceiling": 700,
+  "mcp_reserved": 150,
+  "margin": 50,
   "sundays_per_year": 52,
   "months": 12,
   "days": 31

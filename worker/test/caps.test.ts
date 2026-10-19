@@ -56,18 +56,28 @@ test('spend counter accepts one cfbd consume and rejects an unknown bucket', asy
 	const state = spendState({});
 	const first = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
 		method: 'POST',
-		body: JSON.stringify({ bucket: 'cfbd' }),
+		body: JSON.stringify({ provider: 'cfbd', source: 'app' }),
 	}));
 	assert.equal(first.status, 200);
-	const body = await first.json() as { ok: boolean; count: number; limit: number };
+	const body = await first.json() as { ok: boolean; count: number; limit: number; provider: string; source: string };
 	assert.equal(body.ok, true);
 	assert.equal(body.count, 1);
 	assert.equal(body.limit, DEFAULT_CFBD_MAX_CALLS_PER_DAY);
+	assert.equal(body.provider, 'cfbd');
+	assert.equal(body.source, 'app');
 	const denied = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
 		method: 'POST',
 		body: JSON.stringify({ bucket: 'nope' }),
 	}));
 	assert.equal(denied.status, 400);
+	const mcp = await consumeSpend(state, {}, new Request('https://spend.budget/consume', {
+		method: 'POST',
+		body: JSON.stringify({ provider: 'cfbd', source: 'mcp' }),
+	}));
+	assert.equal(mcp.status, 400);
+	const reserved = await mcp.json() as { error: string; source: string };
+	assert.equal(reserved.error, 'source');
+	assert.equal(reserved.source, 'mcp');
 });
 
 test('unset daily limits fall back to in-code defaults', () => {

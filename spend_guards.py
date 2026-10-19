@@ -22,6 +22,9 @@ class AIRateLimitError(RuntimeError):
 
 # In-code defaults. Unset env must never mean unlimited.
 # These match the Worker daily budget on the spend-budget instance.
+# CFBD is provider `cfbd`, source `app`. Source `mcp` is reserved for #115.
+CFBD_PROVIDER = 'cfbd'
+CFBD_APP_SOURCE = 'app'
 AI_PROVIDERS = ('xai', 'workers_ai')
 DEFAULT_XAI_MAX_CALLS = 0
 DEFAULT_AI_MAX_CALLS = 100
@@ -224,7 +227,10 @@ def _consume_global_budget(bucket: str) -> None:
     import urllib.request
 
     url = f'http://{host}/consume'
-    payload = json.dumps({'bucket': bucket}).encode()
+    body = {'provider': bucket, 'bucket': bucket}
+    if bucket == CFBD_PROVIDER:
+        body['source'] = CFBD_APP_SOURCE
+    payload = json.dumps(body).encode()
     req = urllib.request.Request(
         url,
         data=payload,

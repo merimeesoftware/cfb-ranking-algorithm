@@ -1,5 +1,5 @@
 import { Container, ContainerProxy, getRandom } from '@cloudflare/containers';
-import { dailyLimitFor, type SpendBucket } from './budget.ts';
+import { CFBD_APP_SOURCE, CFBD_PROVIDER, dailyLimitFor, type SpendBucket } from './budget.ts';
 import {
 	boardRoute,
 	buildRuntimeEnv,
@@ -85,13 +85,13 @@ export class CfbApiContainer extends Container<Env> {
  */
 CfbApiContainer.outboundByHost = {
 	'spend.budget': async (request: Request, env: Env): Promise<Response> => {
-		let payload: { bucket?: string } = {};
+		let payload: { provider?: string; bucket?: string; source?: string } = {};
 		try {
-			payload = (await request.json()) as { bucket?: string };
+			payload = (await request.json()) as { provider?: string; bucket?: string; source?: string };
 		} catch {
 			return Response.json({ ok: false, error: 'json' }, { status: 400 });
 		}
-		const bucket = payload.bucket;
+		const bucket = payload.provider ?? payload.bucket;
 		if (bucket !== 'xai' && bucket !== 'workers_ai' && bucket !== 'cfbd') {
 			return Response.json({ ok: false, error: 'bucket' }, { status: 400 });
 		}
@@ -99,15 +99,21 @@ CfbApiContainer.outboundByHost = {
 		const limit = dailyLimitFor(spendBucket, env);
 		if (!paidCallAllowed(env, spendBucket)) {
 			return Response.json(
-				{ ok: false, count: 0, limit, bucket, code: 'kill_switch' },
+				{ ok: false, count: 0, limit, bucket, provider: bucket, code: 'kill_switch' },
 				{ status: 429, headers: { 'cache-control': 'no-store' } },
 			);
 		}
 		const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
+		const body: { provider: string; bucket: string; limit: number; source?: string } = {
+			provider: bucket,
+			bucket,
+			limit,
+		};
+		if (bucket === CFBD_PROVIDER) body.source = payload.source?.trim() || CFBD_APP_SOURCE;
 		return stub.fetch('https://spend.budget/consume', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ bucket, limit }),
+			body: JSON.stringify(body),
 		});
 	},
 	[XAI_HOST]: async (request: Request, env: Env): Promise<Response> => {
