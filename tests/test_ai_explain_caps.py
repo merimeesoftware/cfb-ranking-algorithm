@@ -342,6 +342,49 @@ def test_grounded_answer_passes_and_inventions_serve_string_10(client, monkeypat
         assert len(calls) == 2, name
 
 
+def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
+    rankings = json.loads(
+        (ROOT / 'frontend' / 'static' / 'rankings' / '2024' / 'week-15.json').read_text()
+    )
+    from agent_service import _build_team_context, _explain_prompt, answer_is_grounded
+
+    context = _build_team_context(rankings, 'Oregon')
+    assert context is not None
+    assert context['games'] == []
+    teams = [row['team_name'] for row in rankings['team_rankings']]
+    records = context['records']
+    answers = [
+        f"{context['team_name']} sits #{context['rank']} in the {context['conference']}.",
+        f"{context['team_name']}'s Team Quality is {int(context['team_quality_score'])}.",
+        (
+            f"Record Score and Conference Quality sit with Team Quality "
+            f"for {context['team_name']}."
+        ),
+        f"{context['neighbor_behind']} is next to {context['team_name']}.",
+        f"{context['team_name']} beat {context['neighbor_behind']}.",
+        (
+            f"Quality wins: {context['quality_wins']}. "
+            f"Record: {records['total_wins']}-{records['total_losses']}."
+        ),
+    ]
+    assert len(answers) >= 5
+    for answer in answers:
+        assert answer_is_grounded(answer, context, teams), answer
+    assert answer_is_grounded(
+        "The formula is 80% Team Quality + 15% Record Score + 5% Conference Quality.",
+        context,
+        teams,
+    )
+    assert not answer_is_grounded("Oregon is 40-0.", context, teams)
+    assert not answer_is_grounded("Alabama sits nearby.", context, teams)
+    prompt = _explain_prompt(context, 'Which results are carrying this rank?')
+    assert 'This context has no played-game list.' in prompt
+    played = dict(context)
+    played['games'] = [{'opponent': 'Ohio State', 'result': 'win'}]
+    assert 'listed in games' in _explain_prompt(played, 'Which results are carrying this rank?')
+    assert not answer_is_grounded('Oregon lost to Ohio State.', played, teams)
+
+
 def test_stub_explain_is_not_cached(client, monkeypatch):
     monkeypatch.setenv('AI_MODE', 'stub')
     from agent_service import explain_cache_logical

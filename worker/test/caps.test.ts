@@ -756,6 +756,65 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 	}
 });
 
+test('container fetch keeps preview stub and production live after overwriting x-visitor-host', async () => {
+	const seen: { vars?: Record<string, string>; host: string | null }[] = [];
+	const env = {
+		AI_MODE: 'live',
+		CFBD_OFFLINE: '0',
+		API_RATE_LIMITER: { async limit() { return { success: true }; } },
+		AGENT_RATE_LIMITER: { async limit() { return { success: true }; } },
+		ASSETS: { async fetch() { return new Response('no', { status: 404 }); } },
+		CFB_API: {
+			idFromName() { return 'id'; },
+			get() { return probe; },
+		},
+	};
+	const probe = Object.create(CfbApiContainer.prototype) as CfbApiContainer & {
+		env: typeof env;
+		envVars: Record<string, string>;
+		defaultPort: number;
+		startAndWaitForPorts: (options: { startOptions?: { envVars?: Record<string, string> } }) => Promise<void>;
+		containerFetch: (request: Request) => Promise<Response>;
+	};
+	probe.env = env;
+	probe.envVars = {
+		PORT: '8080',
+		FLASK_ENV: 'production',
+		CACHE_BACKEND: 'file',
+		CACHE_DIR: '/tmp/cfb-cache',
+		AI_MODE: 'stub',
+		CFBD_OFFLINE: '1',
+	};
+	probe.defaultPort = 8080;
+	probe.startAndWaitForPorts = async (options) => {
+		seen.push({ vars: options.startOptions?.envVars, host: null });
+	};
+	probe.containerFetch = async (request: Request) => {
+		const last = seen[seen.length - 1];
+		if (last) last.host = request.headers.get('x-visitor-host');
+		return new Response('ok');
+	};
+
+	const previewHost = 'preview.example.workers.dev';
+	const productionHost = 'true-rankings-cfb.example.workers.dev';
+	const preview = await worker.fetch(new Request(`https://${previewHost}/api/agent/explain`, {
+		headers: { 'x-visitor-host': productionHost },
+	}), env as never);
+	const production = await worker.fetch(new Request(`https://${productionHost}/api/agent/explain`, {
+		headers: { 'x-visitor-host': previewHost },
+	}), env as never);
+
+	assert.equal(preview.status, 200);
+	assert.equal(production.status, 200);
+	assert.equal(seen.length, 2);
+	assert.equal(seen[0].vars?.AI_MODE, 'stub');
+	assert.equal(seen[0].vars?.CFBD_OFFLINE, '1');
+	assert.equal(seen[0].host, previewHost);
+	assert.equal(seen[1].vars?.AI_MODE, 'live');
+	assert.equal(seen[1].vars?.CFBD_OFFLINE, '0');
+	assert.equal(seen[1].host, productionHost);
+});
+
 test('workers ai outbound refuses call 101 before the model runs', async () => {
 	const state = spendState({});
 	const budgetEnv = { AI_MAX_CALLS: '100' };

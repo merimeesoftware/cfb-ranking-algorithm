@@ -308,35 +308,90 @@ _NOT_A_TEAM = {
     'quality', 'notable', 'immediately', 'a', 'an', 'after', 'before',
     'with', 'from', 'and', 'but', 'or', 'on', 'in', 'at', 'for', 'to',
 }
+# Terms the explainer states. They are not team names.
+_EXPLAINER_TERMS = {
+    'team quality',
+    'record score',
+    'conference quality',
+    'final ranking score',
+    'quality wins',
+    'quality losses',
+    'bad losses',
+    'strength of schedule',
+    'strength of victory',
+}
 
 
-def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
-    """Every number, team name, and played game in the answer is in the payload."""
+def _strip_possessive(name: str) -> str:
+    text = name.strip().lower()
+    for suffix in ("'s", '\u2019s'):
+        if text.endswith(suffix):
+            return text[: -len(suffix)].strip()
+    return text
+
+
+def answer_is_grounded(
+    answer: str,
+    payload: Dict[str, Any],
+    teams: Optional[List[str]] = None,
+) -> bool:
+    """Every number and team name in the answer is in the payload.
+
+    Team spans are checked against the canonical board list after possessives
+    are removed. Formula terms the explainer uses are allowed. Game-result
+    claims are checked only when the context actually lists games.
+    """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
         return False
     numbers, names, games = _payload_facts(payload)
+    for weight in FRS_WEIGHTS:
+        numbers.add(str(int(round(weight * 100))))
+        numbers.add(_number_token(format(weight, 'f')))
+    canonical = {
+        _strip_possessive(team)
+        for team in (teams or [])
+        if isinstance(team, str) and team.strip()
+    }
     for raw in re.findall(r'\d+(?:\.\d+)?', text):
         if _number_token(raw) not in numbers:
             return False
-    for span in _NAME_SPAN.findall(text):
-        if span.lower() in _NOT_A_TEAM:
+    named = re.sub(r"['\u2019]s\b", '. ', text, flags=re.IGNORECASE)
+    for span in _NAME_SPAN.findall(named):
+        normalized = _strip_possessive(span)
+        if normalized in _NOT_A_TEAM or normalized in _EXPLAINER_TERMS:
             continue
-        if span.lower() not in names:
+        if normalized in names:
+            continue
+        # Board teams have to be in this payload. Other unknown spans do too.
+        invented_team = normalized in canonical
+        if invented_team or normalized not in names:
             return False
-    for verb, opponent in _GAME_CLAIM.findall(text):
-        result = 'loss' if verb.lower() in ('lost to', 'fell to') else 'win'
-        if (result, opponent.lower()) not in games:
-            return False
+    played = payload.get('games') or []
+    if played:
+        for verb, opponent in _GAME_CLAIM.findall(text):
+            result = 'loss' if verb.lower() in ('lost to', 'fell to') else 'win'
+            claimed = _strip_possessive(opponent)
+            if (result, claimed) not in games:
+                return False
     return True
 
 
 def _explain_prompt(context: Dict[str, Any], question: str) -> str:
     w_tq, w_rec, w_cq = FRS_WEIGHTS
+    if context.get('games'):
+        facts = 'scores, records, and games'
+        game_rule = (
+            'Name a game result only when that opponent and result are listed in games.'
+        )
+    else:
+        facts = 'scores and records'
+        game_rule = 'Do not claim who beat whom. This context has no played-game list.'
     return (
         'You are a college football ranking analyst. Answer concisely.\n'
-        'Use ONLY the Team context JSON for scores, records, and games. Do not invent them.\n'
+        f'Use ONLY the Team context JSON for {facts}. Do not invent them.\n'
         f'{NO_PREDICTION_RULE}\n'
+        f'{game_rule}\n'
         f'Question: {question}\n\n'
         f'Team context (JSON): {context}\n\n'
         f'Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality.'
@@ -485,7 +540,14 @@ def explain_ranking():
                 context, team_name, year, week, question_id, provider,
             )
 
-    ai_written = served == 'live' and answer_is_grounded(explanation or '', context)
+    board_teams = [
+        row.get('team_name')
+        for row in rankings.get('team_rankings') or []
+        if isinstance(row, dict)
+    ]
+    ai_written = served == 'live' and answer_is_grounded(
+        explanation or '', context, board_teams,
+    )
     if served == 'live' and not ai_written:
         explanation = EXPLAIN_BREAKDOWN
     payload = {
