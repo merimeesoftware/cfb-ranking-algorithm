@@ -1,66 +1,410 @@
 {
-  "note": "Every user-facing string in the #98 why-here comps. status: 'locked' renders verbatim (source cited); 'existing' is shipped on main today and unchanged by this view; 'data' renders the data field; 'unlocked' is OMITTED from every render until Phil locks it. Every row needs Phil's lock or confirmation before build (needs_phil_lock).",
-  "slots": [
-    {"id": "brand.name", "status": "locked", "text": "True Rankings", "source": "PURPOSE.md (What it is); frontend/src/lib/brand.ts BRAND_NAME", "where": "share card footer", "needs_phil_lock": "confirm"},
-    {"id": "brand.tagline", "status": "locked", "text": "How good they actually are.", "source": "PURPOSE.md locked public lines", "where": "share card footer", "needs_phil_lock": "confirm"},
-    {"id": "brand.rating", "status": "locked", "text": "TR+", "source": "PURPOSE.md; brand.ts RATING_NAME", "where": "board header, panel score, share card", "needs_phil_lock": "confirm"},
-
-    {"id": "board.title", "status": "existing", "text": "Top 25 Teams", "source": "RankingsTable.svelte (main)", "where": "board card header", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.legend.cfp", "status": "existing", "text": "CFP Playoff (1-12)", "source": "RankingsTable.svelte (main)", "where": "board legend", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.legend.bubble", "status": "existing", "text": "On the Bubble (13-25)", "source": "RankingsTable.svelte (main)", "where": "board legend", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.col.rank", "status": "existing", "text": "Rank", "source": "RankingsTable.svelte (main)", "where": "board header", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.col.team", "status": "existing", "text": "Team", "source": "RankingsTable.svelte (main)", "where": "board header", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.col.conference", "status": "existing", "text": "Conference", "source": "RankingsTable.svelte (main)", "where": "board header", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.col.record", "status": "existing", "text": "Record", "source": "RankingsTable.svelte (main)", "where": "board header", "needs_phil_lock": "confirm (unchanged)"},
-    {"id": "board.col.delta", "status": "existing", "text": "Δ", "source": "RankingsTable.svelte (main)", "where": "board header", "needs_phil_lock": "confirm (unchanged)"},
-
-    {"id": "part.name.strength", "status": "data", "field": "parts[key=strength].name", "fixture_text": "how they look", "source": "engine parts[].name (#105); fixture value from PURPOSE.md fan language", "where": "bar label", "needs_phil_lock": "yes"},
-    {"id": "part.name.resume", "status": "data", "field": "parts[key=resume].name", "fixture_text": "who they beat", "source": "engine parts[].name (#105); fixture value from PURPOSE.md fan language", "where": "bar label", "needs_phil_lock": "yes"},
-    {"id": "part.name.league", "status": "data", "field": "parts[key=league].name", "fixture_text": "league strength", "source": "engine parts[].name (#105); fixture value from PURPOSE.md fan language", "where": "bar label", "needs_phil_lock": "yes"},
-    {"id": "part.name.heat", "status": "unlocked", "field": "parts[key=heat].name", "source": "name pending Michael (Heat / momentum)", "where": "bar label, 4-part only", "needs_phil_lock": "yes (after Michael names it)"},
-
-    {"id": "why.toggle.accessible_name", "status": "unlocked", "source": "new", "where": "row toggle aria-label; comps use aria-labelledby=team name until locked", "needs_phil_lock": "yes"},
-    {"id": "why.heading", "status": "unlocked", "source": "new", "where": "open panel heading", "needs_phil_lock": "yes"},
-    {"id": "why.vs_above.caption", "status": "unlocked", "source": "new", "where": "comparison vs #N-1 caption", "needs_phil_lock": "yes"},
-    {"id": "why.vs_below.caption", "status": "unlocked", "source": "new", "where": "comparison vs #N+1 caption", "needs_phil_lock": "yes"},
-    {"id": "why.no_above", "status": "unlocked", "source": "new", "where": "#1 team, in place of the above comparison", "needs_phil_lock": "yes"},
-    {"id": "why.no_below", "status": "unlocked", "source": "new", "where": "last team, in place of the below comparison", "needs_phil_lock": "yes"},
-    {"id": "why.sum.caption", "status": "unlocked", "source": "new", "where": "sum row under the parts", "needs_phil_lock": "yes"},
-    {"id": "why.weight.caption", "status": "unlocked", "source": "new", "where": "explains the % next to each part", "needs_phil_lock": "yes"},
-    {"id": "why.delta.caption", "status": "unlocked", "source": "new", "where": "explains the move vs previous rank", "needs_phil_lock": "yes"},
-    {"id": "stat.sos.label", "status": "unlocked", "source": "new", "where": "schedule strength stat (value = sos_rank)", "needs_phil_lock": "yes"},
-    {"id": "stat.sov.label", "status": "unlocked", "source": "new", "where": "quality of wins stat (value = sov_rank)", "needs_phil_lock": "yes"},
-    {"id": "stat.heat.recent_form_line", "status": "unlocked", "source": "#98 done-when one-line recent form", "where": "4-part panel", "needs_phil_lock": "yes"},
-    {"id": "chips.heading", "status": "unlocked", "source": "new", "where": "game strip heading", "needs_phil_lock": "yes"},
-    {"id": "chip.tag.quality_win", "status": "unlocked", "source": "new", "where": "chip tag text + legend", "needs_phil_lock": "yes"},
-    {"id": "chip.tag.cupcake", "status": "unlocked", "source": "new", "where": "chip tag text + legend", "needs_phil_lock": "yes"},
-    {"id": "chip.tag.bad_loss", "status": "unlocked", "source": "new", "where": "chip tag text + legend", "needs_phil_lock": "yes"},
-    {"id": "chip.venue.home", "status": "unlocked", "source": "new (glyph renders meanwhile)", "where": "chip venue", "needs_phil_lock": "yes"},
-    {"id": "chip.venue.away", "status": "unlocked", "source": "new (glyph renders meanwhile)", "where": "chip venue", "needs_phil_lock": "yes"},
-    {"id": "chip.venue.neutral", "status": "unlocked", "source": "new (glyph renders meanwhile)", "where": "chip venue", "needs_phil_lock": "yes"},
-    {"id": "early.note", "status": "unlocked", "source": "new", "where": "few games / early week marker", "needs_phil_lock": "yes"},
-    {"id": "loading.label", "status": "unlocked", "source": "new", "where": "screen-reader loading text", "needs_phil_lock": "yes"},
-    {"id": "error.message", "status": "unlocked", "source": "replaces RankingsTable 'Couldn’t pull game details right now.'", "where": "error state", "needs_phil_lock": "yes"},
-    {"id": "error.retry.label", "status": "unlocked", "source": "new", "where": "retry button", "needs_phil_lock": "yes"},
-    {"id": "unavailable.message", "status": "unlocked", "source": "new", "where": "season data not published", "needs_phil_lock": "yes"},
-    {"id": "share.button.label", "status": "unlocked", "source": "new", "where": "panel share button", "needs_phil_lock": "yes"},
-    {"id": "share.card.headline", "status": "unlocked", "source": "new", "where": "share card", "needs_phil_lock": "yes"},
-    {"id": "share.card.alt_text", "status": "unlocked", "source": "new", "where": "share image alt / og:image:alt", "needs_phil_lock": "yes"},
-    {"id": "share.post_text", "status": "unlocked", "source": "new", "where": "X intent text", "needs_phil_lock": "yes"},
-    {"id": "sheet.close.label", "status": "unlocked", "source": "new", "where": "390 sheet close button", "needs_phil_lock": "yes"},
-
-    {"id": "data.team_name", "status": "data", "field": "team.team_name", "where": "everywhere"},
-    {"id": "data.rank", "status": "data", "field": "team.rank", "where": "disc, header"},
-    {"id": "data.tr_plus", "status": "data", "field": "team.final_ranking_score (1 dp)", "where": "header, share card"},
-    {"id": "data.record", "status": "data", "field": "team.record", "where": "header, rows"},
-    {"id": "data.delta", "status": "data", "field": "team.prev_rank - team.rank (#105)", "where": "header, board Δ"},
-    {"id": "data.part.weight", "status": "data", "field": "parts[].weight as %", "where": "bar row"},
-    {"id": "data.part.contribution", "status": "data", "field": "weight × (value_self − value_other), 1 dp signed", "where": "bar row"},
-    {"id": "data.gap", "status": "data", "field": "team TR+ − neighbour TR+, 1 dp signed", "where": "comparison header"},
-    {"id": "data.sos_rank", "status": "data", "field": "team.sos_rank (#105)", "where": "stat"},
-    {"id": "data.sov_rank", "status": "data", "field": "team.sov_rank (#105)", "where": "stat"},
-    {"id": "data.game", "status": "data", "field": "games[]: result, opponent, opponent_rank (#105 venue/tag)", "where": "chips"},
-    {"id": "data.url", "status": "data", "field": "team.url (teamPath + year/week)", "where": "share card"},
-    {"id": "data.season", "status": "data", "field": "season", "where": "unavailable state"}
-  ]
+ "note": "Every user-facing string in the #98 why-here comps. status: 'locked' renders verbatim (source cited); 'existing' is shipped on main today and unchanged by this view; 'data' renders the data field; 'unlocked' is OMITTED from every render until Phil locks it. Every row needs Phil's lock or confirmation before build (needs_phil_lock).",
+ "slots": [
+  {
+   "id": "brand.name",
+   "status": "locked",
+   "text": "True Rankings",
+   "source": "PURPOSE.md (What it is); frontend/src/lib/brand.ts BRAND_NAME",
+   "where": "share card footer",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "brand.tagline",
+   "status": "locked",
+   "text": "How good they actually are.",
+   "source": "PURPOSE.md locked public lines",
+   "where": "share card footer",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "brand.rating",
+   "status": "locked",
+   "text": "TR+",
+   "source": "PURPOSE.md; brand.ts RATING_NAME",
+   "where": "board header, panel score, share card",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "board.title",
+   "status": "existing",
+   "text": "Top 25 Teams",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board card header",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.legend.cfp",
+   "status": "existing",
+   "text": "CFP Playoff (1-12)",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board legend",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.legend.bubble",
+   "status": "existing",
+   "text": "On the Bubble (13-25)",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board legend",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.col.rank",
+   "status": "existing",
+   "text": "Rank",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.col.team",
+   "status": "existing",
+   "text": "Team",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.col.conference",
+   "status": "existing",
+   "text": "Conference",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.col.record",
+   "status": "existing",
+   "text": "Record",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "board.col.delta",
+   "status": "existing",
+   "text": "Δ",
+   "source": "RankingsTable.svelte (main)",
+   "where": "board header",
+   "needs_phil_lock": "confirm (unchanged)"
+  },
+  {
+   "id": "part.name.strength",
+   "status": "data",
+   "field": "parts[key=strength].name",
+   "fixture_text": "how they look",
+   "source": "engine parts[].name (#105); fixture value from PURPOSE.md fan language",
+   "where": "bar label",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "part.name.resume",
+   "status": "data",
+   "field": "parts[key=resume].name",
+   "fixture_text": "who they beat",
+   "source": "engine parts[].name (#105); fixture value from PURPOSE.md fan language",
+   "where": "bar label",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "part.name.league",
+   "status": "data",
+   "field": "parts[key=league].name",
+   "fixture_text": "league strength",
+   "source": "engine parts[].name (#105); fixture value from PURPOSE.md fan language",
+   "where": "bar label",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "part.name.heat",
+   "status": "data",
+   "field": "parts[key=heat].name",
+   "fixture_text": "Heat",
+   "source": "engine parts[].name; 'Heat' locked in PURPOSE.md fan language (amendment signed 2026-10-18 23:14 ET)",
+   "where": "bar label, 4-part only",
+   "needs_phil_lock": "confirm"
+  },
+  {
+   "id": "why.toggle.accessible_name",
+   "status": "unlocked",
+   "source": "new",
+   "where": "row toggle aria-label; comps use aria-labelledby=team name until locked",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.heading",
+   "status": "unlocked",
+   "source": "new",
+   "where": "open panel heading",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.vs_above.caption",
+   "status": "unlocked",
+   "source": "new",
+   "where": "comparison vs #N-1 caption",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.vs_below.caption",
+   "status": "unlocked",
+   "source": "new",
+   "where": "comparison vs #N+1 caption",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.no_above",
+   "status": "unlocked",
+   "source": "new",
+   "where": "#1 team, in place of the above comparison",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.no_below",
+   "status": "unlocked",
+   "source": "new",
+   "where": "last team, in place of the below comparison",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.sum.caption",
+   "status": "unlocked",
+   "source": "new",
+   "where": "sum row under the parts",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.weight.caption",
+   "status": "unlocked",
+   "source": "new",
+   "where": "explains the % next to each part",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "why.delta.caption",
+   "status": "unlocked",
+   "source": "new",
+   "where": "explains the move vs previous rank",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "stat.sos.label",
+   "status": "unlocked",
+   "source": "new",
+   "where": "schedule strength stat (value = sos_rank)",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "stat.sov.label",
+   "status": "unlocked",
+   "source": "new",
+   "where": "quality of wins stat (value = sov_rank)",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "stat.heat.recent_form_line",
+   "status": "unlocked",
+   "source": "#98 done-when one-line recent form",
+   "where": "4-part panel",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chips.heading",
+   "status": "unlocked",
+   "source": "new",
+   "where": "game strip heading",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chip.tag.quality_win",
+   "status": "unlocked",
+   "source": "new",
+   "where": "chip tag text + legend",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chip.tag.cupcake",
+   "status": "unlocked",
+   "source": "new",
+   "where": "chip tag text + legend",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chip.tag.bad_loss",
+   "status": "unlocked",
+   "source": "new",
+   "where": "chip tag text + legend",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chip.venue.home",
+   "status": "unlocked",
+   "source": "new (glyph renders meanwhile)",
+   "where": "chip venue",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chip.venue.away",
+   "status": "unlocked",
+   "source": "new (glyph renders meanwhile)",
+   "where": "chip venue",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "chip.venue.neutral",
+   "status": "unlocked",
+   "source": "new (glyph renders meanwhile)",
+   "where": "chip venue",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "early.note",
+   "status": "unlocked",
+   "source": "new",
+   "where": "few games / early week marker",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "loading.label",
+   "status": "unlocked",
+   "source": "new",
+   "where": "screen-reader loading text",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "error.message",
+   "status": "unlocked",
+   "source": "replaces RankingsTable 'Couldn’t pull game details right now.'",
+   "where": "error state",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "error.retry.label",
+   "status": "unlocked",
+   "source": "new",
+   "where": "retry button",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "unavailable.message",
+   "status": "unlocked",
+   "source": "new",
+   "where": "season data not published",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "share.button.label",
+   "status": "unlocked",
+   "source": "new",
+   "where": "panel share button",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "share.card.headline",
+   "status": "unlocked",
+   "source": "new",
+   "where": "share card",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "share.card.alt_text",
+   "status": "unlocked",
+   "source": "new",
+   "where": "share image alt / og:image:alt",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "share.post_text",
+   "status": "unlocked",
+   "source": "new",
+   "where": "X intent text",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "sheet.close.label",
+   "status": "unlocked",
+   "source": "new",
+   "where": "390 sheet close button",
+   "needs_phil_lock": "yes"
+  },
+  {
+   "id": "data.team_name",
+   "status": "data",
+   "field": "team.team_name",
+   "where": "everywhere"
+  },
+  {
+   "id": "data.rank",
+   "status": "data",
+   "field": "team.rank",
+   "where": "disc, header"
+  },
+  {
+   "id": "data.tr_plus",
+   "status": "data",
+   "field": "team.final_ranking_score (1 dp)",
+   "where": "header, share card"
+  },
+  {
+   "id": "data.record",
+   "status": "data",
+   "field": "team.record",
+   "where": "header, rows"
+  },
+  {
+   "id": "data.delta",
+   "status": "data",
+   "field": "team.prev_rank - team.rank (#105)",
+   "where": "header, board Δ"
+  },
+  {
+   "id": "data.part.weight",
+   "status": "data",
+   "field": "parts[].weight as %",
+   "where": "bar row"
+  },
+  {
+   "id": "data.part.contribution",
+   "status": "data",
+   "field": "weight × (value_self − value_other), 1 dp signed",
+   "where": "bar row"
+  },
+  {
+   "id": "data.gap",
+   "status": "data",
+   "field": "team TR+ − neighbour TR+, 1 dp signed",
+   "where": "comparison header"
+  },
+  {
+   "id": "data.sos_rank",
+   "status": "data",
+   "field": "team.sos_rank (#105)",
+   "where": "stat"
+  },
+  {
+   "id": "data.sov_rank",
+   "status": "data",
+   "field": "team.sov_rank (#105)",
+   "where": "stat"
+  },
+  {
+   "id": "data.game",
+   "status": "data",
+   "field": "games[]: result, opponent, opponent_rank (#105 venue/tag)",
+   "where": "chips"
+  },
+  {
+   "id": "data.url",
+   "status": "data",
+   "field": "team.url (teamPath + year/week)",
+   "where": "share card"
+  },
+  {
+   "id": "data.season",
+   "status": "data",
+   "field": "season",
+   "where": "unavailable state"
+  }
+ ]
 }

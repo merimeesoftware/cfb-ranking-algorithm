@@ -1342,7 +1342,7 @@
     },
     {
      "key": "heat",
-     "name": null,
+     "name": "Heat",
      "weight": 0.1,
      "value": 1495.125773775799,
      "contribution": 149.5125773775799
@@ -1378,7 +1378,7 @@
      },
      {
       "key": "heat",
-      "name": null,
+      "name": "Heat",
       "weight": 0.1,
       "value_self": 1495.125773775799,
       "value_other": 1597.2752190682963,
@@ -1418,7 +1418,7 @@
      },
      {
       "key": "heat",
-      "name": null,
+      "name": "Heat",
       "weight": 0.1,
       "value_self": 1495.125773775799,
       "value_other": 1572.6834779552185,

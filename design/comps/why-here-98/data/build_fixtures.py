@@ -27,15 +27,15 @@ def default_config():
 
 CFG = default_config()
 # Part order and score field per part. Names are data (engine parts[].name);
-# fixture values use PURPOSE.md's locked fan-language terms. Heat has no name
-# until Michael picks one, so it ships as null and the label is omitted.
+# fixture values use PURPOSE.md's locked fan-language terms (Heat named in the
+# 2026-10-18 amendment).
 PARTS_3 = [
     {'key': 'strength', 'weight_key': 'team_quality_weight', 'field': 'team_quality_score', 'name': 'how they look'},
     {'key': 'resume', 'weight_key': 'record_weight', 'field': 'record_score', 'name': 'who they beat'},
     {'key': 'league', 'weight_key': 'conference_weight', 'field': 'conference_quality_score', 'name': 'league strength'},
 ]
-# Illustrative "Elo plus form" config for the 4-part comp only. Michael has not
-# picked weights; these live in this fixture, not in any renderer.
+# Illustrative "Elo plus Heat" config for the 4-part comp only. Michael has not
+# picked weights and Heat ships only if the backtest passes (PURPOSE.md); these live in this fixture, not in any renderer.
 ILLUSTRATIVE_4 = {'strength': 0.70, 'resume': 0.15, 'league': 0.05, 'heat': 0.10}
 
 
@@ -189,7 +189,7 @@ def main():
     tq7 = {t['team_name']: t['team_quality_score'] for t in w7}
     w10_4 = json.loads(json.dumps([{k: v for k, v in t.items() if not k.startswith('_')} for t in w10]))
     heat = {t['team_name']: 1500 + t['team_quality_score'] - tq7.get(t['team_name'], t['team_quality_score']) for t in w10_4}
-    spec4 = spec3[:1] + [{'key': 'heat', 'name': None, 'weight': ILLUSTRATIVE_4['heat']}] + spec3[1:]
+    spec4 = spec3[:1] + [{'key': 'heat', 'name': 'Heat', 'weight': ILLUSTRATIVE_4['heat']}] + spec3[1:]
     spec4 = [{**p, 'weight': ILLUSTRATIVE_4[p['key']]} for p in spec4]
     prepare(w10_4, [p['key'] for p in spec4], ILLUSTRATIVE_4, heat)
     w10_4.sort(key=lambda t: -t['_score'])

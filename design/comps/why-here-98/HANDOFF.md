@@ -1,6 +1,6 @@
 # #98 "why here": design handoff package
 
-Refs #98. Built by the CFB design seat (owner:dean-cfb) on 2026-10-18 (ET), branched from the head of PR #95 (`cursor/preview-stills-gate-380c` @ `5378550`). PR #95 is **not merged** (Minicon REVISE). This branch only merges forward from #95, with no rebase and no force-push.
+Refs #98. Built by the CFB design seat (owner:dean-cfb) on 2026-10-18 (ET). Branched from the head of PR #95 (`cursor/preview-stills-gate-380c` @ `5378550`), then merged forward to #95's `272e491` with GitHub's Update branch (merge `1fe77f9`). That brings in the base-ref comp trust, exit 3, and the signed PURPOSE amendment. PR #95 is **not merged**. This PR is stacked on #95's branch and only ever merges forward, with no rebase and no force-push.
 
 The board table stays primary and **unchanged**. There are two exceptions. First, a 44 px row toggle cell. Second, a larger hit area on the team-name link: padding and an equal negative margin, so it looks the same, to meet the 44 px rule.
 
@@ -13,7 +13,7 @@ The board table stays primary and **unchanged**. There are two exceptions. First
 | Share card 1200×675 | `renders/share-card-1200x675.png` | 1 |
 | States | table below; `data/fixtures.json` (one object per state) | 12 |
 | Assets | "Assets" below; `assets/fonts/`, inline SVG glyphs in `render.mjs` (`ICON`) | 2 fonts, 14 glyphs |
-| Copy slots | `copy-slots.json` (source of truth), table below | 57 slots: 30 unlocked, 16 data, 8 existing, 3 locked |
+| Copy slots | `copy-slots.json` (source of truth), table below | 57 slots: 29 unlocked, 17 data, 8 existing, 3 locked |
 | Assertions (app side, for #94) | `check-targets.json`: routes, 16 selector targets, 11 guards | — |
 | Assertions (comp side, proven) | `check-comps.mjs`, `test-check-comps.mjs`, `planted/` | 11 guards, 12 planted fixtures + 1 planted source |
 | Manifest entries (PR #95 schema) | `manifest.fragment.json` (not merged into `design/comps/manifest.json`, see below) | 2 routes, 4 comp entries |
@@ -34,7 +34,7 @@ Primary renders:
 | `row-open-first` | #1 Oregon | No team above: the above slot is empty (`data-empty=true`) and its copy slot is omitted |
 | `row-open-last` | #136 UTEP (1-8) | No team below. Three bad-loss chips, including a loss to an FCS team (Southern Utah) |
 | `three-part` | every 3-part state above | Parts come from `DEFAULT_CONFIG` weights (80 / 15 / 5 %, read from `ranking_service.py` with ast) |
-| `four-part` | Iowa State under illustrative Elo-plus-form weights (Michael pending) | 4 parts; the Heat label is omitted because the slot is unlocked; re-ranked neighbours |
+| `four-part` | Iowa State under illustrative Elo-plus-Heat weights (Michael pending) | 4 parts including Heat (named in the 2026-10-18 PURPOSE amendment); re-ranked neighbours |
 | `negative-part` | Iowa State panel alone | Red bars run left of the axis (strength −54.4 vs Ole Miss) |
 | `early-week` | Iowa State, 2024 W1 (1-0, rank 38) | Few-games marker (dashed bars, `games_played` = 1), no previous rank (Δ shows "—") |
 | `loading` | Iowa State | Skeleton, `aria-busy`, no text |
@@ -53,7 +53,7 @@ Each comparison lists the parts from `parts[]`. Each part has `key`, `name`, `we
 
 - `node check-comps.mjs`: **253/253 checks pass** across 22 files.
   - parts-sum 24
-  - part-label 76 (4 pending: the Heat label in `four-part`, allowed in comps)
+  - part-label 76 (0 pending)
   - overflow-390 11
   - tap-44 19
   - focus-visible 17
@@ -63,7 +63,7 @@ Each comparison lists the parts from `parts[]`. Each part has `key`, `name`, `we
   - share-card 2
   - data-driven 15
   - structure 22
-- `node check-comps.mjs --strict` (the app setting): **249/253**. The 4 failures are the pending Heat label, which shows that the view cannot ship until Michael names Heat and Phil locks it.
+- `node check-comps.mjs --strict` (the app setting, with no pending labels allowed): **253/253**. Heat now has a locked name, so the strict run is clean.
 - `node test-check-comps.mjs`: **16/16 proofs hold**.
   - Each of the 12 planted fixtures fails exactly its own guard and nothing else.
   - `base.html` passes everything.
@@ -116,11 +116,10 @@ Game lists in these comps come from ESPN's public schedule API (`data/games-2024
 **Existing on main, unchanged:** `board.title`, `board.legend.cfp`, `board.legend.bubble`, `board.col.rank|team|conference|record|delta`.
 
 **Data:**
-- `part.name.strength`, `part.name.resume`, `part.name.league` (fixture values come from the PURPOSE.md fan-language list: "how they look", "who they beat", "league strength")
+- `part.name.strength`, `part.name.resume`, `part.name.league`, `part.name.heat` (fixture values come from the PURPOSE.md fan-language list: "how they look", "who they beat", "league strength", "Heat")
 - `data.team_name`, `data.rank`, `data.tr_plus`, `data.record`, `data.delta`, `data.part.weight`, `data.part.contribution`, `data.gap`, `data.sos_rank`, `data.sov_rank`, `data.game`, `data.url`, `data.season`
 
 **Unlocked (omitted):**
-- `part.name.heat` (waiting on Michael)
 - Panel and comparisons: `why.toggle.accessible_name`, `why.heading`, `why.vs_above.caption`, `why.vs_below.caption`, `why.no_above`, `why.no_below`, `why.sum.caption`, `why.weight.caption`, `why.delta.caption`
 - Stats: `stat.sos.label`, `stat.sov.label`, `stat.heat.recent_form_line`
 - Chips: `chips.heading`, `chip.tag.quality_win`, `chip.tag.cupcake`, `chip.tag.bad_loss`, `chip.venue.home`, `chip.venue.away`, `chip.venue.neutral`
@@ -129,8 +128,8 @@ Game lists in these comps come from ESPN's public schedule API (`data/games-2024
 
 ## Open questions
 
-1. **Heat**: the name (Michael), its weights, and whether resume moves to its own board column. The 4-part comp uses illustrative weights (70/10/15/5) and an illustrative value (1500 + change in Elo over 3 weeks). Swap both for the engine's numbers when they exist.
-2. **PURPOSE.md vs the no-gambling rule.** PURPOSE.md's locked lines include "…before you argue or bet" and "Sell disagreement with the market", and the live hero still says "before you argue or bet". Neither is used in this package. Michael and Phil need to re-lock PURPOSE.md.
+1. **Heat**: the name is now locked ("Heat", PURPOSE amendment 2026-10-18 23:14 ET). Still open: its weight, its definition (#96), whether resume moves to its own board column, and the backtest gate PURPOSE sets for shipping it. The 4-part comp uses illustrative weights (70/10/15/5) and an illustrative value (1500 + change in Elo over 3 weeks). Swap both for the engine's numbers when they exist.
+2. **Gambling lines**: resolved in PURPOSE.md by the 2026-10-18 amendment. The live hero still said "…before you argue or bet" on 2026-10-18; removing it is #93 PR2. Nothing in this package uses the old lines.
 3. **Accessible names.** The share, retry and close buttons are icon-only until their label slots are locked. The row toggle uses `aria-labelledby` pointing at the team name in the meantime.
 4. **Fonts in stills.** #95 strips Google Fonts from captured pages, so built stills render fallback faces unless the frontend self-hosts Oswald and Source Sans 3 (these files could be reused). Decide this before signing any comp.
 5. **Few-games threshold.** The comps use fewer than 4 games. Archie or the engine should own the number.

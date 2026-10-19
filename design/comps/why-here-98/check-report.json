@@ -48,7 +48,7 @@
   "part-label": {
    "pass": 76,
    "fail": 0,
-   "pending": 4
+   "pending": 0
   },
   "data-driven": {
    "pass": 15,
@@ -487,9 +487,8 @@
    "file": "states/four-part-1440.html",
    "guard": "part-label",
    "ok": true,
-   "detail": "heat: label pending (part.name.heat)",
-   "width": 1440,
-   "pending": true
+   "detail": "heat: Heat",
+   "width": 1440
   },
   {
    "file": "states/four-part-1440.html",
@@ -516,9 +515,8 @@
    "file": "states/four-part-1440.html",
    "guard": "part-label",
    "ok": true,
-   "detail": "heat: label pending (part.name.heat)",
-   "width": 1440,
-   "pending": true
+   "detail": "heat: Heat",
+   "width": 1440
   },
   {
    "file": "states/four-part-1440.html",
@@ -559,7 +557,7 @@
    "file": "states/four-part-1440.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "2 slot elements ok",
+   "detail": "0 slot elements ok",
    "width": 1440
   },
   {
@@ -608,9 +606,8 @@
    "file": "states/four-part-390.html",
    "guard": "part-label",
    "ok": true,
-   "detail": "heat: label pending (part.name.heat)",
-   "width": 390,
-   "pending": true
+   "detail": "heat: Heat",
+   "width": 390
   },
   {
    "file": "states/four-part-390.html",
@@ -637,9 +634,8 @@
    "file": "states/four-part-390.html",
    "guard": "part-label",
    "ok": true,
-   "detail": "heat: label pending (part.name.heat)",
-   "width": 390,
-   "pending": true
+   "detail": "heat: Heat",
+   "width": 390
   },
   {
    "file": "states/four-part-390.html",
@@ -687,7 +683,7 @@
    "file": "states/four-part-390.html",
    "guard": "copy-slots",
    "ok": true,
-   "detail": "2 slot elements ok",
+   "detail": "0 slot elements ok",
    "width": 390
   },
   {
