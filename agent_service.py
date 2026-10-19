@@ -306,23 +306,31 @@ _EXACT_FORMULA = re.compile(
         for weight, label in zip(FRS_WEIGHTS, _FORMULA_LABELS)
     )
 )
-_RECORD_PAIR = re.compile(r'\b(\d+)\s*[-\u2010-\u2015]\s*(\d+)\b')
+_RECORD_PAIR = re.compile(r'\b(\d+)\s*[-\u2010-\u2015\u2212]\s*(\d+)\b')
 _RESULT_WORD = re.compile(
-    r'\b(?:knocked off|took down|defeat(?:ed|s)?|victory|against|routed|'
-    r'dominated|handled|outlasted|met|played|'
+    r'\b(?:head-to-head|knocked off|took down|defeat(?:ed|s)?|victory|against|'
+    r'routed|dominated|handled|outlasted|met|played|stomped|'
     r'wins?|won|winning|losses|loss|lost|losing|results?|'
-    r'beats?|beating|beaten|fell|topped|edged|upset|downed|over)\b',
+    r'beats?|beating|beaten|fell|topped|edged|edge|upset|downed|over)\b',
     re.IGNORECASE,
 )
 _LOSS_WORD = re.compile(
     r'\b(?:losses|loss|lost|losing|fell)\b',
     re.IGNORECASE,
 )
-_POSITION_WORD = re.compile(
-    r'\b(?:next to|ahead|behind|above|below|spot|place|ranked|sits)\b',
+# ^{team} (sits|is ranked|is|holds the next spot) [just|right]
+# (behind|ahead of|above|below|next to) {team}\.?$
+_PLACEMENT_FORM = re.compile(
+    r'^(?P<left>.+?) '
+    r'(?:sits|is ranked|is|holds the next spot)'
+    r'(?: (?:just|right))?'
+    r' (?:behind|ahead of|above|below|next to) '
+    r'(?P<right>.+?)\.?$',
     re.IGNORECASE,
 )
 _TOP_WIN_PHRASE = re.compile(r'\bbeat\b|\bwin over\b', re.IGNORECASE)
+# ^{subject}('s)?\s+(beat|got a win over|win over)\s+{opponent}\b
+_AGENT_RESULT = r"(?:beat|got a win over|win over)"
 _NOT_A_TEAM = {
     'the', 'they', 'their', 'this', 'that', 'these', 'those', 'record',
     'quality', 'notable', 'immediately', 'a', 'an', 'after', 'before',
@@ -390,14 +398,42 @@ def _sentences(text: str) -> list[str]:
     return [part.strip() for part in re.split(r'[.!?]+', text) if part.strip()]
 
 
+def _spans_longer_team(text: str, start: int, end: int, roster: set[str]) -> bool:
+    """True when this match is only the start of a longer roster name."""
+    for other in roster:
+        if len(other) <= end - start:
+            continue
+        stop = start + len(other)
+        if stop > len(text) or text[start:stop] != other:
+            continue
+        if stop < len(text) and text[stop].isalnum():
+            continue
+        return True
+    return False
+
+
+def _whole_team_spans(text: str, team: str, roster: set[str]) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    for match in re.finditer(rf'\b{re.escape(team)}\b', text):
+        if _spans_longer_team(text, match.start(), match.end(), roster):
+            continue
+        spans.append((match.start(), match.end()))
+    return spans
+
+
 def _mentioned_teams(text: str, teams: set[str]) -> set[str]:
     lowered = re.sub(r"['\u2019]s\b", '', text, flags=re.IGNORECASE).lower()
     found: set[str] = set()
     for team in sorted(teams, key=len, reverse=True):
-        pattern = re.compile(rf'\b{re.escape(team)}\b')
-        if pattern.search(lowered):
-            found.add(team)
-            lowered = pattern.sub(' ', lowered)
+        spans = _whole_team_spans(lowered, team, teams)
+        if not spans:
+            continue
+        found.add(team)
+        chars = list(lowered)
+        for start, end in spans:
+            for index in range(start, end):
+                chars[index] = ' '
+        lowered = ''.join(chars)
     return found
 
 
@@ -410,22 +446,44 @@ def _neighbor_names(payload: Dict[str, Any]) -> set[str]:
     return names
 
 
-def _neighbor_placement(sentence: str, others: set[str], neighbors: set[str]) -> bool:
-    """A second team is allowed when the sentence only places neighbors."""
-    if not others or not others <= neighbors:
+def _neighbor_placement(
+    sentence: str,
+    subject: str,
+    others: set[str],
+    neighbors: set[str],
+) -> bool:
+    """A second team is allowed only in a fixed placement sentence.
+
+    The shape is "{team} sits|is ranked|is|holds the next spot [just|right]
+    behind|ahead of|above|below|next to {team}". An unlisted verb does not
+    get in by sitting next to one of those words.
+    """
+    if len(others) != 1 or not others <= neighbors or not subject:
         return False
-    if _RESULT_WORD.search(sentence):
+    lowered = sentence.strip().lower()
+    match = _PLACEMENT_FORM.match(lowered)
+    if match is None:
         return False
-    return _POSITION_WORD.search(sentence) is not None
+    left = match.group('left').strip()
+    right = match.group('right').strip().rstrip('.')
+    return {left, right} == {subject, next(iter(others))}
 
 
-def _subject_before_phrase(sentence: str, subject: str) -> bool:
-    """The team being explained is the one that beat or won over."""
-    lowered = re.sub(r"['\u2019]s\b", '', sentence, flags=re.IGNORECASE).lower()
-    match = _TOP_WIN_PHRASE.search(lowered)
-    if match is None or not subject:
+def _subject_is_agent(sentence: str, subject: str, opponent: str) -> bool:
+    """The subject is the team directly before beat or win over.
+
+    ``Oregon beat Ohio State`` passes. ``Oregon, who Ohio State beat`` does
+    not, and ``Oregon`` does not match the start of ``Oregon State``.
+    """
+    if not subject or not opponent:
         return False
-    return re.search(rf'\b{re.escape(subject)}\b', lowered[:match.start()]) is not None
+    lowered = sentence.strip().lower()
+    return re.match(
+        rf"^{re.escape(subject)}(?:'s|\u2019s)?\s+{_AGENT_RESULT}\s+"
+        rf"{re.escape(opponent)}\b",
+        lowered,
+        re.IGNORECASE,
+    ) is not None
 
 
 def _top_win_exception(
@@ -435,9 +493,9 @@ def _top_win_exception(
     top_wins: set[str],
 ) -> bool:
     """Subject beat or won over a top_quality_wins team, and nothing else."""
-    if not others or not others <= top_wins:
+    if len(others) != 1 or not others <= top_wins:
         return False
-    if not _subject_before_phrase(sentence, subject):
+    if not _subject_is_agent(sentence, subject, next(iter(others))):
         return False
     remainder = _TOP_WIN_PHRASE.sub(' ', sentence)
     return _RESULT_WORD.search(remainder) is None
@@ -450,10 +508,12 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     Any other percent fails. An N-M pair, including a Unicode dash, is
     accepted only when it is the total record or the conference record.
     With no games list, a sentence that names another payload team passes
-    only when every other team is a neighbor, the sentence has a position
-    word, and it has no result word. The exception is the subject team
-    beating or winning over a top_quality_wins team. When games are listed,
-    that result has to be one of them.
+    only when it is a fixed placement sentence and every other team is a
+    neighbor. The exception is the subject directly before beat or win
+    over, naming a top_quality_wins team. A result word in the next
+    sentence fails too.
+    When games are listed, that result has to be one of them. An N-M pair
+    may use a Unicode dash or a minus sign.
     """
     text = (answer or '').strip()
     if not text or text.startswith('LLM explanation unavailable'):
@@ -485,14 +545,18 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     }
     played = bool(payload.get('games'))
     neighbors = _neighbor_names(payload)
+    previous_named_other = False
     for sentence in _sentences(text):
+        if previous_named_other and _RESULT_WORD.search(sentence):
+            return False
         others = _mentioned_teams(sentence, roster) - {subject}
+        previous_named_other = bool(others)
         if not others:
             continue
         if not played:
             if _top_win_exception(sentence, subject, others, top_wins):
                 continue
-            if _neighbor_placement(sentence, others, neighbors):
+            if _neighbor_placement(sentence, subject, others, neighbors):
                 continue
             return False
         if _RESULT_WORD.search(sentence) is None:

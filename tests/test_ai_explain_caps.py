@@ -408,6 +408,41 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded('Oregon is 12-0.', context)
     assert not answer_is_grounded('Oregon is 12\u20130.', context)
     assert not answer_is_grounded('Oregon is 12 \u2013 0.', context)
+    assert not answer_is_grounded('Oregon is 12\u22120.', context)
+    assert answer_is_grounded('Oregon sits just ahead of Ohio State.', context)
+    assert not answer_is_grounded(
+        "Oregon's head-to-head edge on Ohio State keeps it ahead.", context,
+    )
+    assert not answer_is_grounded(
+        'Oregon sits just ahead of Ohio State. The head-to-head holds.', context,
+    )
+    assert not answer_is_grounded(
+        'Oregon sits just ahead of Ohio State. The edge holds.', context,
+    )
+    assert not answer_is_grounded('Oregon stomped Ohio State and sits ahead.', context)
+    assert not answer_is_grounded(
+        'Oregon sits just ahead of Ohio State. They beat them.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon blanked, sits behind.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon crushed, sits behind.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon smashed, sits behind.', context,
+    )
+    assert not answer_is_grounded(
+        'Ohio State, which Oregon steamrolled, sits behind.', context,
+    )
+    state = dict(context)
+    state['top_quality_wins'] = ['Oregon State']
+    assert not answer_is_grounded('Oregon State beat Oregon.', state)
+    ohio = dict(context)
+    ohio['team_name'] = 'Ohio'
+    ohio['neighbor_behind'] = 'Ohio State'
+    ohio['top_quality_wins'] = ['Ohio State']
+    assert not answer_is_grounded('Ohio State beat Ohio.', ohio)
     assert not answer_is_grounded('Oregon is 15-0.', context)
     assert not answer_is_grounded('The formula is 5% Team Quality.', context)
     # 15 is not a payload number. A bare 5/15/80 whitelist would let this pass.
@@ -419,6 +454,12 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     listed['top_quality_wins'] = [opponent]
     assert answer_is_grounded(f'{subject} beat {opponent}.', listed)
     assert not answer_is_grounded(f'{opponent} beat {subject}.', listed)
+    assert not answer_is_grounded(
+        f'{subject}, who {opponent} beat, sits #1.', listed,
+    )
+    assert not answer_is_grounded(
+        f'{subject} fans saw {opponent} beat {subject}.', listed,
+    )
     assert answer_is_grounded(f'{subject} got a win over {opponent}.', listed)
     assert not answer_is_grounded(f'{subject} topped {opponent}.', listed)
     assert not answer_is_grounded(f'{subject} edged {opponent}.', listed)
