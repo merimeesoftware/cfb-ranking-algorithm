@@ -49,8 +49,8 @@ class CFBDataProcessor:
         else:
             self.team_info_map = self.api_client.get_teams_with_logos() or {}
             if persist and season is not None and self.team_info_map:
-                from static_rankings import write_season_teams
-                write_season_teams(season, self.team_info_map)
+                from static_rankings import DEFAULT_ROOT, write_season_teams
+                write_season_teams(season, self.team_info_map, root=DEFAULT_ROOT)
         self.team_conference_map = {
             team: info.get('conference')
             for team, info in self.team_info_map.items()
@@ -127,6 +127,8 @@ class CFBDataProcessor:
             home_team = game.get('home_team_name')
             away_team = game.get('away_team_name')
             
+            if game.get('completed') is False:
+                continue
             if not home_team or not away_team or game.get('home_score') is None or game.get('away_score') is None:
                 continue
 

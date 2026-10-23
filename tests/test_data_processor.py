@@ -68,6 +68,22 @@ def test_get_available_weeks(mock_client):
     assert weeks == [1, 2]
 
 
+def test_scored_but_incomplete_rows_are_excluded(mock_client):
+    processor = CFBDataProcessor(api_client=mock_client)
+    games = [
+        {
+            **_make_game(1, home='BowlA', away='BowlB'),
+            'season_type': 'postseason',
+            'completed': False,
+            'home_score': 31,
+            'away_score': 28,
+        },
+        {**_make_game(1), 'completed': True},
+    ]
+    kept = processor._process_raw_games(games)
+    assert [game['home_team_name'] for game in kept] == ['TeamA']
+
+
 def test_cfbd_error_is_not_an_empty_season(mock_client):
     from api_integration import CFBDRequestError
 

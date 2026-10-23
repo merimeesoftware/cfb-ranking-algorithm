@@ -46,20 +46,20 @@ def test_compute_priors_only_fetches_two_prior_years():
         assert set(years) == {2023, 2022}
 
 
-def test_compute_priors_reads_baseline_without_cfbd():
+def test_compute_priors_reads_published_scores_without_cfbd():
     from ranking_service import compute_priors, DEFAULT_CONFIG
 
     mock_dp = MagicMock()
-    mock_dp.get_games_for_season.side_effect = AssertionError('baseline should serve priors')
+    mock_dp.get_games_for_season.side_effect = AssertionError('priors should serve scores')
 
-    def _baseline(year, root=None):
-        return []
+    def _priors(year, algo=None, root=None):
+        return {'Georgia': 1800.0}
 
     with patch('ranking_service.get_cache') as mock_cache:
         cache = MagicMock()
         cache.get.return_value = None
         mock_cache.return_value = cache
-        with patch('static_rankings.read_baseline_games', side_effect=_baseline):
+        with patch('static_rankings.read_prior_teams', side_effect=_priors):
             compute_priors(mock_dp, 2024, DEFAULT_CONFIG.copy())
     mock_dp.get_games_for_season.assert_not_called()
 

@@ -331,7 +331,12 @@ def _write_season_payload(
     payload: Dict[str, Any],
     root: Optional[Union[str, Path]],
 ) -> Path:
-    roots = [Path(root)] if root is not None else [_frontend_rankings_root(), Path(DEFAULT_ROOT)]
+    # Games and teams stay in the private rankings root. The public tree
+    # commits derived priors only, never baseline/ or teams/.
+    if root is not None:
+        roots = [Path(root)]
+    else:
+        roots = [Path(DEFAULT_ROOT)]
     last: Optional[Path] = None
     for base in roots:
         fullpath = _season_file(kind, year, base)
@@ -389,13 +394,84 @@ def write_baseline_games(
     games: list,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    """Store processed games, not the raw CFBD response."""
+    """Private cache only. Do not point ``root`` at frontend/static/rankings."""
     return _write_season_payload(
         'baseline',
         year,
         {'year': year, 'games': games},
         root,
     )
+
+
+def _prior_file(year: int, root: Optional[Union[str, Path]]) -> str:
+    if type(year) is not int or not (_YEAR_MIN <= year <= _YEAR_MAX):
+        raise ValueError('year is outside the allowed range')
+    base = Path(root) if root is not None else _frontend_rankings_root()
+    base_norm = os.path.normpath(str(base))
+    fullpath = os.path.normpath(os.path.join(base_norm, 'priors', f'{year}.json'))
+    if not fullpath.startswith(base_norm + os.sep):
+        raise ValueError('prior file path escapes the allowed root')
+    return fullpath
+
+
+def read_prior_teams(
+    year: int,
+    *,
+    algo: Optional[str] = None,
+    root: Optional[Union[str, Path]] = None,
+) -> Optional[Dict[str, float]]:
+    """End-of-season scores. None means the derived file is not published yet."""
+    bases = [Path(root)] if root is not None else [_frontend_rankings_root(), Path(DEFAULT_ROOT)]
+    for base in bases:
+        try:
+            fullpath = _prior_file(year, base)
+        except ValueError:
+            return None
+        if not os.path.exists(fullpath):
+            continue
+        try:
+            with open(fullpath, 'r', encoding='utf-8') as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError, UnicodeError):
+            continue
+        if not isinstance(payload, dict) or payload.get('schema') != 1:
+            continue
+        if algo is not None and payload.get('algo') != algo:
+            continue
+        teams = payload.get('teams')
+        if not isinstance(teams, dict):
+            continue
+        scores: Dict[str, float] = {}
+        for name, score in teams.items():
+            if isinstance(name, str) and isinstance(score, (int, float)):
+                scores[name] = float(score)
+        return scores
+    return None
+
+
+def write_prior_scores(
+    year: int,
+    teams: Dict[str, float],
+    *,
+    source_sha: str,
+    generated_at: str,
+    algo: str,
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    """Derived team-to-score priors. Sorted keys, no CFBD game rows."""
+    payload = {
+        'algo': algo,
+        'generated_at': generated_at,
+        'schema': 1,
+        'source_sha': source_sha,
+        'teams': {name: teams[name] for name in sorted(teams)},
+    }
+    fullpath = _prior_file(year, root)
+    os.makedirs(os.path.dirname(fullpath), exist_ok=True)
+    with open(fullpath, 'w', encoding='utf-8') as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write('\n')
+    return Path(fullpath)
 
 
 def rebuild_rankings_manifest(root: Union[str, Path]) -> Dict[str, Any]:

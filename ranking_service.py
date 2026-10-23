@@ -112,13 +112,20 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
     print(f"Cache MISS: priors for {year}")
     history_data = []
     # calculate_priors only weights Y-1 and Y-2 — skip Y-3.
-    # Published baseline JSON supplies those seasons without a CFBD call.
-    from static_rankings import read_baseline_games
+    # Published priors are end-of-season scores, not CFBD game rows.
+    from static_rankings import read_prior_teams
     for h_year in range(year - 1, year - 3, -1):
         try:
-            h_games = read_baseline_games(h_year)
-            if h_games is None:
-                h_games = data_processor.get_games_for_season(h_year, use_week_scoped_fetch=False)
+            stored = read_prior_teams(h_year, algo=ALGO_VERSION)
+            if stored is not None:
+                history_data.append({
+                    'rankings': {
+                        name: {'final_ranking_score': score}
+                        for name, score in stored.items()
+                    },
+                })
+                continue
+            h_games = data_processor.get_games_for_season(h_year, use_week_scoped_fetch=False)
             if h_games:
                 h_ranker = TeamQualityRanker(config)
                 h_games_by_week = data_processor.organize_games_by_week(h_games)
