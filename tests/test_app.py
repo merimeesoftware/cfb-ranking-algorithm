@@ -47,6 +47,18 @@ def test_cors_allowlist_has_no_wildcard_or_credentials(client, monkeypatch):
     assert 'Access-Control-Allow-Credentials' not in preflight.headers
 
 
+@pytest.mark.parametrize('path', [
+    '/Agent',
+    '/agent;x',
+    '/agent/explain/',
+    '/Agent/explain',
+    '/agent;x/explain',
+])
+def test_classifier_miss_is_flask_404(client, path):
+    response = client.post(path, json={'team_name': 'Oregon'})
+    assert response.status_code == 404
+
+
 def test_mcp_query_route_is_gone(client):
     response = client.post('/agent/mcp/query', json={'tool': 'get-games', 'params': {'year': 2024}})
     assert response.status_code == 404

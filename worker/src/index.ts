@@ -11,7 +11,6 @@ import {
 	isCounterEndpoint,
 	isInternalHost,
 	isSpendKillRoute,
-	isVisitorApiPath,
 	applyJsonSecurity,
 	DROP_CLOSED_MESSAGE,
 	isCacheClearPath,
@@ -24,6 +23,7 @@ import {
 	TURNSTILE_HEADER,
 	turnstileDecision,
 	turnstileRefusal,
+	turnstileUnconfigured,
 	VISITOR_HOST_HEADER,
 	stripPublicCounters,
 	UNPUBLISHED_MESSAGE,
@@ -265,26 +265,18 @@ async function sanitizeCounters(pathname: string, response: Response): Promise<R
 /** Invoked for /api/* only (see wrangler.toml run_worker_first). */
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
-		let incoming: URL;
-		try {
-			incoming = new URL(request.url);
-		} catch {
-			return jsonResponse({ ok: false, error: 'path' }, 400);
-		}
-		if (!isVisitorApiPath(incoming.pathname)) {
-			return jsonResponse({ ok: false, error: 'path' }, 400);
-		}
 		const routed = routeApiRequest(request.url);
 		if (!routed.ok) return jsonResponse({ ok: false, error: 'path' }, routed.status);
 		const apiPath = routed.apiPath;
+		const matchPath = routed.matchPath;
 
 		const limit = await enforceVisitorLimit(request, {
 			api: env.API_RATE_LIMITER,
 			agent: env.AGENT_RATE_LIMITER,
-		}, apiPath);
+		}, matchPath);
 		if (limit.limited) return busyResponse(limit.code);
 
-		if (isSpendKillRoute(request.method, apiPath)) {
+		if (isSpendKillRoute(request.method, matchPath)) {
 			const auth = await spendKillAuthorized(env, request);
 			if (!auth.ok) return jsonResponse({ ok: false, error: 'auth' }, auth.status);
 			let raw: unknown = {};
@@ -306,15 +298,15 @@ export default {
 			});
 		}
 
-		if (isHiddenPublicPath(apiPath)) {
+		if (isHiddenPublicPath(matchPath)) {
 			return jsonResponse({ ok: false }, 404);
 		}
-		if (isCacheClearPath(apiPath)) {
+		if (isCacheClearPath(matchPath)) {
 			if (!(await cacheClearAuthorized(env, request))) {
 				return jsonResponse({ ok: false }, 404);
 			}
 		}
-		if (isDropSubscribePath(apiPath)) {
+		if (isDropSubscribePath(matchPath)) {
 			return new Response(DROP_CLOSED_MESSAGE, {
 				status: 410,
 				headers: jsonSecurityHeaders({
@@ -322,19 +314,20 @@ export default {
 				}),
 			});
 		}
-		if (needsTurnstile(apiPath)) {
+		if (needsTurnstile(matchPath) && request.method !== 'OPTIONS') {
 			const decision = await turnstileDecision(
 				env,
 				request.headers.get(TURNSTILE_HEADER) ?? '',
 				limit.ip,
 			);
+			if (decision === 'unconfigured') return turnstileUnconfigured();
 			if (decision === 'refuse') return turnstileRefusal();
 		}
 
-		const route = boardRoute(apiPath);
+		const route = boardRoute(matchPath);
 		if (route) {
-			const manifest = await loadManifest(env, incoming.origin);
-			const decision = checkPublicQuery(apiPath, incoming.searchParams, manifest);
+			const manifest = await loadManifest(env, routed.origin);
+			const decision = checkPublicQuery(apiPath, routed.searchParams, manifest);
 			if (decision && !decision.ok) return jsonResponse(decision.body, decision.status);
 			if (decision?.ok && decision.route === 'weeks') {
 				return jsonResponse({
@@ -347,7 +340,7 @@ export default {
 			if (decision?.ok && decision.route === 'rankings') {
 				const assetUrl = new URL(
 					`/rankings/${decision.year}/week-${decision.week}.json`,
-					incoming.origin,
+					routed.origin,
 				);
 				const asset = await env.ASSETS.fetch(new Request(assetUrl.toString()));
 				if (asset.ok) return sealJson(asset);
@@ -374,7 +367,7 @@ export default {
 		headers.delete('x-xai-week-reserved');
 		headers.delete('x-spend-kill-secret');
 		headers.delete(TURNSTILE_HEADER);
-		if (!isCacheClearPath(apiPath)) headers.delete('x-cache-secret');
+		if (!isCacheClearPath(matchPath)) headers.delete('x-cache-secret');
 		headers.set(VISITOR_HOST_HEADER, routed.modeHost);
 		headers.set('CF-Connecting-IP', limit.ip);
 
@@ -387,6 +380,6 @@ export default {
 
 		const container = await getRandom(env.CFB_API, 3);
 		const response = await container.fetch(apiRequest);
-		return sanitizeCounters(apiPath, response);
+		return sanitizeCounters(matchPath, response);
 	},
 };

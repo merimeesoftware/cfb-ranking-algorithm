@@ -14,6 +14,7 @@ import {
 	DROP_CLOSED_MESSAGE,
 	SITEVERIFY_URL,
 	TURNSTILE_MESSAGE,
+	TURNSTILE_UNCONFIGURED_MESSAGE,
 	decodeVisitorPath,
 	enforceVisitorLimit,
 	SPEND_GATE_HOST,
@@ -691,6 +692,16 @@ test('spoofed api paths never select an internal or production host', () => {
 		assert.equal(routed.ok, false, form.name);
 		if (!routed.ok) assert.equal(routed.status, 400);
 	}
+	for (const form of fixture.collapsed as { name: string; url: string; apiPath: string }[]) {
+		const routed = routeApiRequest(form.url);
+		assert.equal(routed.ok, true, form.name);
+		if (!routed.ok) continue;
+		assert.equal(routed.upstream.hostname, 'api.internal', form.name);
+		assert.equal(routed.upstream.origin, UPSTREAM_ORIGIN, form.name);
+		assert.equal(routed.apiPath, form.apiPath, form.name);
+		assert.equal(routed.matchPath, form.apiPath.toLowerCase(), form.name);
+		assert.equal(isInternalHost(routed.upstream.hostname), false, form.name);
+	}
 	const team = routeApiRequest(
 		'https://preview.example.workers.dev/api/rankings/team/Ohio%20State?year=2024&week=15',
 	);
@@ -735,6 +746,8 @@ test('spoofed api paths never select an internal or production host', () => {
 test('decodeVisitorPath rejects a second decode on its own', () => {
 	assert.equal(decodeVisitorPath('/api/%2561gent/explain'), null);
 	assert.equal(decodeVisitorPath('/api/agent%2509/explain'), null);
+	assert.equal(decodeVisitorPath('/api/agent%250A/explain'), null);
+	assert.equal(decodeVisitorPath('/api/agent%2Fexplain'), '/api/agent/explain');
 });
 
 test('decodeVisitorPath rejects control characters on its own', () => {
@@ -825,8 +838,6 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 	for (const path of [
 		'/api/%2e%2e/agent/explain',
 		'/api/.%2e/agent/explain',
-		'/api/agent%2fexplain',
-		'/api/agent%2Fexplain',
 		'/api/%61gent/explain',
 		'/api/agent%09/explain',
 		'/api/agent%0A/explain',
@@ -838,6 +849,7 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 		'/api/agent%00/health',
 		'/api/%2561gent/explain',
 		'/api/agent%2509/explain',
+		'/api/agent%250A/explain',
 		'/api/agent%252f/explain',
 		'/api/%C0%AF',
 		'/api/%FF',
@@ -1003,11 +1015,8 @@ test('container forward drops kill and cache secrets except on an authorized cac
 			'x-cache-secret': 'planted',
 		},
 	}), env as never);
-	assert.equal(trailed.status, 200);
-	assert.ok(capture.request);
-	assert.equal(new URL(capture.request.url).pathname, '/spend/kill/');
-	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
-	assert.equal(capture.request.headers.get('x-cache-secret'), null);
+	assert.equal(trailed.status, 403);
+	assert.equal(capture.request, null);
 });
 
 test('container fetch keeps preview stub and production live after overwriting x-visitor-host', async () => {
@@ -1199,14 +1208,21 @@ test('turnstile refuses a planted missing or invalid token and skips siteverify 
 			headers: { 'content-type': 'application/json' },
 			body: '{}',
 		}), { ...base, TURNSTILE_REQUIRED: '1' } as never);
-		assert.equal(required.status, 429);
+		assert.equal(required.status, 503);
 		const requiredBody = await required.json() as { busy?: boolean; capped?: boolean; message?: string; code?: string };
 		assert.equal(requiredBody.busy, true);
 		assert.equal(requiredBody.capped, true);
-		assert.equal(requiredBody.message, TURNSTILE_MESSAGE);
-		assert.equal(requiredBody.code, 'turnstile');
+		assert.equal(requiredBody.message, TURNSTILE_UNCONFIGURED_MESSAGE);
+		assert.notEqual(requiredBody.message, TURNSTILE_MESSAGE);
+		assert.equal(requiredBody.code, 'turnstile_unconfigured');
 		assert.equal(required.headers.get('x-content-type-options'), 'nosniff');
 		assert.equal(required.headers.get('content-security-policy'), "default-src 'none'");
+		assert.equal(warnings.length, 1);
+		const logged = JSON.parse(warnings[0] ?? '') as { event?: string; secret?: string; TURNSTILE_REQUIRED?: string };
+		assert.equal(logged.event, 'turnstile_unconfigured');
+		assert.equal(logged.TURNSTILE_REQUIRED, '1');
+		assert.equal(logged.secret, 'missing');
+		assert.equal(warnings[0]?.includes('site-secret'), false);
 		assert.equal(siteverifyCalls, 0);
 		assert.equal(capture.request, null);
 
@@ -1272,4 +1288,74 @@ test('turnstile refuses a planted missing or invalid token and skips siteverify 
 	assert.equal(runtime.TURNSTILE_SECRET_KEY, undefined);
 	assert.equal(runtime.AI_MODE, 'live');
 	assert.equal(runtime.CFBD_OFFLINE, '1');
+});
+
+test('turnstile gates case, matrix params, duplicate slashes, encoded slashes, and a trailing slash', async () => {
+	const capture: { request: Request | null } = { request: null };
+	const env = apiEnv(capture, { n: 0 });
+	let siteverifyCalls = 0;
+	const original = globalThis.fetch;
+	globalThis.fetch = async () => {
+		siteverifyCalls += 1;
+		return new Response(JSON.stringify({ success: true }), {
+			status: 200,
+			headers: { 'content-type': 'application/json' },
+		});
+	};
+	const secretEnv = { ...env, TURNSTILE_SECRET_KEY: 'site-secret' };
+	const paths = [
+		'/api/Agent/explain',
+		'/api/AGENT/explain',
+		'/api/agent;x/explain',
+		'/api/agent;x=1/explain',
+		'/api/agent%3Bx/explain',
+		'/api//agent/explain',
+		'/api/agent//explain',
+		'/api/agent%2Fexplain',
+		'/api/agent%2fexplain',
+		'/api/%2F/agent/explain',
+		'/api/agent/explain/',
+	];
+	try {
+		for (const path of paths) {
+			capture.request = null;
+			const before = siteverifyCalls;
+			const refused = await worker.fetch(new Request(`https://preview.example.workers.dev${path}`, {
+				method: 'POST',
+			}), secretEnv as never);
+			assert.equal(refused.status, 429, path);
+			const body = await refused.json() as { code?: string; message?: string };
+			assert.equal(body.code, 'turnstile', path);
+			assert.equal(body.message, TURNSTILE_MESSAGE, path);
+			assert.equal(siteverifyCalls, before, path);
+			assert.equal(capture.request, null, path);
+		}
+
+		capture.request = null;
+		const preflight = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/explain', {
+			method: 'OPTIONS',
+			headers: {
+				origin: 'https://board.example.test',
+				'access-control-request-method': 'POST',
+			},
+		}), secretEnv as never);
+		assert.notEqual(preflight.status, 429);
+		assert.equal(siteverifyCalls, 0);
+		assert.ok(capture.request);
+		assert.equal(capture.request.method, 'OPTIONS');
+
+		for (const path of paths) {
+			capture.request = null;
+			const allowed = await worker.fetch(new Request(`https://preview.example.workers.dev${path}`, {
+				method: 'POST',
+				headers: { 'cf-turnstile-response': 'planted-valid-token' },
+			}), secretEnv as never);
+			assert.equal(allowed.status, 200, path);
+			assert.ok(capture.request, path);
+			assert.equal(new URL(capture.request.url).pathname, '/agent/explain', path);
+			assert.equal(capture.request.headers.get('cf-turnstile-response'), null, path);
+		}
+	} finally {
+		globalThis.fetch = original;
+	}
 });

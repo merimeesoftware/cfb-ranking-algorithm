@@ -1,22 +1,6 @@
 {
   "forms": [
     {
-      "name": "protocol-relative-spend",
-      "url": "https://preview.example.workers.dev/api//spend.budget/consume?limit=999"
-    },
-    {
-      "name": "protocol-relative-production",
-      "url": "https://preview.example.workers.dev/api//true-rankings-cfb.acct.workers.dev/agent/explain"
-    },
-    {
-      "name": "encoded-slashes",
-      "url": "https://preview.example.workers.dev/api/%2F%2Fspend.budget/consume"
-    },
-    {
-      "name": "encoded-slashes-lower",
-      "url": "https://preview.example.workers.dev/api/%2f%2fai.xai/v1"
-    },
-    {
       "name": "backslash",
       "url": "https://preview.example.workers.dev/api/\\spend.budget/consume"
     },
@@ -25,28 +9,12 @@
       "url": "https://preview.example.workers.dev/api/%5C%5Cai.workers/run"
     },
     {
-      "name": "protocol-relative-xai",
-      "url": "https://preview.example.workers.dev/api//ai.xai/v1/chat/completions"
-    },
-    {
-      "name": "protocol-relative-workers",
-      "url": "https://preview.example.workers.dev/api//ai.workers/run"
-    },
-    {
       "name": "encoded-dot-dot",
       "url": "https://preview.example.workers.dev/api/%2e%2e/agent/explain"
     },
     {
       "name": "mixed-dot-dot",
       "url": "https://preview.example.workers.dev/api/.%2e/agent/explain"
-    },
-    {
-      "name": "encoded-agent-slash",
-      "url": "https://preview.example.workers.dev/api/agent%2fexplain"
-    },
-    {
-      "name": "encoded-agent-slash-upper",
-      "url": "https://preview.example.workers.dev/api/agent%2Fexplain"
     },
     {
       "name": "encoded-agent-letter",
@@ -97,6 +65,10 @@
       "url": "https://preview.example.workers.dev/api/agent%252f/explain"
     },
     {
+      "name": "double-encoded-agent-lf",
+      "url": "https://preview.example.workers.dev/api/agent%250A/explain"
+    },
+    {
       "name": "overlong-slash",
       "url": "https://preview.example.workers.dev/api/%C0%AF"
     },
@@ -113,5 +85,47 @@
       "url": "https://preview.example.workers.dev/api/agent%EF%BC%8Fexplain"
     }
   ],
-  "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10"
+  "safe": "https://preview.example.workers.dev/api/rankings?year=2024&week=10",
+  "collapsed": [
+    {
+      "name": "protocol-relative-spend",
+      "url": "https://preview.example.workers.dev/api//spend.budget/consume?limit=999",
+      "apiPath": "/spend.budget/consume"
+    },
+    {
+      "name": "protocol-relative-production",
+      "url": "https://preview.example.workers.dev/api//true-rankings-cfb.acct.workers.dev/agent/explain",
+      "apiPath": "/true-rankings-cfb.acct.workers.dev/agent/explain"
+    },
+    {
+      "name": "encoded-slashes",
+      "url": "https://preview.example.workers.dev/api/%2F%2Fspend.budget/consume",
+      "apiPath": "/spend.budget/consume"
+    },
+    {
+      "name": "encoded-slashes-lower",
+      "url": "https://preview.example.workers.dev/api/%2f%2fai.xai/v1",
+      "apiPath": "/ai.xai/v1"
+    },
+    {
+      "name": "protocol-relative-xai",
+      "url": "https://preview.example.workers.dev/api//ai.xai/v1/chat/completions",
+      "apiPath": "/ai.xai/v1/chat/completions"
+    },
+    {
+      "name": "protocol-relative-workers",
+      "url": "https://preview.example.workers.dev/api//ai.workers/run",
+      "apiPath": "/ai.workers/run"
+    },
+    {
+      "name": "encoded-agent-slash",
+      "url": "https://preview.example.workers.dev/api/agent%2fexplain",
+      "apiPath": "/agent/explain"
+    },
+    {
+      "name": "encoded-agent-slash-upper",
+      "url": "https://preview.example.workers.dev/api/agent%2Fexplain",
+      "apiPath": "/agent/explain"
+    }
+  ]
 }
