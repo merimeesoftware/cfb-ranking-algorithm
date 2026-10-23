@@ -413,3 +413,28 @@ def test_current_season_refresh_drops_the_computed_board(tmp_path, monkeypatch):
     assert cache.get('old-board') == {'year': 2024}
     cache.invalidate_prefix('rankings_computed')
     cache.invalidate_prefix('games')
+
+
+def test_published_priors_make_zero_prior_season_cfbd_calls(tmp_path):
+    """frontend/static/rankings/priors skips Y-1 and Y-2 game fetches."""
+    from ranking_service import ALGO_VERSION
+    from static_rankings import write_prior_scores
+
+    calls = []
+
+    class Processor:
+        def get_games_for_season(self, year, through_week=None, use_week_scoped_fetch=False):
+            calls.append(year)
+            raise AssertionError(f'prior season {year} made a CFBD call')
+
+    for prior in (2023, 2022):
+        write_prior_scores(
+            prior,
+            {'Georgia': 1800.0},
+            source_sha='abc',
+            generated_at='2024-01-20T00:00:00Z',
+            algo=ALGO_VERSION,
+            root=tmp_path,
+        )
+    assert pre.ensure_priors(Processor(), 2024, root=tmp_path) == []
+    assert calls == []

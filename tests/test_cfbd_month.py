@@ -71,7 +71,7 @@ def test_planted_in_season_month_exceeds_50():
     assert in_season_errors(calls)
 
 
-def test_live_config_stays_under_tier2_cap():
+def test_live_config_stays_under_tier2_cap(capsys):
     spec = live_spec()
     assert spec['errors'] == []
     assert spec['provider'] == 'cfbd'
@@ -110,10 +110,13 @@ def test_live_config_stays_under_tier2_cap():
     worst = in_season_month_calls(8, spec['in_season_sundays_per_month'])
     expected = expected_in_season_calls(spec['in_season_sundays_per_month'])
     assert worst == 40
-    assert expected == 8
+    assert expected == 20
     assert worst <= IN_SEASON_MONTH_CAP
     assert expected <= IN_SEASON_MONTH_CAP
     assert main() == 0
+    printed = capsys.readouterr().out
+    assert '8×5=40' in printed
+    assert '4×5+0=20' in printed
 
 
 def test_production_vars_ignore_env_dev():

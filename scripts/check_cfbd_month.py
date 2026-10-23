@@ -5,16 +5,18 @@ The budget is provider `cfbd`, source `app`. Tier 2 allows 30,000 calls a
 month. This repo's hard cap is 3,000 (app ceiling 2,800 + 150 MCP reserve
 + 50 margin). The cron path is tighter: an in-season month stays under 50.
 
-Steady Sunday: 1 bulk ``/games?year=Y&seasonType=both``.
-Season setup, once: ``/teams`` + two prior seasons = 3.
+Actions does not cache CFBD responses, so each Sunday starts cold.
+Cold Sunday: ``/teams`` + two prior seasons + one bulk ``/games`` = 4.
+``frontend/static/rankings/priors/{year}.json`` skips those two prior-season
+calls. None are checked in, so the steady month still counts them.
 Off-season (Jan 21–Aug 23): 0.
 Peak Sundays in one month: 5.
-Expected peak month: 5×1 + 3 = 8.
+Expected steady month: 4×5 = 20.
 Per-run cap × 5 must also stay ≤ 50, so a loop cannot hide inside the cap.
 The guard is the worst in-season month, not the 12-month average
 (8×52/12 + 4×31 = 158). With the old 4/day visitor budget that worst month
 is 8×5 + 4×31 = 164. Visitor CFBD in this model is 0, so the guarded month
-is 8×5 + 0. Wrangler ``CFBD_MAX_CALLS`` stays 4 and is not the model.
+is 8×5 = 40. Wrangler ``CFBD_MAX_CALLS`` stays 4 and is not the model.
 
 A planted over-budget fixture must fail, a planted share fixture must break
 the 3,000 sum, and a planted in-season fixture must break 50.
@@ -43,8 +45,8 @@ HARD_CAP = 3000
 APP_CEILING = 2800
 SHARE_CAP = 3000
 IN_SEASON_MONTH_CAP = 50
-STEADY_CALLS_PER_RUN = 1
-SEASON_SETUP_CALLS = 3
+STEADY_CALLS_PER_RUN = 4
+SEASON_SETUP_CALLS = 0
 TIER2_MONTHLY_CALLS = 30000
 VISITOR_CFBD_PER_DAY = 0
 
@@ -78,7 +80,7 @@ def in_season_month_calls(cron_calls_per_run: int, sundays: int) -> int:
 
 
 def expected_in_season_calls(sundays: int) -> int:
-    """Steady bulk call each Sunday, plus one-time teams and two baselines."""
+    """Cold Sunday: teams, two prior seasons, and one bulk games call."""
     return STEADY_CALLS_PER_RUN * int(sundays) + SEASON_SETUP_CALLS
 
 
@@ -250,10 +252,12 @@ def main() -> int:
                 f'{worst_month(spec["cron_calls_per_run"], sundays, 4, spec["days"])} '
                 f'(not the 158 average); '
                 f'guarded worst month {guarded} '
-                f'({spec["cron_calls_per_run"]}×{sundays}+{visitor}×{spec["days"]}); '
+                f'({spec["cron_calls_per_run"]}×{sundays}={cron_worst}, '
+                f'{spec["cron_calls_per_run"]}×{sundays}+{visitor}×{spec["days"]}); '
                 f'ceiling {APP_CEILING}; hard cap {HARD_CAP}; '
                 f'in-season cron worst {cron_worst}, '
-                f'expected {expected} ({STEADY_CALLS_PER_RUN}×{sundays}+{SEASON_SETUP_CALLS}); '
+                f'expected steady month {expected} '
+                f'({STEADY_CALLS_PER_RUN}×{sundays}+{SEASON_SETUP_CALLS}={expected}); '
                 f'shares {spec["ceiling"]} + {spec["mcp_reserved"]} + {spec["margin"]} = {shares}, '
                 f'cap {SHARE_CAP}'
             )

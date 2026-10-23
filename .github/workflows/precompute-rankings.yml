@@ -46,16 +46,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Restore CFBD snapshots
-        uses: actions/cache@v4
-        with:
-          path: |
-            .cache
-            static_rankings
-          key: cfbd-precompute-${{ github.run_id }}
-          restore-keys: |
-            cfbd-precompute-
-
       - name: Precompute static rankings
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
@@ -63,7 +53,9 @@ jobs:
           CFBD_KILL: ${{ vars.CFBD_KILL }}
           # Ingest job. Production wrangler stays CFBD_OFFLINE=1 and is not
           # set here, so this cron can fetch while visitors stay offline.
-          # The current season's bulk /games call is refreshed every run.
+          # Actions does not cache CFBD responses. A cold run is /teams,
+          # two prior seasons (skipped when published priors exist), and
+          # one bulk /games call. The clamp stays 8.
           CFBD_MAX_CALLS: "8"
           YEAR: ${{ github.event.inputs.year }}
           THROUGH_WEEK: ${{ github.event.inputs.through_week }}
