@@ -46,7 +46,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Raw CFBD games and teams. Restore and save on schedule,
+      # workflow_dispatch, or a push to main.
       - name: Restore CFBD snapshots
+        if: >-
+          github.event_name == 'schedule' ||
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/cache@v4
         with:
           path: |
