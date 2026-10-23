@@ -32,7 +32,7 @@ Production `AI_MODE=live` (Workers AI) and `CFBD_OFFLINE=1`. Preview hostnames s
 
 The weekly Actions job is an interim writer; retired when the #117 KV cron lands.
 
-It commits derived week JSON and `priors/{year}.json` (schema, algo version, source hash, timestamp, team-to-score) under `frontend/static/rankings/`. Raw CFBD games and teams stay in the private Actions cache (`.cache` and gitignored `static_rankings/`). They are not written under `frontend/static/rankings/baseline/` or `frontend/static/rankings/teams/`.
+It commits derived week JSON and `priors/{year}.json` (schema, algo version, source hash, timestamp, team-to-score) under `frontend/static/rankings/`. Raw CFBD games and teams are not stored in Actions cache. The Sunday job fetches them and the runner discards the disk. When `priors/{year}.json` is present, those prior seasons are not refetched. Raw games and teams are not written under `frontend/static/rankings/baseline/` or `frontend/static/rankings/teams/`.
 
 A `GITHUB_TOKEN` push does not trigger `ci.yml` or `deploy-cloudflare.yml` (`deploy-cloudflare.yml` runs on `workflow_run` of CI). Publish relies on Workers Builds. Pending Release Ops confirmation.
 

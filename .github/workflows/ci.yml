@@ -23,7 +23,7 @@ jobs:
       - name: Install and lint
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt flake8 pytest
+          pip install -r requirements.txt flake8 pytest pyyaml
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics \
             --exclude=frontend,node_modules,venv,.venv
 

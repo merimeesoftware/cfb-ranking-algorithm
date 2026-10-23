@@ -29,10 +29,11 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / '.env')
 
-# Per Sunday run, not the public daily budget. Cache hits do not count.
-# A cold Sunday is /teams (if missing) + two baseline seasons (if missing)
-# + one bulk /games call. 8 is headroom over that 4. Steady Sundays are 1.
-# See config/cfbd-month.json. Cross-run week storage stays on #117.
+# Per Sunday run, not the public daily budget. Actions does not keep CFBD
+# responses, so each Sunday starts cold: /teams + two prior seasons (skipped
+# when frontend/static/rankings/priors has them) + one bulk /games call.
+# 8 is headroom over that 4. See config/cfbd-month.json.
+# Cross-run week storage stays on #117.
 os.environ.setdefault('CFBD_MAX_CALLS', '8')
 
 from cache import get_cache
@@ -54,8 +55,7 @@ from static_rankings import (
     write_static_rankings,
 )
 
-# Restored by the weekly Actions cache. Longer than the public 1-hour TTL
-# so a Sunday run still sees last Sunday's games, teams, and priors.
+# Within this process only. The next Sunday starts with an empty .cache.
 BATCH_TTL = 30 * 24 * 60 * 60
 
 
@@ -345,7 +345,7 @@ def prior_generated_at(games: list) -> str:
 
 
 def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = None) -> list[int]:
-    """Write Y-1 and Y-2 derived priors once. Raw games stay in the API cache."""
+    """Write Y-1 and Y-2 derived priors when the published file is missing."""
     fetched = []
     for prior in (year - 1, year - 2):
         if read_prior_teams(prior, algo=ALGO_VERSION, root=root) is not None:
@@ -374,7 +374,7 @@ def ingest_season(
     refresh_games: bool,
     static_root: Path | None = None,
 ) -> dict:
-    """One bulk /games call. The current season skips a restored cache."""
+    """One bulk /games call. The in-progress season always refetches."""
     if refresh_games:
         # 30-minute computed boards live under this prefix. A re-dispatch
         # after a bowl must not replay one for the season just refetched.
@@ -453,8 +453,8 @@ def main(argv: list[str] | None = None) -> int:
     for year, weeks in by_year.items():
         processor.ensure_teams(year, persist=True)
         ensure_priors(processor, year)
-        # Scheduled and manual runs of the in-progress season always take one
-        # fresh bulk call. Finished seasons keep the restored cache.
+        # The in-progress season always takes one fresh bulk call.
+        # There is no cross-run CFBD cache.
         ingest_season(
             processor,
             year,
