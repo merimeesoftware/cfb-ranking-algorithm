@@ -117,7 +117,9 @@ Confirm Workers **Paid** is enabled — Containers are Paid-only.
 |--------|----------|
 | `CFBD_API_KEY` | Yes (live rankings) |
 | `XAI_API_KEY` | provisioned by DevSecOps on Michael's yes. Not a var. The Worker sends it only to the AI Gateway grok path. |
-| `CACHE_CLEAR_SECRET` | Optional. Protects `POST /api/cache/clear`. The container reads header `X-Cache-Secret` only. |
+| `CACHE_CLEAR_SECRET` | Optional. Protects `POST /api/cache/clear`. Header `X-Cache-Secret` only. The Worker returns 404 unless this matches. The container still compares with `hmac.compare_digest`. |
+| `TURNSTILE_SECRET_KEY` | When the widget is on. siteverify for `/api/agent/*`. Stays on the Worker. Unset, production logs a warning and keeps the daily cap and per-IP limits. `TURNSTILE_REQUIRED=1` on `env.dev` refuses when it is missing. |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Frontend build variable, not a Worker secret. The widget renders only when this is set. |
 | `SPEND_KILL_SECRET` | DevSecOps provisions on Michael's yes (D-20261019-174). Protects `POST /api/spend/kill`. Header `X-Spend-Kill-Secret` only. Stays on the Worker. Unset returns 403 and does not fall back to `CACHE_CLEAR_SECRET`. |
 
 Set or clear the stored kill latch with `POST /api/spend/kill` and header `X-Spend-Kill-Secret`. The JSON body may contain only `ai_kill` and `cfbd_kill`, each `0` or `1`. `1` latches the flag. `0` clears it. DevSecOps provisions on Michael's yes (D-20261019-174). This repo does not set or read the value.
@@ -208,7 +210,7 @@ Porkbun has no Cloudflare integration — DNS is manual.
 
 Worker → **Domains & Routes** → note the custom domain target, then at Porkbun add a **CNAME** for your subdomain.
 
-After custom domain is live, set the `CORS_ORIGINS` secret to your domain.
+After custom domain is live, set the `CORS_ORIGINS` secret to that exact origin. Unset means same-origin only. `*` is ignored, and credentialed CORS is not enabled.
 
 ---
 

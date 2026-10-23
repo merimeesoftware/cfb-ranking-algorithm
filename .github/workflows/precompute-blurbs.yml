@@ -165,7 +165,7 @@ jobs:
 
       - name: Skip notice
         if: steps.params.outputs.skip == 'true'
-        run: echo "Skipped: ${{ steps.params.outputs.skip_reason }}"
+        run: 'echo "Skipped: ${{ steps.params.outputs.skip_reason }}"'
 
       - name: Upload artifacts
         if: steps.params.outputs.skip != 'true'

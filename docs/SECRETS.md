@@ -45,9 +45,11 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 | `XAI_API_KEY` | When live xAI is enabled | provisioned by DevSecOps on Michael's yes. The Worker reads this name only to authorize the AI Gateway grok path. Do not put a value in the repo. Workers AI uses the `[ai]` binding, not a key. |
 | `CACHE_CLEAR_SECRET` | Optional | Admin `POST /cache/clear`. Header `X-Cache-Secret` only. |
 | `SPEND_KILL_SECRET` | DevSecOps provisions on Michael's yes (D-20261019-174) | `POST /api/spend/kill`. Header `X-Spend-Kill-Secret` only. Not forwarded to the container. Unset fails closed (403) and does not use `CACHE_CLEAR_SECRET`. |
-| `CORS_ORIGINS` | Optional | Restrict CORS to your Worker custom domain |
+| `CORS_ORIGINS` | Optional | Comma-separated browser origins. Unset means same-origin only. `*` is ignored. Credentials are not allowed. |
 | `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
-| `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. No `PUBLIC_*` name may hold a key, token, or password. |
+| `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Optional (build, public) | Turnstile widget id. Inlined into the client and rendered only when set. Not a secret. The matching secret is `TURNSTILE_SECRET_KEY` on the Worker. |
+| `TURNSTILE_SECRET_KEY` | When the widget is on | Worker secret. siteverify for `/api/agent/*`. Not forwarded to the container. Unset, production logs a warning and keeps `AI_MAX_CALLS` plus the per-IP rate limits. |
 
 Or via CLI (after `wrangler login` once on your machine):
 
@@ -99,7 +101,7 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` | stub / `1` on non-production hosts | Explicit override for preview and dev versions |
 
 Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
-`GET /agent/health` and `GET /cache/stats` are public and return `{ "status": "ok" }` only. They do not include budgets, call counts, or cache paths. The global daily counters live on the `CfbApiContainer` instance named `spend-budget`.
+The Worker returns 404 for `/api`, `/api/agent/health`, and `/api/cache/stats`. Flask still answers `/agent/health` inside the container with `{ "status": "ok" }` only. It does not include budgets, call counts, or cache paths. The global daily counters live on the `CfbApiContainer` instance named `spend-budget`. `POST /api/cache/clear` is header `X-Cache-Secret` only. `TURNSTILE_REQUIRED=1` (set on `env.dev`, not production) refuses agent calls when `TURNSTILE_SECRET_KEY` is missing.
 
 Scheduled blurbs: `.github/workflows/precompute-blurbs.yml` runs **stub/offline only**. A live provider call happens on **Cloudflare** when `AI_MODE=live` and static/cache miss. Artifacts are uploaded; commit-to-main remains optional.
 
