@@ -38,16 +38,19 @@ os.environ.setdefault('CFBD_MAX_CALLS', '8')
 from cache import get_cache
 from data_processor import CFBDataProcessor
 from spend_guards import is_cfbd_killed, is_cfbd_offline
+from ranking_algorithm import TeamQualityRanker
 from ranking_service import (
+    ALGO_VERSION,
+    DEFAULT_CONFIG,
     get_or_calculate_rankings,
     slim_rankings_for_list,
 )
 from static_rankings import (
     DEFAULT_ROOT,
-    read_baseline_games,
+    read_prior_teams,
     read_static_rankings,
     rebuild_rankings_manifest,
-    write_baseline_games,
+    write_prior_scores,
     write_static_rankings,
 )
 
@@ -56,14 +59,20 @@ from static_rankings import (
 BATCH_TTL = 30 * 24 * 60 * 60
 
 
-def install_batch_cache_ttl() -> None:
-    """Keep cron snapshots warm across the week without changing public TTLs."""
+def install_batch_cache_ttl(current_year: int | None = None) -> None:
+    """Keep finished seasons warm. The current season is not pinned for 30 days."""
     import api_integration
     import ranking_service
 
     api_integration.TTL_TEAMS = BATCH_TTL
     ranking_service.TTL_PRIORS = BATCH_TTL
-    api_integration.get_games_ttl = lambda year: BATCH_TTL
+
+    def games_ttl(year: int) -> int:
+        if current_year is not None and int(year) == int(current_year):
+            return 60 * 60
+        return BATCH_TTL
+
+    api_integration.get_games_ttl = games_ttl
 
 
 def now_utc() -> datetime:
@@ -138,9 +147,17 @@ def row_complete(game: dict) -> bool:
 
 
 def games_for_week(games: list, week: int) -> list:
+    """Regular games for ``week``. Week 15 also keeps postseason rows.
+
+    Bowl and CFP results change the week-15 fingerprint, so a later Sunday
+    recomputes that board instead of leaving it frozen after conference title games.
+    """
     rows = []
     for game in games:
-        if (game.get('season_type') or 'regular') != 'regular':
+        season_type = game.get('season_type') or 'regular'
+        if season_type == 'postseason':
+            if int(week) >= 15:
+                rows.append(game)
             continue
         if game.get('week') == week:
             rows.append(game)
@@ -278,18 +295,73 @@ def publish_year(
     }
 
 
-def ensure_baseline(processor: CFBDataProcessor, year: int, root: Path | None = None) -> list[int]:
-    """Write Y-1 and Y-2 processed games once. Later Sundays read the files."""
+def end_of_season_scores(processor: CFBDataProcessor, games: list) -> dict[str, float]:
+    """Ranker output for one finished season. Scores only, no game rows."""
+    ranker = TeamQualityRanker(DEFAULT_CONFIG)
+    by_week = processor.organize_games_by_week(games)
+    for week in sorted(by_week):
+        for game in by_week[week]:
+            ranker.update_quality_scores(game)
+    results = ranker.calculate_final_rankings()
+    scores = {}
+    for name, data in results.get('rankings', {}).items():
+        score = data.get('final_ranking_score')
+        if isinstance(score, (int, float)):
+            scores[name] = float(score)
+    return scores
+
+
+def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = None) -> list[int]:
+    """Write Y-1 and Y-2 derived priors once. Raw games stay in the API cache."""
     fetched = []
     for prior in (year - 1, year - 2):
-        if read_baseline_games(prior, root=root) is not None:
-            print(f'Baseline hit: {prior}')
+        if read_prior_teams(prior, algo=ALGO_VERSION, root=root) is not None:
+            print(f'Priors hit: {prior}')
             continue
-        print(f'Baseline fetch: {prior}')
+        print(f'Priors fetch: {prior}')
         games = processor.get_games_for_season(prior, through_week=None, use_week_scoped_fetch=False)
-        write_baseline_games(prior, games, root=root)
+        scores = end_of_season_scores(processor, games)
+        generated_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        write_prior_scores(
+            prior,
+            scores,
+            source_sha=games_fingerprint(games),
+            generated_at=generated_at,
+            algo=ALGO_VERSION,
+            root=root,
+        )
         fetched.append(prior)
     return fetched
+
+
+def ingest_season(
+    processor: CFBDataProcessor,
+    year: int,
+    weeks: list[int],
+    *,
+    refresh_games: bool,
+    static_root: Path | None = None,
+) -> dict:
+    """One bulk /games call. The current season skips a restored cache."""
+    print(f'Fetching {year} games (one bulk call, refresh={refresh_games})...')
+    season_games = processor.api_client.get_games(
+        year=year,
+        season_type='both',
+        refresh=refresh_games,
+    )
+    if not weeks:
+        latest = latest_completed_regular_week(season_games)
+        if not latest:
+            print(f'No completed week for {year}.')
+            return {'bulk_calls': 0, 'computed': [], 'fetched_seasons': []}
+        weeks = list(range(1, latest + 1))
+    return publish_year(
+        year,
+        weeks,
+        processor,
+        static_root=static_root,
+        season_games=season_games,
+    )
 
 
 def publish_stored_manifests() -> None:
@@ -329,11 +401,11 @@ def main(argv: list[str] | None = None) -> int:
         print('CFBD_API_KEY required', file=sys.stderr)
         return 1
 
-    install_batch_cache_ttl()
+    current_year = season_year(now)
+    install_batch_cache_ttl(current_year)
     by_year: dict[int, list[int]] = {}
     if args.current:
-        year = season_year(now)
-        by_year[year] = []
+        by_year[current_year] = []
     elif args.year and args.through_week:
         by_year[args.year] = list(range(1, args.through_week + 1))
     elif args.year and args.week:
@@ -344,16 +416,15 @@ def main(argv: list[str] | None = None) -> int:
     processor = CFBDataProcessor(api_key=os.getenv('CFBD_API_KEY'))
     for year, weeks in by_year.items():
         processor.ensure_teams(year, persist=True)
-        ensure_baseline(processor, year)
-        print(f'Fetching {year} games (one bulk call)...')
-        season_games = processor.api_client.get_games(year=year, season_type='both')
-        if not weeks:
-            latest = latest_completed_regular_week(season_games)
-            if not latest:
-                print(f'No completed week for {year}.')
-                continue
-            weeks = list(range(1, latest + 1))
-        publish_year(year, weeks, processor, season_games=season_games)
+        ensure_priors(processor, year)
+        # Scheduled and manual runs of the in-progress season always take one
+        # fresh bulk call. Finished seasons keep the restored cache.
+        ingest_season(
+            processor,
+            year,
+            weeks,
+            refresh_games=(year == current_year),
+        )
 
     publish_stored_manifests()
     print(f'Done. Static root: {DEFAULT_ROOT}')

@@ -15,7 +15,7 @@ class FakeClient:
         self.games = games
         self.calls = []
 
-    def get_games(self, year, week=None, season_type='regular'):
+    def get_games(self, year, week=None, season_type='regular', refresh=False):
         self.calls.append({'year': year, 'week': week, 'season_type': season_type})
         if season_type == 'both' and week is None:
             rows = []
@@ -197,3 +197,111 @@ def test_manifest_lists_weeks_through_the_latest_completed(tmp_path, monkeypatch
     assert result['computed'] == list(range(1, 9))
     manifest = rebuild_rankings_manifest(tmp_path)
     assert manifest['years']['2026'] == list(range(1, 9))
+
+
+def _raw_game(week, **extra):
+    row = {
+        'id': extra.get('id', week),
+        'completed': True,
+        'week': week,
+        'season': 2026,
+        'homeTeam': extra.get('homeTeam', 'Home'),
+        'awayTeam': extra.get('awayTeam', 'Away'),
+        'homePoints': 21,
+        'awayPoints': 14,
+        'seasonType': extra.get('seasonType', 'regular'),
+    }
+    row.update(extra)
+    return row
+
+
+def _client(state, calls):
+    from api_integration import CFBDApiClient
+
+    client = CFBDApiClient(api_key='test')
+
+    def live(_endpoint, params=None):
+        calls.append(dict(params or {}))
+        return [dict(row) for row in state['rows']]
+
+    client._make_request = live
+    return client
+
+
+def test_second_sunday_refetches_current_season_and_publishes_the_new_week(tmp_path, monkeypatch):
+    from cache import get_cache
+
+    get_cache().invalidate_prefix('games')
+    pre.install_batch_cache_ttl()
+    state = {'rows': [_raw_game(week) for week in range(1, 9)]}
+    calls = []
+    client = _client(state, calls)
+    written = []
+
+    def fake_precompute(year, week, _processor):
+        written.append(week)
+        return write_static_rankings(
+            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            year,
+            week,
+            root=tmp_path,
+        )
+
+    monkeypatch.setattr(pre, 'precompute', fake_precompute)
+    processor = FakeProcessor({})
+    processor.api_client = client
+
+    first = pre.ingest_season(processor, 2026, [], refresh_games=True, static_root=tmp_path)
+    assert len(calls) == 1
+    assert calls[0]['seasonType'] == 'both'
+    assert first['computed'] == list(range(1, 9))
+    stale = client.get_games(2026, season_type='both', refresh=False)
+    assert len(calls) == 1
+    assert all(game.get('week') != 9 for game in stale)
+
+    state['rows'].append(_raw_game(9))
+    second = pre.ingest_season(processor, 2026, [], refresh_games=True, static_root=tmp_path)
+    assert len(calls) == 2
+    assert 9 in second['computed']
+    assert 9 in written
+    manifest = rebuild_rankings_manifest(tmp_path)
+    assert 9 in manifest['years']['2026']
+    get_cache().invalidate_prefix('games')
+
+
+def test_postseason_update_recomputes_week_15(tmp_path, monkeypatch):
+    from cache import get_cache
+
+    get_cache().invalidate_prefix('games')
+    pre.install_batch_cache_ttl()
+    state = {'rows': [_raw_game(week) for week in range(1, 16)]}
+    calls = []
+    client = _client(state, calls)
+
+    def fake_precompute(year, week, _processor):
+        return write_static_rankings(
+            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            year,
+            week,
+            root=tmp_path,
+        )
+
+    monkeypatch.setattr(pre, 'precompute', fake_precompute)
+    processor = FakeProcessor({})
+    processor.api_client = client
+    pre.ingest_season(processor, 2026, [], refresh_games=True, static_root=tmp_path)
+    assert len(calls) == 1
+
+    state['rows'].append(_raw_game(
+        1,
+        id=900,
+        seasonType='postseason',
+        homeTeam='Bowl',
+        awayTeam='Guest',
+        homePoints=30,
+        awayPoints=20,
+    ))
+    again = pre.ingest_season(processor, 2026, [], refresh_games=True, static_root=tmp_path)
+    assert len(calls) == 2
+    assert again['computed'] == [15]
+    get_cache().invalidate_prefix('games')
