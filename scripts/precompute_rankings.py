@@ -311,6 +311,39 @@ def end_of_season_scores(processor: CFBDataProcessor, games: list) -> dict[str, 
     return scores
 
 
+# Used only when a season's games carry no kickoff. source_sha still identifies the rows.
+PRIOR_GENERATED_AT_FALLBACK = '1970-01-01T00:00:00Z'
+
+
+def _kickoff(game: dict) -> datetime | None:
+    """CFBD start time. Processed rows store it as date; raw rows use start_date."""
+    raw = game.get('start_date')
+    if raw is None:
+        raw = game.get('date')
+    if raw is None:
+        raw = game.get('startDate')
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    text = raw.strip()
+    if text.endswith('Z'):
+        text = text[:-1] + '+00:00'
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+def prior_generated_at(games: list) -> str:
+    """Latest kickoff in the input. Wall clock would make the same season differ by bytes."""
+    kickoffs = [stamp for stamp in (_kickoff(game) for game in games) if stamp is not None]
+    if not kickoffs:
+        return PRIOR_GENERATED_AT_FALLBACK
+    return max(kickoffs).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
 def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = None) -> list[int]:
     """Write Y-1 and Y-2 derived priors once. Raw games stay in the API cache."""
     fetched = []
@@ -321,12 +354,11 @@ def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = No
         print(f'Priors fetch: {prior}')
         games = processor.get_games_for_season(prior, through_week=None, use_week_scoped_fetch=False)
         scores = end_of_season_scores(processor, games)
-        generated_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         write_prior_scores(
             prior,
             scores,
             source_sha=games_fingerprint(games),
-            generated_at=generated_at,
+            generated_at=prior_generated_at(games),
             algo=ALGO_VERSION,
             root=root,
         )
@@ -343,6 +375,10 @@ def ingest_season(
     static_root: Path | None = None,
 ) -> dict:
     """One bulk /games call. The current season skips a restored cache."""
+    if refresh_games:
+        # 30-minute computed boards live under this prefix. A re-dispatch
+        # after a bowl must not replay one for the season just refetched.
+        get_cache().invalidate_prefix('rankings_computed')
     print(f'Fetching {year} games (one bulk call, refresh={refresh_games})...')
     season_games = processor.api_client.get_games(
         year=year,

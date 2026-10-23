@@ -95,7 +95,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: static-rankings
-          path: .
+          path: frontend/static/rankings
 
       # Derived JSON only. A token push does not start ci.yml, so
       # deploy-cloudflare.yml (workflow_run on CI) does not deploy it.

@@ -305,3 +305,111 @@ def test_postseason_update_recomputes_week_15(tmp_path, monkeypatch):
     assert len(calls) == 2
     assert again['computed'] == [15]
     get_cache().invalidate_prefix('games')
+
+
+def test_prior_files_are_byte_identical(tmp_path, monkeypatch):
+    games = [
+        {'start_date': '2024-09-01T16:00:00Z', 'id': 1},
+        {'start_date': '2024-12-31T20:00:00.000Z', 'id': 2},
+    ]
+
+    class Proc:
+        def get_games_for_season(self, year, through_week=None, use_week_scoped_fetch=False):
+            return list(games)
+
+    monkeypatch.setattr(
+        pre,
+        'end_of_season_scores',
+        lambda processor, rows: {'Georgia': 1800.0, 'Oregon': 1700.5},
+    )
+    ticks = {'n': 0}
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            ticks['n'] += 1
+            return datetime(2026, ticks['n'], 1)
+
+    monkeypatch.setattr(pre, 'datetime', Clock)
+    first = tmp_path / 'a'
+    second = tmp_path / 'b'
+    assert pre.ensure_priors(Proc(), 2026, root=first) == [2025, 2024]
+    assert pre.ensure_priors(Proc(), 2026, root=second) == [2025, 2024]
+    for year in (2024, 2025):
+        left = (first / 'priors' / f'{year}.json').read_bytes()
+        right = (second / 'priors' / f'{year}.json').read_bytes()
+        assert left == right
+        assert '"generated_at": "2024-12-31T20:00:00Z"' in left.decode()
+    assert ticks['n'] == 0
+
+
+def test_main_refreshes_current_season_on_the_short_ttl(monkeypatch):
+    import api_integration
+    import ranking_service
+
+    original_ttl = api_integration.get_games_ttl
+    original_teams = api_integration.TTL_TEAMS
+    original_priors = ranking_service.TTL_PRIORS
+    seen = []
+
+    def fake_ingest(processor, year, weeks, *, refresh_games, static_root=None):
+        seen.append((year, refresh_games, api_integration.get_games_ttl(year)))
+
+    class Proc:
+        def ensure_teams(self, year, persist=True):
+            return None
+
+    monkeypatch.setenv('CFBD_OFFLINE', '0')
+    monkeypatch.setenv('CFBD_API_KEY', 'test-key')
+    monkeypatch.setattr(pre, 'now_utc', lambda: datetime(2026, 10, 18))
+    monkeypatch.setattr(pre, 'CFBDataProcessor', lambda api_key=None: Proc())
+    monkeypatch.setattr(pre, 'ensure_priors', lambda processor, year, root=None: [])
+    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda: None)
+    monkeypatch.setattr(pre, 'ingest_season', fake_ingest)
+    try:
+        assert pre.main(['--current']) == 0
+        assert pre.main(['--year', '2024', '--through-week', '15']) == 0
+    finally:
+        api_integration.get_games_ttl = original_ttl
+        api_integration.TTL_TEAMS = original_teams
+        ranking_service.TTL_PRIORS = original_priors
+    assert seen == [
+        (2026, True, 60 * 60),
+        (2024, False, pre.BATCH_TTL),
+    ]
+    assert seen[0][2] != pre.BATCH_TTL
+
+
+def test_current_season_refresh_drops_the_computed_board(tmp_path, monkeypatch):
+    from cache import get_cache
+
+    cache = get_cache()
+    cache.set('bowl-board', {'year': 2026, 'week': 15}, 1800, prefix='rankings_computed')
+    monkeypatch.setattr(
+        pre,
+        'precompute',
+        lambda year, week, processor: write_static_rankings(
+            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            year,
+            week,
+            root=tmp_path,
+        ),
+    )
+    processor = FakeProcessor({
+        1: [{
+            'home_team_name': 'Home',
+            'away_team_name': 'Away',
+            'home_score': 21,
+            'away_score': 14,
+            'completed': True,
+            'season_type': 'regular',
+        }],
+    })
+    pre.ingest_season(processor, 2026, [1], refresh_games=True, static_root=tmp_path)
+    assert cache.get('bowl-board') is None
+
+    cache.set('old-board', {'year': 2024}, 1800, prefix='rankings_computed')
+    pre.ingest_season(processor, 2024, [1], refresh_games=False, static_root=tmp_path)
+    assert cache.get('old-board') == {'year': 2024}
+    cache.invalidate_prefix('rankings_computed')
+    cache.invalidate_prefix('games')

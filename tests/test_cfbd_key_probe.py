@@ -85,6 +85,8 @@ def test_planted_workflow_that_echoes_the_key_trips():
     assert 'curl ' not in live
     assert script.count('https://api.collegefootballdata.com/info') == 1
     assert 'workflow_dispatch:' in live
+    assert 'on a push to main that touches the probe' in live
+    assert 'outside the cron budget' in live
     assert 'pull_request:' not in live
     assert 'head.repo.full_name' not in live
     assert 'branches:' in live

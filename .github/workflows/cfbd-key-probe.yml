@@ -1,5 +1,5 @@
-# One manual CFBD /info call. Prints patronLevel and remainingCalls.
-# workflow_dispatch, or a push to main that touches this probe.
+# One /info call, outside the cron budget. Prints patronLevel and remainingCalls.
+# Runs on manual dispatch, or on a push to main that touches the probe.
 # Pull requests do not receive the key.
 
 name: CFBD key probe

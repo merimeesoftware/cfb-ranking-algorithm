@@ -1,4 +1,5 @@
 """The publish step commits derived rankings and ignores the private cache."""
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -45,16 +46,17 @@ def test_publish_step_ignores_the_private_cache(tmp_path):
     subprocess.run(['bash', str(SCRIPT)], cwd=repo, check=True)
 
 
-def _upload_artifact_paths(text: str) -> list[str]:
-    """Paths named on actions/upload-artifact steps. Cache paths are ignored."""
+def _action_path_steps(text: str, marker: str) -> list[list[str]]:
+    """Path lists for every step whose ``uses:`` contains ``marker``."""
     lines = text.splitlines()
-    collected = []
+    steps = []
     index = 0
     while index < len(lines):
-        if 'actions/upload-artifact@' not in lines[index]:
+        if marker not in lines[index]:
             index += 1
             continue
         index += 1
+        collected = []
         while index < len(lines):
             line = lines[index]
             if line.startswith('      - ') or (line and not line[0].isspace()):
@@ -66,7 +68,7 @@ def _upload_artifact_paths(text: str) -> list[str]:
                     lines[index].startswith('            ') or not lines[index].strip()
                 ):
                     if lines[index].strip():
-                        collected.append(lines[index].strip())
+                        collected.append(lines[index].strip().strip('"').strip("'"))
                     index += 1
                 continue
             if stripped.startswith('path:'):
@@ -74,36 +76,94 @@ def _upload_artifact_paths(text: str) -> list[str]:
                 if value and value != '|':
                     collected.append(value)
             index += 1
-    return collected
+        steps.append(collected)
+    return steps
 
 
-def _names_private_static_rankings(path: str) -> bool:
-    """True when a path selects repo-root static_rankings, not the public tree."""
-    normalized = path.replace('\\', '/').strip().lstrip('./')
-    if normalized.startswith('frontend/static/rankings/') or normalized.rstrip('/') == 'frontend/static/rankings':
+def _rankings_root(path: str) -> str:
+    return path.replace('\\', '/').strip().lstrip('./').rstrip('/')
+
+
+def _upload_path_allowed(path: str) -> bool:
+    """Public rankings only. Globs and the private cache directory are rejected."""
+    normalized = path.replace('\\', '/').strip().strip('"').strip("'")
+    if '*' in normalized or normalized in {'.', './', '..'}:
         return False
-    segments = [segment for segment in normalized.split('/') if segment]
-    return 'static_rankings' in segments
+    if normalized.lstrip('./').startswith('static_rankings'):
+        return False
+    root = _rankings_root(normalized)
+    return root == 'frontend/static/rankings' or root.startswith('frontend/static/rankings/')
 
 
 def test_upload_artifact_excludes_private_static_rankings():
-    paths = _upload_artifact_paths(WORKFLOW.read_text(encoding='utf-8'))
-    assert paths
-    assert all(not _names_private_static_rankings(path) for path in paths)
-    assert any(
-        path.replace('\\', '/').rstrip('/') == 'frontend/static/rankings'
-        for path in paths
-    )
+    steps = _action_path_steps(WORKFLOW.read_text(encoding='utf-8'), 'actions/upload-artifact@')
+    assert steps
+    for paths in steps:
+        assert paths
+        assert all(_upload_path_allowed(path) for path in paths)
     planted = """
       - uses: actions/upload-artifact@v7
         with:
+          path: frontend/static/rankings/
+      - uses: actions/upload-artifact@v7
+        with:
           path: |
+            *
+            **
+            .
+            static_rankings*
             static_rankings/
             frontend/static/rankings/
 """
-    planted_paths = _upload_artifact_paths(planted)
-    assert 'static_rankings/' in planted_paths
-    assert any(_names_private_static_rankings(path) for path in planted_paths)
+    planted_steps = _action_path_steps(planted, 'actions/upload-artifact@')
+    assert len(planted_steps) == 2
+    assert all(_upload_path_allowed(path) for path in planted_steps[0])
+    rejected = [path for path in planted_steps[1] if not _upload_path_allowed(path)]
+    assert rejected == ['*', '**', '.', 'static_rankings*', 'static_rankings/']
+    assert _upload_path_allowed(planted_steps[1][-1])
+
+
+def test_download_path_matches_upload_path(tmp_path):
+    text = WORKFLOW.read_text(encoding='utf-8')
+    uploads = [
+        path
+        for step in _action_path_steps(text, 'actions/upload-artifact@')
+        for path in step
+    ]
+    downloads = [
+        path
+        for step in _action_path_steps(text, 'actions/download-artifact@')
+        for path in step
+    ]
+    assert uploads and downloads
+    assert {_rankings_root(path) for path in uploads} == {_rankings_root(path) for path in downloads}
+    assert _rankings_root(downloads[0]) == 'frontend/static/rankings'
+
+    repo = tmp_path / 'repo'
+    repo.mkdir()
+    subprocess.run(['git', 'init'], cwd=repo, check=True)
+    subprocess.run(['git', 'config', 'user.email', 't@example.com'], cwd=repo, check=True)
+    subprocess.run(['git', 'config', 'user.name', 't'], cwd=repo, check=True)
+    artifact = tmp_path / 'artifact'
+    (artifact / '2024').mkdir(parents=True)
+    (artifact / '2024' / 'week-15.json').write_text('{"week": 15}\n', encoding='utf-8')
+    (artifact / 'priors').mkdir()
+    (artifact / 'priors' / '2023.json').write_text('{"schema": 1}\n', encoding='utf-8')
+    dest = repo.joinpath(*_rankings_root(downloads[0]).split('/'))
+    shutil.copytree(artifact, dest)
+    subprocess.run(['bash', str(SCRIPT)], cwd=repo, check=True)
+    tracked = subprocess.run(
+        ['git', 'ls-files'],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    names = tracked.splitlines()
+    assert 'frontend/static/rankings/2024/week-15.json' in names
+    assert 'frontend/static/rankings/priors/2023.json' in names
+    assert 'week-15.json' not in names
+    assert 'priors/2023.json' not in names
 
 
 def test_workflow_publish_and_inputs():
