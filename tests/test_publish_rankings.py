@@ -52,7 +52,12 @@ def _action_path_steps(text: str, marker: str) -> list[list[str]]:
     steps = []
     index = 0
     while index < len(lines):
-        if marker not in lines[index]:
+        stripped_line = lines[index].strip()
+        if (
+            stripped_line.startswith('#')
+            or 'uses:' not in stripped_line
+            or marker not in stripped_line
+        ):
             index += 1
             continue
         index += 1
@@ -98,12 +103,89 @@ def _upload_path_allowed(path: str) -> bool:
     return root == 'frontend/static/rankings' or root.startswith('frontend/static/rankings/')
 
 
+# Deploy and preview stills publish these concrete roots. They are not the
+# private CFBD cache. The rankings allowlist in _upload_path_allowed is unchanged.
+_OTHER_ARTIFACT_ROOTS = (
+    'frontend/build',
+    'preview-stills-out',
+)
+
+
+def _workflow_files() -> list[Path]:
+    directory = ROOT / '.github' / 'workflows'
+    return sorted(
+        path for path in directory.iterdir()
+        if path.is_file()
+        and path.suffix in {'.yml', '.yaml'}
+        and not path.name.endswith('.lock.yml')
+    )
+
+
+def _unrelated_public_artifact(path: str) -> bool:
+    """Same glob, dot, and private-cache rejects as the rankings allowlist.
+
+    A path outside ``frontend/static/rankings`` is still rejected unless it is
+    exactly one of the non-rankings roots above, or a child of one.
+    """
+    normalized = path.replace('\\', '/').strip().strip('"').strip("'")
+    if '*' in normalized or normalized in {'.', './', '..'}:
+        return False
+    segments = [segment for segment in normalized.split('/') if segment not in {'', '.'}]
+    if not segments or '..' in segments:
+        return False
+    if any(segment.startswith('static_rankings') for segment in segments):
+        return False
+    root = '/'.join(segments)
+    return any(
+        root == allowed or root.startswith(allowed + '/')
+        for allowed in _OTHER_ARTIFACT_ROOTS
+    )
+
+
 def test_upload_artifact_excludes_private_static_rankings():
     steps = _action_path_steps(WORKFLOW.read_text(encoding='utf-8'), 'actions/upload-artifact@')
     assert steps
     for paths in steps:
         assert paths
         assert all(_upload_path_allowed(path) for path in paths)
+
+    workflows = _workflow_files()
+    names = {path.name for path in workflows}
+    assert {
+        'precompute-rankings.yml',
+        'precompute-blurbs.yml',
+        'deploy-cloudflare.yml',
+        'preview-stills.yml',
+    } <= names
+    seen = set()
+    for workflow in workflows:
+        upload_steps = _action_path_steps(
+            workflow.read_text(encoding='utf-8'),
+            'actions/upload-artifact@',
+        )
+        for paths in upload_steps:
+            assert paths, workflow.name
+            for path in paths:
+                seen.add(path.replace('\\', '/').strip().rstrip('/'))
+                if workflow.name == 'precompute-rankings.yml':
+                    assert _upload_path_allowed(path), path
+                else:
+                    assert _upload_path_allowed(path) or _unrelated_public_artifact(path), (
+                        workflow.name,
+                        path,
+                    )
+    assert seen == {
+        'frontend/static/rankings',
+        'frontend/build',
+        'preview-stills-out',
+    }
+
+    blurbs = (ROOT / '.github' / 'workflows' / 'precompute-blurbs.yml').read_text(encoding='utf-8')
+    assert 'actions/upload-artifact@' not in blurbs
+    assert 'actions/download-artifact@' not in blurbs
+    assert 'static_rankings/' not in blurbs
+    assert _action_path_steps(blurbs, 'actions/upload-artifact@') == []
+
     planted = """
       - uses: actions/upload-artifact@v7
         with:
@@ -132,6 +214,14 @@ def test_upload_artifact_excludes_private_static_rankings():
         'frontend/static/rankings/../../static_rankings',
     ]
     assert _upload_path_allowed(planted_steps[1][-1])
+    assert all(not _unrelated_public_artifact(path) for path in rejected)
+    assert not _unrelated_public_artifact('frontend/build/../../static_rankings')
+    assert not _unrelated_public_artifact('frontend/build/static_rankings')
+    assert not _unrelated_public_artifact('coverage/')
+    assert _unrelated_public_artifact('frontend/build')
+    assert _unrelated_public_artifact('preview-stills-out/')
+    assert not _upload_path_allowed('frontend/build')
+    assert not _upload_path_allowed('preview-stills-out/')
 
 
 def test_download_path_matches_upload_path(tmp_path):
