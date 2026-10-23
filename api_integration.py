@@ -7,6 +7,8 @@ import requests
 from cache import get_cache, TTL_TEAMS, TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, get_games_ttl
 from spend_guards import (
     CFBDOfflineError,
+    cfbd_remaining_blocked,
+    enforce_cfbd_remaining,
     is_cfbd_offline,
     register_live_cfbd_call,
     resolve_cfbd_api_key,
@@ -51,10 +53,15 @@ class CFBDApiClient:
                 f'CFBD offline: refused live call to {endpoint}. '
                 'Serve static rankings or warm .cache/ first.'
             )
+        if cfbd_remaining_blocked():
+            raise CFBDOfflineError(
+                'CFBD remaining calls are below the floor. Further live calls are stopped.'
+            )
 
         try:
             call_n = register_live_cfbd_call()
             response = requests.get(url, headers=self.headers, params=params, timeout=30)
+            enforce_cfbd_remaining(response.headers)
             remaining = response.headers.get('X-CallLimit-Remaining')
             print(
                 f"CFBD LIVE #{call_n}: {endpoint} params={params} "
@@ -89,15 +96,25 @@ class CFBDApiClient:
         """Generate a cache key for an API call."""
         return self._cache._generate_key(prefix, *args, **kwargs)
 
-    def get_games(self, year: int, week: Optional[int] = None, season_type: str = 'regular') -> List[Dict]:
-        """Fetch games with caching, error handling and data transformation"""
+    def get_games(
+        self,
+        year: int,
+        week: Optional[int] = None,
+        season_type: str = 'regular',
+        refresh: bool = False,
+    ) -> List[Dict]:
+        """Fetch games with caching, error handling and data transformation.
+
+        ``refresh`` skips a restored snapshot. The current-season cron sets it
+        so a 30-day cache entry cannot hide the next Sunday's games.
+        """
         cache_key = self._get_cache_key('games', year, week, season_type)
-        
-        # Try cache first
-        cached = self._cache.get(cache_key)
-        if cached is not None:
-            print(f"Cache HIT: games {year} week={week} type={season_type}")
-            return cached
+
+        if not refresh:
+            cached = self._cache.get(cache_key)
+            if cached is not None:
+                print(f"Cache HIT: games {year} week={week} type={season_type}")
+                return cached
         
         print(f"Cache MISS: games {year} week={week} type={season_type}")
         

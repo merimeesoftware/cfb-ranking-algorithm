@@ -99,7 +99,7 @@ def test_cfbd_gate_names_provider_and_app_source(monkeypatch):
 def test_cfbd_max_defaults_in_development(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'development')
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
-    assert cfbd_max_calls() == 25
+    assert cfbd_max_calls() == 8
 
 
 def test_provider_max_calls_budget(monkeypatch):
@@ -223,7 +223,7 @@ def test_spend_status_shape(monkeypatch):
     status = spend_status()
     assert status['cfbd_offline'] is True
     assert status['ai_mode'] == 'stub'
-    assert status['cfbd_max_calls'] == 25
+    assert status['cfbd_max_calls'] == 8
     assert status['xai_max_calls'] == 0
     assert status['workers_ai_max_calls'] == 100
 
@@ -250,7 +250,7 @@ def test_make_request_does_not_log_api_key(monkeypatch, capsys):
     client = CFBDApiClient(api_key=secret)
     response = MagicMock()
     response.status_code = 200
-    response.headers = {'X-CallLimit-Remaining': '999'}
+    response.headers = {'X-CallLimit-Remaining': '28000'}
     response.json.return_value = []
     response.raise_for_status.return_value = None
     with patch('api_integration.requests.get', return_value=response):
