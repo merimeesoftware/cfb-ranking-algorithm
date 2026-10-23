@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from dotenv import load_dotenv
 
 from data_processor import CFBDataProcessor
@@ -31,12 +30,56 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# CORS: allow configured origins or wildcard in dev
-_cors_origins = os.environ.get('CORS_ORIGINS', '*')
-if _cors_origins == '*':
-    CORS(app, origins=['*'], supports_credentials=True)
-else:
-    CORS(app, origins=[o.strip() for o in _cors_origins.split(',')], supports_credentials=True)
+# CORS: only origins listed in CORS_ORIGINS. Unset means same-origin
+# (no Access-Control-Allow-Origin). '*' is not an allowlist entry.
+# The frontend sends no credentials.
+_CORS_ALLOW_HEADERS = 'Content-Type, cf-turnstile-response'
+
+
+def allowed_cors_origins():
+    raw = os.environ.get('CORS_ORIGINS', '')
+    origins = []
+    seen = set()
+    for part in raw.split(','):
+        item = part.strip()
+        if not item or item == '*':
+            continue
+        if item in seen:
+            continue
+        seen.add(item)
+        origins.append(item)
+    return origins
+
+
+def _apply_cors(response, origin):
+    response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = _CORS_ALLOW_HEADERS
+    if 'Access-Control-Allow-Credentials' in response.headers:
+        del response.headers['Access-Control-Allow-Credentials']
+    return response
+
+
+@app.before_request
+def _cors_preflight():
+    if request.method != 'OPTIONS':
+        return None
+    origin = request.headers.get('Origin', '')
+    if origin not in allowed_cors_origins():
+        return None
+    return _apply_cors(app.make_response(('', 204)), origin)
+
+
+@app.after_request
+def _cors_response(response):
+    origin = request.headers.get('Origin', '')
+    if origin in allowed_cors_origins():
+        _apply_cors(response, origin)
+    elif 'Access-Control-Allow-Credentials' in response.headers:
+        del response.headers['Access-Control-Allow-Credentials']
+    return response
+
 
 cache = get_cache()
 api_key = os.getenv('CFBD_API_KEY')
@@ -64,23 +107,12 @@ def get_current_season_week():
 
 @app.route('/')
 def index():
+    # Container health check. The public Worker 404s /api so this catalog
+    # is not a visitor route, and it does not name internal paths.
     return jsonify({
         "message": "True Rankings API is running",
         "brand": "True Rankings",
         "rating": "TR+",
-        "endpoints": [
-            "/rankings",
-            "/rankings/team/<team_name>",
-            "/matchup",
-            "/drop/subscribe",
-            "/weeks",
-            "/cache/stats",
-            "/cache/clear",
-            "/agent/explain",
-            "/agent/blurb",
-            "/agent/climb",
-            "/agent/health",
-        ],
     })
 
 

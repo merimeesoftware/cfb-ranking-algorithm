@@ -13,6 +13,46 @@ def test_index(client):
     data = response.get_json()
     assert 'True Rankings' in data['message']
     assert data.get('rating') == 'TR+'
+    catalog = response.get_data(as_text=True)
+    assert '/cache/clear' not in catalog
+    assert '/cache/stats' not in catalog
+    assert '/drop/subscribe' not in catalog
+    assert '/agent/health' not in catalog
+
+
+def test_cors_allowlist_has_no_wildcard_or_credentials(client, monkeypatch):
+    monkeypatch.delenv('CORS_ORIGINS', raising=False)
+    unset = client.get('/', headers={'Origin': 'https://evil.example'})
+    assert 'Access-Control-Allow-Origin' not in unset.headers
+    assert 'Access-Control-Allow-Credentials' not in unset.headers
+
+    monkeypatch.setenv('CORS_ORIGINS', '*')
+    wildcard = client.get('/', headers={'Origin': 'https://evil.example'})
+    assert 'Access-Control-Allow-Origin' not in wildcard.headers
+    assert 'Access-Control-Allow-Credentials' not in wildcard.headers
+
+    monkeypatch.setenv('CORS_ORIGINS', 'https://board.example.test, *')
+    denied = client.get('/', headers={'Origin': 'https://evil.example'})
+    assert 'Access-Control-Allow-Origin' not in denied.headers
+    allowed = client.get('/', headers={'Origin': 'https://board.example.test'})
+    assert allowed.headers['Access-Control-Allow-Origin'] == 'https://board.example.test'
+    assert 'Access-Control-Allow-Credentials' not in allowed.headers
+    preflight = client.options('/', headers={
+        'Origin': 'https://board.example.test',
+        'Access-Control-Request-Method': 'POST',
+    })
+    assert preflight.status_code == 204
+    assert preflight.headers['Access-Control-Allow-Origin'] == 'https://board.example.test'
+    assert 'cf-turnstile-response' in preflight.headers['Access-Control-Allow-Headers']
+    assert 'Access-Control-Allow-Credentials' not in preflight.headers
+
+
+def test_mcp_query_route_is_gone(client):
+    response = client.post('/agent/mcp/query', json={'tool': 'get-games', 'params': {'year': 2024}})
+    assert response.status_code == 404
+    body = response.get_data(as_text=True)
+    assert 'MCP query failed' not in body
+    assert 'CFBD_MCP_URL' not in body
 
 
 def test_weeks_endpoint(client):
