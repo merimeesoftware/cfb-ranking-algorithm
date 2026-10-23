@@ -4,9 +4,11 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from api_integration import CFBDRequestError
 from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
+from spend_guards import CFBDOfflineError
 
 ALGO_VERSION = 'v5.3'
 
@@ -109,10 +111,14 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
 
     print(f"Cache MISS: priors for {year}")
     history_data = []
-    # calculate_priors only weights Y-1 and Y-2 — skip Y-3
+    # calculate_priors only weights Y-1 and Y-2 — skip Y-3.
+    # Published baseline JSON supplies those seasons without a CFBD call.
+    from static_rankings import read_baseline_games
     for h_year in range(year - 1, year - 3, -1):
         try:
-            h_games = data_processor.get_games_for_season(h_year, use_week_scoped_fetch=False)
+            h_games = read_baseline_games(h_year)
+            if h_games is None:
+                h_games = data_processor.get_games_for_season(h_year, use_week_scoped_fetch=False)
             if h_games:
                 h_ranker = TeamQualityRanker(config)
                 h_games_by_week = data_processor.organize_games_by_week(h_games)
@@ -122,6 +128,8 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
                 h_results = h_ranker.calculate_final_rankings()
                 h_results = h_ranker.normalize_scores(h_results)
                 history_data.append(h_results)
+        except (CFBDRequestError, CFBDOfflineError):
+            raise
         except Exception as e:
             print(f"Could not process history for {h_year}: {e}")
 
@@ -266,7 +274,7 @@ def calculate_rankings_logic(
 
 
 def get_or_calculate_rankings(
-    data_processor: CFBDataProcessor,
+    data_processor: Optional[CFBDataProcessor],
     year: int,
     week: Optional[int],
     request_args,
@@ -295,6 +303,9 @@ def get_or_calculate_rankings(
             return static
         print(f"STATIC MISS: rankings {year} week={week} (compute disabled)")
         return None
+
+    if data_processor is None:
+        raise RuntimeError('computing rankings requires a data processor')
 
     cache = get_cache()
     key = rankings_cache_key(year, week, request_args)

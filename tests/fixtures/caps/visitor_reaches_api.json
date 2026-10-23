@@ -1,0 +1,16 @@
+{
+  "routes": [
+    {"method": "GET", "path": "/"},
+    {"method": "GET", "path": "/rankings?year=2024&week=10"},
+    {"method": "GET", "path": "/rankings/team/Georgia?year=2024&week=10"},
+    {"method": "GET", "path": "/matchup?year=2024&week=10&team_a=Georgia&team_b=Texas"},
+    {"method": "GET", "path": "/weeks?year=2024"},
+    {"method": "GET", "path": "/cache/stats"},
+    {"method": "GET", "path": "/agent/health"},
+    {"method": "POST", "path": "/agent/explain"},
+    {"method": "POST", "path": "/agent/blurb"},
+    {"method": "POST", "path": "/agent/climb"},
+    {"method": "POST", "path": "/drop/subscribe"}
+  ],
+  "planted_source": "from api_integration import CFBDApiClient\ndata_processor = CFBDataProcessor(api_key=api_key)\n"
+}

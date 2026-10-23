@@ -660,9 +660,6 @@ def explain_ranking():
     Stub and off do not call a provider. Live calls are budgeted per provider.
     A repeat of the same cache key does not make another paid call.
     """
-    if _data_processor is None:
-        return jsonify({'error': 'Data processor not initialized'}), 503
-
     body = request.get_json(silent=True) or {}
     rejected = _reject_question(body)
     if rejected:
@@ -828,9 +825,6 @@ def _static_blurb_for_team(
 
 def _blurb_http(kind: str):
     """Shared handler for /agent/blurb and /agent/climb."""
-    if _data_processor is None:
-        return jsonify({'error': 'Data processor not initialized'}), 503
-
     try:
         check_agent_rate_limit(_client_key())
     except AIRateLimitError:

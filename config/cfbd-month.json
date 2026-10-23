@@ -1,10 +1,16 @@
 {
   "provider": "cfbd",
   "source": "app",
-  "ceiling": 700,
+  "ceiling": 2800,
   "mcp_reserved": 150,
   "margin": 50,
+  "hard_cap": 3000,
+  "tier2_monthly_calls": 30000,
   "sundays_per_year": 52,
   "months": 12,
-  "days": 31
+  "days": 31,
+  "in_season_sundays_per_month": 5,
+  "steady_calls_per_run": 1,
+  "season_setup_calls": 3,
+  "in_season_month_cap": 50
 }

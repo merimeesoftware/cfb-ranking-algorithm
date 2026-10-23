@@ -1,0 +1,6 @@
+{
+  "provider": "cfbd",
+  "source": "app",
+  "cron_calls_per_run": 11,
+  "in_season_sundays_per_month": 5
+}

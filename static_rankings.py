@@ -278,3 +278,151 @@ def team_blurb_from_static(
         if str(name).lower() == lower and text:
             return str(text)
     return None
+
+
+_SEASON_KINDS = ('baseline', 'teams')
+
+
+def _frontend_rankings_root() -> Path:
+    return Path(__file__).resolve().parent / 'frontend' / 'static' / 'rankings'
+
+
+def _season_file(kind: str, year: int, root: Optional[Union[str, Path]]) -> str:
+    """Allowlisted ``baseline|teams/YYYY.json`` under a rankings root."""
+    if kind not in _SEASON_KINDS:
+        raise ValueError('unsupported season file')
+    if type(year) is not int or not (_YEAR_MIN <= year <= _YEAR_MAX):
+        raise ValueError('year is outside the allowed range')
+    base = Path(root) if root is not None else Path(DEFAULT_ROOT)
+    base_norm = os.path.normpath(str(base))
+    fullpath = os.path.normpath(os.path.join(base_norm, kind, f'{year}.json'))
+    if not fullpath.startswith(base_norm + os.sep):
+        raise ValueError('season file path escapes the allowed root')
+    return fullpath
+
+
+def _season_read_roots(root: Optional[Union[str, Path]]) -> list:
+    if root is not None:
+        return [Path(root)]
+    return [_frontend_rankings_root(), Path(DEFAULT_ROOT)]
+
+
+def _read_season_payload(kind: str, year: int, root: Optional[Union[str, Path]]) -> Optional[Dict[str, Any]]:
+    for base in _season_read_roots(root):
+        try:
+            fullpath = _season_file(kind, year, base)
+        except ValueError:
+            return None
+        if not os.path.exists(fullpath):
+            continue
+        try:
+            with open(fullpath, 'r', encoding='utf-8') as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError, UnicodeError):
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return None
+
+
+def _write_season_payload(
+    kind: str,
+    year: int,
+    payload: Dict[str, Any],
+    root: Optional[Union[str, Path]],
+) -> Path:
+    roots = [Path(root)] if root is not None else [_frontend_rankings_root(), Path(DEFAULT_ROOT)]
+    last: Optional[Path] = None
+    for base in roots:
+        fullpath = _season_file(kind, year, base)
+        fullpath = os.path.normpath(fullpath)
+        if not fullpath.startswith(os.path.normpath(str(base)) + os.sep):
+            raise ValueError('season file path escapes the allowed root')
+        os.makedirs(os.path.dirname(fullpath), exist_ok=True)
+        with open(fullpath, 'w', encoding='utf-8') as handle:
+            json.dump(payload, handle, indent=2)
+            handle.write('\n')
+        last = Path(fullpath)
+    if last is None:
+        raise ValueError('no season file root')
+    return last
+
+
+def read_season_teams(
+    year: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Teams for one season. Missing file means the caller may fetch /teams once."""
+    payload = _read_season_payload('teams', year, root)
+    if not payload:
+        return None
+    teams = payload.get('teams')
+    if isinstance(teams, dict) and teams:
+        return teams
+    return None
+
+
+def write_season_teams(
+    year: int,
+    teams: Dict[str, Any],
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    return _write_season_payload('teams', year, {'year': year, 'teams': teams}, root)
+
+
+def read_baseline_games(
+    year: int,
+    root: Optional[Union[str, Path]] = None,
+) -> Optional[list]:
+    """Processed games for a prior season. None means the file is not published yet."""
+    payload = _read_season_payload('baseline', year, root)
+    if not payload:
+        return None
+    games = payload.get('games')
+    if isinstance(games, list):
+        return games
+    return None
+
+
+def write_baseline_games(
+    year: int,
+    games: list,
+    root: Optional[Union[str, Path]] = None,
+) -> Path:
+    """Store processed games, not the raw CFBD response."""
+    return _write_season_payload(
+        'baseline',
+        year,
+        {'year': year, 'games': games},
+        root,
+    )
+
+
+def rebuild_rankings_manifest(root: Union[str, Path]) -> Dict[str, Any]:
+    """Rewrite manifest.json from week-N.json files already on disk."""
+    base = Path(root)
+    base.mkdir(parents=True, exist_ok=True)
+    years: Dict[str, list] = {}
+    for year_dir in sorted(path for path in base.iterdir() if path.is_dir()):
+        if not year_dir.name.isdigit():
+            continue
+        year = int(year_dir.name)
+        if not (_YEAR_MIN <= year <= _YEAR_MAX):
+            continue
+        weeks = []
+        for path in year_dir.iterdir():
+            name = path.name
+            if not name.startswith('week-') or not name.endswith('.json'):
+                continue
+            number = name[len('week-'):-len('.json')]
+            if not number.isdigit():
+                continue
+            week = int(number)
+            if _WEEK_MIN <= week <= _WEEK_MAX:
+                weeks.append(week)
+        if weeks:
+            years[str(year)] = sorted(set(weeks))
+    payload = {'years': years}
+    manifest = base / 'manifest.json'
+    manifest.write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+    return payload

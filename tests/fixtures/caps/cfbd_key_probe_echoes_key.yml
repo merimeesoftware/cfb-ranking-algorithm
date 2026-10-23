@@ -1,0 +1,9 @@
+name: planted key probe
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: leak
+        run: echo "$CFBD_API_KEY"

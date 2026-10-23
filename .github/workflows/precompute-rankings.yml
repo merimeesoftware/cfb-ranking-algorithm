@@ -3,6 +3,9 @@
 
 name: Precompute Rankings
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "0 6 * * 0"  # Sunday 06:00 UTC
@@ -21,6 +24,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
 
       - uses: actions/setup-python@v7
         with:
@@ -47,10 +52,12 @@ jobs:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
           # Repo variable. "1" skips the run before any live fetch. Empty is off.
           CFBD_KILL: ${{ vars.CFBD_KILL }}
-          # Per Sunday, after skipping published weeks. Warm runs refetch the
-          # latest week only. 24 × 52/12 = 104/month, inside the 700 app ceiling.
-          # Provider cfbd, source app. See config/cfbd-month.json.
-          CFBD_MAX_CALLS: "24"
+          # Ingest job. Production wrangler stays CFBD_OFFLINE=1 and is not
+          # set here, so this cron can fetch while visitors stay offline.
+          # Steady Sunday: 1 bulk /games call. Cold Sunday adds /teams and
+          # two baseline seasons (4). Cap 8. 8×5 in-season Sundays = 40,
+          # under the 50/month cron cap. See config/cfbd-month.json.
+          CFBD_MAX_CALLS: "8"
         run: |
           if [ -n "${{ github.event.inputs.year }}" ] && [ -n "${{ github.event.inputs.through_week }}" ]; then
             python scripts/precompute_rankings.py --year ${{ github.event.inputs.year }} --through-week ${{ github.event.inputs.through_week }}
@@ -67,8 +74,18 @@ jobs:
             frontend/static/rankings/
           retention-days: 14
 
-# Soften: do not auto-commit from Actions by default (artifact upload only)
-      - name: Commit static rankings for Pages (optional)
-        if: false
+      - name: Publish static rankings
         run: |
-          echo "Enable this step when ready to publish static rankings to main"
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- frontend/static/rankings static_rankings
+          if git rev-parse -q --verify HEAD >/dev/null; then
+            git reset -q HEAD -- static_rankings/_sources || true
+          fi
+          if git diff --cached --quiet; then
+            echo "No ranking changes to publish"
+            exit 0
+          fi
+          git commit -m "Publish precomputed rankings"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

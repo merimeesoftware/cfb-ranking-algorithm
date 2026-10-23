@@ -1,0 +1,35 @@
+# One manual CFBD /info call. Prints patronLevel and remainingCalls.
+# Same-repo pull requests that touch this workflow may run it. Forks cannot.
+
+name: CFBD key probe
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/cfbd-key-probe.yml'
+      - 'scripts/cfbd_key_probe.py'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: One CFBD /info call
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Probe /info
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+        run: python scripts/cfbd_key_probe.py

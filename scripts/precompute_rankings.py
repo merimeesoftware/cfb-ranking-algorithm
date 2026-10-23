@@ -19,7 +19,7 @@ import json
 import os
 import shutil
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,18 +30,26 @@ from dotenv import load_dotenv
 load_dotenv(ROOT / '.env')
 
 # Per Sunday run, not the public daily budget. Cache hits do not count.
-# 24 covers one cold season (teams + weeks 1..15 + priors). A warm Sunday
-# refetches only the latest week. See config/cfbd-month.json.
-os.environ.setdefault('CFBD_MAX_CALLS', '24')
+# A cold Sunday is /teams (if missing) + two baseline seasons (if missing)
+# + one bulk /games call. 8 is headroom over that 4. Steady Sundays are 1.
+# See config/cfbd-month.json. Cross-run week storage stays on #117.
+os.environ.setdefault('CFBD_MAX_CALLS', '8')
 
 from cache import get_cache
 from data_processor import CFBDataProcessor
-from spend_guards import is_cfbd_killed
+from spend_guards import is_cfbd_killed, is_cfbd_offline
 from ranking_service import (
     get_or_calculate_rankings,
     slim_rankings_for_list,
 )
-from static_rankings import read_static_rankings, write_static_rankings, DEFAULT_ROOT
+from static_rankings import (
+    DEFAULT_ROOT,
+    read_baseline_games,
+    read_static_rankings,
+    rebuild_rankings_manifest,
+    write_baseline_games,
+    write_static_rankings,
+)
 
 # Restored by the weekly Actions cache. Longer than the public 1-hour TTL
 # so a Sunday run still sees last Sunday's games, teams, and priors.
@@ -58,8 +66,30 @@ def install_batch_cache_ttl() -> None:
     api_integration.get_games_ttl = lambda year: BATCH_TTL
 
 
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def is_offseason(now: datetime | None = None) -> bool:
+    """Jan 21 through Aug 23. Bowl weeks through Jan 20 still count as in season."""
+    now = now or now_utc()
+    if (now.month, now.day) <= (1, 20):
+        return False
+    if (now.month, now.day) < (8, 24):
+        return True
+    return False
+
+
+def season_year(now: datetime | None = None) -> int:
+    """January bowls belong to the season that started the previous August."""
+    now = now or now_utc()
+    if now.month == 1:
+        return now.year - 1
+    return now.year
+
+
 def current_season_week(now: datetime | None = None) -> tuple[int, int]:
-    now = now or datetime.now()
+    now = now or now_utc()
     if now.month < 8:
         return now.year - 1, 15
     season_start = datetime(now.year, 8, 24)
@@ -99,6 +129,36 @@ def seed_week_games(year: int, week: int, games: list) -> None:
     cache = get_cache()
     key = cache._generate_key('games', year, week, 'regular')
     cache.set(key, games, BATCH_TTL, prefix='games')
+
+
+def row_complete(game: dict) -> bool:
+    if game.get('completed') is False:
+        return False
+    return game.get('home_score') is not None and game.get('away_score') is not None
+
+
+def games_for_week(games: list, week: int) -> list:
+    rows = []
+    for game in games:
+        if (game.get('season_type') or 'regular') != 'regular':
+            continue
+        if game.get('week') == week:
+            rows.append(game)
+    return rows
+
+
+def latest_completed_regular_week(games: list) -> int | None:
+    """Highest regular week whose games all have scores. Partial weeks wait."""
+    by_week: dict[int, list] = {}
+    for game in games:
+        if (game.get('season_type') or 'regular') != 'regular':
+            continue
+        week = game.get('week')
+        if week is None:
+            continue
+        by_week.setdefault(int(week), []).append(game)
+    done = [week for week, rows in by_week.items() if rows and all(row_complete(row) for row in rows)]
+    return max(done) if done else None
 
 
 def weeks_to_fetch(weeks: list[int], published: set[int], snapshots: set[int]) -> list[int]:
@@ -165,52 +225,79 @@ def publish_year(
     processor: CFBDataProcessor,
     *,
     static_root: Path | None = None,
+    season_games: list | None = None,
 ) -> dict:
-    """Fetch only weeks that are new or whose latest games changed."""
+    """One bulk season payload. Recompute unpublished weeks and a changed latest week."""
+    if not weeks:
+        return {'bulk_calls': 0, 'computed': [], 'fetched_seasons': []}
+    bulk_calls = 0
+    if season_games is None:
+        print(f'Fetching {year} games (one bulk call)...')
+        season_games = processor.api_client.get_games(year=year, season_type='both')
+        bulk_calls = 1
     published = {
         week for week in weeks
         if read_static_rankings(year, week, root=static_root) is not None
     }
-    snapshots = {
-        week for week in range(1, (max(weeks) if weeks else 0) + 1)
-        if read_source(year, week, static_root) is not None
-    }
-    fetch = weeks_to_fetch(weeks, published, snapshots)
-    fetched: dict[int, list] = {}
     previous_fingerprint: dict[int, str | None] = {}
-    for week in fetch:
+    by_week: dict[int, list] = {}
+    latest = max(weeks)
+    for week in weeks:
         previous = read_source(year, week, static_root)
         previous_fingerprint[week] = None if previous is None else previous.get('fingerprint')
-        print(f'Fetching {year} week {week} games...')
-        fetched[week] = processor.api_client.get_games(year=year, week=week)
-        if fetched[week]:
-            seed_week_games(year, week, fetched[week])
+        rows = games_for_week(season_games, week)
+        if not rows and previous and previous.get('games'):
+            rows = previous['games']
+        by_week[week] = rows
+        if rows:
+            seed_week_games(year, week, rows)
             # Keep the previous latest-week fingerprint until compute succeeds.
-            # Otherwise a failed rebuild looks unchanged on the next Sunday.
-            if week != max(weeks):
-                write_source(year, week, fetched[week], static_root)
+            if week != latest:
+                write_source(year, week, rows, static_root)
 
-    for week, source in (
-        (week, read_source(year, week, static_root))
-        for week in range(1, (max(weeks) if weeks else 0) + 1)
-    ):
-        if week not in fetched and source and source.get('games'):
-            seed_week_games(year, week, source['games'])
-
-    latest = max(weeks) if weeks else None
-    changed = False
-    if latest is not None and latest in fetched:
-        changed = latest_games_changed(previous_fingerprint.get(latest), fetched[latest])
-    compute = weeks_to_compute(weeks, published, changed)
+    compute = []
+    for week in weeks:
+        week_changed = latest_games_changed(
+            previous_fingerprint.get(week),
+            by_week.get(week) or [],
+        )
+        if week not in published or week_changed:
+            compute.append(week)
     for week in sorted(published - set(compute)):
         print(f'Skip unchanged {year} week {week}')
     for week in compute:
         print(f'Precomputing {year} week {week}...')
         precompute(year, week, processor)
-        games = fetched.get(week)
+        games = by_week.get(week)
         if games:
             write_source(year, week, games, static_root)
-    return {'fetched': fetch, 'computed': compute}
+    return {
+        'bulk_calls': bulk_calls,
+        'computed': compute,
+        'fetched_seasons': [year] if bulk_calls else [],
+    }
+
+
+def ensure_baseline(processor: CFBDataProcessor, year: int, root: Path | None = None) -> list[int]:
+    """Write Y-1 and Y-2 processed games once. Later Sundays read the files."""
+    fetched = []
+    for prior in (year - 1, year - 2):
+        if read_baseline_games(prior, root=root) is not None:
+            print(f'Baseline hit: {prior}')
+            continue
+        print(f'Baseline fetch: {prior}')
+        games = processor.get_games_for_season(prior, through_week=None, use_week_scoped_fetch=False)
+        write_baseline_games(prior, games, root=root)
+        fetched.append(prior)
+    return fetched
+
+
+def publish_stored_manifests() -> None:
+    """Refresh manifests from files already on disk. No CFBD call."""
+    frontend = ROOT / 'frontend' / 'static' / 'rankings'
+    rebuild_rankings_manifest(frontend)
+    if Path(DEFAULT_ROOT).exists():
+        rebuild_rankings_manifest(DEFAULT_ROOT)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -225,32 +312,50 @@ def main(argv: list[str] | None = None) -> int:
         print('CFBD kill switch is on. Precompute skipped.')
         return 0
 
+    now = now_utc()
+    if args.current and is_offseason(now):
+        print('Off-season: precompute skipped (0 CFBD calls).')
+        publish_stored_manifests()
+        return 0
+
+    if is_cfbd_offline():
+        # Prod stays CFBD_OFFLINE=1. Publishing still refreshes the manifest
+        # from static JSON. The ingest job itself leaves CFBD_OFFLINE unset.
+        print('CFBD offline: publishing stored rankings only (0 CFBD calls).')
+        publish_stored_manifests()
+        return 0
+
     if not os.getenv('CFBD_API_KEY'):
         print('CFBD_API_KEY required', file=sys.stderr)
         return 1
 
     install_batch_cache_ttl()
-    processor = CFBDataProcessor(api_key=os.getenv('CFBD_API_KEY'))
-    jobs: list[tuple[int, int]] = []
-
+    by_year: dict[int, list[int]] = {}
     if args.current:
-        year, cur = current_season_week()
-        for week in range(1, cur):
-            jobs.append((year, week))
+        year = season_year(now)
+        by_year[year] = []
     elif args.year and args.through_week:
-        for week in range(1, args.through_week + 1):
-            jobs.append((args.year, week))
+        by_year[args.year] = list(range(1, args.through_week + 1))
     elif args.year and args.week:
-        jobs.append((args.year, args.week))
+        by_year[args.year] = [args.week]
     else:
         parser.error('Provide --year/--week, --year/--through-week, or --current')
 
-    by_year: dict[int, list[int]] = {}
-    for year, week in jobs:
-        by_year.setdefault(year, []).append(week)
+    processor = CFBDataProcessor(api_key=os.getenv('CFBD_API_KEY'))
     for year, weeks in by_year.items():
-        publish_year(year, weeks, processor)
+        processor.ensure_teams(year, persist=True)
+        ensure_baseline(processor, year)
+        print(f'Fetching {year} games (one bulk call)...')
+        season_games = processor.api_client.get_games(year=year, season_type='both')
+        if not weeks:
+            latest = latest_completed_regular_week(season_games)
+            if not latest:
+                print(f'No completed week for {year}.')
+                continue
+            weeks = list(range(1, latest + 1))
+        publish_year(year, weeks, processor, season_games=season_games)
 
+    publish_stored_manifests()
     print(f'Done. Static root: {DEFAULT_ROOT}')
     return 0
 

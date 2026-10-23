@@ -17,8 +17,12 @@ def test_transform_preserves_notes_and_season_type():
         'notes': 'CFP Semifinal - Rose Bowl',
         'seasonType': 'postseason',
         'neutralSite': True,
+        'id': 401234,
+        'completed': True,
     }
     out = CFBDApiClient._transform_game(None, raw)
+    assert out['id'] == 401234
+    assert out['completed'] is True
     assert out['notes'] == 'CFP Semifinal - Rose Bowl'
     assert out['season_type'] == 'postseason'
     assert out['neutral_site'] is True
