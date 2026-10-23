@@ -78,9 +78,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: static-rankings
-          path: |
-            static_rankings/
-            frontend/static/rankings/
+          path: frontend/static/rankings/
           retention-days: 14
 
   publish:

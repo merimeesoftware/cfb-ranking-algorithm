@@ -45,6 +45,67 @@ def test_publish_step_ignores_the_private_cache(tmp_path):
     subprocess.run(['bash', str(SCRIPT)], cwd=repo, check=True)
 
 
+def _upload_artifact_paths(text: str) -> list[str]:
+    """Paths named on actions/upload-artifact steps. Cache paths are ignored."""
+    lines = text.splitlines()
+    collected = []
+    index = 0
+    while index < len(lines):
+        if 'actions/upload-artifact@' not in lines[index]:
+            index += 1
+            continue
+        index += 1
+        while index < len(lines):
+            line = lines[index]
+            if line.startswith('      - ') or (line and not line[0].isspace()):
+                break
+            stripped = line.strip()
+            if stripped == 'path: |':
+                index += 1
+                while index < len(lines) and (
+                    lines[index].startswith('            ') or not lines[index].strip()
+                ):
+                    if lines[index].strip():
+                        collected.append(lines[index].strip())
+                    index += 1
+                continue
+            if stripped.startswith('path:'):
+                value = stripped.split(':', 1)[1].strip().strip('"').strip("'")
+                if value and value != '|':
+                    collected.append(value)
+            index += 1
+    return collected
+
+
+def _names_private_static_rankings(path: str) -> bool:
+    """True when a path selects repo-root static_rankings, not the public tree."""
+    normalized = path.replace('\\', '/').strip().lstrip('./')
+    if normalized.startswith('frontend/static/rankings/') or normalized.rstrip('/') == 'frontend/static/rankings':
+        return False
+    segments = [segment for segment in normalized.split('/') if segment]
+    return 'static_rankings' in segments
+
+
+def test_upload_artifact_excludes_private_static_rankings():
+    paths = _upload_artifact_paths(WORKFLOW.read_text(encoding='utf-8'))
+    assert paths
+    assert all(not _names_private_static_rankings(path) for path in paths)
+    assert any(
+        path.replace('\\', '/').rstrip('/') == 'frontend/static/rankings'
+        for path in paths
+    )
+    planted = """
+      - uses: actions/upload-artifact@v7
+        with:
+          path: |
+            static_rankings/
+            frontend/static/rankings/
+"""
+    planted_paths = _upload_artifact_paths(planted)
+    assert 'static_rankings/' in planted_paths
+    assert any(_names_private_static_rankings(path) for path in planted_paths)
+
+
 def test_workflow_publish_and_inputs():
     text = WORKFLOW.read_text(encoding='utf-8')
     script = SCRIPT.read_text(encoding='utf-8')
