@@ -28,6 +28,14 @@ Production `AI_MODE=live` (Workers AI) and `CFBD_OFFLINE=1`. Preview hostnames s
 | Visitor limits | 60/min on `/api/*`, 10/min on `/agent/*`, keyed on `CF-Connecting-IP`. The canonical path only picks which limiter. |
 | Kill switches | `AI_KILL`, `XAI_KILL`, `WORKERS_AI_KILL`, and `CFBD_KILL` default off. A stored Durable Object latch still blocks the call after the env var is cleared. |
 
+## Interim rankings writer
+
+The weekly Actions job is an interim writer; retired when the #117 KV cron lands.
+
+It commits derived week JSON and `priors/{year}.json` (schema, algo version, source hash, timestamp, team-to-score) under `frontend/static/rankings/`. Raw CFBD games and teams stay in the private Actions cache (`.cache` and gitignored `static_rankings/`). They are not written under `frontend/static/rankings/baseline/` or `frontend/static/rankings/teams/`.
+
+A `GITHUB_TOKEN` push does not trigger `ci.yml` or `deploy-cloudflare.yml` (`deploy-cloudflare.yml` runs on `workflow_run` of CI). Publish relies on Workers Builds. Pending Release Ops confirmation.
+
 ## Already-counted headers
 
 `x-workers-ai-reserved` and `x-xai-week-reserved` mean the container already reserved that paid call on SpendBudget. The outbound handlers trust them only on the container's request to `ai.workers` and `ai.xai`. The edge deletes both headers from visitor requests before the container fetch, so a visitor cannot plant them.
