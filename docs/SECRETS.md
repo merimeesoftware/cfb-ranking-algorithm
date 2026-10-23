@@ -48,8 +48,8 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 | `CORS_ORIGINS` | Optional | Comma-separated browser origins. Unset means same-origin only. `*` is ignored. Credentials are not allowed. |
 | `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
 | `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. |
-| `PUBLIC_TURNSTILE_SITE_KEY` | Optional (build, public) | Turnstile widget id. Inlined into the client and rendered only when set. Not a secret. The matching secret is `TURNSTILE_SECRET_KEY` on the Worker. |
-| `TURNSTILE_SECRET_KEY` | When the widget is on | Worker secret. siteverify for `/api/agent/*`. Not forwarded to the container. Unset, production logs a warning and keeps `AI_MAX_CALLS` plus the per-IP rate limits. |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Optional (build, public) | Turnstile widget id. Inlined into the client and rendered only when set. Not a secret. The matching secret is `TURNSTILE_SECRET_KEY` on the Worker. Build the site key into the frontend before setting the secret, or agent calls return "Try again." |
+| `TURNSTILE_SECRET_KEY` | When the widget is on | Worker secret. siteverify for `/api/agent/*`. Not forwarded to the container. Unset, production logs a warning and keeps `AI_MAX_CALLS` plus the per-IP rate limits. `TURNSTILE_REQUIRED=1` with no secret logs one JSON line (`turnstile_unconfigured`, secret `missing`) and returns that code. |
 
 Or via CLI (after `wrangler login` once on your machine):
 
@@ -101,7 +101,7 @@ That does **not** deploy them to Cloudflare. After you deploy, set them again (o
 | `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` | stub / `1` on non-production hosts | Explicit override for preview and dev versions |
 
 Free CFBD tier is **1,000 calls/month**. Prefer static 2024 weeks for UI work.
-The Worker returns 404 for `/api`, `/api/agent/health`, and `/api/cache/stats`. Flask still answers `/agent/health` inside the container with `{ "status": "ok" }` only. It does not include budgets, call counts, or cache paths. The global daily counters live on the `CfbApiContainer` instance named `spend-budget`. `POST /api/cache/clear` is header `X-Cache-Secret` only. `TURNSTILE_REQUIRED=1` (set on `env.dev`, not production) refuses agent calls when `TURNSTILE_SECRET_KEY` is missing.
+The Worker returns 404 for `/api`, `/api/agent/health`, and `/api/cache/stats`. Flask still answers `/agent/health` inside the container with `{ "status": "ok" }` only. It does not include budgets, call counts, or cache paths. The global daily counters live on the `CfbApiContainer` instance named `spend-budget`. `POST /api/cache/clear` is header `X-Cache-Secret` only. `TURNSTILE_REQUIRED=1` (set on `env.dev`, not production) refuses agent calls when `TURNSTILE_SECRET_KEY` is missing and returns `turnstile_unconfigured`.
 
 Scheduled blurbs: `.github/workflows/precompute-blurbs.yml` runs **stub/offline only**. A live provider call happens on **Cloudflare** when `AI_MODE=live` and static/cache miss. Artifacts are uploaded; commit-to-main remains optional.
 

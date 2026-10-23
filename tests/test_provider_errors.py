@@ -41,6 +41,29 @@ def _drop_blurb_cache():
 
 
 @pytest.mark.parametrize('error_type', ['url', 'timeout'])
+def test_call_provider_returns_fixed_string(monkeypatch, capsys, error_type):
+    """The return value itself is the fixed string. An f-string of the exception fails this."""
+    from agent_service import LLM_UNAVAILABLE, _call_provider
+
+    detail = _detail()
+    _arm_live(monkeypatch)
+
+    def explode(*_args, **_kwargs):
+        if error_type == 'url':
+            raise urllib.error.URLError(detail)
+        raise TimeoutError(detail)
+
+    with patch('agent_service.urllib.request.urlopen', side_effect=explode):
+        text = _call_provider('workers_ai', 'Oregon week 10')
+    assert text == LLM_UNAVAILABLE
+    assert detail not in text
+    assert f'{detail}' not in text
+    assert 'URLError' not in text
+    assert 'TimeoutError' not in text
+    assert detail in capsys.readouterr().out
+
+
+@pytest.mark.parametrize('error_type', ['url', 'timeout'])
 def test_explain_provider_error_hides_exception(client, monkeypatch, capsys, error_type):
     from agent_service import EXPLAIN_BREAKDOWN
 

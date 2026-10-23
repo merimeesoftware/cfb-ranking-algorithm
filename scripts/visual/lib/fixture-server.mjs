@@ -40,10 +40,55 @@ function resolveUnder(root, pathname) {
   return null;
 }
 
-function send(res, status, body, type) {
+/** Cloudflare `_headers` rules. The longest matching path wins. `/*` covers every page. */
+export function parseHeaderRules(text) {
+  const rules = [];
+  let current = null;
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    if (!line.startsWith(' ') && !line.startsWith('\t')) {
+      current = { path: line.trim(), headers: {} };
+      rules.push(current);
+      continue;
+    }
+    const split = line.indexOf(':');
+    if (!current || split === -1) continue;
+    current.headers[line.slice(0, split).trim()] = line.slice(split + 1).trim();
+  }
+  return rules;
+}
+
+export function headersForPath(pathname, rules) {
+  let best = null;
+  let score = -1;
+  for (const rule of rules) {
+    const spec = rule.path;
+    let matched = false;
+    let next = 0;
+    if (spec === '/*') {
+      matched = true;
+      next = 1;
+    } else if (spec.endsWith('*')) {
+      const prefix = spec.slice(0, -1);
+      matched = pathname.startsWith(prefix);
+      next = prefix.length;
+    } else if (pathname === spec) {
+      matched = true;
+      next = spec.length + 10;
+    }
+    if (matched && next > score) {
+      best = rule.headers;
+      score = next;
+    }
+  }
+  return best || {};
+}
+
+function send(res, status, body, type, extra = {}) {
   res.writeHead(status, {
     'content-type': type,
     'cache-control': 'no-store',
+    ...extra,
   });
   res.end(body);
 }
@@ -68,6 +113,11 @@ export function startFixtureServer({
   host = '127.0.0.1',
 } = {}) {
   const agentHits = [];
+  let headerRules = [];
+  if (buildDir) {
+    const headersFile = path.join(buildDir, '_headers');
+    if (existsSync(headersFile)) headerRules = parseHeaderRules(readFileSync(headersFile, 'utf8'));
+  }
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || '/', `http://${host}`);
     const pathname = url.pathname.replace(/\/+$/, '') || '/';
@@ -150,7 +200,8 @@ export function startFixtureServer({
     if (buildDir && shouldRewrite(file, type)) {
       body = Buffer.from(rewriteCaptureText(body.toString('utf8')), 'utf8');
     }
-    send(res, 200, body, type);
+    const pageHeaders = headersForPath(url.pathname, headerRules);
+    send(res, 200, body, type, pageHeaders);
   });
 
   return new Promise((resolve, reject) => {
