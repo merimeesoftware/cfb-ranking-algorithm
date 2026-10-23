@@ -12,5 +12,6 @@
   "in_season_sundays_per_month": 5,
   "steady_calls_per_run": 1,
   "season_setup_calls": 3,
-  "in_season_month_cap": 50
+  "in_season_month_cap": 50,
+  "visitor_cfbd_per_day": 0
 }

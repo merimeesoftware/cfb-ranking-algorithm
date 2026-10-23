@@ -6,12 +6,15 @@ month. This repo's hard cap is 3,000 (app ceiling 2,800 + 150 MCP reserve
 + 50 margin). The cron path is tighter: an in-season month stays under 50.
 
 Steady Sunday: 1 bulk ``/games?year=Y&seasonType=both``.
-Season setup, once: ``/teams`` + baseline Y-1 + baseline Y-2 = 3.
+Season setup, once: ``/teams`` + two prior seasons = 3.
 Off-season (Jan 21–Aug 23): 0.
 Peak Sundays in one month: 5.
 Expected peak month: 5×1 + 3 = 8.
 Per-run cap × 5 must also stay ≤ 50, so a loop cannot hide inside the cap.
-Live prod budget is unchanged (wrangler ``CFBD_MAX_CALLS`` 4/day).
+The guard is the worst in-season month, not the 12-month average
+(8×52/12 + 4×31 = 158). With the old 4/day visitor budget that worst month
+is 8×5 + 4×31 = 164. Visitor CFBD in this model is 0, so the guarded month
+is 8×5 + 0. Wrangler ``CFBD_MAX_CALLS`` stays 4 and is not the model.
 
 A planted over-budget fixture must fail, a planted share fixture must break
 the 3,000 sum, and a planted in-season fixture must break 50.
@@ -43,6 +46,7 @@ IN_SEASON_MONTH_CAP = 50
 STEADY_CALLS_PER_RUN = 1
 SEASON_SETUP_CALLS = 3
 TIER2_MONTHLY_CALLS = 30000
+VISITOR_CFBD_PER_DAY = 0
 
 
 def monthly_total(
@@ -56,6 +60,16 @@ def monthly_total(
     """Return (monthly total, cron calls for the month)."""
     cron_calls = cron_calls_per_run * sundays_per_year // months
     return cron_calls + live_cfbd_per_day * days, cron_calls
+
+
+def worst_month(
+    cron_calls_per_run: int,
+    sundays: int,
+    visitor_per_day: int,
+    days: int,
+) -> int:
+    """True worst month: every in-season Sunday plus the visitor daily budget."""
+    return int(cron_calls_per_run) * int(sundays) + int(visitor_per_day) * int(days)
 
 
 def in_season_month_calls(cron_calls_per_run: int, sundays: int) -> int:
@@ -152,6 +166,7 @@ def live_spec() -> dict:
     for name in (
         'ceiling', 'mcp_reserved', 'margin', 'hard_cap',
         'in_season_sundays_per_month', 'tier2_monthly_calls',
+        'visitor_cfbd_per_day',
     ):
         if name not in formula:
             errors.append(f'config/cfbd-month.json missing {name}')
@@ -165,7 +180,9 @@ def live_spec() -> dict:
         'provider': formula.get('provider'),
         'source': formula.get('source'),
         'cron_calls_per_run': cron_cap,
-        'live_cfbd_per_day': int(wrangler['CFBD_MAX_CALLS']),
+        'live_cfbd_per_day': VISITOR_CFBD_PER_DAY,
+        'visitor_cfbd_per_day': formula.get('visitor_cfbd_per_day'),
+        'wrangler_cfbd_max_calls': wrangler.get('CFBD_MAX_CALLS'),
         'sundays_per_year': formula.get('sundays_per_year'),
         'months': formula.get('months'),
         'days': formula.get('days'),
@@ -182,6 +199,8 @@ def live_spec() -> dict:
         errors.append(f'hard cap must stay {HARD_CAP}')
     if spec.get('tier2_monthly_calls') != TIER2_MONTHLY_CALLS:
         errors.append(f'tier2_monthly_calls must stay {TIER2_MONTHLY_CALLS}')
+    if spec.get('visitor_cfbd_per_day') != VISITOR_CFBD_PER_DAY:
+        errors.append(f'visitor CFBD budget must stay {VISITOR_CFBD_PER_DAY}')
     if HARD_CAP >= TIER2_MONTHLY_CALLS:
         errors.append(f'hard cap {HARD_CAP} must stay under Tier 2 {TIER2_MONTHLY_CALLS}')
     spec['errors'] = errors
@@ -205,18 +224,35 @@ def main() -> int:
             errors.append(f'app projection {total} exceeds hard cap {HARD_CAP}')
         errors.extend(evaluate(spec))
         sundays = int(spec['in_season_sundays_per_month'])
-        worst = in_season_month_calls(spec['cron_calls_per_run'], sundays)
+        cron_worst = in_season_month_calls(spec['cron_calls_per_run'], sundays)
         expected = expected_in_season_calls(sundays)
-        errors.extend(in_season_errors(worst))
+        visitor = spec.get('visitor_cfbd_per_day')
+        guarded = None
+        if isinstance(visitor, int):
+            guarded = worst_month(
+                spec['cron_calls_per_run'],
+                sundays,
+                visitor,
+                spec['days'],
+            )
+            if guarded > APP_CEILING or guarded > HARD_CAP:
+                errors.append(f'guarded worst month {guarded} exceeds the ceiling')
+        errors.extend(in_season_errors(cron_worst))
         errors.extend(in_season_errors(expected))
         if all(spec.get(name) is not None for name in ('ceiling', 'mcp_reserved', 'margin')):
             shares = share_total(spec)
             print(
-                f'CFBD {spec["provider"]}:{spec["source"]} month {total} = {cron_calls} cron '
+                f'CFBD {spec["provider"]}:{spec["source"]} '
+                f'average {total} = {cron_calls} cron '
                 f'({spec["cron_calls_per_run"]}×{spec["sundays_per_year"]}/{spec["months"]}) '
-                f'+ {spec["live_cfbd_per_day"]}×{spec["days"]} live; '
+                f'+ {spec["visitor_cfbd_per_day"]}×{spec["days"]} visitor; '
+                f'worst month if visitors were 4/day '
+                f'{worst_month(spec["cron_calls_per_run"], sundays, 4, spec["days"])} '
+                f'(not the 158 average); '
+                f'guarded worst month {guarded} '
+                f'({spec["cron_calls_per_run"]}×{sundays}+{visitor}×{spec["days"]}); '
                 f'ceiling {APP_CEILING}; hard cap {HARD_CAP}; '
-                f'in-season worst {worst} ({spec["cron_calls_per_run"]}×{sundays}), '
+                f'in-season cron worst {cron_worst}, '
                 f'expected {expected} ({STEADY_CALLS_PER_RUN}×{sundays}+{SEASON_SETUP_CALLS}); '
                 f'shares {spec["ceiling"]} + {spec["mcp_reserved"]} + {spec["margin"]} = {shares}, '
                 f'cap {SHARE_CAP}'

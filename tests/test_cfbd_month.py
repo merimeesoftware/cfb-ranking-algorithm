@@ -20,6 +20,7 @@ from check_cfbd_month import (  # noqa: E402
     production_vars,
     share_errors,
     share_total,
+    worst_month,
 )
 
 FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_month_over_budget.json'
@@ -82,7 +83,9 @@ def test_live_config_stays_under_tier2_cap():
     assert share_total(spec) == 3000
     assert share_errors(spec) == []
     assert spec['cron_calls_per_run'] == 8
-    assert spec['live_cfbd_per_day'] == 4
+    assert spec['visitor_cfbd_per_day'] == 0
+    assert spec['live_cfbd_per_day'] == 0
+    assert spec['wrangler_cfbd_max_calls'] == '4'
     total, cron_calls = monthly_total(
         spec['cron_calls_per_run'],
         spec['live_cfbd_per_day'],
@@ -91,8 +94,19 @@ def test_live_config_stays_under_tier2_cap():
         days=spec['days'],
     )
     assert cron_calls == 8 * 52 // 12
-    assert total == cron_calls + 4 * 31
+    assert total == cron_calls
+    assert 8 * 52 // 12 + 4 * 31 == 158
+    assert worst_month(8, 5, 4, 31) == 164
+    guarded = worst_month(
+        8,
+        spec['in_season_sundays_per_month'],
+        spec['visitor_cfbd_per_day'],
+        spec['days'],
+    )
+    assert guarded == 40
+    assert guarded != 158
     assert total <= spec['ceiling']
+    assert guarded <= spec['ceiling']
     worst = in_season_month_calls(8, spec['in_season_sundays_per_month'])
     expected = expected_in_season_calls(spec['in_season_sundays_per_month'])
     assert worst == 40
