@@ -12,8 +12,18 @@ import {
 	isInternalHost,
 	isSpendKillRoute,
 	isVisitorApiPath,
+	applyJsonSecurity,
+	DROP_CLOSED_MESSAGE,
+	isCacheClearPath,
+	isDropSubscribePath,
+	isHiddenPublicPath,
+	jsonSecurityHeaders,
+	needsTurnstile,
 	paidCallAllowed,
 	routeApiRequest,
+	TURNSTILE_HEADER,
+	turnstileDecision,
+	turnstileRefusal,
 	VISITOR_HOST_HEADER,
 	stripPublicCounters,
 	UNPUBLISHED_MESSAGE,
@@ -22,7 +32,7 @@ import {
 	type RateLimiter,
 } from './caps.ts';
 import { completeFromRequest, WORKERS_AI_HOST, XAI_HOST, type WorkersAiBinding } from './providers.ts';
-import { consumeSpend, publicKillSetBody, spendKillAuthorized } from './spend-object.ts';
+import { cacheClearAuthorized, consumeSpend, publicKillSetBody, spendKillAuthorized } from './spend-object.ts';
 
 export { ContainerProxy };
 
@@ -38,6 +48,8 @@ export interface Env extends CapEnv {
 	CACHE_CLEAR_SECRET?: string;
 	SPEND_KILL_SECRET?: string;
 	CORS_ORIGINS?: string;
+	TURNSTILE_SECRET_KEY?: string;
+	TURNSTILE_REQUIRED?: string;
 	AI?: WorkersAiBinding;
 }
 
@@ -121,7 +133,7 @@ CfbApiContainer.outboundByHost = {
 				prompt?: string;
 			};
 		} catch {
-			return Response.json({ ok: false, error: 'json' }, { status: 400 });
+			return jsonResponse({ ok: false, error: 'json' }, 400);
 		}
 		if (payload.action === 'reserve_usd') {
 			const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
@@ -138,14 +150,14 @@ CfbApiContainer.outboundByHost = {
 		}
 		const bucket = payload.provider ?? payload.bucket;
 		if (bucket !== 'xai' && bucket !== 'workers_ai' && bucket !== 'cfbd') {
-			return Response.json({ ok: false, error: 'bucket' }, { status: 400 });
+			return jsonResponse({ ok: false, error: 'bucket' }, 400);
 		}
 		const spendBucket = bucket as SpendBucket;
 		const limit = dailyLimitFor(spendBucket, env);
 		if (!paidCallAllowed(env, spendBucket)) {
-			return Response.json(
+			return jsonResponse(
 				{ ok: false, count: 0, limit, bucket, provider: bucket, code: 'kill_switch' },
-				{ status: 429, headers: { 'cache-control': 'no-store' } },
+				429,
 			);
 		}
 		const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
@@ -163,10 +175,7 @@ CfbApiContainer.outboundByHost = {
 	},
 	[XAI_HOST]: async (request: Request, env: Env): Promise<Response> => {
 		if (!paidCallAllowed(env, 'xai')) {
-			return Response.json(
-				{ ok: false, code: 'kill_switch' },
-				{ status: 429, headers: { 'cache-control': 'no-store' } },
-			);
+			return jsonResponse({ ok: false, code: 'kill_switch' }, 429);
 		}
 		if (request.headers.get('x-xai-week-reserved') !== '1') {
 			const prompt = await xaiPrompt(request.clone());
@@ -187,10 +196,7 @@ CfbApiContainer.outboundByHost = {
 	},
 	[WORKERS_AI_HOST]: async (request: Request, env: Env): Promise<Response> => {
 		if (!paidCallAllowed(env, 'workers_ai')) {
-			return Response.json(
-				{ ok: false, code: 'kill_switch' },
-				{ status: 429, headers: { 'cache-control': 'no-store' } },
-			);
+			return jsonResponse({ ok: false, code: 'kill_switch' }, 429);
 		}
 		if (request.headers.get('x-workers-ai-reserved') !== '1') {
 			const stub = env.CFB_API.get(env.CFB_API.idFromName('spend-budget'));
@@ -200,10 +206,7 @@ CfbApiContainer.outboundByHost = {
 				body: JSON.stringify({ provider: 'workers_ai', bucket: 'workers_ai' }),
 			});
 			if (!reserved.ok) {
-				return Response.json(
-					{ ok: false, code: 'workers_ai_budget' },
-					{ status: 429, headers: { 'cache-control': 'no-store' } },
-				);
+				return jsonResponse({ ok: false, code: 'workers_ai_budget' }, 429);
 			}
 		}
 		return completeFromRequest('workers_ai', env, request);
@@ -226,7 +229,17 @@ async function loadManifest(env: Env, origin: string): Promise<Manifest> {
 function jsonResponse(body: Record<string, unknown>, status: number): Response {
 	return Response.json(body, {
 		status,
-		headers: { 'cache-control': 'no-store' },
+		headers: jsonSecurityHeaders(),
+	});
+}
+
+function sealJson(response: Response): Response {
+	const headers = new Headers(response.headers);
+	applyJsonSecurity(headers);
+	return new Response(response.body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers,
 	});
 }
 
@@ -242,6 +255,7 @@ async function sanitizeCounters(pathname: string, response: Response): Promise<R
 	const headers = new Headers(response.headers);
 	headers.set('cache-control', 'no-store');
 	headers.delete('content-length');
+	applyJsonSecurity(headers);
 	return new Response(JSON.stringify(stripPublicCounters(parsed)), {
 		status: response.status,
 		headers,
@@ -292,6 +306,31 @@ export default {
 			});
 		}
 
+		if (isHiddenPublicPath(apiPath)) {
+			return jsonResponse({ ok: false }, 404);
+		}
+		if (isCacheClearPath(apiPath)) {
+			if (!(await cacheClearAuthorized(env, request))) {
+				return jsonResponse({ ok: false }, 404);
+			}
+		}
+		if (isDropSubscribePath(apiPath)) {
+			return new Response(DROP_CLOSED_MESSAGE, {
+				status: 410,
+				headers: jsonSecurityHeaders({
+					'content-type': 'text/plain; charset=utf-8',
+				}),
+			});
+		}
+		if (needsTurnstile(apiPath)) {
+			const decision = await turnstileDecision(
+				env,
+				request.headers.get(TURNSTILE_HEADER) ?? '',
+				limit.ip,
+			);
+			if (decision === 'refuse') return turnstileRefusal();
+		}
+
 		const route = boardRoute(apiPath);
 		if (route) {
 			const manifest = await loadManifest(env, incoming.origin);
@@ -311,7 +350,7 @@ export default {
 					incoming.origin,
 				);
 				const asset = await env.ASSETS.fetch(new Request(assetUrl.toString()));
-				if (asset.ok) return asset;
+				if (asset.ok) return sealJson(asset);
 				return jsonResponse({
 					published: false,
 					busy: false,
@@ -334,7 +373,8 @@ export default {
 		headers.delete('x-workers-ai-reserved');
 		headers.delete('x-xai-week-reserved');
 		headers.delete('x-spend-kill-secret');
-		if (apiPath !== '/cache/clear') headers.delete('x-cache-secret');
+		headers.delete(TURNSTILE_HEADER);
+		if (!isCacheClearPath(apiPath)) headers.delete('x-cache-secret');
 		headers.set(VISITOR_HOST_HEADER, routed.modeHost);
 		headers.set('CF-Connecting-IP', limit.ip);
 

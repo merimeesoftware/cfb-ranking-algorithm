@@ -1,4 +1,5 @@
 import { dailyLimitFor } from './budget.ts';
+import { jsonSecurityHeaders } from './caps.ts';
 import { weeklyCapMicros, XAI_USD } from './xai-usd.ts';
 
 /**
@@ -138,7 +139,7 @@ export function textFromModelPayload(payload: unknown): string {
 function jsonResult(body: Record<string, unknown>, status: number): Response {
 	return Response.json(body, {
 		status,
-		headers: { 'cache-control': 'no-store' },
+		headers: jsonSecurityHeaders(),
 	});
 }
 

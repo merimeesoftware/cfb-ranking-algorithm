@@ -73,6 +73,8 @@ export interface CapEnv {
 	PREVIEW_CFBD_OFFLINE?: string;
 	AGENT_RATE_LIMIT?: string;
 	XAI_WEEKLY_USD_CAP?: string;
+	TURNSTILE_SECRET_KEY?: string;
+	TURNSTILE_REQUIRED?: string;
 }
 
 export type BoardRoute = 'rankings' | 'matchup' | 'weeks' | 'team';
@@ -335,12 +337,16 @@ export function resolveContainerModes(
 	};
 }
 
-/** Secrets forwarded into the container. The xAI credential stays on the Worker. */
+/**
+ * Secrets forwarded into the container. The xAI credential and the Turnstile
+ * secret stay on the Worker. TURNSTILE_SECRET_KEY is not copied here.
+ */
 export function containerSecrets(env: {
 	CFBD_API_KEY?: string;
 	XAI_API_KEY?: string;
 	CACHE_CLEAR_SECRET?: string;
 	CORS_ORIGINS?: string;
+	TURNSTILE_SECRET_KEY?: string;
 }): Record<string, string> {
 	return {
 		...(env.CFBD_API_KEY ? { CFBD_API_KEY: env.CFBD_API_KEY } : {}),
@@ -387,10 +393,23 @@ export function busyBody(code: string): Record<string, unknown> {
 	};
 }
 
+/** Browser-facing JSON. No active content, and no MIME sniffing. */
+export function applyJsonSecurity(headers: Headers): void {
+	headers.set('x-content-type-options', 'nosniff');
+	headers.set('content-security-policy', "default-src 'none'");
+}
+
+export function jsonSecurityHeaders(extra?: HeadersInit): Headers {
+	const headers = new Headers(extra);
+	if (!headers.has('cache-control')) headers.set('cache-control', 'no-store');
+	applyJsonSecurity(headers);
+	return headers;
+}
+
 export function busyResponse(code: string, status = 429): Response {
 	return Response.json(busyBody(code), {
 		status,
-		headers: { 'cache-control': 'no-store' },
+		headers: jsonSecurityHeaders(),
 	});
 }
 
@@ -538,4 +557,105 @@ export function stripPublicCounters(body: unknown): Record<string, unknown> {
 export function isCounterEndpoint(pathname: string): boolean {
 	return pathname === '/agent/health' || pathname === '/cache/stats'
 		|| pathname === '/api/agent/health' || pathname === '/api/cache/stats';
+}
+
+/** Drop one trailing slash so /api/agent/health/ is the same route. */
+export function visitorPath(pathname: string): string {
+	if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
+	return pathname;
+}
+
+/**
+ * Public visitors do not get the API catalog, health, or cache stats.
+ * Cache clear is separate: it stays on the header secret path.
+ */
+export function isHiddenPublicPath(pathname: string): boolean {
+	const path = visitorPath(pathname);
+	return path === '/' || path === '/agent/health' || path === '/cache/stats';
+}
+
+export function isCacheClearPath(pathname: string): boolean {
+	return visitorPath(pathname) === '/cache/clear';
+}
+
+export function isDropSubscribePath(pathname: string): boolean {
+	return visitorPath(pathname) === '/drop/subscribe';
+}
+
+/** explain, blurb, climb, and any other /agent route that is still public. */
+export function needsTurnstile(pathname: string): boolean {
+	const path = visitorPath(pathname);
+	return path === '/agent' || path.startsWith('/agent/');
+}
+
+export const DROP_CLOSED_MESSAGE = 'The Drop is closed.';
+export const TURNSTILE_HEADER = 'cf-turnstile-response';
+export const TURNSTILE_MESSAGE = 'Try again.';
+export const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+export function turnstileRequired(env: { TURNSTILE_REQUIRED?: string }): boolean {
+	return isKillSwitch(env.TURNSTILE_REQUIRED);
+}
+
+const TURNSTILE_UNCONFIGURED = 'TURNSTILE_SECRET_KEY is unset; agent routes keep the daily cap and per-IP limit.';
+
+export interface TurnstileEnv {
+	TURNSTILE_SECRET_KEY?: string;
+	TURNSTILE_REQUIRED?: string;
+}
+
+/**
+ * Draft stage: verify only when the secret is set. Unset, log and keep the
+ * existing caps. TURNSTILE_REQUIRED=1 refuses when the secret is missing.
+ * siteverify is not called unless a secret and a token are both present.
+ */
+export async function turnstileDecision(
+	env: TurnstileEnv,
+	token: string,
+	ip: string,
+	siteverify: typeof fetch = fetch,
+	warn: (message: string) => void = console.warn,
+): Promise<'pass' | 'refuse'> {
+	const secret = (env.TURNSTILE_SECRET_KEY ?? '').trim();
+	if (!secret) {
+		if (turnstileRequired(env)) return 'refuse';
+		warn(TURNSTILE_UNCONFIGURED);
+		return 'pass';
+	}
+	const provided = token.trim();
+	if (!provided) return 'refuse';
+	let response: Response;
+	try {
+		response = await siteverify(SITEVERIFY_URL, {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({
+				secret,
+				response: provided,
+				remoteip: ip,
+			}).toString(),
+		});
+	} catch {
+		return 'refuse';
+	}
+	if (!response.ok) return 'refuse';
+	try {
+		const payload = await response.json() as { success?: unknown };
+		return payload.success === true ? 'pass' : 'refuse';
+	} catch {
+		return 'refuse';
+	}
+}
+
+/** Friendly capped state. JSON, not an error page. */
+export function turnstileRefusal(): Response {
+	return Response.json({
+		busy: true,
+		capped: true,
+		message: TURNSTILE_MESSAGE,
+		code: 'turnstile',
+	}, {
+		status: 429,
+		headers: jsonSecurityHeaders(),
+	});
 }

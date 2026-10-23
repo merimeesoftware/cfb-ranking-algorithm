@@ -11,6 +11,9 @@ import {
 	checkPublicQuery,
 	clientIp,
 	containerSecrets,
+	DROP_CLOSED_MESSAGE,
+	SITEVERIFY_URL,
+	TURNSTILE_MESSAGE,
 	decodeVisitorPath,
 	enforceVisitorLimit,
 	SPEND_GATE_HOST,
@@ -853,42 +856,55 @@ test('fetch keeps the container on api.internal and rejects dot-dot paths', asyn
 	}
 });
 
-test('agent health strips counters on the canonical path', async () => {
+test('public catalog, health, stats, and unauthenticated cache clear stay off the edge', async () => {
 	const capture: { request: Request | null } = { request: null };
-	const env = {
-		API_RATE_LIMITER: { async limit() { return { success: true }; } },
-		AGENT_RATE_LIMITER: { async limit() { return { success: true }; } },
-		ASSETS: { async fetch() { return new Response('no', { status: 404 }); } },
-		CFB_API: {
-			idFromName() { return 'id'; },
-			get() {
-				return {
-					async fetch(request: Request) {
-						capture.request = request;
-						return new Response(JSON.stringify({
-							status: 'ok',
-							cfbd_calls: 9,
-							spend: { xai_max_calls: 0 },
-						}), {
-							status: 200,
-							headers: { 'content-type': 'application/json' },
-						});
-					},
-				};
-			},
-		},
-	};
-	const response = await worker.fetch(
-		new Request('https://preview.example.workers.dev/api/agent/health'),
-		env as never,
-	);
-	assert.equal(response.status, 200);
-	const body = await response.json() as { status?: string; cfbd_calls?: number; spend?: unknown };
-	assert.equal(body.status, 'ok');
-	assert.equal(body.cfbd_calls, undefined);
-	assert.equal(body.spend, undefined);
+	const env = apiEnv(capture, { n: 0 });
+	for (const path of ['/api', '/api/', '/api/agent/health', '/api/agent/health/', '/api/cache/stats']) {
+		capture.request = null;
+		const response = await worker.fetch(
+			new Request(`https://preview.example.workers.dev${path}`),
+			env as never,
+		);
+		assert.equal(response.status, 404, path);
+		assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+		assert.equal(response.headers.get('content-security-policy'), "default-src 'none'");
+		assert.equal(capture.request, null, path);
+	}
+
+	const closed = await worker.fetch(new Request('https://preview.example.workers.dev/api/drop/subscribe', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ email: 'fan@example.com' }),
+	}), env as never);
+	assert.equal(closed.status, 410);
+	assert.equal(await closed.text(), DROP_CLOSED_MESSAGE);
+	assert.equal(closed.headers.get('content-type'), 'text/plain; charset=utf-8');
+	assert.equal(capture.request, null);
+
+	capture.request = null;
+	const missing = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear', {
+		method: 'POST',
+		headers: { 'x-cache-secret': 'planted' },
+	}), env as never);
+	assert.equal(missing.status, 404);
+	assert.equal(capture.request, null);
+
+	const wrong = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear', {
+		method: 'POST',
+		headers: { 'x-cache-secret': 'nope' },
+	}), { ...env, CACHE_CLEAR_SECRET: 'planted' } as never);
+	assert.equal(wrong.status, 404);
+	assert.equal(capture.request, null);
+
+	const opened = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear?secret=planted', {
+		method: 'POST',
+		headers: { 'x-cache-secret': 'planted', 'x-spend-kill-secret': 'other' },
+	}), { ...env, CACHE_CLEAR_SECRET: 'planted' } as never);
+	assert.equal(opened.status, 200);
 	assert.ok(capture.request);
-	assert.equal(new URL(capture.request.url).pathname, '/agent/health');
+	assert.equal(capture.request.headers.get('x-cache-secret'), 'planted');
+	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
+	assert.equal(new URL(capture.request.url).search.includes('secret'), false);
 });
 
 test('spend kill fails closed unless SPEND_KILL_SECRET matches the header', async () => {
@@ -959,7 +975,7 @@ test('spend kill fails closed unless SPEND_KILL_SECRET matches the header', asyn
 	assert.equal(capture.request, null);
 });
 
-test('container forward drops kill and cache secrets except on cache clear', async () => {
+test('container forward drops kill and cache secrets except on an authorized cache clear', async () => {
 	const capture: { request: Request | null } = { request: null };
 	const env = apiEnv(capture, { n: 0 });
 	const cleared = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear?year=2024', {
@@ -968,11 +984,17 @@ test('container forward drops kill and cache secrets except on cache clear', asy
 			'x-spend-kill-secret': 'planted',
 			'x-cache-secret': 'planted',
 		},
-	}), env as never);
+	}), { ...env, CACHE_CLEAR_SECRET: 'planted' } as never);
 	assert.equal(cleared.status, 200);
 	assert.ok(capture.request);
 	assert.equal(capture.request.headers.get('x-spend-kill-secret'), null);
 	assert.equal(capture.request.headers.get('x-cache-secret'), 'planted');
+	capture.request = null;
+	const blocked = await worker.fetch(new Request('https://preview.example.workers.dev/api/cache/clear?year=2024', {
+		method: 'POST',
+	}), { ...env, CACHE_CLEAR_SECRET: 'planted' } as never);
+	assert.equal(blocked.status, 404);
+	assert.equal(capture.request, null);
 	capture.request = null;
 	const trailed = await worker.fetch(new Request('https://preview.example.workers.dev/api/spend/kill/', {
 		method: 'POST',
@@ -1142,4 +1164,112 @@ test('AI_MAX_CALLS of 1000 still refuses workers ai call 101', async () => {
 	assert.equal(body.ok, false);
 	assert.equal(body.code, 'workers_ai_budget');
 	assert.equal(modelRan, false);
+});
+
+test('turnstile refuses a planted missing or invalid token and skips siteverify offline', async () => {
+	const planted = JSON.parse(readFileSync(new URL('../../tests/fixtures/turnstile/siteverify-invalid.json', import.meta.url), 'utf8')) as {
+		success: boolean;
+		token: string;
+		'error-codes': string[];
+	};
+	assert.equal(planted.success, false);
+	const capture: { request: Request | null } = { request: null };
+	const base = apiEnv(capture, { n: 0 });
+	let siteverifyCalls = 0;
+	const original = globalThis.fetch;
+	globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+		siteverifyCalls += 1;
+		assert.equal(String(input), SITEVERIFY_URL);
+		const body = String(init?.body ?? '');
+		assert.equal(body.includes('secret=site-secret'), true);
+		assert.equal(body.includes(planted.token), true);
+		return new Response(JSON.stringify({
+			success: planted.success,
+			'error-codes': planted['error-codes'],
+		}), { status: 200, headers: { 'content-type': 'application/json' } });
+	};
+	const warnings: string[] = [];
+	const warn = console.warn;
+	console.warn = (message?: unknown) => {
+		warnings.push(String(message ?? ''));
+	};
+	try {
+		const required = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/explain', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: '{}',
+		}), { ...base, TURNSTILE_REQUIRED: '1' } as never);
+		assert.equal(required.status, 429);
+		const requiredBody = await required.json() as { busy?: boolean; capped?: boolean; message?: string; code?: string };
+		assert.equal(requiredBody.busy, true);
+		assert.equal(requiredBody.capped, true);
+		assert.equal(requiredBody.message, TURNSTILE_MESSAGE);
+		assert.equal(requiredBody.code, 'turnstile');
+		assert.equal(required.headers.get('x-content-type-options'), 'nosniff');
+		assert.equal(required.headers.get('content-security-policy'), "default-src 'none'");
+		assert.equal(siteverifyCalls, 0);
+		assert.equal(capture.request, null);
+
+		capture.request = null;
+		const open = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/blurb', {
+			method: 'POST',
+		}), base as never);
+		assert.equal(open.status, 200);
+		assert.equal(siteverifyCalls, 0);
+		assert.ok(warnings.some((line) => line.includes('TURNSTILE_SECRET_KEY is unset')));
+		assert.ok(capture.request);
+
+		capture.request = null;
+		const missing = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/climb', {
+			method: 'POST',
+		}), { ...base, TURNSTILE_SECRET_KEY: 'site-secret', TURNSTILE_REQUIRED: '1' } as never);
+		assert.equal(missing.status, 429);
+		assert.equal((await missing.json() as { message?: string }).message, TURNSTILE_MESSAGE);
+		assert.equal(siteverifyCalls, 0);
+		assert.equal(capture.request, null);
+
+		const invalid = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/explain', {
+			method: 'POST',
+			headers: { 'cf-turnstile-response': planted.token },
+		}), { ...base, TURNSTILE_SECRET_KEY: 'site-secret' } as never);
+		assert.equal(invalid.status, 429);
+		const invalidText = await invalid.text();
+		assert.equal(JSON.parse(invalidText).message, TURNSTILE_MESSAGE);
+		assert.equal(invalidText.includes('site-secret'), false);
+		assert.equal(invalidText.includes('invalid-input-response'), false);
+		assert.equal(siteverifyCalls, 1);
+		assert.equal(capture.request, null);
+
+		globalThis.fetch = async () => new Response(JSON.stringify({ success: true }), {
+			status: 200,
+			headers: { 'content-type': 'application/json' },
+		});
+		capture.request = null;
+		const ok = await worker.fetch(new Request('https://preview.example.workers.dev/api/agent/explain', {
+			method: 'POST',
+			headers: { 'cf-turnstile-response': 'planted-valid-token' },
+		}), { ...base, TURNSTILE_SECRET_KEY: 'site-secret' } as never);
+		assert.equal(ok.status, 200);
+		assert.ok(capture.request);
+		assert.equal(capture.request.headers.get('cf-turnstile-response'), null);
+	} finally {
+		console.warn = warn;
+		globalThis.fetch = original;
+	}
+
+	const forwarded = containerSecrets({
+		CFBD_API_KEY: 'k',
+		TURNSTILE_SECRET_KEY: 'site-secret',
+	});
+	assert.equal(forwarded.CFBD_API_KEY, 'k');
+	assert.equal('TURNSTILE_SECRET_KEY' in forwarded, false);
+	const runtime = buildRuntimeEnv({ PORT: '8080' }, {
+		AI_MODE: 'live',
+		CFBD_OFFLINE: '1',
+		TURNSTILE_SECRET_KEY: 'site-secret',
+		TURNSTILE_REQUIRED: '1',
+	}, 'true-rankings-cfb.workers.dev');
+	assert.equal(runtime.TURNSTILE_SECRET_KEY, undefined);
+	assert.equal(runtime.AI_MODE, 'live');
+	assert.equal(runtime.CFBD_OFFLINE, '1');
 });

@@ -7,7 +7,7 @@ import {
 	type BudgetEnv,
 	type SpendBucket,
 } from './budget.ts';
-import { BUSY_MESSAGE } from './caps.ts';
+import { BUSY_MESSAGE, jsonSecurityHeaders } from './caps.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from './xai-usd.ts';
 
 /**
@@ -76,8 +76,12 @@ function killBit(value: unknown): 0 | 1 | null {
 	return null;
 }
 
+function spendJson(body: object, status: number): Response {
+	return Response.json(body, { status, headers: jsonSecurityHeaders() });
+}
+
 /** Compare SHA-256 digests so a different length does not return early. */
-async function secretsMatch(expected: string, provided: string): Promise<boolean> {
+export async function secretsMatch(expected: string, provided: string): Promise<boolean> {
 	const encoder = new TextEncoder();
 	const [left, right] = await Promise.all([
 		crypto.subtle.digest('SHA-256', encoder.encode(expected)),
@@ -98,6 +102,20 @@ export async function spendKillAuthorized(
 	return { ok: true };
 }
 
+/**
+ * Header only. Unset CACHE_CLEAR_SECRET fails closed. The container still
+ * compares with hmac.compare_digest after this gate.
+ */
+export async function cacheClearAuthorized(
+	env: { CACHE_CLEAR_SECRET?: string },
+	request: Request,
+): Promise<boolean> {
+	const expected = env.CACHE_CLEAR_SECRET ?? '';
+	if (!expected) return false;
+	const provided = request.headers.get('x-cache-secret') ?? '';
+	return secretsMatch(expected, provided);
+}
+
 /** Public POST /api/spend/kill may only write the two flags. */
 export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?: unknown; cfbd_kill?: unknown } | null {
 	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -111,35 +129,32 @@ export function publicKillSetBody(raw: unknown): { action: 'set_kill'; ai_kill?:
 async function setStoredKills(state: SpendState, env: SpendEnv, request: Request, payload: SpendPayload): Promise<Response> {
 	const auth = await spendKillAuthorized(env, request);
 	if (!auth.ok) {
-		return Response.json({ ok: false, error: 'auth' }, { status: auth.status, headers: { 'cache-control': 'no-store' } });
+		return spendJson({ ok: false, error: 'auth' }, auth.status);
 	}
 	const updates: Record<string, 0 | 1> = {};
 	if (payload.ai_kill !== undefined) {
 		const bit = killBit(payload.ai_kill);
 		if (bit === null) {
-			return Response.json({ ok: false, error: 'flags' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+			return spendJson({ ok: false, error: 'flags' }, 400);
 		}
 		updates[AI_KILL_KEY] = bit;
 	}
 	if (payload.cfbd_kill !== undefined) {
 		const bit = killBit(payload.cfbd_kill);
 		if (bit === null) {
-			return Response.json({ ok: false, error: 'flags' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+			return spendJson({ ok: false, error: 'flags' }, 400);
 		}
 		updates[CFBD_KILL_KEY] = bit;
 	}
 	if (!Object.keys(updates).length) {
-		return Response.json({ ok: false, error: 'flags' }, { status: 400, headers: { 'cache-control': 'no-store' } });
+		return spendJson({ ok: false, error: 'flags' }, 400);
 	}
 	await state.blockConcurrencyWhile(async () => {
 		for (const [key, value] of Object.entries(updates)) {
 			await state.storage.put(key, value);
 		}
 	});
-	return Response.json(
-		{ ok: true, ...updates },
-		{ status: 200, headers: { 'cache-control': 'no-store' } },
-	);
+	return spendJson({ ok: true, ...updates }, 200);
 }
 
 async function reserveXaiUsd(
@@ -188,10 +203,7 @@ async function reserveXaiUsd(
 			week,
 		};
 	});
-	return Response.json(result, {
-		status: result.ok ? 200 : 429,
-		headers: { 'cache-control': 'no-store' },
-	});
+	return spendJson(result, result.ok ? 200 : 429);
 }
 
 export async function consumeSpend(state: SpendState, env: SpendEnv, request: Request): Promise<Response> {
@@ -199,18 +211,18 @@ export async function consumeSpend(state: SpendState, env: SpendEnv, request: Re
 	try {
 		payload = (await request.json()) as SpendPayload;
 	} catch {
-		return Response.json({ ok: false, error: 'json' }, { status: 400 });
+		return spendJson({ ok: false, error: 'json' }, 400);
 	}
 	if (payload.action === 'set_kill') {
 		return setStoredKills(state, env, request, payload);
 	}
 	const bucket = asBucket(payload.provider ?? payload.bucket);
 	if (!bucket) {
-		return Response.json({ ok: false, error: 'bucket' }, { status: 400 });
+		return spendJson({ ok: false, error: 'bucket' }, 400);
 	}
 	if (payload.action === 'reserve_usd') {
 		if (bucket !== 'xai') {
-			return Response.json({ ok: false, error: 'bucket' }, { status: 400 });
+			return spendJson({ ok: false, error: 'bucket' }, 400);
 		}
 		const prompt = typeof payload.prompt === 'string' ? payload.prompt : '';
 		return reserveXaiUsd(state, env, prompt);
@@ -219,10 +231,7 @@ export async function consumeSpend(state: SpendState, env: SpendEnv, request: Re
 	if (bucket === CFBD_PROVIDER) {
 		source = (payload.source ?? '').trim() || CFBD_APP_SOURCE;
 		if (source !== CFBD_APP_SOURCE) {
-			return Response.json(
-				{ ok: false, error: 'source', provider: CFBD_PROVIDER, source },
-				{ status: 400 },
-			);
+			return spendJson({ ok: false, error: 'source', provider: CFBD_PROVIDER, source }, 400);
 		}
 	}
 	const fallback = dailyLimitFor(bucket, env);
@@ -250,8 +259,5 @@ export async function consumeSpend(state: SpendState, env: SpendEnv, request: Re
 		}
 		return consumeDaily(store, bucket, limit, new Date(), source);
 	});
-	return Response.json(result, {
-		status: result.ok ? 200 : 429,
-		headers: { 'cache-control': 'no-store' },
-	});
+	return spendJson(result, result.ok ? 200 : 429);
 }
