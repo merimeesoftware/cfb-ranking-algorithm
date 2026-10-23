@@ -8,7 +8,6 @@
 	import WeekStoryStrip from '$lib/components/WeekStoryStrip.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import BoardActions from '$lib/components/BoardActions.svelte';
-	import DropSignup from '$lib/components/DropSignup.svelte';
 	import SeoHead from '$lib/components/SeoHead.svelte';
 	import type { Conference } from '$lib/types';
 	import {
@@ -358,9 +357,6 @@
 		{/if}
 	{/if}
 
-	<div class="mt-8">
-		<DropSignup />
-	</div>
 </div>
 
 {#if showConferenceModal && selectedConference}

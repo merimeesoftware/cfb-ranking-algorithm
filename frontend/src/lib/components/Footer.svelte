@@ -27,12 +27,6 @@
 					How it works
 				</a>
 				<a
-					href="/#the-drop"
-					class="hover:text-white focus:outline-none focus-visible:underline"
-				>
-					The Drop
-				</a>
-				<a
 					href={githubUrl}
 					target="_blank"
 					rel="noopener noreferrer"

@@ -5,7 +5,6 @@ export const BRAND_SHORT = 'TR';
 export const RATING_NAME = 'TR+';
 export const TAGLINE = 'How good they actually are.';
 export const HANDLE = '@TrueCFB';
-export const DROP_NAME = 'The Drop';
 
 /** http(s) origin from PUBLIC_SITE_URL. Empty when the setting is unset — no default host. */
 export function siteOriginFrom(raw: string | undefined | null): string {
