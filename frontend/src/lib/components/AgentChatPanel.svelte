@@ -13,6 +13,7 @@
 	let explanation = '';
 	let loading = false;
 	let busy = false;
+	let busyMessage = BUSY_MESSAGE;
 	let aiWritten = false;
 	let error: string | null = null;
 
@@ -29,6 +30,7 @@
 		loading = true;
 		error = null;
 		busy = false;
+		busyMessage = BUSY_MESSAGE;
 		aiWritten = false;
 		explanation = '';
 		try {
@@ -38,7 +40,10 @@
 				week ?? $filterState.week,
 				questionId
 			);
-			if (result.busy) busy = true;
+			if (result.busy) {
+				busy = true;
+				busyMessage = result.message || BUSY_MESSAGE;
+			}
 			if (result.explanation) explanation = result.explanation;
 			aiWritten = result.aiWritten === true;
 		} catch {
@@ -90,7 +95,7 @@
 			</div>
 
 			{#if busy}
-				<p class="mt-3 text-sm text-gray-700 dark:text-gray-300" role="status">{BUSY_MESSAGE}</p>
+				<p class="mt-3 text-sm text-gray-700 dark:text-gray-300" role="status">{busyMessage}</p>
 			{:else if error}
 				<p class="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
 			{/if}

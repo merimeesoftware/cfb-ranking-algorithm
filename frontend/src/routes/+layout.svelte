@@ -2,6 +2,7 @@
 	import '../app.css';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import TurnstileSlot from '$lib/components/TurnstileSlot.svelte';
 	import { theme, applyTheme } from '$lib/stores/theme';
 	import { onMount } from 'svelte';
 
@@ -26,4 +27,5 @@
 	</main>
 
 	<Footer />
+	<TurnstileSlot />
 </div>

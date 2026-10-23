@@ -100,6 +100,36 @@ const REVIEWED_ALLOWLIST = [
 		token: COUNTER_LIST,
 		reason: 'counter fields stripped from public JSON, not a credential',
 	},
+	{
+		file: 'frontend/src/lib/turnstile.ts',
+		token: 'PUBLIC_TURNSTILE_SITE_KEY',
+		reason: 'Cloudflare Turnstile site key is public and rendered in the page. The secret is TURNSTILE_SECRET_KEY on the Worker.',
+	},
+	{
+		file: 'frontend/src/app.d.ts',
+		token: 'PUBLIC_TURNSTILE_SITE_KEY',
+		reason: 'type for the public Turnstile site key. The secret is TURNSTILE_SECRET_KEY on the Worker.',
+	},
+	{
+		file: '.env.example',
+		token: 'PUBLIC_TURNSTILE_SITE_KEY',
+		reason: 'documented public Turnstile site key. Not a secret.',
+	},
+	{
+		file: 'docs/SECRETS.md',
+		token: 'PUBLIC_TURNSTILE_SITE_KEY',
+		reason: 'documented public Turnstile site key. Not a secret.',
+	},
+	{
+		file: 'docs/DEPLOY-CLOUDFLARE.md',
+		token: 'PUBLIC_TURNSTILE_SITE_KEY',
+		reason: 'documented public Turnstile site key. Not a secret.',
+	},
+	{
+		file: 'scripts/check-public-host.mjs',
+		token: 'PUBLIC_TURNSTILE_SITE_KEY',
+		reason: 'reviewed exception list for the public Turnstile site key',
+	},
 ];
 const DUMMY_HOST = /https?:\/\/(?:[a-z0-9-]+\.)*example\.test\b/gi;
 const SECRET_PUBLIC = /PUBLIC_[A-Z0-9_]*(?:KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)/;
@@ -329,6 +359,17 @@ function selfTest() {
 	}
 	if (!unexpectedSecretNames(join(repoRoot, 'worker/src/index.ts'), `const name = "${COUNTER_LIST}";\n`).length) {
 		fail(`${COUNTER_LIST} is reviewed only in caps.ts`);
+	}
+	const turnstileName = 'PUBLIC_TURNSTILE_SITE_KEY';
+	const turnstileFile = join(repoRoot, 'frontend/src/lib/turnstile.ts');
+	if (unexpectedSecretNames(turnstileFile, readFileSync(turnstileFile, 'utf8')).length) {
+		fail(`${turnstileName} must be reviewed in turnstile.ts`);
+	}
+	if (!unexpectedSecretNames(turnstileFile, `export const leak = "${plantedKey}";\n`).length) {
+		fail('another PUBLIC_* key in turnstile.ts must still trip');
+	}
+	if (!unexpectedSecretNames(join(repoRoot, 'worker/src/index.ts'), `const name = "${turnstileName}";\n`).length) {
+		fail(`${turnstileName} is not reviewed in the Worker`);
 	}
 	const narrowDir = mkdtempSync(join(tmpdir(), 'public-host-narrow-'));
 	try {
