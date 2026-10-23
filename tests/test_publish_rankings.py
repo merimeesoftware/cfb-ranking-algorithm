@@ -85,13 +85,16 @@ def _rankings_root(path: str) -> str:
 
 
 def _upload_path_allowed(path: str) -> bool:
-    """Public rankings only. Globs and the private cache directory are rejected."""
+    """Public rankings only. Globs, ``..``, and the private cache directory are rejected."""
     normalized = path.replace('\\', '/').strip().strip('"').strip("'")
     if '*' in normalized or normalized in {'.', './', '..'}:
         return False
-    if normalized.lstrip('./').startswith('static_rankings'):
+    segments = [segment for segment in normalized.split('/') if segment not in {'', '.'}]
+    if not segments or '..' in segments:
         return False
-    root = _rankings_root(normalized)
+    if segments[0].startswith('static_rankings'):
+        return False
+    root = '/'.join(segments)
     return root == 'frontend/static/rankings' or root.startswith('frontend/static/rankings/')
 
 
@@ -113,13 +116,21 @@ def test_upload_artifact_excludes_private_static_rankings():
             .
             static_rankings*
             static_rankings/
+            frontend/static/rankings/../../static_rankings
             frontend/static/rankings/
 """
     planted_steps = _action_path_steps(planted, 'actions/upload-artifact@')
     assert len(planted_steps) == 2
     assert all(_upload_path_allowed(path) for path in planted_steps[0])
     rejected = [path for path in planted_steps[1] if not _upload_path_allowed(path)]
-    assert rejected == ['*', '**', '.', 'static_rankings*', 'static_rankings/']
+    assert rejected == [
+        '*',
+        '**',
+        '.',
+        'static_rankings*',
+        'static_rankings/',
+        'frontend/static/rankings/../../static_rankings',
+    ]
     assert _upload_path_allowed(planted_steps[1][-1])
 
 
@@ -136,6 +147,8 @@ def test_download_path_matches_upload_path(tmp_path):
         for path in step
     ]
     assert uploads and downloads
+    assert 'actions/upload-artifact@v7' in text
+    assert 'actions/download-artifact@v7' in text
     assert {_rankings_root(path) for path in uploads} == {_rankings_root(path) for path in downloads}
     assert _rankings_root(downloads[0]) == 'frontend/static/rankings'
 
