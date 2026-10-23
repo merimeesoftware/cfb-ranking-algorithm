@@ -124,7 +124,7 @@ Set or clear the stored kill latch with `POST /api/spend/kill` and header `X-Spe
 
 ### Paid-call caps (deploy migration)
 
-Production `AI_MODE=stub` and `CFBD_OFFLINE=1` in `wrangler.toml`.
+Production `AI_MODE=live` (Workers AI) and `CFBD_OFFLINE=1` in `wrangler.toml`. Preview and `env.dev` stay `AI_MODE=stub`.
 
 | Control | Default when unset | Where it is enforced |
 |---------|--------------------|----------------------|

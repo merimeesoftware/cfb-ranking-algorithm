@@ -123,8 +123,8 @@ def evaluate() -> list[str]:
     text = WRANGLER_PATH.read_text(encoding='utf-8')
     wrangler = production_vars(text)
     errors: list[str] = []
-    if wrangler.get('AI_MODE') != 'stub' or wrangler.get('CFBD_OFFLINE') != '1':
-        errors.append('production AI_MODE must be stub and CFBD_OFFLINE must be 1')
+    if wrangler.get('AI_MODE') != 'live' or wrangler.get('CFBD_OFFLINE') != '1':
+        errors.append('production AI_MODE must be live and CFBD_OFFLINE must be 1')
     raw_xai = wrangler.get('XAI_MAX_CALLS')
     if raw_xai is None:
         errors.append('production XAI_MAX_CALLS is missing from wrangler.toml')
@@ -146,6 +146,8 @@ def evaluate() -> list[str]:
         errors.append('production CF_ACCOUNT_ID must be a non-secret var')
     dev = re.search(r'(?ms)^\[env\.dev\.vars\]\n(.*?)(?=^\[|\Z)', text)
     dev_vars = dict(re.findall(r'(?m)^([A-Z0-9_]+)\s*=\s*"([^"]*)"', dev.group(1))) if dev else {}
+    if dev_vars.get('AI_MODE') != 'stub' or dev_vars.get('CFBD_OFFLINE') != '1':
+        errors.append('env.dev.vars AI_MODE must be stub and CFBD_OFFLINE must be 1')
     if dev_vars.get('AI_GATEWAY_ID') != GATEWAY_NAME or 'CF_ACCOUNT_ID' not in dev_vars:
         errors.append('env.dev.vars must set CF_ACCOUNT_ID and AI_GATEWAY_ID=true-rankings')
     if re.search(r'(?m)^XAI_API_KEY\s*=', text):
