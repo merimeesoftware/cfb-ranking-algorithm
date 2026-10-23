@@ -17,7 +17,7 @@ Visitor requests for `/api/*` hit the edge Worker. Everything else is static.
 
 ## Paid-call caps
 
-Production stays `AI_MODE=stub` and `CFBD_OFFLINE=1` until Release Ops changes them.
+Production `AI_MODE=live` (Workers AI) and `CFBD_OFFLINE=1`. Preview hostnames stay stub and offline unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` are set.
 
 | Control | Default |
 |---|---|

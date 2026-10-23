@@ -16,7 +16,7 @@ The job checks out the pull request, then checks out `github.event.pull_request.
 
 Until the base SHA contains `design/comps/manifest.json`, the job writes a bootstrap manifest with `/`, `/methodology`, and `/2024/week/15` and an empty `comps` array. It does not copy the pull request's manifest. That bootstrap has zero signed comps.
 
-Chrome is launched with Playwright's sandbox left on. The workflow does not call a Workers preview. Preview versions of this Worker use production `AI_MODE`.
+Chrome is launched with Playwright's sandbox left on. The workflow does not call a Workers preview. Preview hostnames stay `AI_MODE=stub` and `CFBD_OFFLINE=1` unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` is set. They do not follow production `AI_MODE=live`.
 
 ## Exit codes
 
@@ -114,4 +114,4 @@ Capture uses `browserContext.route` for every request, `serviceWorkers: 'block'`
 
 ## Workers preview
 
-`--url` exists for a later check against an allowlisted preview host. It requires `--sha` and a `/build.json` whose `sha` matches. CI does not pass `--url`. Do not point stills at a preview until preview URLs are confirmed on this issue; those versions use production `AI_MODE`.
+`--url` exists for a later check against an allowlisted preview host. It requires `--sha` and a `/build.json` whose `sha` matches. CI does not pass `--url`. Do not point stills at a preview until preview URLs are confirmed on this issue; those versions stay `AI_MODE=stub` and `CFBD_OFFLINE=1`.
