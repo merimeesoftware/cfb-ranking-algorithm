@@ -166,13 +166,3 @@ jobs:
       - name: Skip notice
         if: steps.params.outputs.skip == 'true'
         run: 'echo "Skipped: ${{ steps.params.outputs.skip_reason }}"'
-
-      - name: Upload artifacts
-        if: steps.params.outputs.skip != 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: static-blurbs
-          path: |
-            static_rankings/
-            frontend/static/rankings/
-          retention-days: 14
