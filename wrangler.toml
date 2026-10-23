@@ -13,6 +13,11 @@ compatibility_date = "2026-03-01"
 # to CACHE_CLEAR_SECRET. Unset, POST /api/spend/kill returns 403.
 # XAI_API_KEY is a secret name only. It is provisioned by DevSecOps on
 # Michael's yes. Do not assign it in this file.
+# TURNSTILE_SECRET_KEY is a Worker secret (wrangler secret put). It is not
+# forwarded to the container. Unset, production logs a warning and keeps
+# AI_MAX_CALLS and the per-IP rate-limit bindings. TURNSTILE_REQUIRED=1
+# refuses /api/agent/* when that secret is missing. env.dev sets the flag.
+# Production does not. Do not assign the secret in this file.
 # See docs/SECRETS.md and docs/DEPLOY-CLOUDFLARE.md
 
 [assets]
@@ -119,6 +124,8 @@ AI_MAX_CALLS = "100"
 CFBD_MAX_CALLS = "4"
 CF_ACCOUNT_ID = ""
 AI_GATEWAY_ID = "true-rankings"
+# Fail closed until Release Ops sets TURNSTILE_SECRET_KEY. Production omits this.
+TURNSTILE_REQUIRED = "1"
 
 [env.dev.ai]
 binding = "AI"

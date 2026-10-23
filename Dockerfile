@@ -15,6 +15,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin appuser \
+    && mkdir -p /tmp/cfb-cache \
+    && chown -R appuser:appuser /app /tmp/cfb-cache
+
+USER appuser
+
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

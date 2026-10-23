@@ -562,9 +562,30 @@ function safeReport(dir) {
   }
 }
 
+async function cspHeadersTest() {
+  const dir = mkdtempSync(path.join(tmpdir(), 'stills-headers-'));
+  copyFileSync(path.join(REPO, 'frontend/static/_headers'), path.join(dir, '_headers'));
+  writeFileSync(path.join(dir, 'index.html'), '<!doctype html><title>x</title>');
+  const server = await startFixtureServer({ buildDir: dir });
+  try {
+    const response = await fetch(`${server.origin}/`);
+    const csp = response.headers.get('content-security-policy');
+    assert(csp && csp.includes("default-src 'self'"), 'stills server applies the page CSP');
+    assert(csp.includes('challenges.cloudflare.com'), 'page CSP allows the Turnstile host');
+    assert(
+      response.headers.get('strict-transport-security')?.includes('max-age=31536000'),
+      'stills server applies HSTS'
+    );
+    assert(response.headers.get('x-content-type-options') === 'nosniff', 'stills server applies nosniff');
+  } finally {
+    await server.close();
+  }
+}
+
 const planted = { exits: {} };
 try {
   unitTests();
+  await cspHeadersTest();
   await previewHostTests();
   const result = await integrationTests();
   planted.exits = result.exits;

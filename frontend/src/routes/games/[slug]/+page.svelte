@@ -3,7 +3,6 @@
 	import { page } from '$app/state';
 	import SeoHead from '$lib/components/SeoHead.svelte';
 	import MatchupLines from '$lib/components/MatchupLines.svelte';
-	import DropSignup from '$lib/components/DropSignup.svelte';
 	import {
 		BRAND_NAME,
 		RATING_NAME,
@@ -127,10 +126,6 @@
 		Rankings stay free. This page exists so you can see where {RATING_NAME} disagrees with the market
 		before you risk a dollar.
 	</p>
-
-	<div class="mt-8">
-		<DropSignup compact />
-	</div>
 
 	<p class="mt-6 text-sm">
 		<a href={weekPath(year, week)} class="text-primary-700 dark:text-cfb-gold-bright hover:underline"

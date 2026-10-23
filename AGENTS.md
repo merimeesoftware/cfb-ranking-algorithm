@@ -37,7 +37,7 @@ Impeccable / OpenCode are fine to install **locally or via Cursor plugins** for 
 - **Hard caps when the vars are unset:** xAI is hard **0/day** and `XAI_ENABLED` defaults off, so a key does not start a call. `XAI_WEEKLY_USD_CAP` defaults to **0**. The week estimate is input and output tokens times `config/xai-usd.json`. CI fails when that cap plus CFBD's paid tier reaches **$5** a week ($0.23 only when `CFBD_TIER=1`). `AI_MAX_CALLS` is the Workers AI cap, **100/day** (worst case 58 Neurons × 100 = 5800, ceiling 8000). `CFBD_MAX_CALLS` **25/day** in code, **4/day** in production. Unset is never unlimited. The Worker stores the daily counter and the xAI week dollars on the `CfbApiContainer` instance `spend-budget`; Flask repeats the same numbers per process. `AI_KILL` stops both providers. `XAI_KILL` and `WORKERS_AI_KILL` stop one.
 - `AI_KILL=1` / `CFBD_KILL=1` stop live paid calls. Preview hostnames use `AI_MODE=stub` and `CFBD_OFFLINE=1` unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` are set.
 - `AGENT_RATE_LIMIT` caps `/agent/*` per `CF-Connecting-IP` (default 50/hour in dev, 30/hour in production). The edge limiter is separate and also ignores `X-Forwarded-For`.
-- `GET /agent/health` and `GET /cache/stats` do not expose budgets or counters.
+- The Worker returns 404 for `/api`, `/api/agent/health`, and `/api/cache/stats`. Flask `/agent/health` stays an internal container check and does not expose budgets or counters. `POST /api/cache/clear` needs header `X-Cache-Secret`.
 - See `.env.example`.
 
 ### CFBD_API_KEY for live data

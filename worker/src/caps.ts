@@ -73,6 +73,8 @@ export interface CapEnv {
 	PREVIEW_CFBD_OFFLINE?: string;
 	AGENT_RATE_LIMIT?: string;
 	XAI_WEEKLY_USD_CAP?: string;
+	TURNSTILE_SECRET_KEY?: string;
+	TURNSTILE_REQUIRED?: string;
 }
 
 export type BoardRoute = 'rankings' | 'matchup' | 'weeks' | 'team';
@@ -95,14 +97,17 @@ function pathOnly(value: string): string {
 }
 
 /** True when a path uses //, an encoded slash pair, or a backslash. */
+function hasBackslash(path: string): boolean {
+	const value = pathOnly(path);
+	return value.includes('\\') || /%5c/i.test(value);
+}
+
+/** A path we are about to forward. Duplicate or encoded slashes are not canonical. */
 export function pathHasSpoof(path: string): boolean {
 	const value = pathOnly(path);
-	return value.includes('//')
-		|| value.includes('\\')
-		|| /%2f%2f/i.test(value)
-		|| /%5c/i.test(value)
-		|| /%2f\//i.test(value)
-		|| /\/%2f/i.test(value);
+	return hasBackslash(value)
+		|| value.includes('//')
+		|| /%2f/i.test(value);
 }
 
 /** Visitor API paths after URL normalization. `/api/../...` is not one of them. */
@@ -116,7 +121,7 @@ export function requestPathSpoofed(rawUrl: string): boolean {
 	const rest = scheme === -1 ? rawUrl : rawUrl.slice(scheme + 3);
 	const slash = rest.indexOf('/');
 	if (slash === -1) return false;
-	return pathHasSpoof(rest.slice(slash));
+	return hasBackslash(rest.slice(slash));
 }
 
 /** Drop every query key that decodes to `secret`, in any case. */
@@ -155,12 +160,22 @@ export function upstreamApiUrl(pathname: string, search: string): URL | null {
 
 export type ApiRoute =
 	| { ok: false; status: 400 }
-	| { ok: true; upstream: URL; modeHost: string; apiPath: string };
+	| {
+		ok: true;
+		upstream: URL;
+		modeHost: string;
+		/** Path forwarded to the container. Team names keep their case. */
+		apiPath: string;
+		/** Lowercase path used for every gate. */
+		matchPath: string;
+		origin: string;
+		searchParams: URLSearchParams;
+	};
 
 /** Bytes encodeURIComponent leaves alone. Encoding them hides a route. */
 const UNRESERVED_ASCII = /[A-Za-z0-9\-._~!*'()]/;
 
-function requestTarget(rawUrl: string): { path: string; search: string; hostname: string } | null {
+function requestTarget(rawUrl: string): { path: string; search: string; hostname: string; origin: string } | null {
 	let incoming: URL;
 	try {
 		incoming = new URL(rawUrl);
@@ -178,7 +193,7 @@ function requestTarget(rawUrl: string): { path: string; search: string; hostname
 	const path = query === -1 ? tail : tail.slice(0, query);
 	const search = query === -1 ? '' : tail.slice(query);
 	if (!path.startsWith('/')) return null;
-	return { path, search, hostname: incoming.hostname };
+	return { path, search, hostname: incoming.hostname, origin: incoming.origin };
 }
 
 /** C0 controls and DEL. Raw or percent-encoded, these are not team names. */
@@ -206,12 +221,13 @@ function hasEncodedControl(path: string): boolean {
 /**
  * Decode a visitor path once into the canonical path.
  * Team names use encodeURIComponent (spaces, accents). A control character,
- * an encoded slash or backslash, a slash lookalike (U+2215, U+FF0F), a
- * backslash, a failed decode, a second decode that changes the path, or an
- * encoded unreserved byte (`%61`) is rejected.
+ * an encoded backslash, a slash lookalike (U+2215, U+FF0F), a backslash,
+ * a failed decode, a second decode that changes the path, or an encoded
+ * unreserved byte (`%61`) is rejected. A single `%2F` becomes `/` and is
+ * collapsed later. `%252f` still fails the second decode.
  */
 export function decodeVisitorPath(path: string): string | null {
-	if (path.includes('\\') || /%5c/i.test(path) || /%2f/i.test(path)) return null;
+	if (path.includes('\\') || /%5c/i.test(path)) return null;
 	if (hasControlCharacter(path) || hasEncodedControl(path)) return null;
 	if (/%(?![0-9A-Fa-f]{2})/.test(path)) return null;
 	for (const token of path.match(/%[0-9A-Fa-f]{2}/g) ?? []) {
@@ -238,22 +254,21 @@ export function decodeVisitorPath(path: string): string | null {
 	return decoded;
 }
 
-/** Collapse dot segments. `//` and `..` are not visitor routes. */
+/**
+ * One canonical path: drop `;params`, collapse duplicate slashes and `.`,
+ * reject `..`, and drop a trailing slash. Case is unchanged here.
+ */
 export function normalizeVisitorPath(path: string): string | null {
 	if (!path.startsWith('/')) return null;
-	const trailing = path.length > 1 && path.endsWith('/');
-	const body = trailing ? path.slice(0, -1) : path;
 	const parts: string[] = [];
-	for (const segment of body.split('/')) {
-		if (segment === '.' || segment === '') {
-			if (segment === '' && parts.length > 0) return null;
-			continue;
-		}
-		if (segment === '..') return null;
-		parts.push(segment);
+	for (const segment of path.split('/')) {
+		const clean = segment.split(';')[0] ?? '';
+		if (clean === '' || clean === '.') continue;
+		if (clean === '..') return null;
+		parts.push(clean);
 	}
 	if (!parts.length) return null;
-	return `/${parts.join('/')}${trailing ? '/' : ''}`;
+	return `/${parts.join('/')}`;
 }
 
 /**
@@ -267,12 +282,33 @@ export function routeApiRequest(rawUrl: string): ApiRoute {
 	const decoded = decodeVisitorPath(target.path);
 	if (!decoded) return { ok: false, status: 400 };
 	const normalized = normalizeVisitorPath(decoded);
-	if (!normalized || !isVisitorApiPath(normalized)) return { ok: false, status: 400 };
-	const apiPath = normalized.replace(/^\/api/, '') || '/';
+	if (!normalized || !isVisitorApiPath(normalized.toLowerCase())) return { ok: false, status: 400 };
+	const parts = normalized.split('/').slice(1);
+	const lower = parts.map((part) => part.toLowerCase());
+	if (lower[0] !== 'api') return { ok: false, status: 400 };
+	const restLower = lower.slice(1);
+	const restOrig = parts.slice(1);
+	let forwardRest = restLower;
+	if (restLower[0] === 'rankings' && restLower[1] === 'team' && restOrig.length >= 3) {
+		forwardRest = ['rankings', 'team', ...restOrig.slice(2)];
+	}
+	const matchPath = restLower.length ? `/${restLower.join('/')}` : '/';
+	const apiPath = forwardRest.length ? `/${forwardRest.join('/')}` : '/';
 	if (!apiPath.startsWith('/')) return { ok: false, status: 400 };
 	const upstream = upstreamApiUrl(apiPath, target.search);
 	if (!upstream) return { ok: false, status: 400 };
-	return { ok: true, upstream, modeHost: target.hostname, apiPath };
+	const searchParams = new URLSearchParams(
+		target.search.startsWith('?') ? target.search.slice(1) : target.search,
+	);
+	return {
+		ok: true,
+		upstream,
+		modeHost: target.hostname,
+		apiPath,
+		matchPath,
+		origin: target.origin,
+		searchParams,
+	};
 }
 
 /** POST /api/spend/kill after the /api prefix is stripped. */
@@ -335,12 +371,16 @@ export function resolveContainerModes(
 	};
 }
 
-/** Secrets forwarded into the container. The xAI credential stays on the Worker. */
+/**
+ * Secrets forwarded into the container. The xAI credential and the Turnstile
+ * secret stay on the Worker. TURNSTILE_SECRET_KEY is not copied here.
+ */
 export function containerSecrets(env: {
 	CFBD_API_KEY?: string;
 	XAI_API_KEY?: string;
 	CACHE_CLEAR_SECRET?: string;
 	CORS_ORIGINS?: string;
+	TURNSTILE_SECRET_KEY?: string;
 }): Record<string, string> {
 	return {
 		...(env.CFBD_API_KEY ? { CFBD_API_KEY: env.CFBD_API_KEY } : {}),
@@ -387,10 +427,23 @@ export function busyBody(code: string): Record<string, unknown> {
 	};
 }
 
+/** Browser-facing JSON. No active content, and no MIME sniffing. */
+export function applyJsonSecurity(headers: Headers): void {
+	headers.set('x-content-type-options', 'nosniff');
+	headers.set('content-security-policy', "default-src 'none'");
+}
+
+export function jsonSecurityHeaders(extra?: HeadersInit): Headers {
+	const headers = new Headers(extra);
+	if (!headers.has('cache-control')) headers.set('cache-control', 'no-store');
+	applyJsonSecurity(headers);
+	return headers;
+}
+
 export function busyResponse(code: string, status = 429): Response {
 	return Response.json(busyBody(code), {
 		status,
-		headers: { 'cache-control': 'no-store' },
+		headers: jsonSecurityHeaders(),
 	});
 }
 
@@ -538,4 +591,126 @@ export function stripPublicCounters(body: unknown): Record<string, unknown> {
 export function isCounterEndpoint(pathname: string): boolean {
 	return pathname === '/agent/health' || pathname === '/cache/stats'
 		|| pathname === '/api/agent/health' || pathname === '/api/cache/stats';
+}
+
+/** Drop one trailing slash so /api/agent/health/ is the same route. */
+export function visitorPath(pathname: string): string {
+	if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
+	return pathname;
+}
+
+/**
+ * Public visitors do not get the API catalog, health, or cache stats.
+ * Cache clear is separate: it stays on the header secret path.
+ */
+export function isHiddenPublicPath(pathname: string): boolean {
+	const path = visitorPath(pathname);
+	return path === '/' || path === '/agent/health' || path === '/cache/stats';
+}
+
+export function isCacheClearPath(pathname: string): boolean {
+	return visitorPath(pathname) === '/cache/clear';
+}
+
+export function isDropSubscribePath(pathname: string): boolean {
+	return visitorPath(pathname) === '/drop/subscribe';
+}
+
+/** explain, blurb, climb, and any other /agent route that is still public. */
+export function needsTurnstile(pathname: string): boolean {
+	const path = visitorPath(pathname);
+	return path === '/agent' || path.startsWith('/agent/');
+}
+
+export const DROP_CLOSED_MESSAGE = 'The Drop is closed.';
+export const TURNSTILE_HEADER = 'cf-turnstile-response';
+export const TURNSTILE_MESSAGE = 'Try again.';
+export const TURNSTILE_UNCONFIGURED_MESSAGE = 'Visitor check is not set up.';
+export const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+export function turnstileRequired(env: { TURNSTILE_REQUIRED?: string }): boolean {
+	return isKillSwitch(env.TURNSTILE_REQUIRED);
+}
+
+const TURNSTILE_UNCONFIGURED = 'TURNSTILE_SECRET_KEY is unset; agent routes keep the daily cap and per-IP limit.';
+
+export interface TurnstileEnv {
+	TURNSTILE_SECRET_KEY?: string;
+	TURNSTILE_REQUIRED?: string;
+}
+
+/**
+ * Draft stage: verify only when the secret is set. Unset, log and keep the
+ * existing caps. TURNSTILE_REQUIRED=1 refuses when the secret is missing.
+ * siteverify is not called unless a secret and a token are both present.
+ */
+export async function turnstileDecision(
+	env: TurnstileEnv,
+	token: string,
+	ip: string,
+	siteverify: typeof fetch = fetch,
+	warn: (message: string) => void = console.warn,
+): Promise<'pass' | 'refuse' | 'unconfigured'> {
+	const secret = (env.TURNSTILE_SECRET_KEY ?? '').trim();
+	if (!secret) {
+		if (turnstileRequired(env)) {
+			warn(JSON.stringify({
+				event: 'turnstile_unconfigured',
+				TURNSTILE_REQUIRED: '1',
+				secret: 'missing',
+			}));
+			return 'unconfigured';
+		}
+		warn(TURNSTILE_UNCONFIGURED);
+		return 'pass';
+	}
+	const provided = token.trim();
+	if (!provided) return 'refuse';
+	let response: Response;
+	try {
+		response = await siteverify(SITEVERIFY_URL, {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({
+				secret,
+				response: provided,
+				remoteip: ip,
+			}).toString(),
+		});
+	} catch {
+		return 'refuse';
+	}
+	if (!response.ok) return 'refuse';
+	try {
+		const payload = await response.json() as { success?: unknown };
+		return payload.success === true ? 'pass' : 'refuse';
+	} catch {
+		return 'refuse';
+	}
+}
+
+/** Fail closed when the flag is on and the secret was never set. */
+export function turnstileUnconfigured(): Response {
+	return Response.json({
+		busy: true,
+		capped: true,
+		message: TURNSTILE_UNCONFIGURED_MESSAGE,
+		code: 'turnstile_unconfigured',
+	}, {
+		status: 503,
+		headers: jsonSecurityHeaders(),
+	});
+}
+
+/** Friendly capped state. JSON, not an error page. */
+export function turnstileRefusal(): Response {
+	return Response.json({
+		busy: true,
+		capped: true,
+		message: TURNSTILE_MESSAGE,
+		code: 'turnstile',
+	}, {
+		status: 429,
+		headers: jsonSecurityHeaders(),
+	});
 }

@@ -1,4 +1,5 @@
 import type { Team, Conference, FilterState, RankingsResponse } from '$lib/types';
+import { agentHeaders } from '$lib/turnstile';
 
 function parseWinPct(value: unknown): number {
 	if (typeof value === 'number') return value;
@@ -377,7 +378,7 @@ export async function fetchShareableBlurb(
 	try {
 		const response = await fetch(`${API_BASE}/agent/blurb`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: await agentHeaders(),
 			body: JSON.stringify({ team_name: teamName, year, week }),
 			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
@@ -421,7 +422,7 @@ export async function fetchClimbBlurb(
 	try {
 		const response = await fetch(`${API_BASE}/agent/climb`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: await agentHeaders(),
 			body: JSON.stringify({ team_name: teamName, year, week }),
 			signal: AbortSignal.timeout(LIVE_BLURB_TIMEOUT_MS),
 		});
@@ -461,7 +462,7 @@ export async function explainRanking(
 }> {
 	const response = await fetch(`${API_BASE}/agent/explain`, {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: await agentHeaders(),
 		body: JSON.stringify({ team_name: teamName, year, week, question_id: questionId }),
 	});
 	const data = (await response.json().catch(() => ({}))) as {

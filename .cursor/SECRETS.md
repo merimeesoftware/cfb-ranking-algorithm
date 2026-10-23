@@ -34,7 +34,7 @@ One CollegeFootballData account. Do not add a second key to get around the month
 CFBD_OFFLINE=0 ./venv/bin/python scripts/warm_cfbd_cache.py 2019 2020
 ```
 
-The public `GET /agent/health` route does not include a key block or any budget counters.
+`GET /agent/health` is not on the public Worker. The container check does not include a key block or any budget counters.
 
 3. **Start a new Cloud Agent** (or restart this one). Secrets inject at **VM boot**, not when you restart Flask alone.
 

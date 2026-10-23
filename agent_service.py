@@ -1,4 +1,4 @@
-"""Agent endpoints for ranking explanations and CFBD MCP proxy."""
+"""Agent endpoints for ranking explanations."""
 import json
 import os
 import re
@@ -7,7 +7,6 @@ import urllib.request
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
-import requests
 from flask import Blueprint, jsonify, request
 
 from ai_stub import stub_explain_from_context
@@ -62,8 +61,9 @@ def set_data_processor(processor) -> None:
     _data_processor = processor
 
 
-CFBD_MCP_URL = os.environ.get('CFBD_MCP_URL', '')
 PROVIDER_TIMEOUT = int(os.environ.get('AI_PROVIDER_TIMEOUT', '60'))
+# Fixed visitor string. Exception text stays in the server log.
+LLM_UNAVAILABLE = 'LLM explanation unavailable.'
 
 # Fixed prompts. Free-text questions are rejected.
 # String 10 stays the curly apostrophe already locked in the visitor UI.
@@ -230,7 +230,8 @@ def _call_provider(provider: str, prompt: str) -> str:
             ) from exc
         return 'LLM explanation unavailable: upstream'
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
-        return f'LLM explanation unavailable: {exc}'
+        print(f'AI provider call failed: {exc}')
+        return LLM_UNAVAILABLE
     text = (data.get('text') or '').strip() if isinstance(data, dict) else ''
     if data.get('ok') and text:
         return text
@@ -948,30 +949,3 @@ def shareable_blurb_route():
 def climb_blurb_route():
     """Path-to-climb blurb (≤280 chars): StoryBrand-simple chase narrative."""
     return _blurb_http('climb')
-
-
-@agent_bp.route('/mcp/query', methods=['POST'])
-def mcp_query():
-    """
-    Proxy ad-hoc queries to CFBD MCP sidecar (when CFBD_MCP_URL is set).
-    Body: { "tool": "get-games", "params": { "year": 2024 } }
-    """
-    if not CFBD_MCP_URL:
-        return jsonify({'error': 'CFBD MCP sidecar not configured (CFBD_MCP_URL)'}), 503
-
-    body = request.get_json(silent=True) or {}
-    tool = body.get('tool')
-    params = body.get('params', {})
-    if not tool:
-        return jsonify({'error': 'tool is required'}), 400
-
-    try:
-        response = requests.post(
-            f"{CFBD_MCP_URL.rstrip('/')}/tools/{tool}",
-            json=params,
-            timeout=30,
-        )
-        response.raise_for_status()
-        return jsonify(response.json())
-    except Exception as e:
-        return jsonify({'error': f'MCP query failed: {e}'}), 502

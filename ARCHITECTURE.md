@@ -10,10 +10,11 @@ Visitor requests for `/api/*` hit the edge Worker. Everything else is static.
 4. `/api/*` is limited per `CF-Connecting-IP`. Paths under `/agent/` also take the tighter agent limiter.
 5. Paid calls ask the SpendBudget Durable Object (`spend-budget` on `CfbApiContainer`) before the provider runs. The object stores the daily counters and the `ai_kill` / `cfbd_kill` latch.
 6. The Worker serves published `/rankings` and `/weeks` from static JSON. The container fetch uses the fixed origin `https://api.internal` plus the canonical path. Flask serves matchup, team pages, and `/agent/explain`.
+7. `/api`, `/api/agent/health`, and `/api/cache/stats` return 404. `POST /api/cache/clear` returns 404 unless header `X-Cache-Secret` matches `CACHE_CLEAR_SECRET` (timing-safe). Flask compares that header again with `hmac.compare_digest`. `POST /api/drop/subscribe` returns 410. `/api/agent/explain`, `/blurb`, and `/climb` check Turnstile when `TURNSTILE_SECRET_KEY` is set. Unset, the Worker logs a warning and keeps the daily cap and per-IP limits. `TURNSTILE_REQUIRED=1` refuses when the secret is missing. A failed or missing token returns the capped JSON state. The Turnstile secret is not forwarded to the container.
 
 `POST /api/spend/kill` is authorized with `SPEND_KILL_SECRET` from header `X-Spend-Kill-Secret` only. Unset, the route returns 403 and does not fall back to `CACHE_CLEAR_SECRET`. The secret stays on the Worker. DevSecOps provisions on Michael's yes (ruling D-20261019-174).
 
-`POST /cache/clear` reads `CACHE_CLEAR_SECRET` from header `X-Cache-Secret` only and compares it with `hmac.compare_digest`. A `secret` query parameter is not forwarded to the container.
+`POST /cache/clear` reads `CACHE_CLEAR_SECRET` from header `X-Cache-Secret` only and compares it with `hmac.compare_digest`. The Worker applies the same header check before the container sees the request. A `secret` query parameter is not forwarded to the container. Public requests without a matching header get 404.
 
 ## Paid-call caps
 

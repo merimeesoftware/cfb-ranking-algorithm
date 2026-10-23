@@ -1,6 +1,5 @@
 python-dotenv>=1.2.3
 flask>=2.3.3
-flask-cors>=6.0.5
 requests>=2.34.2
 python-dateutil>=2.9.0.post0
 gunicorn>=26.2.0
