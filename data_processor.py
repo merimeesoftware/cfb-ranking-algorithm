@@ -28,17 +28,33 @@ class CFBDataProcessor:
             self.api_client = api_client
         else:
             self.api_client = CFBDApiClient(api_key=api_key)
-            
+
         self.team_conference_map = {}
         self.team_info_map = {}  # Full team info including logos
-        self._initialize_conference_map()
 
     def _initialize_conference_map(self):
-        """Fetch and store team conference mappings and full team info."""
-        self.team_info_map = self.api_client.get_teams_with_logos()
+        """Load teams when a compute path asks. Import does not call this."""
+        self.ensure_teams()
+
+    def ensure_teams(self, season: Optional[int] = None, *, persist: bool = False) -> None:
+        """Use the season file when it exists. Otherwise one /teams call."""
+        if self.team_info_map:
+            return
+        stored = None
+        if season is not None:
+            from static_rankings import read_season_teams
+            stored = read_season_teams(season)
+        if stored:
+            self.team_info_map = stored
+        else:
+            self.team_info_map = self.api_client.get_teams_with_logos() or {}
+            if persist and season is not None and self.team_info_map:
+                from static_rankings import DEFAULT_ROOT, write_season_teams
+                write_season_teams(season, self.team_info_map, root=DEFAULT_ROOT)
         self.team_conference_map = {
-            team: info['conference'] 
+            team: info.get('conference')
             for team, info in self.team_info_map.items()
+            if isinstance(info, dict)
         }
 
     def get_team_logo(self, team_name: str) -> Optional[str]:
@@ -70,41 +86,36 @@ class CFBDataProcessor:
         use_week_scoped_fetch: bool = True,
     ) -> List[Dict[str, Any]]:
         """
-        Fetch games for a season, optionally limiting to through_week.
+        One bulk ``/games?year=Y&seasonType=both`` call, then filter in process.
 
-        When through_week is set and use_week_scoped_fetch is True, fetches
-        week-by-week via CFBD week param instead of downloading the full season.
+        ``use_week_scoped_fetch`` is ignored. Per-week and regular-plus-postseason
+        pairs used to multiply calls. Postseason rows stay out of weeks 1–14.
+        CFBD errors propagate; an empty list means the season had no games.
         """
-        raw_games: List[Dict[str, Any]] = []
-
-        if through_week and use_week_scoped_fetch:
-            for week_num in range(1, through_week + 1):
-                week_games = self.api_client.get_games(year=year, week=week_num)
-                raw_games.extend(week_games)
-            # Offline / partial cache: fall back to full-season cache and filter
-            if not raw_games:
-                raw_games = self.api_client.get_games(year=year)
-                if through_week and raw_games:
-                    raw_games = [g for g in raw_games if g.get('week') is not None and g['week'] <= through_week]
-        else:
-            raw_games = self.api_client.get_games(year=year)
-            if through_week:
-                raw_games = [g for g in raw_games if g['week'] <= through_week]
-
-        # Postseason only needed when requesting full season or week 15+
-        if not through_week or through_week >= 15:
-            postseason_games = self.api_client.get_games(year=year, season_type='postseason')
-            if postseason_games:
-                if through_week:
-                    postseason_games = [g for g in postseason_games if g['week'] <= through_week]
-                raw_games.extend(postseason_games)
-
-        return self._process_raw_games(raw_games)
+        del use_week_scoped_fetch
+        self.ensure_teams(year)
+        raw_games = self.api_client.get_games(year=year, season_type='both')
+        selected: List[Dict[str, Any]] = []
+        for game in raw_games:
+            season_type = game.get('season_type') or 'regular'
+            week = game.get('week')
+            if season_type == 'postseason':
+                if through_week is None or through_week >= 15:
+                    selected.append(game)
+                continue
+            if through_week is not None and (week is None or week > through_week):
+                continue
+            selected.append(game)
+        return self._process_raw_games(selected)
 
     def get_available_weeks(self, year: int) -> List[int]:
-        """Return sorted week numbers with completed games for a season."""
-        games = self.api_client.get_games(year=year)
-        weeks = sorted({g['week'] for g in games if g.get('week') is not None})
+        """Return sorted regular-season week numbers. One bulk games call."""
+        self.ensure_teams(year)
+        games = self.api_client.get_games(year=year, season_type='both')
+        weeks = sorted({
+            g['week'] for g in games
+            if g.get('week') is not None and (g.get('season_type') or 'regular') == 'regular'
+        })
         return weeks if weeks else list(range(1, 16))
 
     def _process_raw_games(self, games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -116,6 +127,8 @@ class CFBDataProcessor:
             home_team = game.get('home_team_name')
             away_team = game.get('away_team_name')
             
+            if game.get('completed') is False:
+                continue
             if not home_team or not away_team or game.get('home_score') is None or game.get('away_score') is None:
                 continue
 

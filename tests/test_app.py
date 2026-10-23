@@ -68,15 +68,12 @@ def test_mcp_query_route_is_gone(client):
 
 
 def test_weeks_endpoint(client):
-    with patch('app.data_processor') as mock_dp:
-        mock_dp.get_available_weeks.side_effect = AssertionError('weeks must not call CFBD')
-        response = client.get('/weeks?year=2024')
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['weeks'] == list(range(1, 16))
-        assert data['max_week'] == 15
-        assert data['published'] is True
-        mock_dp.get_available_weeks.assert_not_called()
+    response = client.get('/weeks?year=2024')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['weeks'] == list(range(1, 16))
+    assert data['max_week'] == 15
+    assert data['published'] is True
 
 
 def test_rankings_slim_by_default(client):

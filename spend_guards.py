@@ -33,6 +33,12 @@ AI_PROVIDERS = ('xai', 'workers_ai')
 DEFAULT_XAI_MAX_CALLS = 0
 DEFAULT_AI_MAX_CALLS = 100
 DEFAULT_CFBD_MAX_CALLS = 25
+# Per run, not per day. Env cannot raise this. Cron, dispatch, and any
+# caller of this module (including MCP if it imports the client) share it.
+CFBD_CALLS_PER_RUN = 8
+# Tier 2 is 30,000. The 3,000 hard cap leaves this floor. Below it, or with
+# the header missing, one response is the overshoot and the next call stops.
+CFBD_REMAINING_FLOOR = 27000
 
 _call_lock = threading.Lock()
 _live_call_count = 0
@@ -110,12 +116,53 @@ def is_cfbd_offline() -> bool:
 
 def cfbd_max_calls() -> int:
     """
-    Max live CFBD HTTP calls this process per UTC day.
+    Max live CFBD HTTP calls this process for one run.
 
-    Unset, blank, or invalid CFBD_MAX_CALLS uses DEFAULT_CFBD_MAX_CALLS (25).
-    Never unlimited. The Worker Durable Object enforces the same number globally.
+    Unset, blank, or invalid CFBD_MAX_CALLS uses DEFAULT_CFBD_MAX_CALLS (25),
+    then the per-run ceiling clamps the result to CFBD_CALLS_PER_RUN (8).
+    Never unlimited. A higher env value cannot raise the ceiling.
     """
-    return _parse_cap(os.environ.get('CFBD_MAX_CALLS', ''), DEFAULT_CFBD_MAX_CALLS)
+    resolved = _parse_cap(os.environ.get('CFBD_MAX_CALLS', ''), DEFAULT_CFBD_MAX_CALLS)
+    return min(resolved, CFBD_CALLS_PER_RUN)
+
+
+_cfbd_remaining_blocked = False
+
+
+def cfbd_remaining_blocked() -> bool:
+    return _cfbd_remaining_blocked
+
+
+def reset_cfbd_remaining_block() -> None:
+    global _cfbd_remaining_blocked
+    _cfbd_remaining_blocked = False
+
+
+def enforce_cfbd_remaining(headers) -> None:
+    """Stop the next live call when CFBD's counter is under the floor.
+
+    The response that trips the floor is the one allowed overshoot. A missing
+    or unreadable ``X-CallLimit-Remaining`` header fails closed the same way.
+    """
+    global _cfbd_remaining_blocked
+    if _cfbd_remaining_blocked:
+        raise CFBDOfflineError(
+            'CFBD remaining calls are below the floor. Further live calls are stopped.'
+        )
+    raw = None if headers is None else headers.get('X-CallLimit-Remaining')
+    if raw is None or str(raw).strip() == '':
+        _cfbd_remaining_blocked = True
+        raise CFBDOfflineError('CFBD remaining-call header is missing')
+    try:
+        remaining = int(str(raw).strip())
+    except (TypeError, ValueError):
+        _cfbd_remaining_blocked = True
+        raise CFBDOfflineError('CFBD remaining-call header is missing')
+    if remaining < CFBD_REMAINING_FLOOR:
+        _cfbd_remaining_blocked = True
+        raise CFBDOfflineError(
+            f'CFBD remaining calls {remaining} are below {CFBD_REMAINING_FLOOR}'
+        )
 
 
 def provider_max_calls(provider: str) -> int:
@@ -169,6 +216,7 @@ def cfbd_key_status() -> Dict[str, Any]:
 
 def reset_cfbd_call_count() -> None:
     global _live_call_count, _live_call_day
+    reset_cfbd_remaining_block()
     with _call_lock:
         _live_call_count = 0
         _live_call_day = _utc_day()

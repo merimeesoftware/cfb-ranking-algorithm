@@ -1,7 +1,15 @@
-# Precompute archived rankings as static JSON (hybrid architecture)
-# Runs Saturday evenings (US) after typical game day; also manual dispatch.
+# Precompute archived rankings as static JSON (hybrid architecture).
+# Interim writer; retired when the #117 KV cron lands.
+# A GITHUB_TOKEN push does not trigger ci.yml or deploy-cloudflare.yml.
+# Publish relies on Workers Builds. Pending Release Ops confirmation.
 
 name: Precompute Rankings
+
+permissions: {}
+
+concurrency:
+  group: precompute-rankings
+  cancel-in-progress: false
 
 on:
   schedule:
@@ -11,16 +19,22 @@ on:
       year:
         description: "Season year (blank = current)"
         required: false
+        type: number
       through_week:
         description: "Precompute weeks 1..N (blank = archived weeks of current season)"
         required: false
+        type: number
 
 jobs:
   precompute:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v7
         with:
@@ -47,13 +61,15 @@ jobs:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
           # Repo variable. "1" skips the run before any live fetch. Empty is off.
           CFBD_KILL: ${{ vars.CFBD_KILL }}
-          # Per Sunday, after skipping published weeks. Warm runs refetch the
-          # latest week only. 24 × 52/12 = 104/month, inside the 700 app ceiling.
-          # Provider cfbd, source app. See config/cfbd-month.json.
-          CFBD_MAX_CALLS: "24"
+          # Ingest job. Production wrangler stays CFBD_OFFLINE=1 and is not
+          # set here, so this cron can fetch while visitors stay offline.
+          # The current season's bulk /games call is refreshed every run.
+          CFBD_MAX_CALLS: "8"
+          YEAR: ${{ github.event.inputs.year }}
+          THROUGH_WEEK: ${{ github.event.inputs.through_week }}
         run: |
-          if [ -n "${{ github.event.inputs.year }}" ] && [ -n "${{ github.event.inputs.through_week }}" ]; then
-            python scripts/precompute_rankings.py --year ${{ github.event.inputs.year }} --through-week ${{ github.event.inputs.through_week }}
+          if [ -n "$YEAR" ] && [ -n "$THROUGH_WEEK" ]; then
+            python scripts/precompute_rankings.py --year "$YEAR" --through-week "$THROUGH_WEEK"
           else
             python scripts/precompute_rankings.py --current
           fi
@@ -62,13 +78,33 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: static-rankings
-          path: |
-            static_rankings/
-            frontend/static/rankings/
+          path: frontend/static/rankings/
           retention-days: 14
 
-# Soften: do not auto-commit from Actions by default (artifact upload only)
-      - name: Commit static rankings for Pages (optional)
-        if: false
+  publish:
+    needs: precompute
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+
+      - name: Download precomputed rankings
+        uses: actions/download-artifact@v7
+        with:
+          name: static-rankings
+          path: frontend/static/rankings
+
+      # Derived JSON only. A token push does not start ci.yml, so
+      # deploy-cloudflare.yml (workflow_run on CI) does not deploy it.
+      # Workers Builds is the path that publishes this commit.
+      # Pending Release Ops confirmation.
+      - name: Publish static rankings
         run: |
-          echo "Enable this step when ready to publish static rankings to main"
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          sh scripts/publish_static_rankings.sh
+          git push origin "HEAD:${GITHUB_REF_NAME}"

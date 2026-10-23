@@ -61,6 +61,12 @@
 	let initialTeamName: string | null = null;
 	let prevRanks: Record<string, number> = data.prevRanks || {};
 
+	// First paint is the latest published week. No query params, no live CFBD.
+	const seed = data.seed;
+	if (seed) {
+		filterState.update((state) => ({ ...state, year: seed.year, week: seed.week }));
+	}
+
 	$: conferenceOptions = [
 		...new Set($teams.map((t) => t.conference).filter(Boolean)),
 	].sort((a, b) => a.localeCompare(b));

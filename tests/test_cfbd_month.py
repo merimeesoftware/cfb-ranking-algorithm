@@ -7,17 +7,25 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from check_cfbd_month import (  # noqa: E402
+    APP_CEILING,
+    HARD_CAP,
+    IN_SEASON_MONTH_CAP,
     evaluate,
+    expected_in_season_calls,
+    in_season_errors,
+    in_season_month_calls,
     live_spec,
     main,
     monthly_total,
     production_vars,
     share_errors,
     share_total,
+    worst_month,
 )
 
 FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_month_over_budget.json'
 SHARE_FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_share_sum_over.json'
+SEASON_FIXTURE = ROOT / 'tests' / 'fixtures' / 'caps' / 'cfbd_in_season_over_50.json'
 
 
 def test_planted_over_budget_fixture_fails():
@@ -31,37 +39,53 @@ def test_planted_over_budget_fixture_fails():
     )
     assert spec['provider'] == 'cfbd'
     assert spec['source'] == 'app'
-    assert spec['ceiling'] == 700
-    assert cron_calls == 200 * 52 // 12
-    assert total == cron_calls + 25 * 31
+    assert spec['ceiling'] == APP_CEILING
+    assert cron_calls == 500 * 52 // 12
+    assert total == cron_calls + 30 * 31
     assert total > spec['ceiling']
+    assert total > HARD_CAP
     assert evaluate(spec)
 
 
-def test_planted_share_sum_exceeds_900():
+def test_planted_share_sum_exceeds_hard_cap():
     spec = json.loads(SHARE_FIXTURE.read_text(encoding='utf-8'))
     total = share_total(spec)
     assert spec['provider'] == 'cfbd'
-    assert spec['ceiling'] == 800
+    assert spec['ceiling'] == 2900
     assert spec['mcp_reserved'] == 150
     assert spec['margin'] == 50
-    assert total == 1000
-    assert total > 900
+    assert total == 3100
+    assert total > HARD_CAP
     assert share_errors(spec)
 
 
-def test_live_config_stays_under_700():
+def test_planted_in_season_month_exceeds_50():
+    spec = json.loads(SEASON_FIXTURE.read_text(encoding='utf-8'))
+    calls = in_season_month_calls(
+        spec['cron_calls_per_run'],
+        spec['in_season_sundays_per_month'],
+    )
+    assert spec['provider'] == 'cfbd'
+    assert calls == 55
+    assert calls > IN_SEASON_MONTH_CAP
+    assert in_season_errors(calls)
+
+
+def test_live_config_stays_under_tier2_cap():
     spec = live_spec()
     assert spec['errors'] == []
     assert spec['provider'] == 'cfbd'
     assert spec['source'] == 'app'
-    assert spec['ceiling'] == 700
+    assert spec['ceiling'] == 2800
+    assert spec['hard_cap'] == 3000
     assert spec['mcp_reserved'] == 150
     assert spec['margin'] == 50
-    assert share_total(spec) == 900
+    assert share_total(spec) == 3000
     assert share_errors(spec) == []
-    assert spec['cron_calls_per_run'] == 24
-    assert spec['live_cfbd_per_day'] == 4
+    assert spec['cron_calls_per_run'] == 8
+    assert spec['visitor_cfbd_per_day'] == 0
+    assert spec['live_cfbd_per_day'] == 0
+    assert spec['wrangler_cfbd_max_calls'] == '4'
     total, cron_calls = monthly_total(
         spec['cron_calls_per_run'],
         spec['live_cfbd_per_day'],
@@ -69,9 +93,26 @@ def test_live_config_stays_under_700():
         months=spec['months'],
         days=spec['days'],
     )
-    assert cron_calls == 104
-    assert total == 228
+    assert cron_calls == 8 * 52 // 12
+    assert total == cron_calls
+    assert 8 * 52 // 12 + 4 * 31 == 158
+    assert worst_month(8, 5, 4, 31) == 164
+    guarded = worst_month(
+        8,
+        spec['in_season_sundays_per_month'],
+        spec['visitor_cfbd_per_day'],
+        spec['days'],
+    )
+    assert guarded == 40
+    assert guarded != 158
     assert total <= spec['ceiling']
+    assert guarded <= spec['ceiling']
+    worst = in_season_month_calls(8, spec['in_season_sundays_per_month'])
+    expected = expected_in_season_calls(spec['in_season_sundays_per_month'])
+    assert worst == 40
+    assert expected == 8
+    assert worst <= IN_SEASON_MONTH_CAP
+    assert expected <= IN_SEASON_MONTH_CAP
     assert main() == 0
 
 

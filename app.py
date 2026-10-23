@@ -6,7 +6,6 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
-from data_processor import CFBDataProcessor
 from cache import get_cache
 from ranking_service import (
     get_or_calculate_rankings,
@@ -15,7 +14,7 @@ from ranking_service import (
     DEFAULT_CONFIG,
     FRS_WEIGHTS,
 )
-from agent_service import agent_bp, set_data_processor
+from agent_service import agent_bp
 from path_to_climb import compute_path_to_climb
 from drop_service import subscribe_to_drop
 from matchup_service import build_matchup_payload
@@ -82,9 +81,6 @@ def _cors_response(response):
 
 
 cache = get_cache()
-api_key = os.getenv('CFBD_API_KEY')
-data_processor = CFBDataProcessor(api_key=api_key)
-set_data_processor(data_processor)
 
 app.register_blueprint(agent_bp)
 
@@ -234,7 +230,7 @@ def get_team_breakdown(team_name):
         week = parsed['week']
         # Published files only. A team page must not pull CFBD.
         data = get_or_calculate_rankings(
-            data_processor,
+            None,
             year,
             week,
             request.args,

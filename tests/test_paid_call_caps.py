@@ -51,7 +51,7 @@ def test_unset_env_uses_in_code_defaults_not_unlimited(monkeypatch):
     monkeypatch.delenv('CFBD_MAX_CALLS', raising=False)
     assert provider_max_calls('xai') == fixture['expect_xai']
     assert provider_max_calls('workers_ai') == fixture['expect_workers_ai']
-    assert cfbd_max_calls() == fixture['expect_cfbd']
+    assert cfbd_max_calls() == min(fixture['expect_cfbd'], 8)
     assert provider_max_calls('xai') == 0
     assert provider_max_calls('workers_ai') == 100
 
@@ -63,7 +63,7 @@ def test_invalid_cap_env_falls_back_to_default(monkeypatch):
     monkeypatch.setenv('FLASK_ENV', 'production')
     assert provider_max_calls('xai') == 0
     assert provider_max_calls('workers_ai') == 100
-    assert cfbd_max_calls() == 25
+    assert cfbd_max_calls() == 8
 
 
 def _trip_provider(monkeypatch, name: str):
