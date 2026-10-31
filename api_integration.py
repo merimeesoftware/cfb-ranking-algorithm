@@ -61,8 +61,7 @@ class CFBDApiClient:
         try:
             call_n = register_live_cfbd_call()
             response = requests.get(url, headers=self.headers, params=params, timeout=30)
-            enforce_cfbd_remaining(response.headers)
-            remaining = response.headers.get('X-CallLimit-Remaining')
+            remaining = enforce_cfbd_remaining(response.headers)
             print(
                 f"CFBD LIVE #{call_n}: {endpoint} params={params} "
                 f"status={response.status_code} remaining={remaining}"

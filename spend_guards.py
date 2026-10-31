@@ -36,8 +36,9 @@ DEFAULT_CFBD_MAX_CALLS = 25
 # Per run, not per day. Env cannot raise this. Cron, dispatch, and any
 # caller of this module (including MCP if it imports the client) share it.
 CFBD_CALLS_PER_RUN = 8
-# Tier 2 is 30,000. The 3,000 hard cap leaves this floor. Below it, or with
-# the header missing, one response is the overshoot and the next call stops.
+# Tier 2 is 30,000. The 3,000 hard cap leaves this floor. A present count
+# below it is the one allowed overshoot, and the next call stops. A missing
+# or unreadable header is unknown: the per-run clamp still bounds the run.
 CFBD_REMAINING_FLOOR = 27000
 
 _call_lock = threading.Lock()
@@ -138,11 +139,13 @@ def reset_cfbd_remaining_block() -> None:
     _cfbd_remaining_blocked = False
 
 
-def enforce_cfbd_remaining(headers) -> None:
-    """Stop the next live call when CFBD's counter is under the floor.
+def enforce_cfbd_remaining(headers) -> str:
+    """Return the remaining-call count, or ``unknown``.
 
-    The response that trips the floor is the one allowed overshoot. A missing
-    or unreadable ``X-CallLimit-Remaining`` header fails closed the same way.
+    A present count below the floor stops the next live call. That response
+    is the one allowed overshoot. A missing or unreadable header is unknown
+    and does not stop the run: the per-run clamp and the month budget still
+    bound spend. Never unlimited.
     """
     global _cfbd_remaining_blocked
     if _cfbd_remaining_blocked:
@@ -150,19 +153,19 @@ def enforce_cfbd_remaining(headers) -> None:
             'CFBD remaining calls are below the floor. Further live calls are stopped.'
         )
     raw = None if headers is None else headers.get('X-CallLimit-Remaining')
-    if raw is None or str(raw).strip() == '':
-        _cfbd_remaining_blocked = True
-        raise CFBDOfflineError('CFBD remaining-call header is missing')
+    text = '' if raw is None else str(raw).strip()
+    if not text:
+        return 'unknown'
     try:
-        remaining = int(str(raw).strip())
+        remaining = int(text)
     except (TypeError, ValueError):
-        _cfbd_remaining_blocked = True
-        raise CFBDOfflineError('CFBD remaining-call header is missing')
+        return 'unknown'
     if remaining < CFBD_REMAINING_FLOOR:
         _cfbd_remaining_blocked = True
         raise CFBDOfflineError(
             f'CFBD remaining calls {remaining} are below {CFBD_REMAINING_FLOOR}'
         )
+    return str(remaining)
 
 
 def provider_max_calls(provider: str) -> int:
