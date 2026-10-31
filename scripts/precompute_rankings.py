@@ -38,7 +38,7 @@ os.environ.setdefault('CFBD_MAX_CALLS', '8')
 
 from cache import get_cache
 from data_processor import CFBDataProcessor
-from spend_guards import is_cfbd_killed, is_cfbd_offline
+from spend_guards import CFBDOfflineError, is_cfbd_killed, is_cfbd_offline
 from ranking_algorithm import TeamQualityRanker
 from ranking_service import (
     ALGO_VERSION,
@@ -211,15 +211,28 @@ def latest_games_changed(stored_fingerprint: str | None, games: list) -> bool:
     return stored_fingerprint != games_fingerprint(games)
 
 
-def copy_to_frontend(year: int, week: int, source: Path) -> Path | None:
-    dest_root = ROOT / 'frontend' / 'static' / 'rankings'
+def copy_to_frontend(
+    year: int,
+    week: int,
+    source: Path,
+    static_root: Path | None = None,
+) -> Path | None:
+    dest_root = Path(static_root) if static_root is not None else ROOT / 'frontend' / 'static' / 'rankings'
     dest = dest_root / str(year) / f'week-{week}.json'
     dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, dest)
+    if dest.resolve() != Path(source).resolve():
+        shutil.copy2(source, dest)
     return dest
 
 
-def precompute(year: int, week: int, processor: CFBDataProcessor) -> Path:
+def precompute(
+    year: int,
+    week: int,
+    processor: CFBDataProcessor,
+    *,
+    output_root: Path | None = None,
+    static_root: Path | None = None,
+) -> Path:
     class Args(dict):
         def get(self, key, default=None):
             return dict.get(self, key, default)
@@ -230,8 +243,8 @@ def precompute(year: int, week: int, processor: CFBDataProcessor) -> Path:
     if not data:
         raise RuntimeError(f'No rankings data for {year} week {week}')
     slim = slim_rankings_for_list(data)
-    path = write_static_rankings(slim, year, week)
-    fe = copy_to_frontend(year, week, path)
+    path = write_static_rankings(slim, year, week, root=output_root)
+    fe = copy_to_frontend(year, week, path, static_root)
     print(f'Wrote {path}' + (f' and {fe}' if fe else ''))
     return path
 
@@ -242,6 +255,7 @@ def publish_year(
     processor: CFBDataProcessor,
     *,
     static_root: Path | None = None,
+    output_root: Path | None = None,
     season_games: list | None = None,
 ) -> dict:
     """One bulk season payload. Recompute unpublished weeks and a changed latest week."""
@@ -284,7 +298,13 @@ def publish_year(
         print(f'Skip unchanged {year} week {week}')
     for week in compute:
         print(f'Precomputing {year} week {week}...')
-        precompute(year, week, processor)
+        precompute(
+            year,
+            week,
+            processor,
+            output_root=output_root,
+            static_root=static_root,
+        )
         games = by_week.get(week)
         if games:
             write_source(year, week, games, static_root)
@@ -373,6 +393,7 @@ def ingest_season(
     *,
     refresh_games: bool,
     static_root: Path | None = None,
+    output_root: Path | None = None,
 ) -> dict:
     """One bulk /games call. The in-progress season always refetches."""
     if refresh_games:
@@ -396,19 +417,31 @@ def ingest_season(
         weeks,
         processor,
         static_root=static_root,
+        output_root=output_root,
         season_games=season_games,
     )
 
 
-def publish_stored_manifests() -> None:
+def publish_stored_manifests(
+    output_root: Path | None = None,
+    static_root: Path | None = None,
+) -> None:
     """Refresh manifests from files already on disk. No CFBD call."""
-    frontend = ROOT / 'frontend' / 'static' / 'rankings'
+    frontend = Path(static_root) if static_root is not None else ROOT / 'frontend' / 'static' / 'rankings'
     rebuild_rankings_manifest(frontend)
-    if Path(DEFAULT_ROOT).exists():
-        rebuild_rankings_manifest(DEFAULT_ROOT)
+    rankings_root = Path(output_root) if output_root is not None else Path(DEFAULT_ROOT)
+    if rankings_root.resolve() == frontend.resolve():
+        return
+    if output_root is not None or rankings_root.exists():
+        rebuild_rankings_manifest(rankings_root)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(
+    argv: list[str] | None = None,
+    *,
+    output_root: Path | None = None,
+    static_root: Path | None = None,
+) -> int:
     parser = argparse.ArgumentParser(description='Precompute static rankings JSON')
     parser.add_argument('--year', type=int)
     parser.add_argument('--week', type=int)
@@ -423,14 +456,14 @@ def main(argv: list[str] | None = None) -> int:
     now = now_utc()
     if args.current and is_offseason(now):
         print('Off-season: precompute skipped (0 CFBD calls).')
-        publish_stored_manifests()
+        publish_stored_manifests(output_root, static_root)
         return 0
 
     if is_cfbd_offline():
         # Prod stays CFBD_OFFLINE=1. Publishing still refreshes the manifest
         # from static JSON. The ingest job itself leaves CFBD_OFFLINE unset.
         print('CFBD offline: publishing stored rankings only (0 CFBD calls).')
-        publish_stored_manifests()
+        publish_stored_manifests(output_root, static_root)
         return 0
 
     if not os.getenv('CFBD_API_KEY'):
@@ -450,20 +483,28 @@ def main(argv: list[str] | None = None) -> int:
         parser.error('Provide --year/--week, --year/--through-week, or --current')
 
     processor = CFBDataProcessor(api_key=os.getenv('CFBD_API_KEY'))
-    for year, weeks in by_year.items():
-        processor.ensure_teams(year, persist=True)
-        ensure_priors(processor, year)
-        # The in-progress season always takes one fresh bulk call.
-        # There is no cross-run CFBD cache.
-        ingest_season(
-            processor,
-            year,
-            weeks,
-            refresh_games=(year == current_year),
-        )
+    prior_root = static_root if static_root is not None else output_root
+    try:
+        for year, weeks in by_year.items():
+            processor.ensure_teams(year, persist=True, root=output_root)
+            ensure_priors(processor, year, root=prior_root)
+            # The in-progress season always takes one fresh bulk call.
+            # There is no cross-run CFBD cache.
+            ingest_season(
+                processor,
+                year,
+                weeks,
+                refresh_games=(year == current_year),
+                static_root=static_root,
+                output_root=output_root,
+            )
+    except CFBDOfflineError as exc:
+        print(exc, file=sys.stderr)
+        return 1
 
-    publish_stored_manifests()
-    print(f'Done. Static root: {DEFAULT_ROOT}')
+    publish_stored_manifests(output_root, static_root)
+    shown = output_root if output_root is not None else DEFAULT_ROOT
+    print(f'Done. Static root: {shown}')
     return 0
 
 

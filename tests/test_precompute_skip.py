@@ -47,7 +47,7 @@ def test_repeat_run_fetches_only_the_latest_week(tmp_path, monkeypatch):
     processor = FakeProcessor(games)
     computed = []
 
-    def fake_precompute(year, week, _processor):
+    def fake_precompute(year, week, _processor, **_kwargs):
         computed.append(week)
         return write_static_rankings(
             {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
@@ -81,7 +81,7 @@ def test_changed_latest_week_is_the_only_recompute(tmp_path, monkeypatch):
     monkeypatch.setattr(
         pre,
         'precompute',
-        lambda year, week, _processor: write_static_rankings(
+        lambda year, week, _processor, **_kwargs: write_static_rankings(
             {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
@@ -154,7 +154,7 @@ def test_offseason_current_makes_no_cfbd_call(monkeypatch):
         raise AssertionError('off-season constructed a processor')
 
     monkeypatch.setattr(pre, 'CFBDataProcessor', explode)
-    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda: published.append('manifest'))
+    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda *_args, **_kwargs: published.append('manifest'))
     assert pre.main(['--current']) == 0
     assert published == ['manifest']
 
@@ -169,7 +169,7 @@ def test_offline_publish_makes_no_cfbd_call(monkeypatch):
         raise AssertionError('offline publish constructed a processor')
 
     monkeypatch.setattr(pre, 'CFBDataProcessor', explode)
-    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda: None)
+    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda *_args, **_kwargs: None)
     assert pre.main(['--current']) == 0
 
 
@@ -179,7 +179,7 @@ def test_manifest_lists_weeks_through_the_latest_completed(tmp_path, monkeypatch
     monkeypatch.setattr(
         pre,
         'precompute',
-        lambda year, week, _processor: write_static_rankings(
+        lambda year, week, _processor, **_kwargs: write_static_rankings(
             {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
@@ -238,7 +238,7 @@ def test_second_sunday_refetches_current_season_and_publishes_the_new_week(tmp_p
     client = _client(state, calls)
     written = []
 
-    def fake_precompute(year, week, _processor):
+    def fake_precompute(year, week, _processor, **_kwargs):
         written.append(week)
         return write_static_rankings(
             {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
@@ -278,7 +278,7 @@ def test_postseason_update_recomputes_week_15(tmp_path, monkeypatch):
     calls = []
     client = _client(state, calls)
 
-    def fake_precompute(year, week, _processor):
+    def fake_precompute(year, week, _processor, **_kwargs):
         return write_static_rankings(
             {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
             year,
@@ -352,11 +352,11 @@ def test_main_refreshes_current_season_on_the_short_ttl(monkeypatch):
     original_priors = ranking_service.TTL_PRIORS
     seen = []
 
-    def fake_ingest(processor, year, weeks, *, refresh_games, static_root=None):
+    def fake_ingest(processor, year, weeks, *, refresh_games, static_root=None, output_root=None):
         seen.append((year, refresh_games, api_integration.get_games_ttl(year)))
 
     class Proc:
-        def ensure_teams(self, year, persist=True):
+        def ensure_teams(self, year, persist=True, root=None):
             return None
 
     monkeypatch.setenv('CFBD_OFFLINE', '0')
@@ -364,7 +364,7 @@ def test_main_refreshes_current_season_on_the_short_ttl(monkeypatch):
     monkeypatch.setattr(pre, 'now_utc', lambda: datetime(2026, 10, 18))
     monkeypatch.setattr(pre, 'CFBDataProcessor', lambda api_key=None: Proc())
     monkeypatch.setattr(pre, 'ensure_priors', lambda processor, year, root=None: [])
-    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda: None)
+    monkeypatch.setattr(pre, 'publish_stored_manifests', lambda *_args, **_kwargs: None)
     monkeypatch.setattr(pre, 'ingest_season', fake_ingest)
     try:
         assert pre.main(['--current']) == 0
@@ -388,7 +388,7 @@ def test_current_season_refresh_drops_the_computed_board(tmp_path, monkeypatch):
     monkeypatch.setattr(
         pre,
         'precompute',
-        lambda year, week, processor: write_static_rankings(
+        lambda year, week, processor, **_kwargs: write_static_rankings(
             {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,

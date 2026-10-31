@@ -65,8 +65,34 @@ def test_remaining_below_floor_stops_the_next_call(monkeypatch):
     reset_cfbd_call_count()
 
 
-def test_missing_remaining_header_stops_the_next_call(monkeypatch):
+def test_missing_remaining_header_stays_inside_the_clamp(monkeypatch, capsys):
+    """No remaining-calls header is unknown. The 8-call clamp still applies."""
     fixture = _load('cfbd_remaining_missing.json')
+    monkeypatch.setenv('CFBD_OFFLINE', '0')
+    monkeypatch.setenv('FLASK_ENV', 'production')
+    monkeypatch.setenv('CFBD_MAX_CALLS', '8')
+    monkeypatch.setenv('CFBD_KILL', '0')
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    reset_cfbd_call_count()
+    from api_integration import CFBDApiClient
+    from spend_guards import cfbd_remaining_blocked
+
+    client = CFBDApiClient(api_key='test')
+    bare = _live_response(fixture['headers'])
+    with patch('api_integration.requests.get', return_value=bare) as mock_get:
+        assert client._make_request('/teams', None) == []
+        assert client._make_request('/games', {'year': 2026}) == []
+        assert mock_get.call_count == 2
+    logged = capsys.readouterr().out.strip().splitlines()
+    assert logged == [
+        'CFBD LIVE #1: /teams params=None status=200 remaining=unknown',
+        'CFBD LIVE #2: /games params={\'year\': 2026} status=200 remaining=unknown',
+    ]
+    assert cfbd_remaining_blocked() is False
+    reset_cfbd_call_count()
+
+
+def test_unreadable_remaining_header_stays_inside_the_clamp(monkeypatch, capsys):
     monkeypatch.setenv('CFBD_OFFLINE', '0')
     monkeypatch.setenv('FLASK_ENV', 'production')
     monkeypatch.setenv('CFBD_MAX_CALLS', '8')
@@ -76,11 +102,30 @@ def test_missing_remaining_header_stops_the_next_call(monkeypatch):
     from api_integration import CFBDApiClient
 
     client = CFBDApiClient(api_key='test')
-    bare = _live_response(fixture['headers'])
+    bare = _live_response({'X-CallLimit-Remaining': 'n/a'})
     with patch('api_integration.requests.get', return_value=bare) as mock_get:
+        assert client._make_request('/teams', None) == []
+        assert mock_get.call_count == 1
+    assert 'remaining=unknown' in capsys.readouterr().out
+    reset_cfbd_call_count()
+
+
+def test_zero_remaining_stops_the_next_call(monkeypatch):
+    monkeypatch.setenv('CFBD_OFFLINE', '0')
+    monkeypatch.setenv('FLASK_ENV', 'production')
+    monkeypatch.setenv('CFBD_MAX_CALLS', '8')
+    monkeypatch.setenv('CFBD_KILL', '0')
+    monkeypatch.delenv('SPEND_GATE_HOST', raising=False)
+    reset_cfbd_call_count()
+    from api_integration import CFBDApiClient
+
+    client = CFBDApiClient(api_key='test')
+    empty = _live_response({'X-CallLimit-Remaining': '0'})
+    with patch('api_integration.requests.get', return_value=empty) as mock_get:
         with pytest.raises(CFBDOfflineError):
-            client._make_request('/info', None)
+            client._make_request('/teams', None)
+        assert mock_get.call_count == 1
         with pytest.raises(CFBDOfflineError):
-            client._make_request('/info', None)
+            client._make_request('/games', {'year': 2026})
         assert mock_get.call_count == 1
     reset_cfbd_call_count()

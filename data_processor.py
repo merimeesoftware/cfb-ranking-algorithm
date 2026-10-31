@@ -1,6 +1,7 @@
 # filepath: c:\Users\micha\DevProjects\CFB-Ranking-System\data_processor.py
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from collections import defaultdict
+from pathlib import Path
 from api_integration import CFBDApiClient
 
 # --- Conference Classification Constants ---
@@ -36,21 +37,27 @@ class CFBDataProcessor:
         """Load teams when a compute path asks. Import does not call this."""
         self.ensure_teams()
 
-    def ensure_teams(self, season: Optional[int] = None, *, persist: bool = False) -> None:
+    def ensure_teams(
+        self,
+        season: Optional[int] = None,
+        *,
+        persist: bool = False,
+        root: Optional[Union[str, Path]] = None,
+    ) -> None:
         """Use the season file when it exists. Otherwise one /teams call."""
         if self.team_info_map:
             return
         stored = None
         if season is not None:
             from static_rankings import read_season_teams
-            stored = read_season_teams(season)
+            stored = read_season_teams(season, root=root)
         if stored:
             self.team_info_map = stored
         else:
             self.team_info_map = self.api_client.get_teams_with_logos() or {}
             if persist and season is not None and self.team_info_map:
-                from static_rankings import DEFAULT_ROOT, write_season_teams
-                write_season_teams(season, self.team_info_map, root=DEFAULT_ROOT)
+                from static_rankings import write_season_teams
+                write_season_teams(season, self.team_info_map, root=root)
         self.team_conference_map = {
             team: info.get('conference')
             for team, info in self.team_info_map.items()
