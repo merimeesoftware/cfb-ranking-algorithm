@@ -1,6 +1,8 @@
 name = "true-rankings-cfb"
 main = "worker/src/index.ts"
 compatibility_date = "2026-03-01"
+# Wrangler 4.150+ uploads source maps when this is unset. Keep them off the upload.
+upload_source_maps = false
 
 # Unified Workers deploy: SvelteKit static frontend + Flask API container.
 #   npm run build --prefix frontend && npx wrangler deploy
