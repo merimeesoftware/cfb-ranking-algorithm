@@ -196,7 +196,7 @@ class CFBDApiClient:
 
     def _transform_game(self, game: Dict) -> Dict:
         """Transform CFBD game dict to internal format"""
-        return {
+        transformed = {
             'id': game.get('id'),
             'completed': game.get('completed'),
             'week': game.get('week'),
@@ -215,6 +215,10 @@ class CFBDApiClient:
             'season_type': game.get('seasonType') or 'regular',
             'neutral_site': bool(game.get('neutralSite')),
         }
+        status = game.get('status')
+        if isinstance(status, str) and status.strip():
+            transformed['status'] = status.strip()
+        return transformed
 
     @staticmethod
     def _is_valid_game(game: Dict) -> bool:
