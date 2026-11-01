@@ -7,9 +7,13 @@ Usage:
   ./venv/bin/python scripts/precompute_rankings.py --year 2024 --through-week 15
   ./venv/bin/python scripts/precompute_rankings.py --current   # current season, weeks 1..current-1
 
-Published weeks are not fetched again. The latest week is fetched and
-recomputed only when its games changed. Earlier weeks are read from the
-saved snapshot. Also copies slim JSON into frontend/static/rankings/.
+Published weeks are not fetched again. When a week's games change, that
+week and every later week are recomputed from the games already in memory.
+Earlier weeks stay as saved. Also copies slim JSON into frontend/static/rankings/.
+
+A regular week is ready when every kickoff older than 36 hours has a score.
+One older unscored game is left out of that week's ranking inputs instead
+of freezing the board.
 """
 from __future__ import annotations
 
@@ -19,7 +23,7 @@ import json
 import os
 import shutil
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -140,10 +144,126 @@ def seed_week_games(year: int, week: int, games: list) -> None:
     cache.set(key, games, BATCH_TTL, prefix='games')
 
 
+# A kickoff older than this is no longer "in progress".
+STALE_KICKOFF = timedelta(hours=36)
+
+
 def row_complete(game: dict) -> bool:
     if game.get('completed') is False:
         return False
     return game.get('home_score') is not None and game.get('away_score') is not None
+
+
+def has_final_score(game: dict) -> bool:
+    return game.get('home_score') is not None and game.get('away_score') is not None
+
+
+def _kickoff_text(game: dict) -> str:
+    kick = _kickoff(game)
+    if kick is None:
+        return 'none'
+    return kick.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def _id_key(game: dict) -> tuple:
+    game_id = game.get('id')
+    if isinstance(game_id, int) and not isinstance(game_id, bool):
+        return (0, game_id, '')
+    return (1, 0, '' if game_id is None else str(game_id))
+
+
+def regular_weeks(games: list) -> dict[int, list]:
+    by_week: dict[int, list] = {}
+    for game in games:
+        if (game.get('season_type') or 'regular') != 'regular':
+            continue
+        week = game.get('week')
+        if week is None:
+            continue
+        try:
+            week_num = int(week)
+        except (TypeError, ValueError):
+            continue
+        by_week.setdefault(week_num, []).append(game)
+    return by_week
+
+
+def row_blocks_week(game: dict, now: datetime) -> bool:
+    """True when this row should keep its week unpublished.
+
+    Stale rows (kickoff more than 36 hours ago) do not block. A future
+    kickoff does. A kickoff inside the 36-hour window blocks only while
+    it still has no score.     Undated rows keep the old score check. Notes never settle a row.
+    """
+    kick = _kickoff(game)
+    if kick is None:
+        return not row_complete(game)
+    if kick > now:
+        return True
+    if kick >= now - STALE_KICKOFF:
+        return not has_final_score(game)
+    return False
+
+
+def week_is_done(rows: list, now: datetime | None = None) -> bool:
+    """A week with a scored game, and nothing still live or in the future."""
+    if not rows:
+        return False
+    now = now or now_utc()
+    if any(row_blocks_week(row, now) for row in rows):
+        return False
+    return any(has_final_score(row) for row in rows)
+
+
+def _omit_reason(game: dict, now: datetime) -> str | None:
+    """Why a row stays out of ranking inputs. None means keep it.
+
+    Only a kickoff older than 36 hours with no score is dropped. Notes do
+    not change that, and they never settle a future or in-window game.
+    """
+    if has_final_score(game):
+        return None
+    kick = _kickoff(game)
+    if kick is not None and kick < now - STALE_KICKOFF:
+        return 'stale'
+    return None
+
+
+def ranking_inputs(games: list, now: datetime | None = None) -> list:
+    """Drop unscored stale rows and log each drop."""
+    now = now or now_utc()
+    kept = []
+    for game in games:
+        reason = _omit_reason(game, now)
+        if reason is None:
+            kept.append(game)
+            continue
+        print(
+            f'excluding {reason} game {game.get("id")} week {game.get("week")} '
+            f'kickoff {_kickoff_text(game)} from ranking inputs'
+        )
+    return sorted(kept, key=_id_key)
+
+
+def log_regular_week_coverage(games: list) -> None:
+    """One derived line per regular week. Ids and kickoffs only, no game payloads."""
+    by_week = regular_weeks(games)
+    for week in sorted(by_week):
+        rows = by_week[week]
+        completed = sum(1 for row in rows if row_complete(row))
+        incomplete = sorted(
+            (row for row in rows if not row_complete(row)),
+            key=_id_key,
+        )
+        shown = [
+            f'{row.get("id")}@{_kickoff_text(row)}'
+            for row in incomplete[:5]
+        ]
+        detail = ','.join(shown) if shown else 'none'
+        print(
+            f'regular week {week}: rows={len(rows)} '
+            f'completed={completed} incomplete={detail}'
+        )
 
 
 def games_for_week(games: list, week: int) -> list:
@@ -164,17 +284,19 @@ def games_for_week(games: list, week: int) -> list:
     return rows
 
 
-def latest_completed_regular_week(games: list) -> int | None:
-    """Highest regular week whose games all have scores. Partial weeks wait."""
-    by_week: dict[int, list] = {}
-    for game in games:
-        if (game.get('season_type') or 'regular') != 'regular':
-            continue
-        week = game.get('week')
-        if week is None:
-            continue
-        by_week.setdefault(int(week), []).append(game)
-    done = [week for week, rows in by_week.items() if rows and all(row_complete(row) for row in rows)]
+def latest_completed_regular_week(games: list, now: datetime | None = None) -> int | None:
+    """Highest regular week that is ready to publish.
+
+    Ready means no game is still in the future or inside the 36-hour window
+    without a score, and at least one row has a score. A stale unscored row
+    does not count against the week.
+    """
+    if now is None:
+        now = now_utc()
+    done = [
+        week for week, rows in regular_weeks(games).items()
+        if week_is_done(rows, now)
+    ]
     return max(done) if done else None
 
 
@@ -257,8 +379,11 @@ def publish_year(
     static_root: Path | None = None,
     output_root: Path | None = None,
     season_games: list | None = None,
+    now: datetime | None = None,
 ) -> dict:
-    """One bulk season payload. Recompute unpublished weeks and a changed latest week."""
+    """One bulk season payload. Rebuild from the earliest changed week through the latest."""
+    if now is None:
+        now = now_utc()
     if not weeks:
         return {'bulk_calls': 0, 'computed': [], 'fetched_seasons': []}
     bulk_calls = 0
@@ -279,6 +404,7 @@ def publish_year(
         rows = games_for_week(season_games, week)
         if not rows and previous and previous.get('games'):
             rows = previous['games']
+        rows = ranking_inputs(rows, now)
         by_week[week] = rows
         if rows:
             seed_week_games(year, week, rows)
@@ -286,14 +412,20 @@ def publish_year(
             if week != latest:
                 write_source(year, week, rows, static_root)
 
-    compute = []
-    for week in weeks:
-        week_changed = latest_games_changed(
+    changed = [
+        week for week in weeks
+        if latest_games_changed(
             previous_fingerprint.get(week),
             by_week.get(week) or [],
         )
-        if week not in published or week_changed:
-            compute.append(week)
+    ]
+    if changed:
+        earliest = min(changed)
+        # Later boards are cumulative, so a healed earlier week has to be
+        # recomputed through the latest. The season payload is already loaded.
+        compute = [week for week in weeks if week not in published or week >= earliest]
+    else:
+        compute = [week for week in weeks if week not in published]
     for week in sorted(published - set(compute)):
         print(f'Skip unchanged {year} week {week}')
     for week in compute:
@@ -394,8 +526,11 @@ def ingest_season(
     refresh_games: bool,
     static_root: Path | None = None,
     output_root: Path | None = None,
+    now: datetime | None = None,
 ) -> dict:
     """One bulk /games call. The in-progress season always refetches."""
+    if now is None:
+        now = now_utc()
     if refresh_games:
         # 30-minute computed boards live under this prefix. A re-dispatch
         # after a bowl must not replay one for the season just refetched.
@@ -406,8 +541,9 @@ def ingest_season(
         season_type='both',
         refresh=refresh_games,
     )
+    log_regular_week_coverage(season_games)
     if not weeks:
-        latest = latest_completed_regular_week(season_games)
+        latest = latest_completed_regular_week(season_games, now)
         if not latest:
             print(f'No completed week for {year}.')
             return {'bulk_calls': 0, 'computed': [], 'fetched_seasons': []}
@@ -419,6 +555,7 @@ def ingest_season(
         static_root=static_root,
         output_root=output_root,
         season_games=season_games,
+        now=now,
     )
 
 
@@ -497,6 +634,7 @@ def main(
                 refresh_games=(year == current_year),
                 static_root=static_root,
                 output_root=output_root,
+                now=now,
             )
     except CFBDOfflineError as exc:
         print(exc, file=sys.stderr)
