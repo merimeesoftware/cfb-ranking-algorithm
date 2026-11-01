@@ -238,7 +238,7 @@ def test_download_path_matches_upload_path(tmp_path):
     ]
     assert uploads and downloads
     assert 'actions/upload-artifact@v7' in text
-    assert 'actions/download-artifact@v7' in text
+    assert 'actions/download-artifact@v8' in text
     assert {_rankings_root(path) for path in uploads} == {_rankings_root(path) for path in downloads}
     assert _rankings_root(downloads[0]) == 'frontend/static/rankings'
 
