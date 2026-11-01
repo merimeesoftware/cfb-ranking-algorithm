@@ -47,13 +47,15 @@ def test_transform_defaults_missing_notes():
     assert 'status' not in out
 
 
-def test_transform_keeps_a_present_status():
+def test_transform_ignores_a_status_field():
     raw = {
         'week': 7,
         'season': 2026,
         'homeTeam': 'A',
         'awayTeam': 'B',
         'status': ' canceled ',
+        'notes': 'not canceled',
     }
     out = CFBDApiClient._transform_game(None, raw)
-    assert out['status'] == 'canceled'
+    assert 'status' not in out
+    assert out['notes'] == 'not canceled'

@@ -11,9 +11,9 @@ Published weeks are not fetched again. The latest week is fetched and
 recomputed only when its games changed. Earlier weeks are read from the
 saved snapshot. Also copies slim JSON into frontend/static/rankings/.
 
-A regular week is ready when every kickoff older than 36 hours has a score
-or is cancelled or postponed. One older unscored game is left out of that
-week's ranking inputs instead of freezing the board.
+A regular week is ready when every kickoff older than 36 hours has a score.
+One older unscored game is left out of that week's ranking inputs instead
+of freezing the board.
 """
 from __future__ import annotations
 
@@ -21,7 +21,6 @@ import argparse
 import hashlib
 import json
 import os
-import re
 import shutil
 import sys
 from datetime import datetime, timedelta, timezone
@@ -147,7 +146,6 @@ def seed_week_games(year: int, week: int, games: list) -> None:
 
 # A kickoff older than this is no longer "in progress".
 STALE_KICKOFF = timedelta(hours=36)
-_VOIDED_TEXT = re.compile(r'\b(?:cancelled|canceled|postponed)\b', re.I)
 
 
 def row_complete(game: dict) -> bool:
@@ -158,36 +156,6 @@ def row_complete(game: dict) -> bool:
 
 def has_final_score(game: dict) -> bool:
     return game.get('home_score') is not None and game.get('away_score') is not None
-
-
-def _status_text(game: dict) -> str:
-    chunks = []
-    for key in ('status', 'game_status', 'gameStatus', 'notes'):
-        value = game.get(key)
-        if isinstance(value, str) and value.strip():
-            chunks.append(value.strip())
-    return ' '.join(chunks)
-
-
-def is_voided(game: dict) -> bool:
-    """True when the feed marks the game cancelled or postponed."""
-    for key in ('cancelled', 'canceled', 'postponed'):
-        if game.get(key) is True:
-            return True
-    return _VOIDED_TEXT.search(_status_text(game)) is not None
-
-
-def _voided_label(game: dict) -> str:
-    text = _status_text(game).lower()
-    cancelled = (
-        game.get('cancelled') is True
-        or game.get('canceled') is True
-        or 'cancel' in text
-    )
-    if game.get('postponed') is True or 'postpon' in text:
-        if not cancelled:
-            return 'postponed'
-    return 'cancelled'
 
 
 def _kickoff_text(game: dict) -> str:
@@ -225,10 +193,8 @@ def row_blocks_week(game: dict, now: datetime) -> bool:
 
     Stale rows (kickoff more than 36 hours ago) do not block. A future
     kickoff does. A kickoff inside the 36-hour window blocks only while
-    it still has no score. Undated rows keep the old score check.
+    it still has no score.     Undated rows keep the old score check. Notes never settle a row.
     """
-    if is_voided(game):
-        return False
     kick = _kickoff(game)
     if kick is None:
         return not row_complete(game)
@@ -240,21 +206,23 @@ def row_blocks_week(game: dict, now: datetime) -> bool:
 
 
 def week_is_done(rows: list, now: datetime | None = None) -> bool:
-    """A week with a scored or explicitly voided game, and nothing still live."""
+    """A week with a scored game, and nothing still live or in the future."""
     if not rows:
         return False
     now = now or now_utc()
     if any(row_blocks_week(row, now) for row in rows):
         return False
-    return any(has_final_score(row) or is_voided(row) for row in rows)
+    return any(has_final_score(row) for row in rows)
 
 
 def _omit_reason(game: dict, now: datetime) -> str | None:
-    """Why a row stays out of ranking inputs. None means keep it."""
+    """Why a row stays out of ranking inputs. None means keep it.
+
+    Only a kickoff older than 36 hours with no score is dropped. Notes do
+    not change that, and they never settle a future or in-window game.
+    """
     if has_final_score(game):
         return None
-    if is_voided(game):
-        return _voided_label(game)
     kick = _kickoff(game)
     if kick is not None and kick < now - STALE_KICKOFF:
         return 'stale'
@@ -262,7 +230,7 @@ def _omit_reason(game: dict, now: datetime) -> str | None:
 
 
 def ranking_inputs(games: list, now: datetime | None = None) -> list:
-    """Drop unscored stale rows and cancelled or postponed rows. Log each drop."""
+    """Drop unscored stale rows and log each drop."""
     now = now or now_utc()
     kept = []
     for game in games:
@@ -320,8 +288,8 @@ def latest_completed_regular_week(games: list) -> int | None:
     """Highest regular week that is ready to publish.
 
     Ready means no game is still in the future or inside the 36-hour window
-    without a score, and at least one row has a score or is cancelled or
-    postponed. A stale unscored row does not count against the week.
+    without a score, and at least one row has a score. A stale unscored row
+    does not count against the week.
     """
     now = now_utc()
     done = [

@@ -210,24 +210,59 @@ def test_scored_games_publish_through_the_latest_week(tmp_path, monkeypatch, cap
         get_cache().invalidate_prefix('games')
 
 
-def test_cancelled_and_postponed_rows_do_not_block(tmp_path, monkeypatch, capsys):
+def test_future_postponed_note_still_blocks_the_week(tmp_path, monkeypatch, capsys):
     games = [_played(week) for week in range(1, 4)]
-    games.extend([
-        _open(3, 3001, STALE_KICKOFF, notes='Canceled'),
-        _open(3, 3002, _stamp(NOW + timedelta(days=14)), postponed=True),
-        _open(3, 3003, STALE_KICKOFF, status='postponed'),
-    ])
+    games.append(_open(
+        3,
+        3002,
+        _stamp(NOW + timedelta(days=14)),
+        notes='Rescheduled; originally postponed from Oct. 3',
+    ))
     output = tmp_path / 'output'
     static = tmp_path / 'static'
     try:
         result = _ingest(monkeypatch, games, output, static)
         logged = capsys.readouterr().out
+        assert result['computed'] == [1, 2]
+        assert not (output / '2026' / 'week-3.json').exists()
+        assert 'excluding postponed' not in logged
+        assert 'excluding cancelled' not in logged
+    finally:
+        get_cache().invalidate_prefix('games')
+
+
+def test_not_canceled_note_is_not_special(tmp_path, monkeypatch, capsys):
+    """Notes do not settle a row. A stale one is dropped; a future one blocks."""
+    stale_games = [_played(week) for week in range(1, 4)]
+    stale_games.append(_open(3, 3001, STALE_KICKOFF, notes='not canceled despite storm'))
+    stale_games.append(_open(3, 3005, STALE_KICKOFF, notes='Canceled'))
+    output = tmp_path / 'stale-output'
+    static = tmp_path / 'stale-static'
+    future_output = tmp_path / 'future-output'
+    future_static = tmp_path / 'future-static'
+    try:
+        result = _ingest(monkeypatch, stale_games, output, static)
+        logged = capsys.readouterr().out
         assert result['computed'] == [1, 2, 3]
         assert _source_ids(static, 3) == [3]
-        assert 'excluding cancelled game 3001 week 3 ' in logged
-        assert 'excluding postponed game 3002 week 3 ' in logged
-        assert 'excluding postponed game 3003 week 3 ' in logged
-        assert 'regular week 3: rows=4 completed=1 incomplete=' in logged
+        assert 'excluding stale game 3001 week 3 ' in logged
+        assert 'excluding stale game 3005 week 3 ' in logged
+        assert 'excluding cancelled' not in logged
+
+        capsys.readouterr()
+        future_games = [_played(week) for week in range(1, 3)]
+        future_games.append(_open(
+            3,
+            3004,
+            _stamp(NOW + timedelta(days=2)),
+            notes='not canceled',
+        ))
+        future = _ingest(monkeypatch, future_games, future_output, future_static)
+        future_log = capsys.readouterr().out
+        assert future['computed'] == [1, 2]
+        assert not (future_output / '2026' / 'week-3.json').exists()
+        assert 'excluding cancelled' not in future_log
+        assert 'excluding stale game 3004' not in future_log
     finally:
         get_cache().invalidate_prefix('games')
 
