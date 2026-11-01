@@ -7,9 +7,9 @@ Usage:
   ./venv/bin/python scripts/precompute_rankings.py --year 2024 --through-week 15
   ./venv/bin/python scripts/precompute_rankings.py --current   # current season, weeks 1..current-1
 
-Published weeks are not fetched again. The latest week is fetched and
-recomputed only when its games changed. Earlier weeks are read from the
-saved snapshot. Also copies slim JSON into frontend/static/rankings/.
+Published weeks are not fetched again. When a week's games change, that
+week and every later week are recomputed from the games already in memory.
+Earlier weeks stay as saved. Also copies slim JSON into frontend/static/rankings/.
 
 A regular week is ready when every kickoff older than 36 hours has a score.
 One older unscored game is left out of that week's ranking inputs instead
@@ -381,7 +381,7 @@ def publish_year(
     season_games: list | None = None,
     now: datetime | None = None,
 ) -> dict:
-    """One bulk season payload. Recompute unpublished weeks and a changed latest week."""
+    """One bulk season payload. Rebuild from the earliest changed week through the latest."""
     if now is None:
         now = now_utc()
     if not weeks:
@@ -412,14 +412,20 @@ def publish_year(
             if week != latest:
                 write_source(year, week, rows, static_root)
 
-    compute = []
-    for week in weeks:
-        week_changed = latest_games_changed(
+    changed = [
+        week for week in weeks
+        if latest_games_changed(
             previous_fingerprint.get(week),
             by_week.get(week) or [],
         )
-        if week not in published or week_changed:
-            compute.append(week)
+    ]
+    if changed:
+        earliest = min(changed)
+        # Later boards are cumulative, so a healed earlier week has to be
+        # recomputed through the latest. The season payload is already loaded.
+        compute = [week for week in weeks if week not in published or week >= earliest]
+    else:
+        compute = [week for week in weeks if week not in published]
     for week in sorted(published - set(compute)):
         print(f'Skip unchanged {year} week {week}')
     for week in compute:

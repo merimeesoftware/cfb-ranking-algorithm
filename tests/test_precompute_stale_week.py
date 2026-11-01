@@ -268,6 +268,39 @@ def test_not_canceled_note_is_not_special(tmp_path, monkeypatch, capsys):
         get_cache().invalidate_prefix('games')
 
 
+def test_later_score_rebuilds_that_week_through_the_latest(tmp_path, monkeypatch):
+    games = [_played(week) for week in range(1, 10)]
+    hole = _open(7, STALE_ID, STALE_KICKOFF)
+    games.append(hole)
+    output = tmp_path / 'output'
+    static = tmp_path / 'static'
+    try:
+        first = _ingest(monkeypatch, games, output, static)
+        assert first['computed'] == list(range(1, 10))
+        assert STALE_ID not in _source_ids(static, 7)
+
+        hole['home_score'] = 24
+        hole['away_score'] = 17
+        hole['completed'] = True
+        processor = _Processor(games)
+        second = pre.ingest_season(
+            processor,
+            2026,
+            [],
+            refresh_games=True,
+            static_root=static,
+            output_root=output,
+            now=NOW,
+        )
+        assert second['computed'] == [7, 8, 9]
+        assert processor.api_client.calls == [
+            {'year': 2026, 'week': None, 'season_type': 'both'},
+        ]
+        assert STALE_ID in _source_ids(static, 7)
+    finally:
+        get_cache().invalidate_prefix('games')
+
+
 def test_shuffled_rows_keep_the_same_fingerprint(tmp_path, monkeypatch):
     def scored(game_id):
         row = _played(2)
