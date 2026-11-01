@@ -92,6 +92,7 @@ def _ingest(monkeypatch, rows, output, static):
         refresh_games=True,
         static_root=static,
         output_root=output,
+        now=NOW,
     )
 
 
@@ -118,9 +119,9 @@ def test_stale_unscored_game_does_not_freeze_later_weeks(tmp_path, monkeypatch, 
     monkeypatch.setattr(pre, 'now_utc', lambda: NOW)
     games = [_played(week) for week in range(1, 10)]
     games.append(_open(7, STALE_ID, STALE_KICKOFF))
-    assert pre.latest_completed_regular_week(games) == 9
+    assert pre.latest_completed_regular_week(games, NOW) == 9
     through_week_7 = [game for game in games if game['week'] <= 7]
-    assert pre.latest_completed_regular_week(through_week_7) == 7
+    assert pre.latest_completed_regular_week(through_week_7, NOW) == 7
 
     output = tmp_path / 'output'
     static = tmp_path / 'static'
@@ -193,7 +194,7 @@ def test_scored_games_publish_through_the_latest_week(tmp_path, monkeypatch, cap
     static = tmp_path / 'static'
     try:
         monkeypatch.setattr(pre, 'now_utc', lambda: NOW)
-        assert pre.latest_completed_regular_week(games) == 9
+        assert pre.latest_completed_regular_week(games, NOW) == 9
         first = _ingest(monkeypatch, games, output, static)
         logged = capsys.readouterr().out
         assert first['computed'] == list(range(1, 10))
@@ -263,6 +264,40 @@ def test_not_canceled_note_is_not_special(tmp_path, monkeypatch, capsys):
         assert not (future_output / '2026' / 'week-3.json').exists()
         assert 'excluding cancelled' not in future_log
         assert 'excluding stale game 3004' not in future_log
+    finally:
+        get_cache().invalidate_prefix('games')
+
+
+def test_shuffled_rows_keep_the_same_fingerprint(tmp_path, monkeypatch):
+    def scored(game_id):
+        row = _played(2)
+        row['id'] = game_id
+        return row
+
+    forward = [scored(30), scored(10), _open(2, 5, STALE_KICKOFF), scored(20)]
+    backward = [scored(20), _open(2, 5, STALE_KICKOFF), scored(30), scored(10)]
+    assert pre.games_fingerprint(pre.ranking_inputs(forward, NOW)) == pre.games_fingerprint(
+        pre.ranking_inputs(backward, NOW)
+    )
+    monkeypatch.setattr(pre, 'now_utc', lambda: NOW)
+    _install_precompute(monkeypatch)
+    left = tmp_path / 'left'
+    right = tmp_path / 'right'
+    try:
+        pre.publish_year(
+            2026, [2], _Processor(forward),
+            static_root=left, output_root=left / 'out',
+            season_games=forward, now=NOW,
+        )
+        pre.publish_year(
+            2026, [2], _Processor(backward),
+            static_root=right, output_root=right / 'out',
+            season_games=backward, now=NOW,
+        )
+        left_source = json.loads((left / '_sources' / '2026' / 'week-2.json').read_text())
+        right_source = json.loads((right / '_sources' / '2026' / 'week-2.json').read_text())
+        assert left_source['fingerprint'] == right_source['fingerprint']
+        assert [game['id'] for game in left_source['games']] == [10, 20, 30]
     finally:
         get_cache().invalidate_prefix('games')
 

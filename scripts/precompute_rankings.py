@@ -242,7 +242,7 @@ def ranking_inputs(games: list, now: datetime | None = None) -> list:
             f'excluding {reason} game {game.get("id")} week {game.get("week")} '
             f'kickoff {_kickoff_text(game)} from ranking inputs'
         )
-    return kept
+    return sorted(kept, key=_id_key)
 
 
 def log_regular_week_coverage(games: list) -> None:
@@ -284,14 +284,15 @@ def games_for_week(games: list, week: int) -> list:
     return rows
 
 
-def latest_completed_regular_week(games: list) -> int | None:
+def latest_completed_regular_week(games: list, now: datetime | None = None) -> int | None:
     """Highest regular week that is ready to publish.
 
     Ready means no game is still in the future or inside the 36-hour window
     without a score, and at least one row has a score. A stale unscored row
     does not count against the week.
     """
-    now = now_utc()
+    if now is None:
+        now = now_utc()
     done = [
         week for week, rows in regular_weeks(games).items()
         if week_is_done(rows, now)
@@ -378,8 +379,11 @@ def publish_year(
     static_root: Path | None = None,
     output_root: Path | None = None,
     season_games: list | None = None,
+    now: datetime | None = None,
 ) -> dict:
     """One bulk season payload. Recompute unpublished weeks and a changed latest week."""
+    if now is None:
+        now = now_utc()
     if not weeks:
         return {'bulk_calls': 0, 'computed': [], 'fetched_seasons': []}
     bulk_calls = 0
@@ -400,7 +404,7 @@ def publish_year(
         rows = games_for_week(season_games, week)
         if not rows and previous and previous.get('games'):
             rows = previous['games']
-        rows = ranking_inputs(rows)
+        rows = ranking_inputs(rows, now)
         by_week[week] = rows
         if rows:
             seed_week_games(year, week, rows)
@@ -516,8 +520,11 @@ def ingest_season(
     refresh_games: bool,
     static_root: Path | None = None,
     output_root: Path | None = None,
+    now: datetime | None = None,
 ) -> dict:
     """One bulk /games call. The in-progress season always refetches."""
+    if now is None:
+        now = now_utc()
     if refresh_games:
         # 30-minute computed boards live under this prefix. A re-dispatch
         # after a bowl must not replay one for the season just refetched.
@@ -530,7 +537,7 @@ def ingest_season(
     )
     log_regular_week_coverage(season_games)
     if not weeks:
-        latest = latest_completed_regular_week(season_games)
+        latest = latest_completed_regular_week(season_games, now)
         if not latest:
             print(f'No completed week for {year}.')
             return {'bulk_calls': 0, 'computed': [], 'fetched_seasons': []}
@@ -542,6 +549,7 @@ def ingest_season(
         static_root=static_root,
         output_root=output_root,
         season_games=season_games,
+        now=now,
     )
 
 
@@ -620,6 +628,7 @@ def main(
                 refresh_games=(year == current_year),
                 static_root=static_root,
                 output_root=output_root,
+                now=now,
             )
     except CFBDOfflineError as exc:
         print(exc, file=sys.stderr)

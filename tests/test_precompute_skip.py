@@ -352,7 +352,7 @@ def test_main_refreshes_current_season_on_the_short_ttl(monkeypatch):
     original_priors = ranking_service.TTL_PRIORS
     seen = []
 
-    def fake_ingest(processor, year, weeks, *, refresh_games, static_root=None, output_root=None):
+    def fake_ingest(processor, year, weeks, *, refresh_games, static_root=None, output_root=None, now=None):
         seen.append((year, refresh_games, api_integration.get_games_ttl(year)))
 
     class Proc:
