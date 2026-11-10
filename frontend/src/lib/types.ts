@@ -76,6 +76,10 @@ export interface Team {
 	why_blurb?: string;
 	/** AI/stub StoryBrand path-to-climb blurb (≤280 chars) */
 	climb_blurb?: string;
+	/** Cap tripped before a live share blurb. Show the busy line, not a generated take. */
+	take_busy?: boolean;
+	/** Cap tripped before a live climb blurb. */
+	climb_busy?: boolean;
 }
 
 export interface PathToClimb {

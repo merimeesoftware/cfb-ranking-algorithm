@@ -7,7 +7,7 @@ from shareable_blurb import BLURB_MAX_CHARS
 
 FIXTURES = Path(__file__).parent / 'fixtures'
 
-_BANNED_FAN_LEAKS = ('AI_MODE', 'MiniMax', 'stub narrative', 'TQ', 'CQ', 'Elo')
+_BANNED_FAN_LEAKS = ('AI_MODE', 'xAI', 'Workers AI', 'stub narrative', 'TQ', 'CQ', 'Elo')
 
 
 def _current():
@@ -95,7 +95,7 @@ def test_stub_why_blurbs_top_n_with_path_to_climb():
         assert '?' in text or any(
             w in text.lower() for w in ('debate', 'prove', 'fair', 'belong')
         )
-        for banned in ('AI_MODE', 'MiniMax', 'TQ', 'CQ', 'our model'):
+        for banned in ('AI_MODE', 'xAI', 'Workers AI', 'TQ', 'CQ', 'our model'):
             assert banned not in text
     assert 'No. 1' in blurbs['Oregon'] or '#1' in blurbs['Oregon'] or '1' in blurbs['Oregon']
     assert 'Oregon' in blurbs['Ohio State'] or 'board' in blurbs['Ohio State'].lower()

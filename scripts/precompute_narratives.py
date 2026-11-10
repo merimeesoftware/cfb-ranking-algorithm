@@ -11,8 +11,8 @@ Writes week-{n}.story.json and week-{n}.why.json under:
   - frontend/static/rankings/{year}/
   - static_rankings/{year}/
 
---mode live only calls MiniMax when AI_MODE=live and MINIMAX_API_KEY is set;
-otherwise falls back to stub templates.
+--mode live calls xAI or Workers AI only when AI_MODE=live and the Worker
+host is set. Otherwise it falls back to stub templates.
 """
 from __future__ import annotations
 
@@ -64,27 +64,29 @@ def _write_both(
 
 
 def _live_story_or_stub(facts: Dict[str, Any]) -> Dict[str, Any]:
-    """Attempt MiniMax only when explicitly live + keyed; else stub."""
+    """Attempt the configured provider only when live and the host is set."""
     mode = resolve_ai_mode()
-    key = os.environ.get('MINIMAX_API_KEY', '').strip()
-    if mode != 'live' or not key:
-        if mode == 'live' and not key:
-            print(
-                'AI_MODE=live but MINIMAX_API_KEY unset — using stub story.',
-                file=sys.stderr,
-            )
+    if mode != 'live':
         return stub_week_story(facts)
 
-    try:
-        from agent_service import _call_minimax  # type: ignore
+    from agent_service import ProviderUnconfigured, _call_provider, _provider_host
+    from spend_guards import resolve_ai_provider
 
+    provider = resolve_ai_provider()
+    try:
+        if not _provider_host(provider):
+            print(
+                f'AI_MODE=live but {provider} host unset — using stub story.',
+                file=sys.stderr,
+            )
+            return stub_week_story(facts)
         prompt = (
             'Write a short college football week-story JSON with keys '
             '"headline" (string) and "paragraphs" (array of 2-4 short strings). '
             'Use ONLY these facts; do not invent games:\n'
             + json.dumps(facts, separators=(',', ':'))
         )
-        raw = _call_minimax(prompt)
+        raw = _call_provider(provider, prompt)
         data = json.loads(raw) if isinstance(raw, str) else raw
         if isinstance(data, dict) and data.get('headline'):
             return {
@@ -92,6 +94,8 @@ def _live_story_or_stub(facts: Dict[str, Any]) -> Dict[str, Any]:
                 'paragraphs': data.get('paragraphs') or [],
                 'facts': facts,
             }
+    except ProviderUnconfigured:
+        return stub_week_story(facts)
     except Exception as exc:  # noqa: BLE001 — batch script falls back
         print(f'Live narrative failed ({exc}); falling back to stub.', file=sys.stderr)
 
@@ -145,7 +149,7 @@ def main() -> int:
         '--mode',
         choices=('stub', 'live'),
         default='stub',
-        help='stub (default, free) or live (MiniMax only if AI_MODE=live + key)',
+        help='stub (default, free) or live (provider only if AI_MODE=live and the host is set)',
     )
     args = parser.parse_args()
 

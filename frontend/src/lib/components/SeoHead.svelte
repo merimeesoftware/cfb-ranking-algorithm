@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BRAND_NAME, SITE_ORIGIN, TAGLINE } from '$lib/brand';
+	import { BRAND_NAME, SITE_ORIGIN, TAGLINE, publicUrl } from '$lib/brand';
 
 	export let title: string = BRAND_NAME;
 	export let description: string = `${BRAND_NAME} — ${TAGLINE}`;
@@ -7,7 +7,7 @@
 	export let ogType: string = 'website';
 	export let jsonLd: Record<string, unknown> | Record<string, unknown>[] | null = null;
 
-	$: canonical = `${SITE_ORIGIN}${canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`}`;
+	$: canonical = publicUrl(canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`);
 </script>
 
 <svelte:head>
@@ -18,7 +18,9 @@
 	<meta property="og:title" content={title} />
 	<meta property="og:description" content={description} />
 	<meta property="og:type" content={ogType} />
-	<meta property="og:url" content={canonical} />
+	{#if SITE_ORIGIN}
+		<meta property="og:url" content={canonical} />
+	{/if}
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={title} />
 	<meta name="twitter:description" content={description} />

@@ -11,6 +11,8 @@ declare global {
 
 	interface ImportMetaEnv {
 		readonly PUBLIC_SITE_URL?: string;
+		/** Public Turnstile widget id. Not a secret. */
+		readonly PUBLIC_TURNSTILE_SITE_KEY?: string;
 	}
 
 	interface ImportMeta {

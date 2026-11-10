@@ -1,0 +1,8 @@
+{
+  "calls_per_day": 200,
+  "max_input_tokens": 8000,
+  "max_output_tokens": 1024,
+  "neurons_per_million_input": 13778,
+  "neurons_per_million_output": 26128,
+  "ceiling": 8000
+}

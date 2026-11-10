@@ -1,0 +1,67 @@
+{
+ "_note": "NOT merged into design/comps/manifest.json. Entries use PR #95's schema (route, width, file, sha256, signed_by, signoff, masks). sha256/signed_by/signoff stay empty on purpose: a signed comp must be a still captured from the built #98 UI by visual-check.mjs --capture-only (pixel gate, 0.2% diff), not this HTML design render, and per the Minicon REVISE on #95 it only counts once on main. _design_ref points at the design render the built still is reviewed against.",
+ "routes": [
+  {
+   "path": "/2024/week/10?team=Iowa%20State",
+   "name": "why-here-board-open"
+  },
+  {
+   "path": "/teams/iowa-state?year=2024&week=10",
+   "name": "why-here-team-page"
+  }
+ ],
+ "comps": [
+  {
+   "route": "/2024/week/10?team=Iowa%20State",
+   "width": "390",
+   "file": "renders/why-here-98-board-390.png",
+   "sha256": "",
+   "signed_by": "",
+   "signoff": "",
+   "masks": [],
+   "_design_ref": {
+    "file": "why-here-98/renders/row-open-mid-390.png",
+    "sha256": "eb9206150b84a2f4bf61f2e3136789ab095338e6b65004d3d95e899b04b61c8f"
+   }
+  },
+  {
+   "route": "/2024/week/10?team=Iowa%20State",
+   "width": "1440",
+   "file": "renders/why-here-98-board-1440.png",
+   "sha256": "",
+   "signed_by": "",
+   "signoff": "",
+   "masks": [],
+   "_design_ref": {
+    "file": "why-here-98/renders/row-open-mid-1440.png",
+    "sha256": "afd4be16ea48888d2632ab3dbd51e1402c983c5a2791bf29386358819cd6a483"
+   }
+  },
+  {
+   "route": "/teams/iowa-state?year=2024&week=10",
+   "width": "390",
+   "file": "renders/why-here-98-team-390.png",
+   "sha256": "",
+   "signed_by": "",
+   "signoff": "",
+   "masks": [],
+   "_design_ref": {
+    "file": "why-here-98/renders/row-open-mid-390.png",
+    "sha256": "eb9206150b84a2f4bf61f2e3136789ab095338e6b65004d3d95e899b04b61c8f"
+   }
+  },
+  {
+   "route": "/teams/iowa-state?year=2024&week=10",
+   "width": "1440",
+   "file": "renders/why-here-98-team-1440.png",
+   "sha256": "",
+   "signed_by": "",
+   "signoff": "",
+   "masks": [],
+   "_design_ref": {
+    "file": "why-here-98/renders/row-open-mid-1440.png",
+    "sha256": "afd4be16ea48888d2632ab3dbd51e1402c983c5a2791bf29386358819cd6a483"
+   }
+  }
+ ]
+}

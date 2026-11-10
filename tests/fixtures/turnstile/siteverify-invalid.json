@@ -1,0 +1,5 @@
+{
+  "success": false,
+  "error-codes": ["invalid-input-response"],
+  "token": "planted-invalid-token"
+}

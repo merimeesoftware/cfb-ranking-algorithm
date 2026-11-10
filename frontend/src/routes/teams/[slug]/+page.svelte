@@ -11,7 +11,7 @@
 		teamSlug,
 		weekPath,
 		gamePath,
-		SITE_ORIGIN,
+		publicUrl,
 		citationText,
 		findTeamBySlug,
 	} from '$lib/brand';
@@ -62,7 +62,7 @@
 		name: t.team_name,
 		sport: 'American Football',
 		memberOf: t.conference,
-		url: `${SITE_ORIGIN}${path}`,
+		url: publicUrl(path),
 	};
 
 	$: compareCandidates = neighbors.filter((n) => n.team_name !== t.team_name).slice(0, 3);
@@ -149,4 +149,10 @@
 	</p>
 </div>
 
-<AgentChatPanel teamName={t.team_name} open={askOpen} on:close={() => (askOpen = false)} />
+<AgentChatPanel
+	teamName={t.team_name}
+	year={year}
+	week={week}
+	open={askOpen}
+	on:close={() => (askOpen = false)}
+/>

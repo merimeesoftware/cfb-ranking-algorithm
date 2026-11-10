@@ -24,7 +24,7 @@ See the attached plan at `/opt/cursor/artifacts/plans/cfb_full_optimization_ab21
 - Tests: pytest suite, blocking in CI
 
 ### Phase 3: Agent Features (product, optional)
-- `agent_service.py`: `/agent/explain`, `/agent/mcp/query`, `/agent/health` — requires `MINIMAX_API_KEY` in Cloudflare
+- `agent_service.py`: `/agent/explain`, `/agent/mcp/query`, `/agent/health` — requires `XAI_API_KEY` in Cloudflare
 - `AgentChatPanel.svelte` frontend component
 - Not the same as OpenCode CI tooling
 

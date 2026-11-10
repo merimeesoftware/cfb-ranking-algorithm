@@ -36,6 +36,6 @@ On 2026-10-18 Michael set new product direction.
 - `PRODUCT.md`, the brand spec, the README, and the public LLM notes were updated with the removal. `docs/THE-DROP.md` is deleted. PURPOSE.md is still the 2026-09-28 lock and still contains the bettor lines and The Drop goal; only Michael can change those locked lines. Open PR #69 "Betting layer on V5.3 Elo (GREEN / LEAN / PASS)" is left untouched and conflicts with decision 3. August 2026 audit notes still describe the old `/lines` path as history.
 - The internal eval stays a next-week Brier backtest. It is used as an internal fit check only and is never presented publicly as predictions.
 - Adding a momentum term changes the published formula, the cache key and the methodology page. The doc/code gaps in `/methodology` and `ALGORITHM_BREAKDOWN.md` (stale weights, K, HFA, prior fade) are fixed as part of #97 before any new visuals.
-- No new paid calls (MiniMax, CFBD) on visitor paths until #93's caps are merged. Ask-the-AI (#100) depends on #93.
+- No new paid calls (xAI, CFBD) on visitor paths until #93's caps are merged. Ask-the-AI (#100) depends on #93.
 - All UI work waits for Dean's signed comps and the #94 preview stills check; user-facing copy needs a Phil consult against the amended PURPOSE.md.
 - Conference evidence must report what the data shows. If the Big 12 does not hold up in a given season, the page says so.

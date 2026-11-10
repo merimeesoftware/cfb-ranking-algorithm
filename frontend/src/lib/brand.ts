@@ -9,10 +9,23 @@ export const POSITIONING_LINE =
 	'The order you check before you argue — not a poll, not a committee, not the narrative.';
 export const HANDLE = '@TrueCFB';
 
-/** Canonical public origin. Override via PUBLIC_SITE_URL at build time when custom domain is live. */
-export const SITE_ORIGIN =
-	(typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PUBLIC_SITE_URL) ||
-	'https://truerankings.com';
+/** http(s) origin from PUBLIC_SITE_URL. Empty when the setting is unset — no default host. */
+export function siteOriginFrom(raw: string | undefined | null): string {
+	if (typeof raw !== 'string') return '';
+	const trimmed = raw.trim().replace(/\/$/, '');
+	if (!trimmed || !/^https?:\/\//i.test(trimmed)) return '';
+	return trimmed;
+}
+
+export const SITE_ORIGIN = siteOriginFrom(
+	typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.PUBLIC_SITE_URL : ''
+);
+
+/** Same-origin path. Absolute only when PUBLIC_SITE_URL is set. */
+export function publicUrl(path: string): string {
+	const normalized = path.startsWith('/') ? path : `/${path}`;
+	return SITE_ORIGIN ? `${SITE_ORIGIN}${normalized}` : normalized;
+}
 
 export function teamSlug(name: string): string {
 	return name
@@ -68,7 +81,7 @@ export function gamePath(teamA: string, teamB: string, year?: number, week?: num
 }
 
 export function citationText(year: number, week: number, url?: string): string {
-	const link = url || `${SITE_ORIGIN}${weekPath(year, week)}`;
+	const link = url || publicUrl(weekPath(year, week));
 	return `${BRAND_NAME}, ${year} Week ${week}, ${link}`;
 }
 

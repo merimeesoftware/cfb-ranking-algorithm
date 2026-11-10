@@ -1,12 +1,11 @@
 # filepath: c:\Users\micha\DevProjects\CFB-Ranking-System\app.py
+import hmac
 import os
 from datetime import datetime
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from dotenv import load_dotenv
 
-from data_processor import CFBDataProcessor
 from cache import get_cache
 from ranking_service import (
     get_or_calculate_rankings,
@@ -15,26 +14,72 @@ from ranking_service import (
     DEFAULT_CONFIG,
     FRS_WEIGHTS,
 )
-from agent_service import agent_bp, set_data_processor
+from agent_service import agent_bp
 from path_to_climb import compute_path_to_climb
-from spend_guards import is_cfbd_offline
 from matchup_service import build_matchup_payload
+from public_board import (
+    UNPUBLISHED_MESSAGE,
+    evaluate_public_query,
+    load_manifest,
+)
+from static_rankings import read_static_rankings_any
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# CORS: allow configured origins or wildcard in dev
-_cors_origins = os.environ.get('CORS_ORIGINS', '*')
-if _cors_origins == '*':
-    CORS(app, origins=['*'], supports_credentials=True)
-else:
-    CORS(app, origins=[o.strip() for o in _cors_origins.split(',')], supports_credentials=True)
+# CORS: only origins listed in CORS_ORIGINS. Unset means same-origin
+# (no Access-Control-Allow-Origin). '*' is not an allowlist entry.
+# The frontend sends no credentials.
+_CORS_ALLOW_HEADERS = 'Content-Type, cf-turnstile-response'
+
+
+def allowed_cors_origins():
+    raw = os.environ.get('CORS_ORIGINS', '')
+    origins = []
+    seen = set()
+    for part in raw.split(','):
+        item = part.strip()
+        if not item or item == '*':
+            continue
+        if item in seen:
+            continue
+        seen.add(item)
+        origins.append(item)
+    return origins
+
+
+def _apply_cors(response, origin):
+    response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = _CORS_ALLOW_HEADERS
+    if 'Access-Control-Allow-Credentials' in response.headers:
+        del response.headers['Access-Control-Allow-Credentials']
+    return response
+
+
+@app.before_request
+def _cors_preflight():
+    if request.method != 'OPTIONS':
+        return None
+    origin = request.headers.get('Origin', '')
+    if origin not in allowed_cors_origins():
+        return None
+    return _apply_cors(app.make_response(('', 204)), origin)
+
+
+@app.after_request
+def _cors_response(response):
+    origin = request.headers.get('Origin', '')
+    if origin in allowed_cors_origins():
+        _apply_cors(response, origin)
+    elif 'Access-Control-Allow-Credentials' in response.headers:
+        del response.headers['Access-Control-Allow-Credentials']
+    return response
+
 
 cache = get_cache()
-api_key = os.getenv('CFBD_API_KEY')
-data_processor = CFBDataProcessor(api_key=api_key)
-set_data_processor(data_processor)
 
 app.register_blueprint(agent_bp)
 
@@ -57,22 +102,12 @@ def get_current_season_week():
 
 @app.route('/')
 def index():
+    # Container health check. The public Worker 404s /api so this catalog
+    # is not a visitor route, and it does not name internal paths.
     return jsonify({
         "message": "True Rankings API is running",
         "brand": "True Rankings",
         "rating": "TR+",
-        "endpoints": [
-            "/rankings",
-            "/rankings/team/<team_name>",
-            "/matchup",
-            "/weeks",
-            "/cache/stats",
-            "/cache/clear",
-            "/agent/explain",
-            "/agent/blurb",
-            "/agent/climb",
-            "/agent/health",
-        ],
     })
 
 
@@ -81,17 +116,24 @@ def get_matchup():
     try:
         if request.args.get('market_spread') is not None:
             return jsonify({"error": "market_spread is not accepted."}), 400
+        _parsed, rejected = evaluate_public_query('matchup', request.args, load_manifest())
+        if rejected:
+            body, status = rejected
+            return jsonify(body), status
         team_a = request.args.get('team_a') or request.args.get('a')
         team_b = request.args.get('team_b') or request.args.get('b')
         if not team_a or not team_b:
             return jsonify({"error": "team_a and team_b are required"}), 400
-        year = request.args.get('year', default=2024, type=int)
-        week = request.args.get('week', default=None, type=int)
-        data = get_or_calculate_rankings(
-            data_processor, year, week, request.args, prefer_static=True
-        )
+        year = _parsed['year']
+        week = _parsed['week']
+        data = read_static_rankings_any(year, week)
         if not data:
-            return jsonify({"error": f"No game data found for {year}."}), 404
+            return jsonify({
+                "published": False,
+                "message": UNPUBLISHED_MESSAGE,
+                "year": year,
+                "week": week,
+            }), 200
         payload = build_matchup_payload(
             data.get('team_rankings') or [],
             team_a,
@@ -109,32 +151,31 @@ def get_matchup():
 
 @app.route('/weeks', methods=['GET'])
 def get_weeks():
-    year = request.args.get('year', default=datetime.now().year, type=int)
-    cache_key = cache._generate_key('available_weeks', year)
-    cached = cache.get(cache_key)
-    if cached is not None:
-        weeks = cached
-    else:
-        weeks = data_processor.get_available_weeks(year)
-        # Historical seasons change rarely; current season refreshes hourly
-        from cache import TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, is_historical_season
-        ttl = TTL_GAMES_HISTORICAL if is_historical_season(year) else TTL_GAMES_CURRENT
-        cache.set(cache_key, weeks, ttl, prefix='weeks')
-    return jsonify({"year": year, "weeks": weeks, "max_week": max(weeks) if weeks else 15})
+    parsed, rejected = evaluate_public_query('weeks', request.args, load_manifest())
+    if rejected:
+        body, status = rejected
+        return jsonify(body), status
+    return jsonify({
+        "year": parsed['year'],
+        "weeks": parsed['weeks'],
+        "max_week": parsed['max_week'],
+        "published": True,
+    })
 
 
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
-    return jsonify(cache.get_stats())
+    # Counters stay internal. This route used to publish cache size and paths.
+    return jsonify({"status": "ok"})
 
 
 @app.route('/cache/clear', methods=['POST'])
 def clear_cache():
-    secret = request.headers.get('X-Cache-Secret') or request.args.get('secret')
-    expected_secret = os.environ.get('CACHE_CLEAR_SECRET')
+    provided = request.headers.get('X-Cache-Secret') or ''
+    expected_secret = os.environ.get('CACHE_CLEAR_SECRET') or ''
     if not expected_secret:
         return jsonify({"error": "Cache clear disabled; set CACHE_CLEAR_SECRET"}), 403
-    if secret != expected_secret:
+    if not hmac.compare_digest(provided.encode('utf-8'), expected_secret.encode('utf-8')):
         return jsonify({"error": "Unauthorized"}), 401
     cache.clear_all()
     return jsonify({"message": "Cache cleared successfully"})
@@ -143,20 +184,25 @@ def clear_cache():
 @app.route('/rankings', methods=['GET'])
 def get_rankings():
     try:
-        year = request.args.get('year', default=2023, type=int)
-        week = request.args.get('week', default=None, type=int)
-        detail = request.args.get('detail', 'false').lower() == 'true'
-        # Detail views need full payloads (skip slim static files)
-        data = get_or_calculate_rankings(
-            data_processor, year, week, request.args, prefer_static=not detail
-        )
+        parsed, rejected = evaluate_public_query('rankings', request.args, load_manifest())
+        if rejected:
+            body, status = rejected
+            return jsonify(body), status
+        year = parsed['year']
+        week = parsed['week']
+        data = read_static_rankings_any(year, week)
         if not data:
-            return jsonify({"error": f"No game data found for {year}."}), 404
-        if not detail and data.get('detail') is not False:
+            return jsonify({
+                "published": False,
+                "message": UNPUBLISHED_MESSAGE,
+                "code": "not_published",
+                "year": year,
+                "week": week,
+                "team_rankings": [],
+                "conference_rankings": [],
+            }), 200
+        if data.get('detail') is not False:
             data = slim_rankings_for_list(data)
-        elif detail and 'rankings' in data:
-            # Avoid shipping the duplicate name-keyed map on the wire
-            data = {k: v for k, v in data.items() if k != 'rankings'}
         return jsonify(data)
     except Exception as e:
         print(f"Error during ranking calculation: {e}")
@@ -166,15 +212,20 @@ def get_rankings():
 @app.route('/rankings/team/<team_name>', methods=['GET'])
 def get_team_breakdown(team_name):
     try:
-        year = request.args.get('year', default=2023, type=int)
-        week = request.args.get('week', default=None, type=int)
-        # Offline: serve static/slim. Online: prefer full payload for wins_details.
+        parsed, rejected = evaluate_public_query('team', request.args, load_manifest())
+        if rejected:
+            body, status = rejected
+            return jsonify(body), status
+        year = parsed['year']
+        week = parsed['week']
+        # Published files only. A team page must not pull CFBD.
         data = get_or_calculate_rankings(
-            data_processor,
+            None,
             year,
             week,
             request.args,
-            prefer_static=is_cfbd_offline(),
+            prefer_static=True,
+            allow_compute=False,
         )
         if not data:
             return jsonify({"error": f"No game data found for {year}."}), 404

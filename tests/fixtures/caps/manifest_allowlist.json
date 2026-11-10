@@ -1,0 +1,9 @@
+{
+  "years": {
+    "2024": [10]
+  },
+  "reject_query": "/rankings?year=2024&week=10&team_quality_weight=0.5",
+  "allow_query": "/rankings?year=2024&week=10",
+  "unlisted_query": "/rankings?year=2024&week=3",
+  "matchup_reject_query": "/matchup?team_a=Oregon&team_b=Ohio%20State&year=2024&week=10&base_factor=10"
+}

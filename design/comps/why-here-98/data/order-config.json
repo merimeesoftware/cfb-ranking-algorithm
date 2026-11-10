@@ -1,0 +1,13 @@
+{
+ "note": "Ordering configs under D-20261018-198 (board order = Elo plus Heat; resume is a column, not in the order). ILLUSTRATIVE: the Heat weight is not frozen yet (#96 gate) and the Heat value here is a stand-in (1500 + Elo change over the last 3 weeks). elo_only is the order if Heat fails the #96 gate. Weights live here, never in the renderer.",
+ "heat_window_weeks": 3,
+ "variants": {
+  "elo_heat": {"label": "2-part", "parts": [
+   {"key": "strength", "name": "how they look", "field": "team_quality_score", "weight": 0.9},
+   {"key": "heat", "name": "Heat", "field": "heat", "weight": 0.1}
+  ]},
+  "elo_only": {"label": "1-part", "parts": [
+   {"key": "strength", "name": "how they look", "field": "team_quality_score", "weight": 1.0}
+  ]}
+ }
+}

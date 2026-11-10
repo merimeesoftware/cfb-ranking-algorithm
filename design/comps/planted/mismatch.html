@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Planted board</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #f4f1ea;
+      }
+      [data-check='board'] {
+        height: 100%;
+        background: #8b1e3f;
+      }
+      [data-check='title'] {
+        margin: 0;
+        padding: 16px;
+        color: #111111;
+        font: 24px/1.2 Arial, sans-serif;
+      }
+      [data-check='block'] {
+        width: 180px;
+        height: 72px;
+        margin-left: 140px;
+        background: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section data-check="board">
+        <h1 data-check="title">True Rankings</h1>
+        <div data-check="block"></div>
+      </section>
+    </main>
+  </body>
+</html>

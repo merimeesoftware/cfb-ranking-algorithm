@@ -505,7 +505,7 @@ Weekly agentic workflow (`.github/workflows/security-audit.md`) checks CORS, cac
 | `CACHE_CLEAR_SECRET` | Production cache ops (not in frontend build) | B+ | Random 32+ char string |
 | `R2_ACCESS_KEY_ID` | R2 cache backend | B+ | If not injected solely via wrangler bindings |
 | `R2_SECRET_ACCESS_KEY` | R2 cache backend | B+ | Store only in CF secrets / GH secrets |
-| `MINIMAX_API_KEY` | Agentic workflows (opencode engine) | Optional | For gh-aw scheduled agents |
+| `XAI_API_KEY` | Agentic workflows (opencode engine) | Optional | For gh-aw scheduled agents |
 
 ### 5.2 Repository variables (Settings → Secrets and variables → Actions → Variables)
 
@@ -651,7 +651,7 @@ curl -s -H "Authorization: Bearer $CFBD_API_KEY" \
 2. Run validation:
 
    ```bash
-   CF_API_URL="https://cfb-rankings-api.<account>.workers.dev"  # actual URL
+   CF_API_URL="{SITE_URL}"  # public origin, pending Michael's choice
 
    curl -sf "${CF_API_URL}/"
    time curl -sf --max-time 120 "${CF_API_URL}/rankings?year=2024&week=10" -o /dev/null

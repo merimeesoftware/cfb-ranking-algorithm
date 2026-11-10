@@ -17,7 +17,7 @@ def mock_rankings():
 
 def test_agent_blurb_stub_mode_fits_x_limit(client, monkeypatch, mock_rankings):
     monkeypatch.setenv('AI_MODE', 'stub')
-    monkeypatch.delenv('MINIMAX_API_KEY', raising=False)
+    monkeypatch.delenv('AI_XAI_HOST', raising=False)
     with patch('agent_service._static_blurb_for_team', return_value=None):
         with patch('agent_service.get_or_calculate_rankings', return_value=mock_rankings):
             # Clear any prior period cache so this assertion is stable across runs
@@ -68,7 +68,7 @@ def test_agent_blurb_caches_second_request(client, monkeypatch, mock_rankings):
 
 
 def test_agent_blurb_off_mode_still_returns_stub(client, monkeypatch, mock_rankings):
-    """Modal always needs a blurb; off mode uses stub text (no MiniMax)."""
+    """Modal always needs a blurb; off mode uses stub text."""
     monkeypatch.setenv('AI_MODE', 'off')
     with patch('agent_service._static_blurb_for_team', return_value=None):
         with patch('agent_service.get_or_calculate_rankings', return_value=mock_rankings):

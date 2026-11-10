@@ -60,16 +60,22 @@
 				fetchClimbBlurb(team.team_name, $filterState.year, $filterState.week),
 			]);
 			if (requestId !== detailRequestId) return;
-			const blurb = shareable?.blurb || whyBlurb || undefined;
+			const shareBusy = shareable?.busy === true;
+			const climbBusy = climb?.busy === true;
+			const blurb = shareBusy ? undefined : shareable?.blurb || whyBlurb || undefined;
 			selectedTeam = {
 				...team,
 				...detail,
 				...(blurb ? { why_blurb: blurb } : {}),
-				...(climb?.blurb ? { climb_blurb: climb.blurb } : {}),
+				...(climbBusy ? {} : climb?.blurb ? { climb_blurb: climb.blurb } : {}),
+				take_busy: shareBusy,
+				climb_busy: climbBusy,
 			};
-		} catch {
+		} catch (err) {
 			if (requestId !== detailRequestId) return;
-			detailError = 'Couldn’t pull game details right now.';
+			detailError = err instanceof Error && err.message
+				? err.message
+				: 'Couldn’t pull game details right now.';
 		} finally {
 			if (requestId === detailRequestId) {
 				detailLoading = false;

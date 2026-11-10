@@ -137,7 +137,7 @@ def stub_week_story(facts: Dict[str, Any]) -> Dict[str, Any]:
 
     Headline = biggest jumper vs leader still owning #1.
     Body = risers / taking heat / playoff-band shakeup / top 5 + debate hook.
-    Never leaks AI_MODE, stub, or MiniMax into fan-visible copy.
+    Never leaks AI_MODE, stub, or a provider name into fan-visible copy.
     """
     snap = facts.get('snapshot') or {}
     year = snap.get('year', '?')

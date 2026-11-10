@@ -1,0 +1,2031 @@
+{
+ "board-closed": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 1,
+    "prev_rank": 1,
+    "team_name": "Fixture North",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "8-0",
+    "final_ranking_score": 1860.0,
+    "resume_rank": 1,
+    "color": "#114488"
+   },
+   {
+    "rank": 2,
+    "prev_rank": 2,
+    "team_name": "Fixture South",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1770.0,
+    "resume_rank": 3,
+    "color": "#226644"
+   },
+   {
+    "rank": 3,
+    "prev_rank": 3,
+    "team_name": "Fixture East",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1680.0,
+    "resume_rank": 4,
+    "color": "#553311"
+   },
+   {
+    "rank": 4,
+    "prev_rank": 4,
+    "team_name": "Fixture West",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "5-3",
+    "final_ranking_score": 1635.0,
+    "resume_rank": 5,
+    "color": "#334455"
+   },
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": null
+ },
+ "row-open-mid": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1500,
+     "contribution": 1350.0
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1500,
+     "contribution": 150.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Ridge",
+    "rank": 6,
+    "final_ranking_score": 1590.0,
+    "gap": -90.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1600,
+      "contribution": -90.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 2,
+     "sos_rank": 1,
+     "sov_rank": 4
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1230.0,
+    "gap": 270.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 270.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 5,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  }
+ },
+ "row-open-mid-1part": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_only",
+  "parts_count": 1,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1600.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1585.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1200.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 1.0,
+     "value": 1500,
+     "contribution": 1500.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Harbor",
+    "rank": 6,
+    "final_ranking_score": 1585.0,
+    "gap": -85.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1585,
+      "contribution": -85.0
+     }
+    ],
+    "context": {
+     "resume_rank": 6,
+     "sos_rank": 8,
+     "sov_rank": 7
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1200.0,
+    "gap": 300.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 300.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 6,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  }
+ },
+ "negative-part": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1500,
+     "contribution": 1350.0
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1500,
+     "contribution": 150.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Ridge",
+    "rank": 6,
+    "final_ranking_score": 1590.0,
+    "gap": -90.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1600,
+      "contribution": -90.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 2,
+     "sos_rank": 1,
+     "sov_rank": 4
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1230.0,
+    "gap": 270.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 270.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 5,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  },
+  "focus": "negative"
+ },
+ "negative-part-1part": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_only",
+  "parts_count": 1,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1600.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1585.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1200.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 1.0,
+     "value": 1500,
+     "contribution": 1500.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Harbor",
+    "rank": 6,
+    "final_ranking_score": 1585.0,
+    "gap": -85.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1585,
+      "contribution": -85.0
+     }
+    ],
+    "context": {
+     "resume_rank": 6,
+     "sos_rank": 8,
+     "sov_rank": 7
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1200.0,
+    "gap": 300.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 300.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 6,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  },
+  "focus": "negative"
+ },
+ "heat": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 3,
+    "prev_rank": 3,
+    "team_name": "Fixture East",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1680.0,
+    "resume_rank": 4,
+    "color": "#553311"
+   },
+   {
+    "rank": 4,
+    "prev_rank": 4,
+    "team_name": "Fixture West",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "5-3",
+    "final_ranking_score": 1635.0,
+    "resume_rank": 5,
+    "color": "#334455"
+   },
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "record": "5-3",
+    "games_played": 8,
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "sos_rank": 8,
+    "sov_rank": 7,
+    "sos_rank_all_divisions": 8,
+    "sov_rank_all_divisions": 7,
+    "board_size": 8,
+    "color": "#772244",
+    "url": "{SITE_URL}/teams/fixture-harbor?year=2024&week=10",
+    "heat": 1685,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1585,
+     "contribution": 1426.5
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1685,
+     "contribution": 168.5
+    }
+   ],
+   "above": {
+    "team_name": "Fixture West",
+    "rank": 4,
+    "final_ranking_score": 1635.0,
+    "gap": -40.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1585,
+      "value_other": 1650,
+      "contribution": -58.5
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1685,
+      "value_other": 1500,
+      "contribution": 18.5
+     }
+    ],
+    "context": {
+     "resume_rank": 5,
+     "sos_rank": 3,
+     "sov_rank": 2
+    }
+   },
+   "below": {
+    "team_name": "Fixture Ridge",
+    "rank": 6,
+    "final_ranking_score": 1590.0,
+    "gap": 5.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1585,
+      "value_other": 1600,
+      "contribution": -13.5
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1685,
+      "value_other": 1500,
+      "contribution": 18.5
+     }
+    ],
+    "context": {
+     "resume_rank": 2,
+     "sos_rank": 1,
+     "sov_rank": 4
+    }
+   },
+   "games": [
+    {
+     "week": 2,
+     "opponent": "Fixture Ridge",
+     "opponent_rank": 6,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 5,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "home",
+     "result": "W",
+     "tag": "quality_win"
+    },
+    {
+     "week": 9,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    }
+   ]
+  },
+  "focus": "heat"
+ },
+ "row-open-first": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 1,
+    "prev_rank": 1,
+    "team_name": "Fixture North",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "8-0",
+    "final_ranking_score": 1860.0,
+    "resume_rank": 1,
+    "color": "#114488"
+   },
+   {
+    "rank": 2,
+    "prev_rank": 2,
+    "team_name": "Fixture South",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "6-2",
+    "final_ranking_score": 1770.0,
+    "resume_rank": 3,
+    "color": "#226644"
+   },
+   {
+    "rank": 3,
+    "prev_rank": 3,
+    "team_name": "Fixture East",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1680.0,
+    "resume_rank": 4,
+    "color": "#553311"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 1,
+    "prev_rank": 1,
+    "team_name": "Fixture North",
+    "conference": "Synthetic East",
+    "record": "8-0",
+    "games_played": 8,
+    "final_ranking_score": 1860.0,
+    "resume_rank": 1,
+    "sos_rank": 2,
+    "sov_rank": 1,
+    "sos_rank_all_divisions": 2,
+    "sov_rank_all_divisions": 1,
+    "board_size": 8,
+    "color": "#114488",
+    "url": "{SITE_URL}/teams/fixture-north?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 2,
+     "wins": 2,
+     "losses": 0
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1900,
+     "contribution": 1710.0
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1500,
+     "contribution": 150.0
+    }
+   ],
+   "above": null,
+   "below": {
+    "team_name": "Fixture South",
+    "rank": 2,
+    "final_ranking_score": 1770.0,
+    "gap": 90.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1900,
+      "value_other": 1800,
+      "contribution": 90.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 3,
+     "sos_rank": 4,
+     "sov_rank": 3
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 3,
+     "opponent": "Fixture Mesa",
+     "opponent_rank": 7,
+     "venue": "away",
+     "result": "W",
+     "tag": "cupcake"
+    }
+   ]
+  }
+ },
+ "row-open-last": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "record": "1-7",
+    "games_played": 8,
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "sos_rank": 7,
+    "sov_rank": 8,
+    "sos_rank_all_divisions": 7,
+    "sov_rank_all_divisions": 8,
+    "board_size": 8,
+    "color": "#222266",
+    "url": "{SITE_URL}/teams/fixture-dale?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 0,
+     "losses": 3
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1200,
+     "contribution": 1080.0
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1500,
+     "contribution": 150.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Mesa",
+    "rank": 7,
+    "final_ranking_score": 1500.0,
+    "gap": -270.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1200,
+      "value_other": 1500,
+      "contribution": -270.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 7,
+     "sos_rank": 5,
+     "sov_rank": 6
+    }
+   },
+   "below": null,
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture West",
+     "opponent_rank": 4,
+     "venue": "home",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Mesa",
+     "opponent_rank": 7,
+     "venue": "away",
+     "result": "L",
+     "tag": "bad_loss"
+    }
+   ]
+  }
+ },
+ "early-week": {
+  "season": 2024,
+  "week": 1,
+  "variant": "elo_only",
+  "parts_count": 1,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 4,
+    "prev_rank": null,
+    "team_name": "Fixture West",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "0-0",
+    "final_ranking_score": 1650.0,
+    "resume_rank": 6,
+    "color": "#334455"
+   },
+   {
+    "rank": 5,
+    "prev_rank": null,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "1-0",
+    "final_ranking_score": 1600.0,
+    "resume_rank": 5,
+    "color": "#445522"
+   },
+   {
+    "rank": 6,
+    "prev_rank": null,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "1-0",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 1,
+    "color": "#663300"
+   },
+   {
+    "rank": 7,
+    "prev_rank": null,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "0-0",
+    "final_ranking_score": 1400.0,
+    "resume_rank": 7,
+    "color": "#772244"
+   },
+   {
+    "rank": 8,
+    "prev_rank": null,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "0-1",
+    "final_ranking_score": 1200.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 6,
+    "prev_rank": null,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "1-0",
+    "games_played": 1,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 1,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=1"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 1.0,
+     "value": 1500,
+     "contribution": 1500.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Ridge",
+    "rank": 5,
+    "final_ranking_score": 1600.0,
+    "gap": -100.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1600,
+      "contribution": -100.0
+     }
+    ],
+    "context": {
+     "resume_rank": 5,
+     "sos_rank": 1,
+     "sov_rank": 4
+    }
+   },
+   "below": {
+    "team_name": "Fixture Harbor",
+    "rank": 7,
+    "final_ranking_score": 1400.0,
+    "gap": 100.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1400,
+      "contribution": 100.0
+     }
+    ],
+    "context": {
+     "resume_rank": 7,
+     "sos_rank": 8,
+     "sov_rank": 7
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    }
+   ]
+  }
+ },
+ "loading": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "status": "loading"
+  }
+ },
+ "error": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "status": "error"
+  }
+ },
+ "season-unavailable": {
+  "season": 2026,
+  "week": 8,
+  "board": null,
+  "open": null,
+  "status": "unavailable"
+ },
+ "sheet-390": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1500,
+     "contribution": 1350.0
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1500,
+     "contribution": 150.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Ridge",
+    "rank": 6,
+    "final_ranking_score": 1590.0,
+    "gap": -90.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1600,
+      "contribution": -90.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 2,
+     "sos_rank": 1,
+     "sov_rank": 4
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1230.0,
+    "gap": 270.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 270.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 5,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  },
+  "sheet": true
+ },
+ "share-card": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_heat",
+  "parts_count": 2,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1595.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1590.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1230.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10",
+    "heat": 1500,
+    "recent": {
+     "k": 3,
+     "wins": 2,
+     "losses": 1
+    }
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 0.9,
+     "value": 1500,
+     "contribution": 1350.0
+    },
+    {
+     "key": "heat",
+     "name": "Heat",
+     "weight": 0.1,
+     "value": 1500,
+     "contribution": 150.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Ridge",
+    "rank": 6,
+    "final_ranking_score": 1590.0,
+    "gap": -90.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1600,
+      "contribution": -90.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 2,
+     "sos_rank": 1,
+     "sov_rank": 4
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1230.0,
+    "gap": 270.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 0.9,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 270.0
+     },
+     {
+      "key": "heat",
+      "name": "Heat",
+      "weight": 0.1,
+      "value_self": 1500,
+      "value_other": 1500,
+      "contribution": 0.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 5,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  }
+ },
+ "share-card-1part": {
+  "season": 2024,
+  "week": 10,
+  "variant": "elo_only",
+  "parts_count": 1,
+  "board_size": 8,
+  "board": [
+   {
+    "rank": 5,
+    "prev_rank": 5,
+    "team_name": "Fixture Ridge",
+    "conference": "Synthetic West",
+    "conference_type": "Power 4",
+    "record": "7-1",
+    "final_ranking_score": 1600.0,
+    "resume_rank": 2,
+    "color": "#445522"
+   },
+   {
+    "rank": 6,
+    "prev_rank": 6,
+    "team_name": "Fixture Harbor",
+    "conference": "Synthetic East",
+    "conference_type": "Power 4",
+    "record": "5-3",
+    "final_ranking_score": 1585.0,
+    "resume_rank": 6,
+    "color": "#772244"
+   },
+   {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "conference_type": "Group of 5",
+    "record": "4-4",
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "color": "#663300"
+   },
+   {
+    "rank": 8,
+    "prev_rank": 8,
+    "team_name": "Fixture Dale",
+    "conference": "Synthetic West",
+    "conference_type": "Group of 5",
+    "record": "1-7",
+    "final_ranking_score": 1200.0,
+    "resume_rank": 8,
+    "color": "#222266"
+   }
+  ],
+  "open": {
+   "team": {
+    "rank": 7,
+    "prev_rank": 7,
+    "team_name": "Fixture Mesa",
+    "conference": "Synthetic East",
+    "record": "4-4",
+    "games_played": 8,
+    "final_ranking_score": 1500.0,
+    "resume_rank": 7,
+    "sos_rank": 5,
+    "sov_rank": 6,
+    "sos_rank_all_divisions": 5,
+    "sov_rank_all_divisions": 6,
+    "board_size": 8,
+    "color": "#663300",
+    "url": "{SITE_URL}/teams/fixture-mesa?year=2024&week=10"
+   },
+   "parts": [
+    {
+     "key": "strength",
+     "name": "how they look",
+     "weight": 1.0,
+     "value": 1500,
+     "contribution": 1500.0
+    }
+   ],
+   "above": {
+    "team_name": "Fixture Harbor",
+    "rank": 6,
+    "final_ranking_score": 1585.0,
+    "gap": -85.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1585,
+      "contribution": -85.0
+     }
+    ],
+    "context": {
+     "resume_rank": 6,
+     "sos_rank": 8,
+     "sov_rank": 7
+    }
+   },
+   "below": {
+    "team_name": "Fixture Dale",
+    "rank": 8,
+    "final_ranking_score": 1200.0,
+    "gap": 300.0,
+    "parts": [
+     {
+      "key": "strength",
+      "name": "how they look",
+      "weight": 1.0,
+      "value_self": 1500,
+      "value_other": 1200,
+      "contribution": 300.0
+     }
+    ],
+    "context": {
+     "resume_rank": 8,
+     "sos_rank": 7,
+     "sov_rank": 8
+    }
+   },
+   "games": [
+    {
+     "week": 1,
+     "opponent": "Fixture Dale",
+     "opponent_rank": 8,
+     "venue": "home",
+     "result": "W",
+     "tag": "cupcake"
+    },
+    {
+     "week": 4,
+     "opponent": "Fixture North",
+     "opponent_rank": 1,
+     "venue": "away",
+     "result": "L",
+     "tag": null
+    },
+    {
+     "week": 8,
+     "opponent": "Fixture Harbor",
+     "opponent_rank": 6,
+     "venue": "home",
+     "result": "W",
+     "tag": null
+    }
+   ]
+  }
+ }
+}

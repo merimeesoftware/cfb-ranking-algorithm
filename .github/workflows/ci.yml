@@ -23,7 +23,7 @@ jobs:
       - name: Install and lint
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt flake8 pytest
+          pip install -r requirements.txt flake8 pytest pyyaml
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics \
             --exclude=frontend,node_modules,venv,.venv
 
@@ -31,6 +31,36 @@ jobs:
         run: pytest -v --ignore=frontend
         env:
           CFBD_API_KEY: test-key-for-unit-tests
+
+      - name: CFBD monthly budget
+        run: python scripts/check_cfbd_month.py
+
+      - name: AI provider caps and retired name
+        run: python scripts/check_ai_providers.py
+
+      - name: Workers AI neuron budget
+        run: python scripts/check_workers_ai_neurons.py
+
+      - name: Weekly dollar cap
+        run: python scripts/check_weekly_usd.py
+
+  worker:
+    name: Worker caps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install and test paid-call caps
+        working-directory: worker
+        run: |
+          npm ci
+          node --experimental-strip-types --import ./test/register-cf-loader.mjs --test test/caps.test.ts
 
   frontend:
     name: Frontend
@@ -46,7 +76,28 @@ jobs:
 
       - name: Install, check, and build
         working-directory: frontend
+        env:
+          PUBLIC_SITE_URL: ""
         run: |
           npm ci
           npm run check
           npm run build
+
+      - name: CFBD credit on the board
+        run: python3 scripts/check_cfbd_credit.py --built
+
+      - name: Public host guard
+        env:
+          PUBLIC_SITE_URL: ""
+        run: |
+          node scripts/check-public-host.mjs --self-test
+          node scripts/check-public-host.mjs frontend/build worker/src --python --public-docs
+
+      - name: Build with PUBLIC_SITE_URL set
+        working-directory: frontend
+        env:
+          PUBLIC_SITE_URL: https://example.test
+        run: npm run build
+
+      - name: Assert set site URL
+        run: node scripts/check-public-host.mjs --assert-set https://example.test frontend/build

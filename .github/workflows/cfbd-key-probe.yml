@@ -1,0 +1,37 @@
+# One /info call, outside the cron budget. Prints patronLevel and remainingCalls.
+# Runs on manual dispatch, or on a push to main that touches the probe.
+# Pull requests do not receive the key.
+
+name: CFBD key probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/cfbd-key-probe.yml'
+      - 'scripts/cfbd_key_probe.py'
+
+permissions: {}
+
+jobs:
+  probe:
+    name: One CFBD /info call
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Probe /info
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+        run: python scripts/cfbd_key_probe.py

@@ -7,10 +7,16 @@ import requests
 from cache import get_cache, TTL_TEAMS, TTL_GAMES_HISTORICAL, TTL_GAMES_CURRENT, get_games_ttl
 from spend_guards import (
     CFBDOfflineError,
+    cfbd_remaining_blocked,
+    enforce_cfbd_remaining,
     is_cfbd_offline,
     register_live_cfbd_call,
     resolve_cfbd_api_key,
 )
+
+
+class CFBDRequestError(RuntimeError):
+    """CFBD failed or returned an unusable body. Callers must not treat that as no games."""
 
 
 class CFBDApiClient:
@@ -27,8 +33,7 @@ class CFBDApiClient:
                 api_key = 'offline-placeholder'
                 if not is_cfbd_offline():
                     raise ValueError(
-                        "API key not found. Set CFBD_API_KEY (slot A) and/or "
-                        "CFBD_API_KEY_B (slot B); choose with CFBD_API_KEY_SLOT=A|B."
+                        "API key not found. Set CFBD_API_KEY."
                     )
         
         self.headers = {
@@ -48,38 +53,67 @@ class CFBDApiClient:
                 f'CFBD offline: refused live call to {endpoint}. '
                 'Serve static rankings or warm .cache/ first.'
             )
+        if cfbd_remaining_blocked():
+            raise CFBDOfflineError(
+                'CFBD remaining calls are below the floor. Further live calls are stopped.'
+            )
 
         try:
             call_n = register_live_cfbd_call()
             response = requests.get(url, headers=self.headers, params=params, timeout=30)
-            remaining = response.headers.get('X-CallLimit-Remaining')
+            remaining = enforce_cfbd_remaining(response.headers)
             print(
                 f"CFBD LIVE #{call_n}: {endpoint} params={params} "
                 f"status={response.status_code} remaining={remaining}"
             )
+            if response.status_code in (401, 403):
+                raise CFBDRequestError(
+                    f'CFBD rejected the key for {endpoint} (HTTP {response.status_code})'
+                )
             response.raise_for_status()
-            return response.json()
+            payload = response.json()
         except CFBDOfflineError:
             raise
+        except CFBDRequestError:
+            raise
         except requests.exceptions.RequestException as e:
-            print(f"API Request Error to {endpoint}: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"Response: {e.response.text}")
-            return []
+            status = None
+            if getattr(e, 'response', None) is not None:
+                status = e.response.status_code
+            print(f"API Request Error to {endpoint}: HTTP {status}")
+            raise CFBDRequestError(
+                f'CFBD request failed for {endpoint} (HTTP {status})'
+            ) from e
+        except ValueError as e:
+            print(f"API Request Error to {endpoint}: invalid JSON")
+            raise CFBDRequestError(f'CFBD returned invalid JSON for {endpoint}') from e
+        if payload is None:
+            raise CFBDRequestError(f'CFBD returned an empty body for {endpoint}')
+        return payload
 
     def _get_cache_key(self, prefix: str, *args, **kwargs) -> str:
         """Generate a cache key for an API call."""
         return self._cache._generate_key(prefix, *args, **kwargs)
 
-    def get_games(self, year: int, week: Optional[int] = None, season_type: str = 'regular') -> List[Dict]:
-        """Fetch games with caching, error handling and data transformation"""
+    def get_games(
+        self,
+        year: int,
+        week: Optional[int] = None,
+        season_type: str = 'regular',
+        refresh: bool = False,
+    ) -> List[Dict]:
+        """Fetch games with caching, error handling and data transformation.
+
+        ``refresh`` skips a restored snapshot. The current-season cron sets it
+        so a 30-day cache entry cannot hide the next Sunday's games.
+        """
         cache_key = self._get_cache_key('games', year, week, season_type)
-        
-        # Try cache first
-        cached = self._cache.get(cache_key)
-        if cached is not None:
-            print(f"Cache HIT: games {year} week={week} type={season_type}")
-            return cached
+
+        if not refresh:
+            cached = self._cache.get(cache_key)
+            if cached is not None:
+                print(f"Cache HIT: games {year} week={week} type={season_type}")
+                return cached
         
         print(f"Cache MISS: games {year} week={week} type={season_type}")
         
@@ -90,39 +124,15 @@ class CFBDApiClient:
         if week is not None:
             params['week'] = week
 
-        try:
-            games = self._make_request('/games', params)
-        except CFBDOfflineError as e:
-            print(f"CFBD offline on games miss: {e}")
-            return []
+        games = self._make_request('/games', params)
+        if not isinstance(games, list):
+            raise CFBDRequestError('CFBD /games did not return a list')
         result = [self._transform_game(game) for game in games if self._is_valid_game(game)]
         
         # Cache with appropriate TTL
         if result:
             ttl = get_games_ttl(year)
             self._cache.set(cache_key, result, ttl, prefix='games')
-        
-        return result
-
-    def get_team_info(self) -> Dict[str, str]:
-        """Fetch team conference affiliations with caching"""
-        cache_key = self._get_cache_key('team_info')
-        
-        cached = self._cache.get(cache_key)
-        if cached is not None:
-            print("Cache HIT: team_info")
-            return cached
-        
-        print("Cache MISS: team_info")
-        try:
-            teams = self._make_request('/teams/fbs')
-        except CFBDOfflineError as e:
-            print(f"CFBD offline on team_info miss: {e}")
-            return {}
-        result = {team['school']: team['conference'] for team in teams}
-        
-        if result:
-            self._cache.set(cache_key, result, TTL_TEAMS, prefix='teams')
         
         return result
 
@@ -136,11 +146,9 @@ class CFBDApiClient:
             return cached
         
         print("Cache MISS: teams_with_logos")
-        try:
-            teams = self._make_request('/teams')
-        except CFBDOfflineError as e:
-            print(f"CFBD offline on teams_with_logos miss: {e}")
-            return {}
+        teams = self._make_request('/teams')
+        if not isinstance(teams, list):
+            raise CFBDRequestError('CFBD /teams did not return a list')
         result = {}
         for team in teams:
             result[team['school']] = {
@@ -159,35 +167,11 @@ class CFBDApiClient:
         
         return result
 
-    def get_rankings(self, year: int, week: Optional[int] = None) -> List[Dict]:
-        """Fetch team rankings with caching"""
-        cache_key = self._get_cache_key('rankings', year, week)
-        
-        cached = self._cache.get(cache_key)
-        if cached is not None:
-            print(f"Cache HIT: rankings {year} week={week}")
-            return cached
-        
-        print(f"Cache MISS: rankings {year} week={week}")
-        params = {'year': year}
-        if week is not None:
-            params['week'] = week
-
-        try:
-            result = self._make_request('/rankings', params)
-        except CFBDOfflineError as e:
-            print(f"CFBD offline on rankings miss: {e}")
-            return []
-        
-        if result:
-            ttl = get_games_ttl(year)
-            self._cache.set(cache_key, result, ttl, prefix='rankings_api')
-        
-        return result
-
     def _transform_game(self, game: Dict) -> Dict:
         """Transform CFBD game dict to internal format"""
         return {
+            'id': game.get('id'),
+            'completed': game.get('completed'),
             'week': game.get('week'),
             'year': game.get('season'),
             'home_team_name': game.get('homeTeam'),
@@ -209,8 +193,6 @@ class CFBDApiClient:
     def _is_valid_game(game: Dict) -> bool:
         """Validate game has required data"""
         return (
-            game.get('homePoints') is not None 
-            and game.get('awayPoints') is not None
-            and game.get('homeTeam') is not None
+            game.get('homeTeam') is not None
             and game.get('awayTeam') is not None
         )

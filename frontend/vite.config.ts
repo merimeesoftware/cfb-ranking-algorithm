@@ -8,6 +8,10 @@ import { defineConfig } from 'vite';
 const apiProxyTarget = process.env.API_PROXY_TARGET || 'http://localhost:5001';
 
 export default defineConfig({
+	// PUBLIC_ is inlined into the client bundle. Only public settings belong
+	// there (PUBLIC_SITE_URL and the Turnstile site key). A secret, token,
+	// or password must not use this prefix.
+	envPrefix: ['VITE_', 'PUBLIC_'],
 	plugins: [
 		tailwindcss(),
 		sveltekit({

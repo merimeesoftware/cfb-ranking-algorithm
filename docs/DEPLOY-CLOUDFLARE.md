@@ -34,7 +34,7 @@ One `wrangler deploy` uploads **both** the frontend build and the API container 
 |---|------------------------|----------------|
 | **When** | Live site on `main` | Staging / testing before prod |
 | **Worker name** | `true-rankings-cfb` | `cfb-rankings-dev` |
-| **URL** | `https://true-rankings-cfb.<account>.workers.dev` | `https://cfb-rankings-dev.<account>.workers.dev` |
+| **Public URL** | Custom domain: pending Michael's choice | Custom domain: pending Michael's choice |
 | **How** | Workers Builds on `main` (automatic) or `npm run deploy` | Manual `npm run deploy:dev` only if you want a second Worker |
 
 **Workers Builds (recommended):**
@@ -45,15 +45,16 @@ You do **not** need two Workers unless you want a permanently separate staging U
 
 ---
 
-## Custom domain (True Rankings)
+## Custom domain
 
-Public brand hostname target: **`truerankings.com`** (fallbacks: `truecfb.com`, `truerankings.football`).
+Custom domain: pending Michael's choice. Do not name a hostname in the repo.
 
-1. Buy/DNS the domain at your registrar (or Cloudflare Registrar).
-2. Cloudflare dashboard → **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Domains & Routes** → **Add** → Custom Domain → `truerankings.com` (+ `www` if desired).
-3. Set frontend build var / secret `PUBLIC_SITE_URL=https://truerankings.com` so canonical, OG, sitemap, and citation links match.
+When a domain is chosen:
 
-Keep `robots.txt` Sitemap line and `scripts/generate-sitemap.mjs` aligned with `PUBLIC_SITE_URL`.
+1. Attach it to Worker `true-rankings-cfb` in Cloudflare → **Domains & Routes**.
+2. Set the frontend build variable `PUBLIC_SITE_URL={SITE_URL}` (absolute `http(s)` origin, no trailing slash).
+
+Until `PUBLIC_SITE_URL` is set, the build uses same-origin relative links, omits the absolute canonical and `og:url`, and does not ship `sitemap.xml` or a robots `Sitemap:` line. `scripts/generate-public-files.mjs` writes `robots.txt`, `llms.txt`, `llms-full.txt`, and the sitemap at build time. Vite exposes `PUBLIC_*` to the client, so that prefix is not for secrets. CI checks an unset build and a build with `PUBLIC_SITE_URL=https://example.test`, and scans `frontend/build`, `worker/src`, the Python sources, and the public Markdown docs for a hard-coded public host.
 
 ---
 
@@ -64,7 +65,7 @@ Keep `robots.txt` Sitemap line and `scripts/generate-sitemap.mjs` aligned with `
 1. **Workers & Pages** → `true-rankings-cfb` → **Settings** → **Variables and Secrets**
 2. **Add** → type **Secret** → name `CFBD_API_KEY` → paste value → **Encrypt** → **Deploy**
 
-Repeat for `MINIMAX_API_KEY` / `CACHE_CLEAR_SECRET` if needed. Values are encrypted and never shown again.
+Repeat for `CACHE_CLEAR_SECRET` if cache clear should be enabled, and for `SPEND_KILL_SECRET`. DevSecOps provisions on Michael's yes (D-20261019-174). Values are encrypted and never shown again. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. Do not create or paste secret values from this repo.
 
 For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Worker, or use `wrangler secret put CFBD_API_KEY --env dev` once.
 
@@ -115,8 +116,41 @@ Confirm Workers **Paid** is enabled — Containers are Paid-only.
 | Secret | Required |
 |--------|----------|
 | `CFBD_API_KEY` | Yes (live rankings) |
-| `MINIMAX_API_KEY` | Optional (`AI_MODE=live`) |
-| `CACHE_CLEAR_SECRET` | Optional (protects `POST /api/cache/clear`) |
+| `XAI_API_KEY` | provisioned by DevSecOps on Michael's yes. Not a var. The Worker sends it only to the AI Gateway grok path. |
+| `CACHE_CLEAR_SECRET` | Optional. Protects `POST /api/cache/clear`. Header `X-Cache-Secret` only. The Worker returns 404 unless this matches. The container still compares with `hmac.compare_digest`. |
+| `TURNSTILE_SECRET_KEY` | When the widget is on. siteverify for `/api/agent/*`. Stays on the Worker. Unset, production logs a warning and keeps the daily cap and per-IP limits. `TURNSTILE_REQUIRED=1` on `env.dev` refuses when it is missing. |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Frontend build variable, not a Worker secret. The widget renders only when this is set. Build this into the frontend before setting `TURNSTILE_SECRET_KEY`. If the secret is set first, every agent call returns "Try again." until the next frontend build includes the site key. |
+| `SPEND_KILL_SECRET` | DevSecOps provisions on Michael's yes (D-20261019-174). Protects `POST /api/spend/kill`. Header `X-Spend-Kill-Secret` only. Stays on the Worker. Unset returns 403 and does not fall back to `CACHE_CLEAR_SECRET`. |
+
+Set or clear the stored kill latch with `POST /api/spend/kill` and header `X-Spend-Kill-Secret`. The JSON body may contain only `ai_kill` and `cfbd_kill`, each `0` or `1`. `1` latches the flag. `0` clears it. DevSecOps provisions on Michael's yes (D-20261019-174). This repo does not set or read the value.
+
+### Paid-call caps (deploy migration)
+
+Production `AI_MODE=live` (Workers AI) and `CFBD_OFFLINE=1` in `wrangler.toml`. Preview and `env.dev` stay `AI_MODE=stub`.
+
+| Control | Default when unset | Where it is enforced |
+|---------|--------------------|----------------------|
+| `XAI_MAX_CALLS` / `XAI_ENABLED` | hard **0** / off | xAI is refused even when `XAI_API_KEY` is set. The gateway path stays in the Worker and is not called. |
+| `XAI_WEEKLY_USD_CAP` | **0** | Rolling ISO-week dollar stop on `spend-budget` (`xai:usd:YYYY-Www`). CI fails when this plus the CFBD paid tier reaches $5. The tier is $0.23 only if `CFBD_TIER=1`. |
+| `AI_MAX_CALLS` | **100/day** | Workers AI on `spend-budget`. `@cf/meta/llama-3.1-8b-instruct-fp8`, max 80 output tokens, 4000 input characters. 100 × 58 Neurons = 5800, ceiling 8000. A higher `AI_MAX_CALLS` still stops at 100. |
+| `CFBD_MAX_CALLS` | **4/day** in production `wrangler.toml` (unset code fallback 25/day, then a per-run ceiling of 8) | provider `cfbd`, source `app`. Prod stays `CFBD_OFFLINE=1`. Visitor calls in the monthly model are 0. Cron cap is 8/Sunday. In-season cron worst case 8×5 = 40, expected cold month 4×5 = 20, both under 50. Published priors skip the two prior-season calls. The 12-month average with a 4/day visitor budget was 158; the true worst month at that budget is 8×5+4×31 = 164. The guarded month uses visitor budget 0. Shares 2,800+150+50 = 3,000 hard cap (Tier 2 is 30,000). 150 is reserved for MCP via #115. |
+| `AI_KILL` | off (`0`) | Stops xAI and Workers AI |
+| `XAI_KILL` / `WORKERS_AI_KILL` | off (`0`) | Stops that provider |
+| `CFBD_KILL` | off (`0`) | Worker gate and Flask |
+| Visitor rate limit | 60/min on `/api/*`, 10/min on `/api/agent/*` | Workers Rate Limiting bindings, key = `CF-Connecting-IP` |
+| Preview / dev versions | `AI_MODE=stub`, `CFBD_OFFLINE=1` | Worker, unless `PREVIEW_AI_MODE` / `PREVIEW_CFBD_OFFLINE` is set |
+| `CF_ACCOUNT_ID` | non-secret var, empty until Release Ops sets it | Account segment of the AI Gateway URL |
+| `AI_GATEWAY_ID` | `true-rankings` | Gateway id for both providers |
+
+Both providers go through Cloudflare AI Gateway, for logging only. xAI uses `https://gateway.ai.cloudflare.com/v1/{CF_ACCOUNT_ID}/{AI_GATEWAY_ID}/grok/v1/chat/completions`. Workers AI passes `gateway: { id: AI_GATEWAY_ID }` on `env.AI.run`, with cache skipped. The `spend-budget` instance stays the source of truth for budgets.
+
+Release Ops, once: create AI Gateway `true-rankings` in the account. Do not create it from this repo. Then set the non-secret var `CF_ACCOUNT_ID` to that account id. An empty account id refuses the live xAI call.
+
+This change does not add a Durable Object migration. The global counters use SQLite storage on the existing `CfbApiContainer` class, instance name `spend-budget`, and that fetch returns before the container process starts. Workers Builds on pull requests upload a version (`wrangler versions upload`). A new migration tag is rejected there (`pending Durable Object migration`). The `API_RATE_LIMITER` (`namespace_id` `9301`) and `AGENT_RATE_LIMITER` (`namespace_id` `9302`) bindings are created on deploy. Dev uses `9311` and `9312` so it does not share production counters. No Cloudflare dashboard rate-limit rule is required for this change.
+
+Flask reaches the Durable Object by calling `http://spend.budget/consume`. The container outbound handler (`CfbApiContainer.outboundByHost`, which needs `ContainerProxy` exported from the Worker) turns that into a DO request. If the gate cannot be reached, the live call is refused.
+
+`/api/rankings`, `/api/matchup`, and `/api/weeks` serve the precomputed manifest only. Custom settings return `400` JSON. A visitor rate limit returns `429` with `{"busy": true, "message": "Busy right now. Try again later."}`. An explain cap or kill switch returns that same busy flag with the stub explanation. `/agent/explain` accepts an allowlisted `question_id` only.
 
 ---
 
@@ -141,12 +175,12 @@ First deploy builds the Docker image and can take several minutes. The Worker ma
 ### Verify
 
 ```bash
-WORKER_URL="https://true-rankings-cfb.<account>.workers.dev"
+WORKER_URL="{SITE_URL}"
 curl -sf "${WORKER_URL}/"
 curl -sf --max-time 120 "${WORKER_URL}/api/rankings?year=2024&week=10" | head -c 200
 ```
 
-Open the Worker URL in a browser — rankings for 2024 should load.
+Open `{SITE_URL}` in a browser once the domain is chosen — rankings for 2024 should load.
 
 ### 5. Connect GitHub (optional CI deploy)
 
@@ -154,7 +188,7 @@ Open the Worker URL in a browser — rankings for 2024 should load.
 
 Repository variables:
 - `ENABLE_CLOUDFLARE_DEPLOY` = `true`
-- `WORKER_URL` = your production Worker URL (for smoke tests)
+- `WORKER_URL` = `{SITE_URL}` once the custom domain is chosen (for smoke tests)
 
 Repository secrets:
 - `CLOUDFLARE_API_TOKEN`
@@ -176,7 +210,7 @@ Porkbun has no Cloudflare integration — DNS is manual.
 
 Worker → **Domains & Routes** → note the custom domain target, then at Porkbun add a **CNAME** for your subdomain.
 
-After custom domain is live, set the `CORS_ORIGINS` secret to your domain.
+After custom domain is live, set the `CORS_ORIGINS` secret to that exact origin. Unset means same-origin only. `*` is ignored, and credentialed CORS is not enabled.
 
 ---
 
@@ -198,7 +232,7 @@ cd frontend && npm run dev                              # :5173, proxies /api
 
 ### Planned
 
-- Playwright E2E against `cfb-rankings-dev.*.workers.dev`
+- Playwright E2E against `{SITE_URL}` after the custom domain is chosen
 - Impeccable frontend audit in CI
 - Auto-promote dev → prod after tests pass
 

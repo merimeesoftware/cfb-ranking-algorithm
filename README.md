@@ -39,7 +39,7 @@ The system processes games sequentially through the season week-by-week, allowin
 3. Set up your API key:
    - Copy `.env.example` to `.env`
    - Add your CFBD API key: `CFBD_API_KEY=your_api_key_here`
-   - Optional: `MINIMAX_API_KEY` for agent features
+   - Leave `AI_MODE=stub`. `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes and is not a local value.
 
 ## Deployment
 
@@ -52,7 +52,7 @@ Production uses a **single Cloudflare Worker** deploy (static frontend + API con
 
 | Where | Role |
 |-------|------|
-| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`, optional `MINIMAX_API_KEY` |
+| **Cloudflare** → Worker → Variables and Secrets | **Production** — `CFBD_API_KEY`. `SPEND_KILL_SECRET`: DevSecOps provisions on Michael's yes (D-20261019-174). `XAI_API_KEY` is provisioned by DevSecOps on Michael's yes. |
 | **Cursor Secrets tab** | Cloud Agent VM only while coding — [.cursor/SECRETS.md](.cursor/SECRETS.md) |
 | **`.env` locally** | Your laptop |
 
@@ -62,8 +62,8 @@ The frontend calls `/api/*` on the same origin — no `VITE_API_URL` or `API_ORI
 
 ```bash
 npm ci --prefix frontend && npm ci --prefix worker && npm ci
-npm run deploy          # production → true-rankings-cfb.<account>.workers.dev
-npm run deploy:dev      # dev → cfb-rankings-dev.<account>.workers.dev
+npm run deploy          # production Worker true-rankings-cfb
+npm run deploy:dev      # optional dev Worker cfb-rankings-dev
 wrangler secret put CFBD_API_KEY
 ```
 

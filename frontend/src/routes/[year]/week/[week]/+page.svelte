@@ -9,7 +9,7 @@
 		TAGLINE,
 		pageTitle,
 		weekPath,
-		SITE_ORIGIN,
+		publicUrl,
 		citationText,
 	} from '$lib/brand';
 
@@ -34,7 +34,7 @@
 		'@type': 'ItemList',
 		name: `${BRAND_NAME} ${data.year} Week ${data.week}`,
 		description,
-		url: `${SITE_ORIGIN}${path}`,
+		url: publicUrl(path),
 		numberOfItems: Math.min(25, data.teams.length),
 		itemListElement: data.teams.slice(0, 25).map((t, i) => ({
 			'@type': 'ListItem',

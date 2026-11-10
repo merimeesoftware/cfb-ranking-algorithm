@@ -23,11 +23,8 @@ Raw JSON: [`algo_eval_results.json`](algo_eval_results.json).
 | Action | Live calls |
 |--------|------------|
 | Warm 2017–2018 (for 2019 priors) | **4** |
-| Slot A remaining after warm | ≈814/1000 |
+| Remaining after warm | ≈814/1000 |
 | Eval itself | **0** (offline + cache) |
-
-Dual keys: `CFBD_API_KEY` / `CFBD_API_KEY_B` + `CFBD_API_KEY_SLOT=A|B`
-(see [`.cursor/SECRETS.md`](../.cursor/SECRETS.md)). Slot B not injected on this VM yet.
 
 ## Reference ranks A/B (with priors)
 

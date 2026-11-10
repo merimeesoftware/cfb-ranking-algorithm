@@ -13,16 +13,67 @@ def test_index(client):
     data = response.get_json()
     assert 'True Rankings' in data['message']
     assert data.get('rating') == 'TR+'
+    catalog = response.get_data(as_text=True)
+    assert '/cache/clear' not in catalog
+    assert '/cache/stats' not in catalog
+    assert '/drop/subscribe' not in catalog
+    assert '/agent/health' not in catalog
+
+
+def test_cors_allowlist_has_no_wildcard_or_credentials(client, monkeypatch):
+    monkeypatch.delenv('CORS_ORIGINS', raising=False)
+    unset = client.get('/', headers={'Origin': 'https://evil.example'})
+    assert 'Access-Control-Allow-Origin' not in unset.headers
+    assert 'Access-Control-Allow-Credentials' not in unset.headers
+
+    monkeypatch.setenv('CORS_ORIGINS', '*')
+    wildcard = client.get('/', headers={'Origin': 'https://evil.example'})
+    assert 'Access-Control-Allow-Origin' not in wildcard.headers
+    assert 'Access-Control-Allow-Credentials' not in wildcard.headers
+
+    monkeypatch.setenv('CORS_ORIGINS', 'https://board.example.test, *')
+    denied = client.get('/', headers={'Origin': 'https://evil.example'})
+    assert 'Access-Control-Allow-Origin' not in denied.headers
+    allowed = client.get('/', headers={'Origin': 'https://board.example.test'})
+    assert allowed.headers['Access-Control-Allow-Origin'] == 'https://board.example.test'
+    assert 'Access-Control-Allow-Credentials' not in allowed.headers
+    preflight = client.options('/', headers={
+        'Origin': 'https://board.example.test',
+        'Access-Control-Request-Method': 'POST',
+    })
+    assert preflight.status_code == 204
+    assert preflight.headers['Access-Control-Allow-Origin'] == 'https://board.example.test'
+    assert 'cf-turnstile-response' in preflight.headers['Access-Control-Allow-Headers']
+    assert 'Access-Control-Allow-Credentials' not in preflight.headers
+
+
+@pytest.mark.parametrize('path', [
+    '/Agent',
+    '/agent;x',
+    '/agent/explain/',
+    '/Agent/explain',
+    '/agent;x/explain',
+])
+def test_classifier_miss_is_flask_404(client, path):
+    response = client.post(path, json={'team_name': 'Oregon'})
+    assert response.status_code == 404
+
+
+def test_mcp_query_route_is_gone(client):
+    response = client.post('/agent/mcp/query', json={'tool': 'get-games', 'params': {'year': 2024}})
+    assert response.status_code == 404
+    body = response.get_data(as_text=True)
+    assert 'MCP query failed' not in body
+    assert 'CFBD_MCP_URL' not in body
 
 
 def test_weeks_endpoint(client):
-    with patch('app.data_processor') as mock_dp:
-        mock_dp.get_available_weeks.return_value = [1, 2, 3, 4, 5]
-        response = client.get('/weeks?year=2024')
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['weeks'] == [1, 2, 3, 4, 5]
-        assert data['max_week'] == 5
+    response = client.get('/weeks?year=2024')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['weeks'] == list(range(1, 16))
+    assert data['max_week'] == 15
+    assert data['published'] is True
 
 
 def test_rankings_slim_by_default(client):
@@ -62,10 +113,9 @@ def test_rankings_detail_preserves_wins_details(client):
     }
     with patch('app.get_or_calculate_rankings', return_value=mock_data):
         response = client.get('/rankings?year=2024&week=10&detail=true')
-        assert response.status_code == 200
+        assert response.status_code == 400
         data = response.get_json()
-        assert data['team_rankings'][0]['wins_details'][0]['opponent'] == 'X'
-        assert 'rankings' not in data
+        assert data['code'] == 'formula_params'
 
 
 def test_team_breakdown_includes_game_details(client):
@@ -169,6 +219,18 @@ def test_agent_health(client):
     assert data['status'] == 'ok'
 
 
-def test_cache_clear_requires_secret(client):
+def test_cache_clear_requires_secret(client, monkeypatch):
     response = client.post('/cache/clear')
     assert response.status_code == 403
+    monkeypatch.setenv('CACHE_CLEAR_SECRET', 'clear-test')
+    query = client.post('/cache/clear?secret=clear-test')
+    assert query.status_code == 401
+    body = client.post('/cache/clear', json={'secret': 'clear-test'})
+    assert body.status_code == 401
+    ok = client.post('/cache/clear', headers={'X-Cache-Secret': 'clear-test'})
+    assert ok.status_code == 200
+    non_ascii = client.post('/cache/clear', headers={'X-Cache-Secret': 'caf\u00e9'})
+    assert non_ascii.status_code == 401
+    monkeypatch.setenv('CACHE_CLEAR_SECRET', 'cle\u00e1r')
+    matched = client.post('/cache/clear', headers={'X-Cache-Secret': 'cle\u00e1r'})
+    assert matched.status_code == 200

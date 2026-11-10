@@ -1,0 +1,5 @@
+{
+  "CFBD_KILL": "1",
+  "required_line": "CFBD_KILL: ${{ vars.CFBD_KILL }}",
+  "planted_step_env": "env:\n  CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}\n  CFBD_MAX_CALLS: \"24\"\n"
+}

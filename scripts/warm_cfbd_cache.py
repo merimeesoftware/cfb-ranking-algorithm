@@ -5,9 +5,7 @@ Call budget (typical):
   1 × /teams  +  2 × /games per season (regular + postseason)
   → warming 2019–2022 ≈ 1 + 8 = 9 calls if teams miss; fewer on cache hits.
 
-Dual keys (separate 1k/mo quotas):
-  CFBD_API_KEY_SLOT=A|B   # default A
-  CFBD_API_KEY / CFBD_API_KEY_B
+One key: CFBD_API_KEY. This script does not read any other CFBD credential.
 """
 from __future__ import annotations
 
@@ -25,13 +23,12 @@ os.environ.setdefault('CFBD_MAX_CALLS', '40')
 def main() -> int:
     years = [int(y) for y in (sys.argv[1:] or ['2019', '2020', '2021', '2022', '2023', '2024'])]
     from data_processor import CFBDataProcessor
-    from spend_guards import cfbd_key_slot_status, get_cfbd_call_count
+    from spend_guards import cfbd_key_status, get_cfbd_call_count
 
-    slot = cfbd_key_slot_status()
-    if not slot['active_configured']:
-        print('No CFBD key configured for the active slot.', file=sys.stderr)
+    if not cfbd_key_status()['active_configured']:
+        print('No CFBD key configured.', file=sys.stderr)
         return 1
-    # Slot booleans are derived from the API key env vars. Do not print them.
+    # Do not print the key.
     print('CFBD cache warm starting.')
 
     processor = CFBDataProcessor()

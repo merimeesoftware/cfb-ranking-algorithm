@@ -187,7 +187,6 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
   - **Elo knobs:** K=`base_factor` 50, HFA 50 (was 40/65)
   - **Eval:** tune 2019–2022 / validate 2023 / holdout 2024
   - **reference_ranks:** still off by default (confirmed on longer history)
-  - Dual CFBD key slots (`CFBD_API_KEY` / `CFBD_API_KEY_B`) for separate 1k/mo quotas
 
 - **V5.2:**
   - **Weights:** 75/20/05 (TQ/RS/CQ)
