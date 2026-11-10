@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Union
 from collections import defaultdict
 from pathlib import Path
 from api_integration import CFBDApiClient
+from conference_membership import ConferenceMembership, MembershipError, load_membership
 
 # --- Conference Classification Constants ---
 POWER_4_CONFERENCES = {
@@ -113,7 +114,7 @@ class CFBDataProcessor:
             if through_week is not None and (week is None or week > through_week):
                 continue
             selected.append(game)
-        return self._process_raw_games(selected)
+        return self._process_raw_games(selected, season=year)
 
     def get_available_weeks(self, year: int) -> List[int]:
         """Return sorted regular-season week numbers. One bulk games call."""
@@ -125,10 +126,41 @@ class CFBDataProcessor:
         })
         return weeks if weeks else list(range(1, 16))
 
-    def _process_raw_games(self, games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    @staticmethod
+    def _season_conference(
+        team: str,
+        game_conference: Optional[str],
+        season: int,
+        membership: ConferenceMembership,
+    ) -> tuple:
+        """(conference, tier) from the season map, never from today's /teams."""
+        conference = membership.conference_for(team, season)
+        if conference is not None:
+            return conference, membership.tier_for(conference, season)
+        # Not FBS that season per the map. Keep the per-game label as FCS,
+        # unless the game says FBS: then the map has a gap, so fail closed.
+        if game_conference in membership.fbs_conferences(season):
+            raise MembershipError(
+                f'{team} plays as {game_conference!r} in {season} game data '
+                f'but is not in the {season} membership map ({membership.version})'
+            )
+        return game_conference, 'FCS'
+
+    def _process_raw_games(
+        self,
+        games: List[Dict[str, Any]],
+        season: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Process raw game data to add conference types and other metadata.
+
+        With ``season`` set, conferences and tiers come from the season-aware
+        membership map (#101). Without it (legacy ``process_data``), the old
+        team map then per-game fallback applies.
         """
+        membership = load_membership() if season is not None else None
+        if membership is not None:
+            membership.season_map(season)  # raises outside coverage, even with no games
         processed_games = []
         for game in games:
             home_team = game.get('home_team_name')
@@ -139,13 +171,17 @@ class CFBDataProcessor:
             if not home_team or not away_team or game.get('home_score') is None or game.get('away_score') is None:
                 continue
 
-            # Get conferences from the map, fallback to game data
-            home_conf = self.team_conference_map.get(home_team, game.get('home_conference'))
-            away_conf = self.team_conference_map.get(away_team, game.get('away_conference'))
-
-            # Determine conference types
-            home_conf_type = self.get_conference_type(home_conf)
-            away_conf_type = self.get_conference_type(away_conf)
+            if membership is not None:
+                home_conf, home_conf_type = self._season_conference(
+                    home_team, game.get('home_conference'), season, membership)
+                away_conf, away_conf_type = self._season_conference(
+                    away_team, game.get('away_conference'), season, membership)
+            else:
+                # Legacy path: today's team map, then game data
+                home_conf = self.team_conference_map.get(home_team, game.get('home_conference'))
+                away_conf = self.team_conference_map.get(away_team, game.get('away_conference'))
+                home_conf_type = self.get_conference_type(home_conf)
+                away_conf_type = self.get_conference_type(away_conf)
 
             processed_game = {
                 **game,

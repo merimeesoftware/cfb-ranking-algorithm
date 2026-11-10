@@ -6,7 +6,7 @@ import pytest
 from data_processor import CFBDataProcessor
 
 
-def _make_game(week, home='TeamA', away='TeamB'):
+def _make_game(week, home='Alabama', away='Clemson'):
     return {
         'week': week,
         'year': 2024,
@@ -25,8 +25,8 @@ def _make_game(week, home='TeamA', away='TeamB'):
 def mock_client():
     client = MagicMock()
     client.get_teams_with_logos.return_value = {
-        'TeamA': {'conference': 'SEC', 'logos': []},
-        'TeamB': {'conference': 'ACC', 'logos': []},
+        'Alabama': {'conference': 'SEC', 'logos': []},
+        'Clemson': {'conference': 'ACC', 'logos': []},
     }
     return client
 
@@ -39,7 +39,7 @@ def test_bulk_season_fetch_is_one_call(mock_client):
             _make_game(1),
             _make_game(2),
             _make_game(3),
-            {**_make_game(1, home='BowlA', away='BowlB'), 'season_type': 'postseason', 'week': 1},
+            {**_make_game(1, home='Georgia', away='Miami'), 'season_type': 'postseason', 'week': 1},
         ]
 
     mock_client.get_games.side_effect = _games
@@ -53,7 +53,7 @@ def test_bulk_season_fetch_is_one_call(mock_client):
 def test_bulk_includes_postseason_from_week_15(mock_client):
     mock_client.get_games.return_value = [
         _make_game(15),
-        {**_make_game(1, home='BowlA', away='BowlB'), 'season_type': 'postseason'},
+        {**_make_game(1, home='Georgia', away='Miami'), 'season_type': 'postseason'},
     ]
     processor = CFBDataProcessor(api_client=mock_client)
     games = processor.get_games_for_season(2024, through_week=15)
@@ -72,7 +72,7 @@ def test_scored_but_incomplete_rows_are_excluded(mock_client):
     processor = CFBDataProcessor(api_client=mock_client)
     games = [
         {
-            **_make_game(1, home='BowlA', away='BowlB'),
+            **_make_game(1, home='Georgia', away='Miami'),
             'season_type': 'postseason',
             'completed': False,
             'home_score': 31,
@@ -81,7 +81,7 @@ def test_scored_but_incomplete_rows_are_excluded(mock_client):
         {**_make_game(1), 'completed': True},
     ]
     kept = processor._process_raw_games(games)
-    assert [game['home_team_name'] for game in kept] == ['TeamA']
+    assert [game['home_team_name'] for game in kept] == ['Alabama']
 
 
 def test_cfbd_error_is_not_an_empty_season(mock_client):

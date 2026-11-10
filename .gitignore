@@ -70,6 +70,7 @@ ranking_results/
 !config/cfbd-month.json
 !config/workers-ai-neurons.json
 !config/xai-usd.json
+!data/conference_membership.json
 !design/comps/**/*.json
 
 # Security scan reports
