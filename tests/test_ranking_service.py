@@ -52,7 +52,7 @@ def test_compute_priors_reads_published_scores_without_cfbd():
     mock_dp = MagicMock()
     mock_dp.get_games_for_season.side_effect = AssertionError('priors should serve scores')
 
-    def _priors(year, algo=None, root=None):
+    def _priors(year, algo=None, membership=None, root=None):
         return {'Georgia': 1800.0}
 
     with patch('ranking_service.get_cache') as mock_cache:
