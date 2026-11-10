@@ -229,3 +229,93 @@ def test_backtest_team_meta_uses_season_membership():
     assert meta23['Texas']['conference'] == 'Big 12'
     assert meta24['USC']['conference'] == 'Big Ten'
     assert meta24['Texas']['conference'] == 'SEC'
+
+
+# --- Fix 1 (Archie #149 review): independents are G5 except Notre Dame ---
+
+@pytest.mark.parametrize('team,season,tier', [
+    ('Massachusetts', 2024, 'Group of 5'),
+    ('Army', 2023, 'Group of 5'),
+    ('Liberty', 2022, 'Group of 5'),
+    ('BYU', 2022, 'Group of 5'),
+    ('New Mexico State', 2022, 'Group of 5'),
+    ('Notre Dame', 2021, 'Power 4'),
+    ('Notre Dame', 2026, 'Power 4'),
+    ('Notre Dame', 2020, 'Power 4'),  # ACC that season
+    ('UConn', 2026, 'Group of 5'),
+])
+def test_independent_tiers_notre_dame_only_p4(team, season, tier):
+    m = load_membership()
+    assert m.conference_for(team, season) in ('FBS Independents', 'ACC')
+    assert m.tier_for(m.conference_for(team, season), season, team=team) == tier
+
+
+def test_independents_conference_tier_is_g5_without_team():
+    m = load_membership()
+    for season in range(2017, 2027):
+        assert m.tier_for('FBS Independents', season) == 'Group of 5'
+
+
+def test_processor_applies_team_tier_override():
+    games = [_game(1, 'Notre Dame', 'Massachusetts', 'FBS Independents', 'FBS Independents'),
+             _game(2, 'Army', 'UConn', 'FBS Independents', 'FBS Independents')]
+    c = _confs(_processor(games).get_games_for_season(2023))
+    assert c['Notre Dame'] == ('FBS Independents', 'Power 4')
+    assert c['Massachusetts'] == ('FBS Independents', 'Group of 5')
+    assert c['Army'] == ('FBS Independents', 'Group of 5')
+    assert c['UConn'] == ('FBS Independents', 'Group of 5')
+
+
+@pytest.mark.parametrize('order', [0, 1])
+def test_mixed_tier_conference_row_does_not_depend_on_team_order(order):
+    games = [_game(1, 'Notre Dame', 'Alabama', 'FBS Independents', 'SEC'),
+             _game(2, 'Massachusetts', 'Kansas', 'FBS Independents', 'Big 12')]
+    if order:
+        games.reverse()
+    _, out = _rank(_processor(games).get_games_for_season(2023))
+    by_conf = {c['conference_name']: c for c in out['conference_rankings']}
+    assert by_conf['FBS Independents']['conference_type'] == 'Power 4'  # legacy row label
+    team = {t['team_name']: t for t in out['team_rankings']}
+    assert team['Notre Dame']['conference_type'] == 'Power 4'
+    assert team['Massachusetts']['conference_type'] == 'Group of 5'
+
+
+def test_team_tier_override_must_be_fbs_that_season():
+    payload = json.loads(MAP_PATH.read_text(encoding='utf-8'))
+    bad = copy.deepcopy(payload)
+    bad['team_tiers']['Liberty'] = [{'first': 2017, 'last': 2018, 'tier': 'Power 4'}]
+    with pytest.raises(MembershipError, match='not FBS'):
+        ConferenceMembership(bad)
+
+
+# --- loader shape (Archie N1) ---------------------------------------------
+
+def _mutated(fn):
+    payload = copy.deepcopy(json.loads(MAP_PATH.read_text(encoding='utf-8')))
+    fn(payload)
+    return payload
+
+
+@pytest.mark.parametrize('name,fn', [
+    ('not-object', None),
+    ('no-version', lambda p: p.pop('version')),
+    ('coverage-type', lambda p: p.__setitem__('coverage', [2017, 2026])),
+    ('no-base', lambda p: p.pop('base')),
+    ('base-team-not-str', lambda p: p['base']['conferences']['SEC'].append(7)),
+    ('from-equals-to', lambda p: p['moves'][0].__setitem__('from', p['moves'][0]['to'])),
+    ('duplicate-move', lambda p: p['moves'].append(dict(p['moves'][0]))),
+    ('move-after-coverage', lambda p: p['moves'].append(
+        {'team': 'X', 'season': 2027, 'from': None, 'to': 'SEC', 'source': 'https://x'})),
+    ('overlapping-spans', lambda p: p['tiers']['SEC'].append(
+        {'first': 2020, 'last': 2021, 'tier': 'Group of 5'})),
+    ('span-outside-coverage', lambda p: p['tiers']['SEC'].__setitem__(
+        0, {'first': 2016, 'last': 2026, 'tier': 'Power 4'})),
+    ('bad-tier-name', lambda p: p['tiers']['SEC'].__setitem__(
+        0, {'first': 2017, 'last': 2026, 'tier': 'Power 5'})),
+    ('tiers-type', lambda p: p.__setitem__('tiers', [])),
+    ('team-tiers-type', lambda p: p.__setitem__('team_tiers', [])),
+])
+def test_malformed_map_raises_membership_error(name, fn):
+    payload = 'nope' if fn is None else _mutated(fn)
+    with pytest.raises(MembershipError):
+        ConferenceMembership(payload)

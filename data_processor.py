@@ -136,7 +136,7 @@ class CFBDataProcessor:
         """(conference, tier) from the season map, never from today's /teams."""
         conference = membership.conference_for(team, season)
         if conference is not None:
-            return conference, membership.tier_for(conference, season)
+            return conference, membership.tier_for(conference, season, team=team)
         # Not FBS that season per the map. Keep the per-game label as FCS,
         # unless the game says FBS: then the map has a gap, so fail closed.
         if game_conference in membership.fbs_conferences(season):

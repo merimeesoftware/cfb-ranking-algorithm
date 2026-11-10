@@ -1,6 +1,6 @@
 {
   "schema": "true-rankings/conference-membership/v1",
-  "version": "2026-11-09.1",
+  "version": "2026-11-09.2",
   "issue": "merimeesoftware/cfb-ranking-algorithm#101",
   "coverage": {
     "first_season": 2017,
@@ -546,7 +546,7 @@
       "source": "https://fbschedules.com/2018-fbs-independents-football-helmet-schedule/"
     }
   ],
-  "tier_policy": "Repo policy, not a provider fact. Pac-12 stays Power 4 through 2023; from 2024 it is Group of 5 (two-member league 2024-2025, then a Group of Six league in 2026 per the NDSU/MW CFP note). FBS Independents stay Power 4 (existing V4.0.1 rule in data_processor.get_conference_type).",
+  "tier_policy": "Repo policy, not a provider fact. Pac-12 stays Power 4 through 2023; from 2024 it is Group of 5 (two-member league 2024-2025, then a Group of Six league in 2026 per the NDSU/MW CFP note). FBS Independents are Group of 5 by conference; Notre Dame alone is Power 4 by team_tiers override. This matches main's effective tiers, where UMass, Army, Liberty and New Mexico State carried their current G5 conference labels in every season (Archie review of #149, Fix 1). \"Group of 5\" means non-P4 FBS. Owner: True Rankings seat. Bump version on every edit; stored priors carry the version and are rejected on mismatch.",
   "tiers": {
     "SEC": [
       {
@@ -592,7 +592,7 @@
       {
         "first": 2017,
         "last": 2026,
-        "tier": "Power 4"
+        "tier": "Group of 5"
       }
     ],
     "American Athletic": [
@@ -628,6 +628,15 @@
         "first": 2017,
         "last": 2026,
         "tier": "Group of 5"
+      }
+    ]
+  },
+  "team_tiers": {
+    "Notre Dame": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Power 4"
       }
     ]
   },
