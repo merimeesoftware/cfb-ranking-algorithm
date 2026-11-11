@@ -43,6 +43,22 @@ def test_ohio_state_chasing_oregon():
     )
 
 
+def test_gap_that_rounds_below_one_point_is_less_than_a_point():
+    above = {
+        'team_name': 'Sharp',
+        'team_quality_score': 1900.4,
+    }
+    below = {
+        'team_name': 'Soft',
+        'team_quality_score': 1900.0,
+    }
+    result = compute_path_to_climb(below, above)
+    assert result['summary'] == (
+        'Soft trails Sharp by less than a point on TR+. '
+        'Beating better teams closes the gap.'
+    )
+
+
 def test_climb_follows_elo_when_resume_gap_is_larger():
     above = {
         'team_name': 'Sharp',

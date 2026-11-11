@@ -57,7 +57,9 @@ def test_level_on_elo_does_not_use_the_record_as_the_lever():
         'path_to_climb': {
             'at_top': False,
             'team_above': 'Sharp',
-            'score_gap': 0.2,
+            'score_gap': 0.04,
+            'shown_rating': 1900.04,
+            'shown_rating_above': 1900.0,
             'gaps': {'tq': 0.16, 'resume': 400.0, 'cq': 12.0},
             'primary_lever': None,
             'summary': 'Soft matches Sharp on Elo.',
@@ -68,6 +70,38 @@ def test_level_on_elo_does_not_use_the_record_as_the_lever():
     assert 'display-only' not in lower
     assert 'who they beat' not in lower
     assert 'conference' not in lower
+
+
+def test_board_gap_above_zero_is_not_level():
+    blurb = stub_climb_blurb({
+        'team_name': 'Soft',
+        'neighbor_ahead': 'Sharp',
+        'path_to_climb': {
+            'at_top': False,
+            'team_above': 'Sharp',
+            'score_gap': 0.4,
+            'shown_rating': 1900.0,
+            'shown_rating_above': 1900.4,
+            'primary_lever': 'Elo',
+        },
+    })
+    assert 'level' not in blurb.lower()
+
+
+def test_equal_shown_ratings_are_level():
+    blurb = stub_climb_blurb({
+        'team_name': 'Soft',
+        'neighbor_ahead': 'Sharp',
+        'path_to_climb': {
+            'at_top': False,
+            'team_above': 'Sharp',
+            'score_gap': 0.04,
+            'shown_rating': 1900.04,
+            'shown_rating_above': 1900.0,
+            'primary_lever': None,
+        },
+    })
+    assert 'level' in blurb.lower()
 
 
 def test_stub_climb_blurb_at_top():

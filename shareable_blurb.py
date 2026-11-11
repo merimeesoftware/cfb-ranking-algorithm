@@ -4,6 +4,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Dict, Optional
 
+from path_to_climb import board_rating
+
 BLURB_MAX_CHARS = 280
 
 
@@ -151,14 +153,18 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
 
 def _plain_lever(path: Dict[str, Any]) -> str:
     """Map structured climb data to fan-language problem (StoryBrand)."""
-    lever = str(path.get('primary_lever') or '').lower()
-    gap = path.get('score_gap')
+    # Level only when the two ratings printed on the board are the same.
+    mine = path.get('shown_rating')
+    above = path.get('shown_rating_above')
     try:
-        level = gap is not None and abs(float(gap)) <= 0.5
+        level = (
+            mine is not None
+            and above is not None
+            and board_rating(float(mine)) == board_rating(float(above))
+        )
     except (TypeError, ValueError):
         level = False
-    # A tie on TR+ is not a résumé gap. Do not read gaps when the lever is empty.
-    if level or lever in ('', 'none', 'level'):
+    if level:
         return 'They are level on TR+.'
     return 'Beating better teams closes the gap.'
 
