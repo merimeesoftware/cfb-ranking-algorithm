@@ -11,7 +11,13 @@ os.environ.setdefault('CFBD_API_KEY', 'test-key-for-unit-tests')
 
 from conference_membership import MembershipError, load_membership  # noqa: E402
 from data_processor import CFBDataProcessor  # noqa: E402
-from ranking_service import ALGO_VERSION, DEFAULT_CONFIG, compute_priors, priors_cache_key  # noqa: E402
+from ranking_service import (  # noqa: E402
+    ALGO_VERSION,
+    BLEND_PRIOR_ALGO,
+    DEFAULT_CONFIG,
+    compute_priors,
+    priors_cache_key,
+)
 from spend_guards import CFBDOfflineError  # noqa: E402
 from static_rankings import read_prior_teams, write_prior_scores  # noqa: E402
 
@@ -153,8 +159,8 @@ def test_read_prior_teams_requires_membership_argument(tmp_path):
 def test_committed_priors_match_the_current_map(year):
     """The committed files were regenerated under the current map: reused as-is."""
     payload = json.loads((PUBLISHED / 'priors' / f'{year}.json').read_text())
-    assert payload['algo'] == ALGO_VERSION and payload['membership'] == VERSION
-    stored = read_prior_teams(year, algo=ALGO_VERSION, membership=VERSION, root=PUBLISHED)
+    assert payload['algo'] == BLEND_PRIOR_ALGO and payload['membership'] == VERSION
+    stored = read_prior_teams(year, algo=BLEND_PRIOR_ALGO, membership=VERSION, root=PUBLISHED)
     assert stored == payload['teams']
     assert read_prior_teams(year, algo=ALGO_VERSION, membership=VERSION + '-other', root=PUBLISHED) is None
 

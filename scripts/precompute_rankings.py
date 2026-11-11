@@ -47,6 +47,7 @@ from spend_guards import CFBDOfflineError, is_cfbd_killed, is_cfbd_offline
 from ranking_algorithm import TeamQualityRanker
 from ranking_service import (
     ALGO_VERSION,
+    BLEND_PRIOR_ALGO,
     DEFAULT_CONFIG,
     get_or_calculate_rankings,
     slim_rankings_for_list,
@@ -502,7 +503,7 @@ def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = No
     fetched = []
     membership = load_membership().version
     for prior in (year - 1, year - 2):
-        if read_prior_teams(prior, algo=ALGO_VERSION, membership=membership, root=root) is not None:
+        if read_prior_teams(prior, algo=BLEND_PRIOR_ALGO, membership=membership, root=root) is not None:
             print(f'Priors hit: {prior}')
             continue
         print(f'Priors fetch: {prior}')
@@ -513,7 +514,7 @@ def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = No
             scores,
             source_sha=games_fingerprint(games),
             generated_at=prior_generated_at(games),
-            algo=ALGO_VERSION,
+            algo=BLEND_PRIOR_ALGO,
             membership=membership,
             root=root,
         )

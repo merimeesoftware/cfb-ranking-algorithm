@@ -31,6 +31,7 @@ from dotenv import load_dotenv
 load_dotenv(ROOT / '.env')
 
 from narrative_facts import extract_week_facts, stub_week_story, stub_why_blurbs  # noqa: E402
+from ranking_service import publish_order  # noqa: E402
 from spend_guards import resolve_ai_mode  # noqa: E402
 from static_rankings import (  # noqa: E402
     DEFAULT_ROOT,
@@ -45,9 +46,11 @@ FRONTEND_ROOT = ROOT / 'frontend' / 'static' / 'rankings'
 def _load_week(year: int, week: int) -> Optional[Dict[str, Any]]:
     """Prefer frontend static copy, then static_rankings/."""
     data = read_static_rankings(year, week, root=FRONTEND_ROOT)
-    if data is not None:
-        return data
-    return read_static_rankings(year, week, root=DEFAULT_ROOT)
+    if data is None:
+        data = read_static_rankings(year, week, root=DEFAULT_ROOT)
+    if data is None:
+        return None
+    return publish_order(data)
 
 
 def _write_both(

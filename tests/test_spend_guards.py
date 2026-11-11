@@ -282,6 +282,9 @@ def test_stub_explain_from_fixture():
     assert 'stub' not in text.lower()
     assert 'TQ' not in text
     assert 'CQ' not in text
+    assert '80%' not in text
+    assert '15%' not in text
+    assert 'TR+' in text
     assert 'Elo' not in text
 
 
@@ -337,9 +340,13 @@ def test_agent_explain_stub_expanded_context(client, monkeypatch):
         assert ctx['rank'] == 2
         assert 'formula_breakdown' in ctx
         fb = ctx['formula_breakdown']
-        assert fb['tq_contribution'] == round(1850 * 0.80, 2)
-        assert fb['rec_contribution'] == round(90 * 0.15, 2)
-        assert fb['cq_contribution'] == round(90 * 0.05, 2)
+        assert fb['ordering'] == 'elo'
+        assert fb['total'] == 1850
+        assert fb['tq_contribution'] == 1850
+        assert fb['display_only']['record_score'] == 90
+        assert fb['display_only']['conference_quality'] == 90
+        assert 'rec_contribution' not in fb
+        assert 'cq_contribution' not in fb
         assert ctx['quality_wins'] == 2
         assert ctx['quality_losses'] == 1
         assert ctx['bad_losses'] == 0
@@ -348,7 +355,7 @@ def test_agent_explain_stub_expanded_context(client, monkeypatch):
         assert ctx['neighbor_behind'] == 'Georgia'
         assert ctx['path_to_climb']['at_top'] is False
         assert ctx['path_to_climb']['team_above'] == 'Oregon'
-        assert ctx['path_to_climb']['score_gap'] == 5.0
+        assert ctx['path_to_climb']['score_gap'] == 50.0
         assert 'Oregon' in data['explanation']
         # Stub uses path_to_climb.summary / neighbor phrasing (not literal "path"/"gap")
         expl = data['explanation'].lower()

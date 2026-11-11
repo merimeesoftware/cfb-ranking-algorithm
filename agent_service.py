@@ -12,7 +12,13 @@ from flask import Blueprint, jsonify, request
 from ai_stub import stub_explain_from_context
 from cache import get_cache
 from path_to_climb import compute_path_to_climb
-from ranking_service import get_or_calculate_rankings, DEFAULT_CONFIG, FRS_WEIGHTS
+from ranking_algorithm import ordering_score
+from ranking_service import (
+    get_or_calculate_rankings,
+    DEFAULT_CONFIG,
+    FRS_WEIGHTS,
+    formula_breakdown,
+)
 from shareable_blurb import (
     BLURB_MAX_CHARS,
     blurb_cache_key,
@@ -125,24 +131,16 @@ def _build_team_context(rankings: Dict[str, Any], team_name: str) -> Optional[Di
 
         team_above = team_rankings[i - 1] if i > 0 else None
         team_below = team_rankings[i + 1] if i + 1 < len(team_rankings) else None
-        tq = float(team.get('team_quality_score') or 0)
-        rec = float(team.get('record_score') or 0)
-        cq = float(team.get('conference_quality_score') or 0)
-
         return {
             'rank': i + 1,
             'team_name': team['team_name'],
             'conference': team['conference'],
             'final_ranking_score': team['final_ranking_score'],
             'team_quality_score': team['team_quality_score'],
+            'ordering_score': ordering_score(team),
             'record_score': team['record_score'],
             'conference_quality_score': team['conference_quality_score'],
-            'formula_breakdown': {
-                'tq_contribution': round(tq * FRS_WEIGHTS[0], 2),
-                'rec_contribution': round(rec * FRS_WEIGHTS[1], 2),
-                'cq_contribution': round(cq * FRS_WEIGHTS[2], 2),
-                'total': team.get('final_ranking_score'),
-            },
+            'formula_breakdown': formula_breakdown(team),
             'records': team.get('records', {}),
             'sos': team.get('sos'),
             'sov': team.get('sov'),
@@ -300,6 +298,8 @@ def _payload_facts(payload: Dict[str, Any]) -> tuple[set[str], set[str], set[tup
 _NAME_SPAN = re.compile(
     r"[A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*)*"
 )
+# Leftover blend phrase. Strip it so those percents are not a new claim.
+# The live prompt does not teach this formula. The place is Elo only.
 _FORMULA_LABELS = ('Team Quality', 'Record Score', 'Conference Quality')
 _EXACT_FORMULA = re.compile(
     '|'.join(
@@ -505,8 +505,8 @@ def _top_win_exception(
 def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     """Every number and team name in the answer is in the payload.
 
-    Only the three FRS weight phrases are removed before the number check.
-    Any other percent fails. An N-M pair, including a Unicode dash, is
+    The obsolete 80/15/5 blend phrase is removed before the number check.
+    It is not the live formula. Any other percent fails. An N-M pair, including a Unicode dash, is
     accepted only when it is the total record or the conference record.
     With no games list, a sentence that names another payload team passes
     only when it is a fixed placement sentence and every other team is a
@@ -569,7 +569,6 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
 
 
 def _explain_prompt(context: Dict[str, Any], question: str) -> str:
-    w_tq, w_rec, w_cq = FRS_WEIGHTS
     if context.get('games'):
         facts = 'scores, records, and games'
         game_rule = (
@@ -583,9 +582,11 @@ def _explain_prompt(context: Dict[str, Any], question: str) -> str:
         f'Use ONLY the Team context JSON for {facts}. Do not invent them.\n'
         f'{NO_PREDICTION_RULE}\n'
         f'{game_rule}\n'
+        'The public rating name is TR+ (ordering_score). Do not call it Elo. '
+        'Do not apply an 80/15/5 blend or any other weights. '
+        'Record score and conference quality are not in the order.\n'
         f'Question: {question}\n\n'
-        f'Team context (JSON): {context}\n\n'
-        f'Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality.'
+        f'Team context (JSON): {context}\n'
     )
 
 

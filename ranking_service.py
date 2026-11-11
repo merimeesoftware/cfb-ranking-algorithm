@@ -6,12 +6,15 @@ from typing import Any, Dict, Optional
 
 from api_integration import CFBDRequestError
 from data_processor import CFBDataProcessor
-from ranking_algorithm import TeamQualityRanker
+from ranking_algorithm import TeamQualityRanker, ordering_score
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
 
-ALGO_VERSION = 'v5.3'
+ALGO_VERSION = 'v5.4'
+# Committed prior files stay the blend seed (résumé and league included).
+# Reading them under v5.4 would miss the files and try a live recompute.
+BLEND_PRIOR_ALGO = 'v5.3'
 
 DEFAULT_CONFIG = {
     'power_conf_initial': 1500.0,
@@ -122,7 +125,7 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
                   f"(map {membership.version})")
             continue
         try:
-            stored = read_prior_teams(h_year, algo=ALGO_VERSION, membership=membership.version)
+            stored = read_prior_teams(h_year, algo=BLEND_PRIOR_ALGO, membership=membership.version)
             if stored is not None:
                 history_data.append({
                     'rankings': {
@@ -153,6 +156,31 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
 
 
 _LIST_STRIP_TEAM_KEYS = ('wins_details', 'losses_details')
+
+
+def formula_breakdown(team: Dict[str, Any]) -> Dict[str, Any]:
+    """The place is Elo. Record and conference stay display-only, not parts of the total."""
+    score = ordering_score(team)
+    return {
+        'ordering': 'elo',
+        'tq_contribution': score,
+        'total': score,
+        'display_only': {
+            'record_score': float(team.get('record_score') or 0),
+            'conference_quality': float(team.get('conference_quality_score') or 0),
+        },
+    }
+
+
+def publish_order(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Order the board by Elo. Heat weight is 0. Stamp ordering_score on each row."""
+    teams = rankings_data.get('team_rankings')
+    if isinstance(teams, list):
+        for team in teams:
+            if isinstance(team, dict):
+                team['ordering_score'] = ordering_score(team)
+        rankings_data['team_rankings'] = sorted(teams, key=ordering_score, reverse=True)
+    return rankings_data
 
 
 def slim_rankings_for_list(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -284,7 +312,7 @@ def calculate_rankings_logic(
     rankings_data['algo'] = ALGO_VERSION
     # team_rankings is canonical; drop name-keyed duplicate before cache/API
     rankings_data.pop('rankings', None)
-    return rankings_data
+    return publish_order(rankings_data)
 
 
 def get_or_calculate_rankings(
@@ -305,16 +333,16 @@ def get_or_calculate_rankings(
             if static is not None and (prefer_static or not allow_compute):
                 if prefer_static and is_archived_week(year, week):
                     print(f"STATIC HIT: rankings {year} week={week}")
-                    return static
+                    return publish_order(static)
                 if not allow_compute:
                     print(f"STATIC HIT: rankings {year} week={week}")
-                    return static
+                    return publish_order(static)
         except Exception as e:
             print(f"Static rankings read error: {e}")
 
     if not allow_compute:
         if static is not None:
-            return static
+            return publish_order(static)
         print(f"STATIC MISS: rankings {year} week={week} (compute disabled)")
         return None
 
@@ -326,7 +354,7 @@ def get_or_calculate_rankings(
     cached = cache.get(key)
     if cached is not None:
         print(f"Cache HIT: computed rankings {year} week={week}")
-        return cached
+        return publish_order(cached)
 
     print(f"Cache MISS: computed rankings {year} week={week}")
     data = calculate_rankings_logic(data_processor, year, week, request_args)

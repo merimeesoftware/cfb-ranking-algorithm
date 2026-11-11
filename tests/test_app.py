@@ -208,7 +208,7 @@ def test_team_breakdown_path_to_climb_vs_team_above(client):
         path = data['path_to_climb']
         assert path['at_top'] is False
         assert path['team_above'] == 'Oregon'
-        assert path['score_gap'] == 5.0
+        assert path['score_gap'] == 50.0
         assert path['summary']
 
 

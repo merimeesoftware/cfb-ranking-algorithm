@@ -1,8 +1,10 @@
-"""Head-to-head of published TR+ ratings. No spread, market line, or pick."""
+"""Head-to-head of published Elo ratings. No spread, market line, or pick."""
 
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
+
+from ranking_algorithm import ordering_score
 
 
 def find_team(team_rankings: List[Dict[str, Any]], name: str) -> Tuple[Optional[int], Optional[Dict[str, Any]]]:
@@ -32,7 +34,8 @@ def build_matchup_payload(
         return {
             "name": team["team_name"],
             "rank": rank,
-            "tr_plus": float(team["final_ranking_score"]),
+            "tr_plus": ordering_score(team),
+            "rating_label": "TR+",
             "record": f"{wins}-{losses}",
         }
 

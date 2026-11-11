@@ -39,6 +39,8 @@ export interface Team {
 	conference_type?: string;
 	final_ranking_score: number;
 	team_quality_score: number;
+	/** Place and the headline rating. Elo. Legacy blend stays on final_ranking_score. */
+	ordering_score?: number;
 	record_score: number;
 	conference_quality_score: number;
 	sos: number | null;

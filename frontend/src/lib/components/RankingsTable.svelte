@@ -5,7 +5,8 @@
 	import TeamDetailModal from './TeamDetailModal.svelte';
 	import { fetchTeamDetail, fetchWhyBlurb, fetchShareableBlurb, fetchClimbBlurb } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
-	import { RATING_NAME, teamPath } from '$lib/brand';
+	import { teamPath, RATING_NAME, RATING_TOOLTIP } from '$lib/brand';
+	import { shownScore } from '$lib/order';
 
 	export let teams: Team[] = [];
 	/** Full unfiltered list for deep-link ?team= lookup and accurate ranks */
@@ -181,10 +182,9 @@
 						</div>
 					</div>
 
-					<!-- TR+ -->
 					<div class="text-right">
-						<div class="font-bold text-lg text-primary-600 dark:text-primary-400">
-							{team.final_ranking_score.toFixed(1)}
+						<div class="font-bold text-lg text-primary-600 dark:text-primary-400 tabular-nums" title={RATING_TOOLTIP}>
+							{shownScore(team).toFixed(1)}
 						</div>
 						<div class="text-xs text-gray-500 dark:text-gray-400">
 							{RATING_NAME}
@@ -205,7 +205,7 @@
 					<th class="table-header px-4 py-3 text-left">Conference</th>
 					<th class="table-header px-4 py-3 text-center">Record</th>
 					<th class="table-header px-4 py-3 text-center">Δ</th>
-					<th class="table-header px-4 py-3 text-right">{RATING_NAME}</th>
+					<th class="table-header px-4 py-3 text-right" title={RATING_TOOLTIP}>{RATING_NAME}</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
