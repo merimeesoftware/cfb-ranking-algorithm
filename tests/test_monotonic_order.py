@@ -61,3 +61,35 @@ def test_extra_fcs_win_never_lowers_ordering_score():
     assert after['final_ranking_score'] < before['final_ranking_score']
     assert ordering_score(after) == after['team_quality_score']
     assert ordering_score(after) >= ordering_score(before)
+
+
+def test_published_sort_is_elo_when_the_blend_disagrees():
+    """The list order itself is Elo. Reverting the sort call to the blend goes red."""
+    games = [
+        _game(1, 'Pretty', 'CupA', 42, 7, 'Group of 5', 'FCS'),
+        _game(1, 'Pretty', 'CupB', 35, 3, 'Group of 5', 'FCS'),
+        _game(2, 'Pretty', 'CupC', 28, 10, 'Group of 5', 'FCS'),
+        _game(1, 'Battle', 'Rival', 21, 20, 'Group of 5', 'Group of 5'),
+        _game(2, 'Rival', 'Battle', 24, 17, 'Group of 5', 'Group of 5'),
+        _game(3, 'Battle', 'Other', 31, 14, 'Group of 5', 'Group of 5'),
+    ]
+    # Conference names on G5-G5 games need real leagues so tiers stick.
+    for game, home_conf, away_conf in (
+        (games[3], 'American Athletic', 'Mid-American'),
+        (games[4], 'Mid-American', 'American Athletic'),
+        (games[5], 'American Athletic', 'Conference USA'),
+    ):
+        game['home_conference'] = home_conf
+        game['away_conference'] = away_conf
+    for game in games[:3]:
+        game['home_conference'] = 'Sun Belt'
+        game['away_conference'] = None
+
+    rankings, _ranker = rank_through_week(games, 3, config={'prior_strength': 0.0})
+    keep = {'Power 4', 'Group of 5', 'FBS Independents'}
+    board = [team for team in rankings['team_rankings'] if team.get('conference_type') in keep]
+    elos = [team['team_quality_score'] for team in board]
+    blends = [team['final_ranking_score'] for team in board]
+    assert elos == sorted(elos, reverse=True)
+    assert blends != sorted(blends, reverse=True)
+    assert board[0]['team_name'] == 'Battle'
