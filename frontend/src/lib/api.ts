@@ -1,4 +1,5 @@
 import type { Team, Conference, FilterState, RankingsResponse } from '$lib/types';
+import { ALGO_VERSION } from '$lib/algo';
 import { agentHeaders } from '$lib/turnstile';
 import { orderTeamsByElo } from '$lib/order';
 
@@ -147,6 +148,7 @@ async function fetchStaticRankings(year: number, week: number): Promise<Rankings
 		});
 		if (!response.ok) return null;
 		const data = await response.json();
+		if (data.algo !== ALGO_VERSION) return null;
 		return {
 			teams: orderTeamsByElo((data.team_rankings || data.teams || []).map(mapTeamFromApi)),
 			conferences: (data.conference_rankings || data.conferences || []).map(mapConferenceFromApi),

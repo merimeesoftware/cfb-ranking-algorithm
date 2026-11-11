@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
+from ranking_service import ALGO_VERSION
+
 os.environ.setdefault('CFBD_API_KEY', 'test-key-for-unit-tests')
 
 
@@ -87,9 +89,10 @@ def test_rankings_slim_by_default(client):
         'conference_rankings': [],
         'year': 2024,
         'week': 10,
+        'algo': ALGO_VERSION,
         'rankings': {'Georgia': {}},
     }
-    with patch('app.get_or_calculate_rankings', return_value=mock_data):
+    with patch('app.read_static_rankings_any', return_value=mock_data):
         response = client.get('/rankings?year=2024&week=10')
         assert response.status_code == 200
         data = response.get_json()

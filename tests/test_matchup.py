@@ -41,6 +41,7 @@ def test_matchup_route_has_no_spread_fields(client, monkeypatch):
     assert res.status_code in (200, 404)
     if res.status_code == 200:
         data = res.get_json()
-        assert 'team_a' in data and 'team_b' in data
         for banned in ('implied_spread', 'market_spread', 'favorite', 'delta'):
             assert banned not in data
+        if data.get('published') is not False:
+            assert 'team_a' in data and 'team_b' in data

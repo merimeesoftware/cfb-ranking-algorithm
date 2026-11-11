@@ -11,9 +11,9 @@ from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
 
-ALGO_VERSION = 'v5.4'
+ALGO_VERSION = 'v5.5'
 # Committed prior files stay the blend seed (résumé and league included).
-# Reading them under v5.4 would miss the files and try a live recompute.
+# Reading them under v5.5 would miss the files and try a live recompute.
 BLEND_PRIOR_ALGO = 'v5.3'
 
 DEFAULT_CONFIG = {
@@ -68,6 +68,16 @@ def build_config(request_args) -> Dict[str, Any]:
     config['conference_weight'] = get_float_arg('conference_weight', config['conference_weight'])
     config['record_weight'] = get_float_arg('record_weight', config['record_weight'])
     return config
+
+
+def published_snapshot(data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """A stored week is current only when it was written under this algo label.
+
+    v5.4 and the committed v5.3 files were built with the 1.18 upset step.
+    """
+    if not isinstance(data, dict) or data.get('algo') != ALGO_VERSION:
+        return None
+    return data
 
 
 def rankings_cache_key(year: int, week: Optional[int], request_args) -> str:
@@ -329,7 +339,7 @@ def get_or_calculate_rankings(
     if week is not None and (prefer_static or not allow_compute):
         try:
             from static_rankings import read_static_rankings_any
-            static = read_static_rankings_any(year, week)
+            static = published_snapshot(read_static_rankings_any(year, week))
             if static is not None and (prefer_static or not allow_compute):
                 if prefer_static and is_archived_week(year, week):
                     print(f"STATIC HIT: rankings {year} week={week}")
@@ -341,6 +351,7 @@ def get_or_calculate_rankings(
             print(f"Static rankings read error: {e}")
 
     if not allow_compute:
+        static = published_snapshot(static)
         if static is not None:
             return publish_order(static)
         print(f"STATIC MISS: rankings {year} week={week} (compute disabled)")

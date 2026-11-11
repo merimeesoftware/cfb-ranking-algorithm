@@ -265,7 +265,8 @@ def test_param_allowlist_rejects_formula_and_unlisted_week(client, monkeypatch):
     assert rejected.get_json()['code'] == 'formula_params'
     assert 'team_quality_weight' in rejected.get_json()['rejected']
     assert allowed.status_code == 200
-    assert allowed.get_json()['team_rankings']
+    assert allowed.get_json()['team_rankings'] == []
+    assert allowed.get_json()['published'] is False
     assert unlisted.status_code == 200
     assert unlisted.get_json()['published'] is False
     assert unlisted.get_json()['team_rankings'] == []
