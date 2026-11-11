@@ -282,7 +282,9 @@ def test_stub_explain_from_fixture():
     assert 'stub' not in text.lower()
     assert 'TQ' not in text
     assert 'CQ' not in text
-    assert 'Elo' not in text
+    assert '80%' not in text
+    assert '15%' not in text
+    assert 'The place is Elo' in text
 
 
 def test_agent_explain_stub_mode(client, monkeypatch):

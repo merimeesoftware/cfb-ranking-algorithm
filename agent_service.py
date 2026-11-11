@@ -298,6 +298,8 @@ def _payload_facts(payload: Dict[str, Any]) -> tuple[set[str], set[str], set[tup
 _NAME_SPAN = re.compile(
     r"[A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*)*"
 )
+# Leftover blend phrase. Strip it so those percents are not a new claim.
+# The live prompt does not teach this formula. The place is Elo only.
 _FORMULA_LABELS = ('Team Quality', 'Record Score', 'Conference Quality')
 _EXACT_FORMULA = re.compile(
     '|'.join(
@@ -503,8 +505,8 @@ def _top_win_exception(
 def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
     """Every number and team name in the answer is in the payload.
 
-    Only the three FRS weight phrases are removed before the number check.
-    Any other percent fails. An N-M pair, including a Unicode dash, is
+    The obsolete 80/15/5 blend phrase is removed before the number check.
+    It is not the live formula. Any other percent fails. An N-M pair, including a Unicode dash, is
     accepted only when it is the total record or the conference record.
     With no games list, a sentence that names another payload team passes
     only when it is a fixed placement sentence and every other team is a
@@ -567,7 +569,6 @@ def answer_is_grounded(answer: str, payload: Dict[str, Any]) -> bool:
 
 
 def _explain_prompt(context: Dict[str, Any], question: str) -> str:
-    w_tq, w_rec, w_cq = FRS_WEIGHTS
     if context.get('games'):
         facts = 'scores, records, and games'
         game_rule = (
@@ -581,9 +582,11 @@ def _explain_prompt(context: Dict[str, Any], question: str) -> str:
         f'Use ONLY the Team context JSON for {facts}. Do not invent them.\n'
         f'{NO_PREDICTION_RULE}\n'
         f'{game_rule}\n'
+        'The place is Elo only (ordering_score). '
+        'Do not apply an 80/15/5 blend or any other weights. '
+        'Record score and conference quality are display-only and do not move the place.\n'
         f'Question: {question}\n\n'
-        f'Team context (JSON): {context}\n\n'
-        f'Formula: {w_tq:.0%} Team Quality + {w_rec:.0%} Record Score + {w_cq:.0%} Conference Quality.'
+        f'Team context (JSON): {context}\n'
     )
 
 

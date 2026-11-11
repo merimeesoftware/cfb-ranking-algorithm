@@ -130,7 +130,7 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
     else:
         why = (
             f'{name} is No. {rank}{record_bit} ({conf}). '
-            f'The board ranks them on who they beat and how they look — not the hype.'
+            f'The place is Elo. The record is beside the order and does not move it.'
         )
         if ahead:
             hook = f' Fair ranking — or is {ahead} getting too much respect?'
@@ -147,7 +147,7 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
         return blurb
     # Authoring guard: stubs must always fit — shorten deliberately, do not chop mid-thought
     return accept_blurb(
-        f'{name} is No. {rank}{record_bit}. The board ranks the full resume, not the noise. '
+        f'{name} is No. {rank}{record_bit}. The place is Elo. The record does not move it. '
         f'{"Prove " + behind + " belongs ahead?" if behind else "Fair ranking — or still up for debate?"}'
     ) or f'{name} is No. {rank}. Debate?'
 
@@ -155,25 +155,17 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
 def _plain_lever(path: Dict[str, Any]) -> str:
     """Map structured climb data to fan-language problem (StoryBrand)."""
     lever = str(path.get('primary_lever') or '').lower()
-    # The place is Elo. Do not pick the résumé gap even when it is larger.
-    if 'elo' in lever or lever == 'tq':
+    gap = path.get('score_gap')
+    try:
+        level = gap is not None and abs(float(gap)) <= 0.5
+    except (TypeError, ValueError):
+        level = False
+    # A tie on Elo is not a résumé gap. Do not read gaps when the lever is empty.
+    if level or lever in ('', 'none', 'level'):
+        return 'They are level on Elo. The record is display-only and does not move the place'
+    if 'elo' in lever or lever == 'tq' or 'quality' in lever:
         return 'Elo sets the place. The record does not move it'
-    gaps = path.get('gaps') or {}
-    if gaps:
-        key = max(gaps, key=lambda k: float(gaps.get(k) or 0))
-        if float(gaps.get(key) or 0) > 0.5:
-            return {
-                'tq': 'how strong they look week to week',
-                'resume': 'who they beat on the schedule',
-                'cq': 'the company they keep in conference',
-            }.get(key, 'the full body of work')
-    if 'quality' in lever or 'elo' in lever or lever == 'tq':
-        return 'how strong they look week to week'
-    if 'resume' in lever or 'record' in lever or 'beat' in lever:
-        return 'who they beat on the schedule'
-    if 'conference' in lever or lever == 'cq':
-        return 'the company they keep in conference'
-    return 'the full body of work'
+    return 'Elo sets the place. The record is display-only and does not move it'
 
 
 def stub_climb_blurb(context: Dict[str, Any]) -> str:
@@ -194,10 +186,16 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
         return blurb or accept_blurb(f'{name} is on top. Who takes the throne next?') or f'{name} is #1.'
 
     problem = _plain_lever(path)
-    body = (
-        f'{name} is chasing {ahead}. The place is Elo. '
-        f'{problem}. Close it by beating better teams.'
-    )
+    if 'level on elo' in problem.lower():
+        body = (
+            f'{name} and {ahead} are level on Elo. '
+            f'The record is display-only and does not move the place.'
+        )
+    else:
+        body = (
+            f'{name} is chasing {ahead}. The place is Elo. '
+            f'{problem} Close it by beating better teams.'
+        )
     hook = f' Think {name} already deserves that spot?'
     blurb = accept_blurb(f'{body} {hook}')
     if blurb:

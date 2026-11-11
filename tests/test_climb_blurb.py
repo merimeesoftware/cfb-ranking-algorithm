@@ -46,6 +46,26 @@ def test_stub_climb_blurb_is_caveman_simple():
     assert '?' in blurb or any(w in lower for w in ('argue', 'debate', 'prove', 'think', 'buy'))
 
 
+def test_level_on_elo_does_not_use_the_record_as_the_lever():
+    blurb = stub_climb_blurb({
+        'team_name': 'Soft',
+        'neighbor_ahead': 'Sharp',
+        'path_to_climb': {
+            'at_top': False,
+            'team_above': 'Sharp',
+            'score_gap': 0.2,
+            'gaps': {'tq': 0.16, 'resume': 400.0, 'cq': 12.0},
+            'primary_lever': None,
+            'summary': 'Soft matches Sharp on Elo.',
+        },
+    })
+    lower = blurb.lower()
+    assert 'level on elo' in lower
+    assert 'display-only' in lower
+    assert 'who they beat' not in lower
+    assert 'conference' not in lower
+
+
 def test_stub_climb_blurb_at_top():
     ctx = {
         'team_name': 'Indiana',
