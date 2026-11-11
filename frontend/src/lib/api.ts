@@ -44,6 +44,7 @@ export function mapTeamFromApi(t: Record<string, unknown>): Team {
 		conference_type: (t.conference_type || '') as string,
 		final_ranking_score: (t.final_ranking_score || t.score || 0) as number,
 		team_quality_score: (t.team_quality_score || 0) as number,
+		ordering_score: (t.ordering_score ?? t.team_quality_score ?? 0) as number,
 		record_score: (t.record_score || 0) as number,
 		conference_quality_score: (t.conference_quality_score || 0) as number,
 		sos: (t.sos ?? null) as number | null,

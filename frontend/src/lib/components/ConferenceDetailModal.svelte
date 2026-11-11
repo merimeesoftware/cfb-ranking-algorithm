@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import type { Conference, Team } from '$lib/types';
+	import { shownScore } from '$lib/order';
 
 	export let conference: Conference;
 	export let rank: number;
@@ -24,7 +25,7 @@
 	// Get teams in this conference
 	$: conferenceTeams = allTeams
 		.filter(t => t.conference === conference.conference)
-		.sort((a, b) => b.team_quality_score - a.team_quality_score);
+		.sort((a, b) => shownScore(b) - shownScore(a));
 
 	// Conference colors map
 	const conferenceColors: Record<string, string> = {
@@ -199,7 +200,7 @@
 									{team.records.total_wins}-{team.records.total_losses}
 								</span>
 								<span class="font-semibold text-primary-600 dark:text-primary-400">
-									{team.team_quality_score.toFixed(1)}
+									{shownScore(team).toFixed(1)}
 									<span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">Elo</span>
 								</span>
 							</div>

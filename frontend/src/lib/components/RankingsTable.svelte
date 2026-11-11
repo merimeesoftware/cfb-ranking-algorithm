@@ -6,6 +6,7 @@
 	import { fetchTeamDetail, fetchWhyBlurb, fetchShareableBlurb, fetchClimbBlurb } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
 	import { teamPath } from '$lib/brand';
+	import { shownScore } from '$lib/order';
 
 	export let teams: Team[] = [];
 	/** Full unfiltered list for deep-link ?team= lookup and accurate ranks */
@@ -184,7 +185,7 @@
 					<!-- Elo, the sort key -->
 					<div class="text-right">
 						<div class="font-bold text-lg text-primary-600 dark:text-primary-400 tabular-nums">
-							{team.team_quality_score.toFixed(1)}
+							{shownScore(team).toFixed(1)}
 						</div>
 						<div class="text-xs text-gray-500 dark:text-gray-400">
 							Elo

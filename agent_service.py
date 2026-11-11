@@ -12,7 +12,13 @@ from flask import Blueprint, jsonify, request
 from ai_stub import stub_explain_from_context
 from cache import get_cache
 from path_to_climb import compute_path_to_climb
-from ranking_service import get_or_calculate_rankings, DEFAULT_CONFIG, FRS_WEIGHTS
+from ranking_algorithm import ordering_score
+from ranking_service import (
+    get_or_calculate_rankings,
+    DEFAULT_CONFIG,
+    FRS_WEIGHTS,
+    formula_breakdown,
+)
 from shareable_blurb import (
     BLURB_MAX_CHARS,
     blurb_cache_key,
@@ -125,24 +131,16 @@ def _build_team_context(rankings: Dict[str, Any], team_name: str) -> Optional[Di
 
         team_above = team_rankings[i - 1] if i > 0 else None
         team_below = team_rankings[i + 1] if i + 1 < len(team_rankings) else None
-        tq = float(team.get('team_quality_score') or 0)
-        rec = float(team.get('record_score') or 0)
-        cq = float(team.get('conference_quality_score') or 0)
-
         return {
             'rank': i + 1,
             'team_name': team['team_name'],
             'conference': team['conference'],
             'final_ranking_score': team['final_ranking_score'],
             'team_quality_score': team['team_quality_score'],
+            'ordering_score': ordering_score(team),
             'record_score': team['record_score'],
             'conference_quality_score': team['conference_quality_score'],
-            'formula_breakdown': {
-                'tq_contribution': round(tq * FRS_WEIGHTS[0], 2),
-                'rec_contribution': round(rec * FRS_WEIGHTS[1], 2),
-                'cq_contribution': round(cq * FRS_WEIGHTS[2], 2),
-                'total': team.get('team_quality_score'),
-            },
+            'formula_breakdown': formula_breakdown(team),
             'records': team.get('records', {}),
             'sos': team.get('sos'),
             'sov': team.get('sov'),

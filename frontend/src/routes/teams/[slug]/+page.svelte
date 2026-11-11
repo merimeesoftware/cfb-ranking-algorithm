@@ -15,6 +15,7 @@
 		findTeamBySlug,
 	} from '$lib/brand';
 	import { fetchRankingsFromApi } from '$lib/api';
+	import { shownScore } from '$lib/order';
 	import type { Team } from '$lib/types';
 
 	export let data: {
@@ -53,7 +54,7 @@
 	});
 
 	$: title = pageTitle([`${t.team_name} Elo rank`, `${year} Week ${week}`]);
-	$: description = `${t.team_name} is #${rank} in ${BRAND_NAME} (Elo ${t.team_quality_score.toFixed(1)}) for ${year} Week ${week}. ${TAGLINE}`;
+	$: description = `${t.team_name} is #${rank} in ${BRAND_NAME} (Elo ${shownScore(t).toFixed(1)}) for ${year} Week ${week}. ${TAGLINE}`;
 	$: path = `/teams/${teamSlug(t.team_name)}`;
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -95,7 +96,7 @@
 		<div class="card p-3">
 			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">Elo</p>
 			<p class="font-display text-2xl text-primary-900 dark:text-white">
-				{t.team_quality_score.toFixed(1)}
+				{shownScore(t).toFixed(1)}
 			</p>
 		</div>
 		<div class="card p-3">

@@ -2,6 +2,7 @@
 	import type { Team } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
 	import { teamPath } from '$lib/brand';
+	import { shownScore } from '$lib/order';
 
 	export let team: Team;
 	export let rank: number;
@@ -100,7 +101,7 @@
 	</td>
 	<td class="px-4 py-3 text-right">
 		<span class="font-bold text-primary-600 dark:text-primary-400 tabular-nums" title="Elo. This is the sort key.">
-			{team.team_quality_score.toFixed(1)}
+			{shownScore(team).toFixed(1)}
 		</span>
 	</td>
 </tr>

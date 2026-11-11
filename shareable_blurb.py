@@ -157,7 +157,7 @@ def _plain_lever(path: Dict[str, Any]) -> str:
     lever = str(path.get('primary_lever') or '').lower()
     # The place is Elo. Do not pick the résumé gap even when it is larger.
     if 'elo' in lever or lever == 'tq':
-        return 'Elo, which sets the place. The record is shown beside the order and does not move it'
+        return 'Elo sets the place. The record does not move it'
     gaps = path.get('gaps') or {}
     if gaps:
         key = max(gaps, key=lambda k: float(gaps.get(k) or 0))
@@ -189,21 +189,14 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
     if path.get('at_top') or not ahead:
         hook = f' Can {behind} take the throne?' if behind else ' Who belongs up here next?'
         blurb = accept_blurb(
-            f'{name} is already on top. The board is impartial — wins, strength, '
-            f'and the whole resume decide it, not the noise.{hook}'
+            f'{name} is already on top. The place is Elo, not a vote and not the resume.{hook}'
         )
         return blurb or accept_blurb(f'{name} is on top. Who takes the throne next?') or f'{name} is #1.'
 
     problem = _plain_lever(path)
-    plan = {
-        'who they beat on the schedule': 'Beat a real contender. Padding wins will not close this.',
-        'how strong they look week to week': 'Stack wins against good teams and look dominant doing it.',
-        'the company they keep in conference': 'Prove it against the best in their league.',
-    }.get(problem, 'Keep winning the games that matter.')
-
     body = (
-        f'{name} is chasing {ahead}. The gap is mostly {problem} — '
-        f'the board weighs the whole resume, not the narrative. {plan}'
+        f'{name} is chasing {ahead}. The place is Elo. '
+        f'{problem}. Close it by beating better teams.'
     )
     hook = f' Think {name} already deserves that spot?'
     blurb = accept_blurb(f'{body} {hook}')

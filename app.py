@@ -7,13 +7,14 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
 from cache import get_cache
+from ranking_algorithm import ordering_score
 from ranking_service import (
     get_or_calculate_rankings,
     slim_rankings_for_list,
     build_config,
     DEFAULT_CONFIG,
-    FRS_WEIGHTS,
     publish_order,
+    formula_breakdown,
 )
 from agent_service import agent_bp
 from path_to_climb import compute_path_to_climb
@@ -256,72 +257,17 @@ def get_team_breakdown(team_name):
         ]
 
         def build_comparison(target, other, target_rank, other_rank):
-            diff_final = target['team_quality_score'] - other['team_quality_score']
-            diff_tq = target['team_quality_score'] - other['team_quality_score']
-            diff_rec = target['record_score'] - other['record_score']
-            diff_cq = target['conference_quality_score'] - other['conference_quality_score']
-            diff_sos = target['sos'] - other['sos']
-            diff_sov = target['sov'] - other['sov']
-            factors = []
-            tq_contrib = diff_tq * FRS_WEIGHTS[0]
-            if abs(tq_contrib) > 5:
-                factors.append({
-                    'factor': 'Team Quality (Elo)',
-                    'advantage': 'target' if tq_contrib > 0 else 'other',
-                    'diff': abs(diff_tq),
-                    'contribution': abs(tq_contrib),
-                    'explanation': (
-                        f"{'Higher' if diff_tq > 0 else 'Lower'} Elo rating "
-                        f"({target['team_quality_score']:.0f} vs {other['team_quality_score']:.0f})"
-                    ),
-                })
-            rec_contrib = diff_rec * FRS_WEIGHTS[1]
-            if abs(rec_contrib) > 5:
-                factors.append({
-                    'factor': 'Record Score (Resume)',
-                    'advantage': 'target' if rec_contrib > 0 else 'other',
-                    'diff': abs(diff_rec),
-                    'contribution': abs(rec_contrib),
-                    'explanation': (
-                        f"{'Stronger' if diff_rec > 0 else 'Weaker'} resume "
-                        f"({target['record_score']:.0f} vs {other['record_score']:.0f})"
-                    ),
-                })
-            cq_contrib = diff_cq * FRS_WEIGHTS[2]
-            if abs(cq_contrib) > 2:
-                factors.append({
-                    'factor': 'Conference Quality',
-                    'advantage': 'target' if cq_contrib > 0 else 'other',
-                    'diff': abs(diff_cq),
-                    'contribution': abs(cq_contrib),
-                    'explanation': (
-                        f"{'Stronger' if diff_cq > 0 else 'Weaker'} conference "
-                        f"({target['conference']} vs {other['conference']})"
-                    ),
-                })
-            if abs(diff_sos) > 20:
-                factors.append({
-                    'factor': 'Strength of Schedule',
-                    'advantage': 'target' if diff_sos > 0 else 'other',
-                    'diff': abs(diff_sos),
-                    'contribution': 0,
-                    'explanation': (
-                        f"{'Tougher' if diff_sos > 0 else 'Easier'} schedule "
-                        f"(avg opp: {target['sos']:.0f} vs {other['sos']:.0f})"
-                    ),
-                })
-            if abs(diff_sov) > 20:
-                factors.append({
-                    'factor': 'Strength of Victory',
-                    'advantage': 'target' if diff_sov > 0 else 'other',
-                    'diff': abs(diff_sov),
-                    'contribution': 0,
-                    'explanation': (
-                        f"{'Better' if diff_sov > 0 else 'Weaker'} quality wins "
-                        f"(avg win opp: {target['sov']:.0f} vs {other['sov']:.0f})"
-                    ),
-                })
-            factors.sort(key=lambda x: x['contribution'], reverse=True)
+            diff_final = ordering_score(target) - ordering_score(other)
+            factors = [{
+                'factor': 'Elo',
+                'advantage': 'target' if diff_final > 0 else 'other',
+                'diff': abs(diff_final),
+                'contribution': abs(diff_final),
+                'explanation': (
+                    f"Elo {ordering_score(target):.0f} vs {ordering_score(other):.0f}. "
+                    f"The record is shown beside the order and does not move the place."
+                ),
+            }]
             return {
                 'other_team': other['team_name'],
                 'other_rank': other_rank,
@@ -349,7 +295,8 @@ def get_team_breakdown(team_name):
                 'conference': team_data['conference'],
                 'record': f"{team_data['records']['total_wins']}-{team_data['records']['total_losses']}",
                 'conf_record': f"{team_data['records']['conf_wins']}-{team_data['records']['conf_losses']}",
-                'final_score': team_data['team_quality_score'],
+                'final_score': ordering_score(team_data),
+                'ordering_score': ordering_score(team_data),
                 'team_quality': team_data['team_quality_score'],
                 'record_score': team_data['record_score'],
                 'conference_quality': team_data['conference_quality_score'],
@@ -360,12 +307,7 @@ def get_team_breakdown(team_name):
                 'logo': team_data.get('logo'),
                 'color': team_data.get('color'),
             },
-            'formula_breakdown': {
-                'tq_contribution': team_data['team_quality_score'] * FRS_WEIGHTS[0],
-                'rec_contribution': team_data['record_score'] * FRS_WEIGHTS[1],
-                'cq_contribution': team_data['conference_quality_score'] * FRS_WEIGHTS[2],
-                'total': team_data['team_quality_score'],
-            },
+            'formula_breakdown': formula_breakdown(team_data),
             'wins_details': team_data.get('wins_details') or [],
             'losses_details': team_data.get('losses_details') or [],
             'quality_wins': team_data.get('quality_wins'),

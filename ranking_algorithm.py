@@ -876,6 +876,7 @@ class TeamQualityRanker:
                 'conference': data['conference'],
                 'conference_type': data['conference_type'],
                 'team_quality_score': data['quality_score'],
+                'ordering_score': data['quality_score'],
                 'conference_quality_score': cq,
                 'record_score': record_score,
                 'final_ranking_score': final_score,

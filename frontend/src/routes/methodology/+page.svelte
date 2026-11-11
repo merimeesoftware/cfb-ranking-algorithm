@@ -18,7 +18,7 @@
 			How the board works
 		</h1>
 		<p class="mt-3 text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-			Meathead version: who they beat + how they look + the league they live in.
+			The place is Elo: how they look after the games so far. The record sits beside that order.
 		</p>
 		<p class="mt-2 text-sm text-stone-600 dark:text-stone-400 max-w-2xl mx-auto">
 			Nerdy version below — every weight, bonus, and floor.
@@ -34,13 +34,14 @@
 			The mix
 		</h2>
 		<div class="bg-stone-100 dark:bg-stone-800/60 rounded-lg p-4 font-mono text-center text-base sm:text-lg mb-4">
-			<span class="text-primary-600 dark:text-primary-400 font-bold">Board score</span> =
-			(<span class="text-primary-600 dark:text-primary-400">0.65</span> × how they look) +
-			(<span class="text-amber-600 dark:text-amber-400">0.27</span> × who they beat) +
-			(<span class="text-stone-600 dark:text-stone-300">0.08</span> × league strength)
+			<span class="text-primary-600 dark:text-primary-400 font-bold">Place</span> =
+			<span class="text-primary-600 dark:text-primary-400">Elo</span>
 		</div>
 		<p class="text-sm text-gray-600 dark:text-gray-400 text-center">
-			All components are normalized to a 0–100 scale before weighting.
+			The record and the league are not in the sort. In weeks 1–11 the opening Elo still
+			mixes in last season's published score, which included both. At week 1 that mix is
+			70% of the stored prior: about 49% of last year and 21% of the year before.
+			From week 12 the prior is gone. Heat is not in the order.
 		</p>
 	</div>
 
@@ -54,7 +55,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">How they look (65%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">How they look (the order)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Pure team strength — how good they look on the field, week to week.
@@ -78,7 +79,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Who they beat (27%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Who they beat (not in the order)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				The ledger: wins, quality of opponents, schedule toughness, and milestones.
@@ -102,7 +103,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">League strength (8%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">League strength (not in the order)</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Credit for the conference you play in — a tougher league means more.
@@ -328,7 +329,7 @@
 						Resume = (Base + WeightedWinPct + SoV + SoS - BadLoss + QW) × MilestoneMultiplier
 					</div>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						All components are calculated then normalized to 0-100 scale.
+						The place is Elo. A 0–100 rescale is stored after the sort and is not the order.
 					</p>
 				</div>
 
@@ -697,8 +698,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white">Balance Power & Resume</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						How they look (65%) answers "How good are you?" while who they beat (27%) answers "What have you actually done?"
-						Neither strength alone nor résumé alone — a hybrid that uses both.
+						Elo answers "How good are you?" and that is the place. Who they beat is on the board beside the order and does not move it.
 					</p>
 				</div>
 			</div>

@@ -1,0 +1,65 @@
+{
+  "protocol": "HFA 50, regular season weeks 1-15, at least one FBS team, postseason excluded, cold priors 0.70/0.30, membership map. 2025 not used. 2024 is a mid-gate, not the holdout.",
+  "blend_minus_elo": {
+    "source": "independent re-run, week-bootstrap 2000 resamples",
+    "note": "Positive means the blend is worse than Elo.",
+    "windows": [
+      {
+        "window": "tune_2019_2022",
+        "games": 3074,
+        "point": 0.00307,
+        "ci_low": 0.00089,
+        "ci_high": 0.00524
+      },
+      {
+        "window": "validate_2023",
+        "games": 868,
+        "point": 0.00443,
+        "ci_low": -0.00119,
+        "ci_high": 0.01007
+      },
+      {
+        "window": "test_2024_mid_gate",
+        "games": 872,
+        "point": 0.00527,
+        "ci_low": 0.00098,
+        "ci_high": 0.01010
+      }
+    ]
+  },
+  "upset_bonus_1_minus_current": {
+    "source": "scripts/paired_order_brier.py --compare upset",
+    "seed": 20261111,
+    "resamples": 2000,
+    "note": "Negative means removing the 1.18 step is better. Point estimates are not worse.",
+    "windows": [
+      {
+        "window": "tune_2019_2022",
+        "games": 3076,
+        "current_brier": 0.1723706857268193,
+        "bonus_1_brier": 0.17212582490574233,
+        "point": -0.0002448608210769843,
+        "ci_low": -0.000573958321674962,
+        "ci_high": 0.00007332395934775169
+      },
+      {
+        "window": "validate_2023",
+        "games": 868,
+        "current_brier": 0.15794810540701004,
+        "bonus_1_brier": 0.1578542408712719,
+        "point": -0.00009386453573816343,
+        "ci_low": -0.0006496277928797785,
+        "ci_high": 0.0004158987577946712
+      },
+      {
+        "window": "test_2024_mid_gate",
+        "games": 872,
+        "current_brier": 0.17138533076944118,
+        "bonus_1_brier": 0.1711761925218217,
+        "point": -0.00020913824761948922,
+        "ci_low": -0.0006287557914463794,
+        "ci_high": 0.00018757692008691994
+      }
+    ]
+  }
+}
