@@ -17,6 +17,17 @@ def _contrib(team: Dict[str, Any], weights: Tuple[float, float, float] = WEIGHTS
     }
 
 
+def _gap_words(gap: float) -> str:
+    """Fan phrase for a TR+ gap. Under 1 is not rounded up to 1."""
+    size = abs(gap)
+    if size < 1:
+        return 'less than a point'
+    whole = int(round(size))
+    if whole == 1:
+        return '1 point'
+    return f'{whole} points'
+
+
 def compute_path_to_climb(
     team: Dict[str, Any],
     team_above: Optional[Dict[str, Any]],
@@ -51,21 +62,15 @@ def compute_path_to_climb(
     if score_gap > 0.5:
         primary = 'Elo'
         summary = (
-            f'To catch {above_name}, {team_name} needs {score_gap:.0f} more Elo points. '
-            f'The record is shown beside the order and does not move the place.'
+            f'{team_name} trails {above_name} by {_gap_words(score_gap)} on TR+. '
+            f'Beating better teams closes the gap.'
         )
     elif score_gap < -0.5:
         primary = 'Elo'
-        summary = (
-            f'{team_name} is already ahead of {above_name} on Elo. '
-            f'The record is shown beside the order and does not move the place.'
-        )
+        summary = f'{team_name} is ahead of {above_name} on TR+.'
     else:
         primary = None
-        summary = (
-            f'{team_name} matches {above_name} on Elo. '
-            f'The record is shown beside the order and does not move the place.'
-        )
+        summary = f'{team_name} matches {above_name} on TR+.'
 
     return {
         'at_top': False,

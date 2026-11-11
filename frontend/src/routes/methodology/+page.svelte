@@ -1,5 +1,6 @@
 <script lang="ts">
-	// Methodology page - V5 (StoryBrand fan copy)
+	import { EARLY_SEASON_NOTE } from '$lib/brand';
+
 	let expandedSection: string | null = null;
 
 	function toggleSection(section: string) {
@@ -38,10 +39,7 @@
 			<span class="text-primary-600 dark:text-primary-400">Elo</span>
 		</div>
 		<p class="text-sm text-gray-600 dark:text-gray-400 text-center">
-			The record and the league are not in the sort. In weeks 1–11 the opening Elo still
-			mixes in last season's published score, which included both. At week 1 that mix is
-			70% of the stored prior: about 49% of last year and 21% of the year before.
-			From week 12 the prior is gone. Heat is not in the order.
+			{EARLY_SEASON_NOTE}
 		</p>
 	</div>
 
@@ -143,7 +141,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Starting Elo Ratings by Tier</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Each team begins with a tier-based rating (85% weight) blended with their historical performance (15% weight) to reduce legacy bias while respecting pedigree:
+						Each conference tier has its own starting rating:
 					</p>
 					<div class="grid grid-cols-3 gap-3 text-center">
 						<div class="bg-primary-50 dark:bg-primary-900/30 rounded-lg p-3">
@@ -329,7 +327,7 @@
 						Resume = (Base + WeightedWinPct + SoV + SoS - BadLoss + QW) × MilestoneMultiplier
 					</div>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						The place is Elo. A 0–100 rescale is stored after the sort and is not the order.
+						The place is Elo.
 					</p>
 				</div>
 
@@ -698,7 +696,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white">Balance Power & Resume</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Elo answers "How good are you?" and that is the place. Who they beat is on the board beside the order and does not move it.
+						Elo answers “How good are you?” and that is the place.
 					</p>
 				</div>
 			</div>

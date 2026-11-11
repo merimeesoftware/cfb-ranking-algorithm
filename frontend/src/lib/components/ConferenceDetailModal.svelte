@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { Conference, Team } from '$lib/types';
 	import { shownScore } from '$lib/order';
+	import { RATING_NAME } from '$lib/brand';
 
 	export let conference: Conference;
 	export let rank: number;
@@ -201,7 +202,7 @@
 								</span>
 								<span class="font-semibold text-primary-600 dark:text-primary-400">
 									{shownScore(team).toFixed(1)}
-									<span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">Elo</span>
+									<span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">{RATING_NAME}</span>
 								</span>
 							</div>
 						</div>

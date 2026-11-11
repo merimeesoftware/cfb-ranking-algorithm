@@ -5,6 +5,7 @@
 	import AgentChatPanel from './AgentChatPanel.svelte';
 	import { BUSY_MESSAGE } from '$lib/api';
 	import { shownScore } from '$lib/order';
+	import { EARLY_SEASON_NOTE, RATING_NAME } from '$lib/brand';
 
 	export let team: Team;
 	export let rank: number;
@@ -295,14 +296,13 @@
 				<div>
 					<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Why this spot</h3>
 					<div class="flex justify-between items-center">
-						<span class="font-bold text-gray-900 dark:text-white">Elo</span>
+						<span class="font-bold text-gray-900 dark:text-white">{RATING_NAME}</span>
 						<span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
 							{eloScore.toFixed(1)}
 						</span>
 					</div>
 					<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-						The place is Elo. The record and the league are shown beside the order and do not move it.
-						Early weeks also start from last season's published score, which included both.
+						{EARLY_SEASON_NOTE}
 					</p>
 				</div>
 
@@ -337,7 +337,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{win.opponent_rank <= 25 ? `#${win.opponent_rank}` : ''} {win.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -383,7 +383,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{win.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -429,7 +429,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{loss.opponent_rank <= 25 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -475,7 +475,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{loss.opponent_rank <= 136 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -543,7 +543,7 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(Math.abs(comp.score_diff))} Elo ahead
+													{formatDiff(Math.abs(comp.score_diff))} {RATING_NAME} ahead
 												</span>
 											</div>
 											{#if comp.factors && comp.factors.length > 0}
@@ -575,11 +575,11 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(diff.total)} Elo ahead
+													{formatDiff(diff.total)} {RATING_NAME} ahead
 												</span>
 											</div>
 											<p class="text-xs text-gray-500 dark:text-gray-400">
-												Elo gap {formatDiff(diff.tq)}. The record is beside the order and does not move it.
+												{RATING_NAME} {formatDiff(diff.tq)}
 											</p>
 										</div>
 									{/each}
@@ -602,7 +602,7 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(Math.abs(comp.score_diff))} Elo behind
+													{formatDiff(Math.abs(comp.score_diff))} {RATING_NAME} behind
 												</span>
 											</div>
 											{#if comp.factors && comp.factors.length > 0}
@@ -634,11 +634,11 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(diff.total)} Elo behind
+													{formatDiff(diff.total)} {RATING_NAME} behind
 												</span>
 											</div>
 											<p class="text-xs text-gray-500 dark:text-gray-400">
-												Elo gap {formatDiff(diff.tq)}. The record is beside the order and does not move it.
+												{RATING_NAME} {formatDiff(diff.tq)}
 											</p>
 										</div>
 									{/each}

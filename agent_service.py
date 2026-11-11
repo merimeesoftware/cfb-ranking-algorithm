@@ -582,9 +582,9 @@ def _explain_prompt(context: Dict[str, Any], question: str) -> str:
         f'Use ONLY the Team context JSON for {facts}. Do not invent them.\n'
         f'{NO_PREDICTION_RULE}\n'
         f'{game_rule}\n'
-        'The place is Elo only (ordering_score). '
+        'The public rating name is TR+ (ordering_score). Do not call it Elo. '
         'Do not apply an 80/15/5 blend or any other weights. '
-        'Record score and conference quality are display-only and do not move the place.\n'
+        'Record score and conference quality are not in the order.\n'
         f'Question: {question}\n\n'
         f'Team context (JSON): {context}\n'
     )

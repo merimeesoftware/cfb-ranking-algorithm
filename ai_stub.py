@@ -22,15 +22,9 @@ def stub_explain_from_context(context: Dict[str, Any], question: Optional[str] =
         parts.append(f'{name} on the board:')
 
     if isinstance(place, (int, float)):
-        parts.append(
-            f'The place is Elo {place:.1f}. '
-            f'The record is beside the order and does not move it.'
-        )
+        parts.append(f'The rating is TR+ {place:.1f}.')
     elif place is not None:
-        parts.append(
-            f'The place is Elo {place}. '
-            f'The record is beside the order and does not move it.'
-        )
+        parts.append(f'The rating is TR+ {place}.')
     if wins is not None and losses is not None:
         parts.append(f'Record: {wins}-{losses}.')
 

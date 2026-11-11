@@ -465,7 +465,8 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded(f'{subject} edged {opponent}.', listed)
     prompt = _explain_prompt(context, 'Which results are carrying this rank?')
     assert 'This context has no played-game list.' in prompt
-    assert 'Elo only' in prompt
+    assert 'Do not call it Elo' in prompt
+    assert 'TR+' in prompt
     assert '80%' not in prompt
     assert '15%' not in prompt
     assert '5%' not in prompt

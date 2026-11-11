@@ -21,7 +21,7 @@ def test_build_matchup_payload_is_a_rating_comparison():
     payload = build_matchup_payload(teams, 'Oregon', 'Ohio State', 2024, 9)
     assert payload is not None
     assert payload['team_a']['tr_plus'] == 1700.0
-    assert payload['team_a']['rating_label'] == 'Elo'
+    assert payload['team_a']['rating_label'] == 'TR+'
     assert payload['team_b']['tr_plus'] == 1600.0
     assert payload['team_b']['rank'] == 2
     assert payload['team_a']['record'] == '8-0'

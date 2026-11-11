@@ -128,10 +128,7 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
         why = f'{name} is No. {rank}{record_bit} with nothing left to chase in the table.'
         hook = ' Is the board too locked in?'
     else:
-        why = (
-            f'{name} is No. {rank}{record_bit} ({conf}). '
-            f'The place is Elo. The record is beside the order and does not move it.'
-        )
+        why = f'{name} is No. {rank}{record_bit} ({conf}) on TR+.'
         if ahead:
             hook = f' Fair ranking — or is {ahead} getting too much respect?'
         elif behind:
@@ -147,7 +144,7 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
         return blurb
     # Authoring guard: stubs must always fit — shorten deliberately, do not chop mid-thought
     return accept_blurb(
-        f'{name} is No. {rank}{record_bit}. The place is Elo. The record does not move it. '
+        f'{name} is No. {rank}{record_bit} on TR+. '
         f'{"Prove " + behind + " belongs ahead?" if behind else "Fair ranking — or still up for debate?"}'
     ) or f'{name} is No. {rank}. Debate?'
 
@@ -160,12 +157,10 @@ def _plain_lever(path: Dict[str, Any]) -> str:
         level = gap is not None and abs(float(gap)) <= 0.5
     except (TypeError, ValueError):
         level = False
-    # A tie on Elo is not a résumé gap. Do not read gaps when the lever is empty.
+    # A tie on TR+ is not a résumé gap. Do not read gaps when the lever is empty.
     if level or lever in ('', 'none', 'level'):
-        return 'They are level on Elo. The record is display-only and does not move the place.'
-    if 'elo' in lever or lever == 'tq' or 'quality' in lever:
-        return 'Elo sets the place. The record does not move it.'
-    return 'Elo sets the place. The record is display-only and does not move it.'
+        return 'They are level on TR+.'
+    return 'Beating better teams closes the gap.'
 
 
 def stub_climb_blurb(context: Dict[str, Any]) -> str:
@@ -181,21 +176,17 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
     if path.get('at_top') or not ahead:
         hook = f' Can {behind} take the throne?' if behind else ' Who belongs up here next?'
         blurb = accept_blurb(
-            f'{name} is already on top. The place is Elo, not a vote and not the resume.{hook}'
+            f'{name} is already on top on TR+, not a vote and not the resume.{hook}'
         )
         return blurb or accept_blurb(f'{name} is on top. Who takes the throne next?') or f'{name} is #1.'
 
     problem = _plain_lever(path)
-    if 'level on elo' in problem.lower():
-        body = (
-            f'{name} and {ahead} are level on Elo. '
-            f'The record is display-only and does not move the place.'
-        )
+    if 'level on tr+' in problem.lower():
+        body = f'{name} and {ahead} are level on TR+.'
     else:
-        sentence = problem if problem.endswith('.') else f'{problem}.'
         body = (
-            f'{name} is chasing {ahead}. The place is Elo. '
-            f'{sentence} Close it by beating better teams.'
+            f'{name} is chasing {ahead} on TR+. '
+            f'Beating better teams is how it climbs; the record alone doesn’t move it.'
         )
     hook = f' Think {name} already deserves that spot?'
     blurb = accept_blurb(f'{body} {hook}')
@@ -203,8 +194,8 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
         return blurb
     return (
         accept_blurb(
-            f'{name} is chasing {ahead}. Close it by beating better teams. '
-            f'Think they already deserve that spot?'
+            f'{name} is chasing {ahead} on TR+. '
+            f'Beating better teams is how it climbs; the record alone doesn’t move it.'
         )
         or f'{name} vs {ahead}: who belongs higher?'
     )
@@ -238,10 +229,10 @@ def build_climb_prompt(context: Dict[str, Any]) -> str:
         'Use Donald Miller StoryBrand simplicity: caveman-clear. Fan is the hero.\n'
         'Structure:\n'
         '1) Who they are chasing (team above).\n'
-        '2) The gap in plain football language (who they beat / how they look / schedule).\n'
+        '2) The gap in plain football language (how they look right now).\n'
         '3) One clear thing that would move them up.\n'
         '4) End with a complete debate question (?).\n'
-        'Voice: confident that an impartial model (wins + strength + full resume) beats hot takes.\n'
+        'Voice: confident that an impartial model beats hot takes.\n'
         f'{search_prompt_rules()}'
         'Do NOT use: TQ, CQ, Elo, delta, Δ, contrib, lever, point gaps, decimals, formulas.\n'
         'No hashtags, emojis, or quotes around the whole blurb.\n'

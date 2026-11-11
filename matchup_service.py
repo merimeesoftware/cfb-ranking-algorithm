@@ -35,7 +35,7 @@ def build_matchup_payload(
             "name": team["team_name"],
             "rank": rank,
             "tr_plus": ordering_score(team),
-            "rating_label": "Elo",
+            "rating_label": "TR+",
             "record": f"{wins}-{losses}",
         }
 

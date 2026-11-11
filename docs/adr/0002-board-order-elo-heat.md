@@ -22,7 +22,7 @@ Home field is the ranker's 50. Regular season, weeks 1–15, at least one FBS te
 | Validate 2023 | 868 | +0.00443 | [−0.00119, +0.01007] |
 | 2024 mid-gate | 872 | +0.00527 | [+0.00098, +0.01010] |
 
-Elo is not worse on any window. 2023's interval crosses zero. The script is `scripts/paired_order_brier.py`. The recorded intervals are in `docs/elo-order-brier.json`.
+Elo is not worse on any window. 2023's interval crosses zero. The blend-versus-Elo scores come from `scripts/monotonicity_counts.py`. The week-bootstrap intervals in this table are the independent re-run recorded in `docs/elo-order-brier.json` (`blend_minus_elo.source`). They are not from `scripts/paired_order_brier.py`.
 
 ## Upset step
 
@@ -34,10 +34,10 @@ A later change on this stack removes the ×1.18 upset step at a 150-point live g
 | Validate 2023 | 868 | −0.00009 | [−0.00065, +0.00042] |
 | 2024 mid-gate | 872 | −0.00021 | [−0.00063, +0.00019] |
 
-Point estimates are not worse. The intervals cross zero. The step is removed because it breaks monotonicity and the rating does not get worse.
+Point estimates are not worse. The intervals cross zero. The step is removed because it breaks monotonicity and the rating does not get worse. Those intervals are from `scripts/paired_order_brier.py` (`--compare upset`), recorded in `docs/elo-order-brier.json` under `upset_bonus_1_minus_current`.
 
 ## Consequences
 
 - Rank and the number beside it have to be `ordering_score`. A lower place must not show a higher rating.
 - `ALGO_VERSION` is `v5.4`, so a computed cache from `v5.3` is not reused. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
-- Methodology copy that said 0.65 / 0.27 / 0.08, or that parts are scaled to 0–100 before weighting, was describing a different formula. The page now says the place is Elo.
+- Methodology copy that said 0.65 / 0.27 / 0.08, or that parts are scaled to 0–100 before weighting, was describing a different formula. The methodology page still names Elo. The board, team panel, title, and share copy call the rating TR+.

@@ -71,7 +71,7 @@ def test_matchup_rating_is_the_ordering_score(client):
     assert sharp['tr_plus'] == 1600.0
     assert soft['tr_plus'] == 1400.0
     assert sharp['tr_plus'] > soft['tr_plus']
-    assert sharp['rating_label'] == 'Elo'
+    assert sharp['rating_label'] == 'TR+'
 
 
 def test_explain_total_matches_the_place(client, monkeypatch):

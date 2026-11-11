@@ -5,6 +5,7 @@
 	import AgentChatPanel from '$lib/components/AgentChatPanel.svelte';
 	import {
 		BRAND_NAME,
+		RATING_NAME,
 		TAGLINE,
 		pageTitle,
 		teamSlug,
@@ -53,8 +54,8 @@
 		}
 	});
 
-	$: title = pageTitle([`${t.team_name} Elo rank`, `${year} Week ${week}`]);
-	$: description = `${t.team_name} is #${rank} in ${BRAND_NAME} (Elo ${shownScore(t).toFixed(1)}) for ${year} Week ${week}. ${TAGLINE}`;
+	$: title = pageTitle([`${t.team_name} ${RATING_NAME} rank`, `${year} Week ${week}`]);
+	$: description = `${t.team_name} is #${rank} in ${BRAND_NAME} (${RATING_NAME} ${shownScore(t).toFixed(1)}) for ${year} Week ${week}. ${TAGLINE}`;
 	$: path = `/teams/${teamSlug(t.team_name)}`;
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -94,7 +95,7 @@
 			<p class="font-display text-2xl text-primary-900 dark:text-white">#{rank}</p>
 		</div>
 		<div class="card p-3">
-			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">Elo</p>
+			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">{RATING_NAME}</p>
 			<p class="font-display text-2xl text-primary-900 dark:text-white">
 				{shownScore(t).toFixed(1)}
 			</p>

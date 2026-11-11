@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Team } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
-	import { teamPath } from '$lib/brand';
+	import { teamPath, RATING_TOOLTIP } from '$lib/brand';
 	import { shownScore } from '$lib/order';
 
 	export let team: Team;
@@ -100,7 +100,7 @@
 		{/if}
 	</td>
 	<td class="px-4 py-3 text-right">
-		<span class="font-bold text-primary-600 dark:text-primary-400 tabular-nums" title="Elo. This is the sort key.">
+		<span class="font-bold text-primary-600 dark:text-primary-400 tabular-nums" title={RATING_TOOLTIP}>
 			{shownScore(team).toFixed(1)}
 		</span>
 	</td>

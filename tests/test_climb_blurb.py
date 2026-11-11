@@ -32,8 +32,10 @@ def test_stub_climb_blurb_is_caveman_simple():
     assert 40 <= len(blurb) <= BLURB_MAX_CHARS
     assert 'Indiana' in blurb
     assert 'Ohio State' in blurb
-    assert 'it. Close it' in blurb
-    assert 'it Close it' not in blurb
+    assert (
+        'Ohio State is chasing Indiana on TR+. '
+        'Beating better teams is how it climbs; the record alone doesn’t move it.'
+    ) in blurb
     lower = blurb.lower()
     # No math jargon (word-ish checks; avoid false positives like "below")
     for banned in ('tq contrib', 'cq Δ', 'resume Δ', 'contrib Δ', 'Δ', ' primary lever', 'elo gains'):
@@ -62,8 +64,8 @@ def test_level_on_elo_does_not_use_the_record_as_the_lever():
         },
     })
     lower = blurb.lower()
-    assert 'level on elo' in lower
-    assert 'display-only' in lower
+    assert 'level on tr+' in lower
+    assert 'display-only' not in lower
     assert 'who they beat' not in lower
     assert 'conference' not in lower
 

@@ -37,7 +37,10 @@ def test_ohio_state_chasing_oregon():
     assert result['score_gap'] == 50.0
     assert result['team_above'] == 'Oregon'
     assert result['primary_lever'] == 'Elo'
-    assert 'does not move the place' in result['summary']
+    assert result['summary'] == (
+        'Ohio State trails Oregon by 50 points on TR+. '
+        'Beating better teams closes the gap.'
+    )
 
 
 def test_climb_follows_elo_when_resume_gap_is_larger():
@@ -57,4 +60,7 @@ def test_climb_follows_elo_when_resume_gap_is_larger():
     assert result['primary_lever'] == 'Elo'
     assert result['score_gap'] == 10.0
     assert 'resume' not in result['primary_lever'].lower()
-    assert 'record' in result['summary'].lower()
+    assert result['summary'] == (
+        'Soft trails Sharp by 10 points on TR+. '
+        'Beating better teams closes the gap.'
+    )

@@ -259,13 +259,12 @@ def get_team_breakdown(team_name):
         def build_comparison(target, other, target_rank, other_rank):
             diff_final = ordering_score(target) - ordering_score(other)
             factors = [{
-                'factor': 'Elo',
+                'factor': 'TR+',
                 'advantage': 'target' if diff_final > 0 else 'other',
                 'diff': abs(diff_final),
                 'contribution': abs(diff_final),
                 'explanation': (
-                    f"Elo {ordering_score(target):.0f} vs {ordering_score(other):.0f}. "
-                    f"The record is shown beside the order and does not move the place."
+                    f"TR+ {ordering_score(target):.0f} vs {ordering_score(other):.0f}."
                 ),
             }]
             return {
