@@ -159,7 +159,8 @@ class TeamQualityRanker:
         
         # V5.3: Upset bonus configuration (dampened from V4)
         self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)  # Elo gap for upset bonus
-        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.18)  # V5.3: Reduced from 1.25
+        # 1.0: a live 150-point step let a bigger earlier win erase a later bonus.
+        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.0)
         self.g5_beats_p4_mult = self.config.get('g5_beats_p4_mult', 1.12)  # V5.3: Reduced from 1.20
         
         # V5.3: Tier-specific SoV thresholds (now equalized)

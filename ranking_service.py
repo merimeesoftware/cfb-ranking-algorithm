@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
     'fcs_initial': 900.0,
     'base_factor': 50.0,
     'hfa_elo': 50.0,
-    'upset_bonus_mult': 1.18,
+    'upset_bonus_mult': 1.0,
     'team_quality_weight': 0.80,
     'conference_weight': 0.05,
     'record_weight': 0.15,

@@ -1,0 +1,16 @@
+{
+  "protocol": "Same-week boards, 2019-2024 regular season weeks 1-15. Postseason excluded. Season membership map. Cold priors 0.70/0.30 then the week fade. Ranker home field 50. Upset step was still 1.18 for this count. A hit is a drop larger than 1e-6. 2025 was not used. 2024 is a mid-gate, not the holdout. Same-week checks cannot see a later week's upset cliff; season-end Elo is covered by tests/test_monotonic_order.py.",
+  "script": "scripts/monotonicity_counts.py",
+  "f4_margin_forced_to_1": {
+    "rows": 4190,
+    "old_blend_fell": 47,
+    "elo_fell": 0,
+    "largest_blend_drop": 19.175905123554458
+  },
+  "f6_extra_fcs_win_35_0": {
+    "rows": 11250,
+    "old_blend_fell": 4208,
+    "elo_fell": 0,
+    "largest_blend_drop": 103.96301926301135
+  }
+}
