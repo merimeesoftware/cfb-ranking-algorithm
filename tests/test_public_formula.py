@@ -148,6 +148,45 @@ console.log('ok', rows);
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
+def test_what_if_can_promote_a_team_outside_the_official_top():
+    """Exploratory order uses the whole published board, not a top-40 slice."""
+    script = r"""
+import { whatIfTop } from './frontend/src/lib/whatIfOrder.js';
+const teams = [];
+for (let i = 0; i < 45; i += 1) {
+  teams.push({
+    team_name: `Team ${i + 1}`,
+    team_quality_score: 2000 - i,
+    record_score: 1000,
+    conference_quality_score: 1000,
+    final_ranking_score: 2000 - i,
+  });
+}
+const official = whatIfTop(teams, { look: 0.8, resume: 0.15, league: 0.05 }, 8);
+const boosted = teams.map((team) => ({ ...team }));
+boosted[44].record_score = 9000;
+const top = whatIfTop(boosted, { look: 0, resume: 1, league: 0 }, 8);
+if (top[0].team_name !== 'Team 45' || top[0].officialRank !== 45) {
+  console.error(top.map((t) => [t.team_name, t.officialRank]));
+  process.exit(1);
+}
+const names = official.map((t) => t.team_name).join(',');
+if (names !== 'Team 1,Team 2,Team 3,Team 4,Team 5,Team 6,Team 7,Team 8') {
+  console.error(names);
+  process.exit(1);
+}
+console.log('ok');
+"""
+    completed = subprocess.run(
+        ['node', '--input-type=module', '-e', script],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
 def test_ui_does_not_hardcode_retired_formula_numbers():
     modal = (ROOT / 'frontend/src/lib/components/TeamDetailModal.svelte').read_text(encoding='utf-8')
     page = (ROOT / 'frontend/src/routes/methodology/+page.svelte').read_text(encoding='utf-8')

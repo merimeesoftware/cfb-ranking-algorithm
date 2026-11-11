@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { PUBLIC_FORMULA } from '$lib/publicFormula';
+	import { whatIfTop } from '$lib/whatIfOrder.js';
 
 	type Row = {
 		team_name: string;
@@ -46,15 +47,11 @@
 		league = PUBLIC_FORMULA.conference_weight * 100;
 	}
 
-	function whatIf(team: Row): number {
-		return (
-			team.team_quality_score * (look / 100) +
-			team.record_score * (resume / 100) +
-			team.conference_quality_score * (league / 100)
-		);
-	}
-
-	$: ordered = [...teams].sort((a, b) => whatIf(b) - whatIf(a)).slice(0, 8);
+	$: ordered = whatIfTop(
+		teams,
+		{ look: look / 100, resume: resume / 100, league: league / 100 },
+		8
+	);
 	$: officialWeights =
 		Math.abs(look - PUBLIC_FORMULA.team_quality_weight * 100) < 0.05 &&
 		Math.abs(resume - PUBLIC_FORMULA.record_weight * 100) < 0.05 &&
@@ -90,7 +87,7 @@
 			const ranked = (data.team_rankings || [])
 				.filter((team) => team.team_name)
 				.sort((a, b) => b.final_ranking_score - a.final_ranking_score);
-			teams = ranked.slice(0, 40).map((team, index) => ({ ...team, officialRank: index + 1 }));
+			teams = ranked.map((team, index) => ({ ...team, officialRank: index + 1 }));
 			weekLabel = `${year} week ${week}`;
 		} catch {
 			unavailable = true;
