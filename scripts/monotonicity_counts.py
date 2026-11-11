@@ -2,9 +2,12 @@
 
 Game rows come from TR_GAMES_DIR (games-YYYY-both.json for 2017-2024).
 Recorded counts: docs/monotonicity-counts.json.
+
+--upset-bonus sets upset_bonus_mult. Omit it to keep the ranker default of 1.0.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -52,8 +55,11 @@ def load_year(year: int):
     return regular
 
 
-def cold_final_scores(games):
-    ranker = TeamQualityRanker(DEFAULT_CONFIG.copy())
+def cold_final_scores(games, upset_bonus=None):
+    config = DEFAULT_CONFIG.copy()
+    if upset_bonus is not None:
+        config['upset_bonus_mult'] = upset_bonus
+    ranker = TeamQualityRanker(config)
     by_week = defaultdict(list)
     for game in games:
         by_week[int(game['week'])].append(game)
@@ -125,13 +131,30 @@ def fbs_names(rankings):
     return names
 
 
-def main():
+def ranked(games, week, priors, upset_bonus):
+    if upset_bonus is None:
+        return rank_through_week(games, week, priors=priors)
+    return rank_through_week(
+        games, week, priors=priors, config={'upset_bonus_mult': upset_bonus},
+    )
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='Same-week monotonicity counts. Offline.')
+    parser.add_argument(
+        '--upset-bonus',
+        type=float,
+        default=None,
+        help='Set upset_bonus_mult. Omit to keep the ranker default of 1.0.',
+    )
+    args = parser.parse_args(argv)
+    upset_bonus = args.upset_bonus
     print('loading', flush=True)
     by_year = {year: load_year(year) for year in YEARS}
     print({year: len(games) for year, games in by_year.items()}, flush=True)
     cold = {}
     for year in range(2017, 2024):
-        cold[year] = cold_final_scores(by_year[year])
+        cold[year] = cold_final_scores(by_year[year], upset_bonus)
         print('cold', year, len(cold[year]), flush=True)
 
     # Paired Brier, HFA 50, regular season, priors, Elo vs blend.
@@ -165,7 +188,7 @@ def main():
                     ratings_elo = preseason_ratings(priors=priors, team_meta=meta)
                     ratings_blend = ratings_elo
                 else:
-                    rankings, _ = rank_through_week(games, week - 1, priors=priors)
+                    rankings, _ = ranked(games, week - 1, priors, upset_bonus)
                     ratings_elo = ratings_from_rankings(rankings, field='team_quality_score')
                     ratings_blend = ratings_from_rankings(rankings, field='final_ranking_score')
                 for game in games:
@@ -214,7 +237,7 @@ def main():
         indexed = list(enumerate(games))
         for week in weeks:
             base_games = [game for game in games if int(game['week']) <= week]
-            base, _ = rank_through_week(base_games, week, priors=priors)
+            base, _ = ranked(base_games, week, priors, upset_bonus)
             base_by_name = {team['team_name']: team for team in base['team_rankings']}
             week_games = [(index, game) for index, game in indexed if int(game['week']) == week and is_fbs_fbs(game)]
             for index, game in week_games:
@@ -231,7 +254,7 @@ def main():
                         break
                 if not replaced:
                     continue
-                alt, _ = rank_through_week(alt_games, week, priors=priors)
+                alt, _ = ranked(alt_games, week, priors, upset_bonus)
                 name = winner_name(game)
                 actual_blend = score_of(base, name, 'final_ranking_score')
                 forced_blend = score_of(alt, name, 'final_ranking_score')
@@ -264,7 +287,7 @@ def main():
                     'season_type': 'regular',
                     'neutral_site': False,
                 }
-                alt, _ = rank_through_week(base_games + [extra], week, priors=priors)
+                alt, _ = ranked(base_games + [extra], week, priors, upset_bonus)
                 base_blend = float(base_by_name[name]['final_ranking_score'])
                 base_elo = float(base_by_name[name]['team_quality_score'])
                 alt_blend = score_of(alt, name, 'final_ranking_score')

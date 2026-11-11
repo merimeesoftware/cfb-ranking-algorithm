@@ -58,10 +58,14 @@ def test_archie_bigger_margin_then_upset_does_not_fall():
 
 
 def test_archie_extra_fcs_win_then_upset_does_not_fall():
-    """Extra 35-0 FCS win before Alpha wins at Gamma 1680."""
-    priors = {'Alpha': 1500.0, 'Delta': 1400.0, 'Gamma': 1680.0}
+    """Extra 35-0 FCS win before Alpha wins at Gamma 1680.
+
+    Delta starts at 1500 and the first game is 24-21. Restoring the
+    1.18 upset bonus makes the extra win lower Alpha.
+    """
+    priors = {'Alpha': 1500.0, 'Delta': 1500.0, 'Gamma': 1680.0}
     base = [
-        _game(1, 'Alpha', 'Delta', 21, 14),
+        _game(1, 'Alpha', 'Delta', 24, 21),
         _game(3, 'Gamma', 'Alpha', 10, 30),
     ]
     extra = list(base)
@@ -106,7 +110,7 @@ def test_seeded_schedules_stay_monotone_at_season_end():
         wider[0]['home_score'] = games[0]['home_score'] + rng.randint(1, 20)
         assert _end(wider, 'Alpha', priors, 1.0) + 1e-6 >= _end(games, 'Alpha', priors, 1.0)
         extra = deepcopy(games)
-        extra.append(_game(week, 'Alpha', f'Cup{week}', 35, 0, kind['Alpha'], 'FCS', 'SEC', None))
+        extra.insert(1, _game(2, 'Alpha', f'Cup{week}', 35, 0, kind['Alpha'], 'FCS', 'SEC', None))
         assert _end(extra, 'Alpha', priors, 1.0) + 1e-6 >= _end(games, 'Alpha', priors, 1.0)
 
 
