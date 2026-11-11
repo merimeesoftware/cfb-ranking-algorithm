@@ -899,10 +899,15 @@ class TeamQualityRanker:
         # Re-calculate aggregate records for display
         conf_records = defaultdict(lambda: {'p4': {'w':0,'l':0}, 'g5': {'w':0,'l':0}, 'fcs': {'w':0,'l':0}})
         conf_team_counts = defaultdict(int)
+        # #101: a conference's tier is its members' season tier, set from games.
+        # Mixed tiers (FBS Independents: Notre Dame P4, others G5) fall back to
+        # the legacy label so the row does not depend on team order.
+        conf_member_types: Dict[str, set] = defaultdict(set)
         
         for team, data in self.team_stats.items():
             if data['conference']:
                 conf_team_counts[data['conference']] += 1
+                conf_member_types[data['conference']].add(data['conference_type'])
                 for k in ['p4', 'g5', 'fcs']:
                     # Use inter_conf_records instead of total records
                     conf_records[data['conference']][k]['w'] += data['inter_conf_records'][k]['w']
@@ -926,7 +931,8 @@ class TeamQualityRanker:
             recs = conf_records[conf]
             conf_rankings.append({
                 'conference_name': conf,
-                'conference_type': get_conf_type(conf),
+                'conference_type': (next(iter(conf_member_types[conf])) if len(conf_member_types.get(conf, ())) == 1
+                                    else get_conf_type(conf)),
                 'average_team_quality': avg_q,
                 'number_of_teams': conf_team_counts[conf],
                 'record_vs_p4': f"{recs['p4']['w']}-{recs['p4']['l']}",

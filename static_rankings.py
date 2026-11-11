@@ -418,9 +418,16 @@ def read_prior_teams(
     year: int,
     *,
     algo: Optional[str] = None,
+    membership: str,
     root: Optional[Union[str, Path]] = None,
 ) -> Optional[Dict[str, float]]:
-    """End-of-season scores. None means the derived file is not published yet."""
+    """End-of-season scores. None means no usable derived file.
+
+    ``membership`` is the conference membership map version (#101). A file
+    whose ``membership`` is missing or different was computed under other
+    conference labels: it is rejected (logged, treated as unpublished) so the
+    caller recomputes from map-aware games. Never reused as-is.
+    """
     bases = [Path(root)] if root is not None else [_frontend_rankings_root(), Path(DEFAULT_ROOT)]
     for base in bases:
         try:
@@ -437,6 +444,10 @@ def read_prior_teams(
         if not isinstance(payload, dict) or payload.get('schema') != 1:
             continue
         if algo is not None and payload.get('algo') != algo:
+            continue
+        if payload.get('membership') != membership:
+            print(f"Priors {year}: rejected {fullpath}: membership "
+                  f"{payload.get('membership')!r}, need {membership!r}; recomputing")
             continue
         teams = payload.get('teams')
         if not isinstance(teams, dict):
@@ -456,12 +467,16 @@ def write_prior_scores(
     source_sha: str,
     generated_at: str,
     algo: str,
+    membership: str,
     root: Optional[Union[str, Path]] = None,
 ) -> Path:
     """Derived team-to-score priors. Sorted keys, no CFBD game rows."""
+    if not isinstance(membership, str) or not membership:
+        raise ValueError('priors need the conference membership map version')
     payload = {
         'algo': algo,
         'generated_at': generated_at,
+        'membership': membership,
         'schema': 1,
         'source_sha': source_sha,
         'teams': {name: teams[name] for name in sorted(teams)},

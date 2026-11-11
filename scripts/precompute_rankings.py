@@ -41,6 +41,7 @@ load_dotenv(ROOT / '.env')
 os.environ.setdefault('CFBD_MAX_CALLS', '8')
 
 from cache import get_cache
+from conference_membership import load_membership
 from data_processor import CFBDataProcessor
 from spend_guards import CFBDOfflineError, is_cfbd_killed, is_cfbd_offline
 from ranking_algorithm import TeamQualityRanker
@@ -499,8 +500,9 @@ def prior_generated_at(games: list) -> str:
 def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = None) -> list[int]:
     """Write Y-1 and Y-2 derived priors when the published file is missing."""
     fetched = []
+    membership = load_membership().version
     for prior in (year - 1, year - 2):
-        if read_prior_teams(prior, algo=ALGO_VERSION, root=root) is not None:
+        if read_prior_teams(prior, algo=ALGO_VERSION, membership=membership, root=root) is not None:
             print(f'Priors hit: {prior}')
             continue
         print(f'Priors fetch: {prior}')
@@ -512,6 +514,7 @@ def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = No
             source_sha=games_fingerprint(games),
             generated_at=prior_generated_at(games),
             algo=ALGO_VERSION,
+            membership=membership,
             root=root,
         )
         fetched.append(prior)

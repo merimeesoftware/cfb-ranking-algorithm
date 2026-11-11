@@ -418,6 +418,7 @@ def test_current_season_refresh_drops_the_computed_board(tmp_path, monkeypatch):
 def test_published_priors_make_zero_prior_season_cfbd_calls(tmp_path):
     """frontend/static/rankings/priors skips Y-1 and Y-2 game fetches."""
     from ranking_service import ALGO_VERSION
+    from conference_membership import load_membership
     from static_rankings import write_prior_scores
 
     calls = []
@@ -434,6 +435,7 @@ def test_published_priors_make_zero_prior_season_cfbd_calls(tmp_path):
             source_sha='abc',
             generated_at='2024-01-20T00:00:00Z',
             algo=ALGO_VERSION,
+            membership=load_membership().version,
             root=tmp_path,
         )
     assert pre.ensure_priors(Processor(), 2024, root=tmp_path) == []

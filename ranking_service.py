@@ -8,6 +8,7 @@ from api_integration import CFBDRequestError
 from data_processor import CFBDataProcessor
 from ranking_algorithm import TeamQualityRanker
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
+from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
 
 ALGO_VERSION = 'v5.3'
@@ -94,6 +95,8 @@ def priors_cache_key(year: int, config: Dict[str, Any]) -> str:
     cache = get_cache()
     fingerprint = {k: config.get(k, DEFAULT_CONFIG.get(k)) for k in _PRIORS_CONFIG_KEYS}
     fingerprint['algo'] = ALGO_VERSION
+    # #101: priors computed under another membership map are a different key.
+    fingerprint['membership'] = load_membership().version
     config_hash = hashlib.md5(
         json.dumps(fingerprint, sort_keys=True).encode(),
         usedforsecurity=False,
@@ -114,9 +117,16 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
     # calculate_priors only weights Y-1 and Y-2 — skip Y-3.
     # Published priors are end-of-season scores, not CFBD game rows.
     from static_rankings import read_prior_teams
+    membership = load_membership()
     for h_year in range(year - 1, year - 3, -1):
+        if h_year < membership.first_season:
+            # Explicit: no membership map before coverage, so no history.
+            print(f"Priors: skipping {h_year}, before conference membership "
+                  f"coverage {membership.first_season}-{membership.last_season} "
+                  f"(map {membership.version})")
+            continue
         try:
-            stored = read_prior_teams(h_year, algo=ALGO_VERSION)
+            stored = read_prior_teams(h_year, algo=ALGO_VERSION, membership=membership.version)
             if stored is not None:
                 history_data.append({
                     'rankings': {
@@ -135,7 +145,8 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
                 h_results = h_ranker.calculate_final_rankings()
                 h_results = h_ranker.normalize_scores(h_results)
                 history_data.append(h_results)
-        except (CFBDRequestError, CFBDOfflineError):
+        except (CFBDRequestError, CFBDOfflineError, MembershipError):
+            # MembershipError fails closed (#101): a map gap is not "no history".
             raise
         except Exception as e:
             print(f"Could not process history for {h_year}: {e}")
