@@ -1,5 +1,4 @@
 import type { Team, Conference, FilterState, RankingsResponse } from '$lib/types';
-import { ALGO_VERSION } from '$lib/algo';
 import { agentHeaders } from '$lib/turnstile';
 import { orderTeamsByElo } from '$lib/order';
 
@@ -148,7 +147,6 @@ async function fetchStaticRankings(year: number, week: number): Promise<Rankings
 		});
 		if (!response.ok) return null;
 		const data = await response.json();
-		if (data.algo !== ALGO_VERSION) return null;
 		return {
 			teams: orderTeamsByElo((data.team_rankings || data.teams || []).map(mapTeamFromApi)),
 			conferences: (data.conference_rankings || data.conferences || []).map(mapConferenceFromApi),
@@ -254,30 +252,19 @@ export async function fetchTeamDetail(
 > {
 	const url = `${API_BASE}/rankings/team/${encodeURIComponent(teamName)}?year=${year}&week=${week}`;
 	const response = await fetch(url);
-	const errorBody = await response.json().catch(() => ({}));
-	const payload = errorBody as { error?: string; message?: string; published?: boolean; code?: string };
 	if (response.status === 429) {
-		throw noticeFromPayload(payload, BUSY_MESSAGE);
-	}
-	if (payload.published === false || response.status === 400) {
-		throw noticeFromPayload(payload, payload.message || payload.error || BUSY_MESSAGE);
+		const error = await response.json().catch(() => ({}));
+		throw noticeFromPayload(error as { message?: string; code?: string }, BUSY_MESSAGE);
 	}
 	if (!response.ok) {
+		const error = await response.json().catch(() => ({}));
+		const payload = error as { error?: string; message?: string; published?: boolean; code?: string };
+		if (payload.published === false || response.status === 400) {
+			throw noticeFromPayload(payload, payload.message || payload.error || BUSY_MESSAGE);
+		}
 		throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
 	}
-	const data = errorBody as {
-		team?: { name?: string };
-		wins_details?: Team['wins_details'];
-		losses_details?: Team['losses_details'];
-		quality_wins?: number;
-		quality_losses?: number;
-		bad_losses?: number;
-		top_10_wins?: number;
-		top_25_wins?: number;
-		path_to_climb?: Team['path_to_climb'];
-		comparisons_ahead?: Team['comparisons_ahead'];
-		comparisons_behind?: Team['comparisons_behind'];
-	};
+	const data = await response.json();
 	const t = data.team || {};
 	return {
 		team_name: t.name || teamName,

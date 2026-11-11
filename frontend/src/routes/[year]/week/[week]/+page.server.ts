@@ -22,16 +22,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		throw error(404, 'Week not found');
 	}
 	const data = loadWeekRankings(year, week);
-	if (!data) {
-		return {
-			year,
-			week,
-			teams: [],
-			conferences: [],
-			story: null,
-			prevRanks: {},
-		};
-	}
+	if (!data) throw error(404, 'Week not found');
 	const prev = loadPrevRanks(year, week);
 	const prevRanks: Record<string, number> = {};
 	prev.forEach((rank, name) => {

@@ -96,9 +96,7 @@
 		</button>
 	</div>
 
-	{#if data.teams.length === 0}
-		<p class="mt-8 text-primary-800 dark:text-primary-200">That week isn't on the board yet.</p>
-	{:else if tab === 'teams'}
+	{#if tab === 'teams'}
 		<RankingsTable
 			teams={data.teams}
 			allTeams={data.teams}

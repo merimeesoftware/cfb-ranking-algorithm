@@ -37,12 +37,6 @@ export default defineConfig({
 						return;
 					}
 					throw new Error(message);
-				},
-				handleUnseenRoutes: ({ routes, message }) => {
-					// No v5.5 week is published, so these have nothing to enumerate.
-					const waiting = new Set(['/games/[slug]', '/teams/[slug]']);
-					const extra = routes.filter((route) => !waiting.has(route));
-					if (extra.length) throw new Error(message);
 				}
 			}
 		})

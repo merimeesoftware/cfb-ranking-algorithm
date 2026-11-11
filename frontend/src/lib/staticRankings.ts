@@ -5,7 +5,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Conference, Team } from '$lib/types';
-import { ALGO_VERSION } from '$lib/algo';
 import { orderTeamsByElo } from '$lib/order';
 
 const STATIC_ROOT = join(process.cwd(), 'static', 'rankings');
@@ -105,7 +104,6 @@ export function loadWeekRankings(
 	const path = join(STATIC_ROOT, String(year), `week-${week}.json`);
 	if (!existsSync(path)) return null;
 	const data = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;
-	if (data.algo !== ALGO_VERSION) return null;
 	const teams = orderTeamsByElo(
 		((data.team_rankings || data.teams || []) as Record<string, unknown>[]).map(mapTeam)
 	);
