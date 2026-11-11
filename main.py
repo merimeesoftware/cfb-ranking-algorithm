@@ -59,7 +59,6 @@ class CFBRankingApp:
     def run_ranking(self, 
                    year: int, 
                    week: Optional[int] = None,
-                   use_ats: bool = False,
                    include_fcs: bool = True,
                    save_charts: bool = False,
                    config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -69,7 +68,6 @@ class CFBRankingApp:
         Args:
             year: Season year
             week: Week number (None for full season)
-            use_ats: Whether to use against-the-spread performance
             include_fcs: Whether to include FCS games
             save_charts: Whether to save charts to files
             config: Optional configuration overrides
@@ -118,8 +116,7 @@ class CFBRankingApp:
         
         # 2. Initialize the ranking algorithm for Current Year
         ranking_config = config or {}
-        ranking_config['use_ats'] = use_ats
-        
+
         # V4.3: Dynamic Prior Strength
         # Formula: 0.2 * (1 - week/15) -> 20% at Week 0, 0% at Week 15
         if 'prior_strength' not in ranking_config:
@@ -141,15 +138,7 @@ class CFBRankingApp:
             include_fcs=include_fcs
         )
         logger.info(f"Filtered to {len(filtered_games)} games")
-        
-        # Add betting lines if using ATS
-        if use_ats:
-            logger.info("Adding betting lines data...")
-            betting_lines = self.data_processor.get_betting_lines(year, week)
-            filtered_games = self.data_processor.enrich_games_with_betting_lines(
-                filtered_games, betting_lines
-            )
-        
+
         # Organize games by week for sequential processing
         games_by_week = self.data_processor.organize_games_by_week(filtered_games)
         
@@ -196,7 +185,6 @@ class CFBRankingApp:
             'week': week,
             'run_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'config': {
-                'use_ats': use_ats,
                 'include_fcs': include_fcs,
                 'power_conf_initial': ranker.power_conf_initial,
                 'group_five_initial': ranker.group_five_initial,
@@ -410,7 +398,6 @@ def parse_args():
     parser.add_argument('--output-dir', default=DEFAULT_OUTPUT_DIR, help=f'Output directory (default: {DEFAULT_OUTPUT_DIR})')
     parser.add_argument('--save', action='store_true', help='Save rankings to file')
     parser.add_argument('--charts', action='store_true', help='Generate charts')
-    parser.add_argument('--ats', action='store_true', help='Use Against The Spread performance')
     parser.add_argument('--exclude-fcs', action='store_true', help='Exclude FCS games')
     parser.add_argument('--all-divisions', action='store_true', help='Show all divisions in output (default: FBS only)')
     parser.add_argument('--top', type=int, default=25, help='Number of teams to display (default: 25)')
@@ -453,7 +440,6 @@ def main():
         rankings_data = app.run_ranking(
             year=args.year,
             week=args.week,
-            use_ats=args.ats,
             include_fcs=not args.exclude_fcs,
             save_charts=args.charts,
             config=config or None

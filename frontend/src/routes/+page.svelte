@@ -14,6 +14,7 @@
 		BRAND_NAME,
 		RATING_NAME,
 		TAGLINE,
+		POSITIONING_LINE,
 		pageTitle,
 		publicUrl,
 	} from '$lib/brand';
@@ -228,7 +229,7 @@
 			{#if data.story?.headline}
 				{data.story.headline}
 			{:else}
-				This week’s true order — open math, free to cite, ready before you argue or bet.
+				{POSITIONING_LINE}
 			{/if}
 		</p>
 
@@ -362,7 +363,6 @@
 			<ConferenceTable conferences={$filteredConferences} on:click={handleConferenceClick} />
 		{/if}
 	{/if}
-
 </div>
 
 {#if showConferenceModal && selectedConference}

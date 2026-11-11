@@ -167,33 +167,6 @@ class CFBDApiClient:
         
         return result
 
-    def get_betting_lines(self, year: int, week: Optional[int] = None) -> List[Dict]:
-        """Fetch betting lines and spreads with caching"""
-        cache_key = self._get_cache_key('betting_lines', year, week)
-        
-        cached = self._cache.get(cache_key)
-        if cached is not None:
-            print(f"Cache HIT: betting_lines {year} week={week}")
-            return cached
-        
-        print(f"Cache MISS: betting_lines {year} week={week}")
-        params = {
-            'year': year,
-            'seasonType': 'regular'
-        }
-        if week is not None:
-            params['week'] = week
-
-        result = self._make_request('/lines', params)
-        if not isinstance(result, list):
-            raise CFBDRequestError('CFBD /lines did not return a list')
-
-        if result:
-            ttl = get_games_ttl(year)
-            self._cache.set(cache_key, result, ttl, prefix='betting_lines')
-        
-        return result
-
     def _transform_game(self, game: Dict) -> Dict:
         """Transform CFBD game dict to internal format"""
         return {

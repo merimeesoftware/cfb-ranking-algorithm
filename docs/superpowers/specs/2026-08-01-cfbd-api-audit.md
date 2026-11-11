@@ -1,5 +1,7 @@
 # CFBD API Integration Audit
 
+> Historical note (2026-10-19): ATS, `get_betting_lines()`, and `/lines` were removed. Odds-MCP recommendations in this file are not product direction. See ADR 0001.
+
 **Project:** CFB Ranking System  
 **Date:** 2026-08-01  
 **Scope:** `api_integration.py`, `data_processor.py`, `cache.py`, `app.py`, `requirements.txt`  

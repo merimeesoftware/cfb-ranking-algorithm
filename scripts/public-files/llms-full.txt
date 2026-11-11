@@ -36,10 +36,6 @@ Live:
 - `GET /api/rankings/team/{name}?year=&week=`
 - `GET /api/matchup?team_a=&team_b=&year=&week=` → both teams' rank, TR+, and record.
 
-## Weekly ritual
-
-**The Drop** — weekly release (target: Sunday 8pm ET or Monday 8am ET) with Top 25, biggest movers, and CFP 1–12 band changes.
-
 ## Contact / brand
 
 Site: {ORIGIN}/

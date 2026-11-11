@@ -147,7 +147,6 @@
 	<p class="mt-6 text-xs text-primary-600 dark:text-primary-400">
 		{citationText(year, week)}
 	</p>
-
 </div>
 
 <AgentChatPanel

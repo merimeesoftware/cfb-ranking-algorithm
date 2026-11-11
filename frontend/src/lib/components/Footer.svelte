@@ -41,12 +41,6 @@
 				© {new Date().getFullYear()}
 				{BRAND_NAME}. Not affiliated with the NCAA or College Football Playoff.
 			</p>
-			<p>
-				21+ where required. Gambling problem? Call
-				<a href="https://www.ncpgambling.org/help-treatment/" class="underline hover:text-cfb-chalk" rel="noopener noreferrer" target="_blank">1-800-GAMBLER</a>
-				or visit
-				<a href="https://www.ncpgambling.org/" class="underline hover:text-cfb-chalk" rel="noopener noreferrer" target="_blank">ncpgambling.org</a>.
-			</p>
 		</div>
 	</div>
 </footer>

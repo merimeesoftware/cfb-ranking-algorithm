@@ -16,7 +16,6 @@ from ranking_service import (
 )
 from agent_service import agent_bp
 from path_to_climb import compute_path_to_climb
-from drop_service import subscribe_to_drop
 from matchup_service import build_matchup_payload
 from public_board import (
     UNPUBLISHED_MESSAGE,
@@ -112,18 +111,11 @@ def index():
     })
 
 
-@app.route('/drop/subscribe', methods=['POST'])
-def drop_subscribe():
-    payload = request.get_json(silent=True) or {}
-    email = payload.get('email') or ''
-    source = payload.get('source') or 'web'
-    status, body = subscribe_to_drop(email, source=source)
-    return jsonify(body), status
-
-
 @app.route('/matchup', methods=['GET'])
 def get_matchup():
     try:
+        if request.args.get('market_spread') is not None:
+            return jsonify({"error": "market_spread is not accepted."}), 400
         _parsed, rejected = evaluate_public_query('matchup', request.args, load_manifest())
         if rejected:
             body, status = rejected
@@ -134,7 +126,6 @@ def get_matchup():
             return jsonify({"error": "team_a and team_b are required"}), 400
         year = _parsed['year']
         week = _parsed['week']
-        market = request.args.get('market_spread', default=None, type=float)
         data = read_static_rankings_any(year, week)
         if not data:
             return jsonify({
@@ -149,7 +140,6 @@ def get_matchup():
             team_b,
             year,
             week or data.get('week'),
-            market_spread=market,
         )
         if not payload:
             return jsonify({"error": "One or both teams not found in rankings."}), 404

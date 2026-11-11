@@ -46,7 +46,6 @@ Dashboard → your API service → **Settings → Variables and Secrets** → **
 | `CACHE_CLEAR_SECRET` | Optional | Admin `POST /cache/clear`. Header `X-Cache-Secret` only. |
 | `SPEND_KILL_SECRET` | DevSecOps provisions on Michael's yes (D-20261019-174) | `POST /api/spend/kill`. Header `X-Spend-Kill-Secret` only. Not forwarded to the container. Unset fails closed (403) and does not use `CACHE_CLEAR_SECRET`. |
 | `CORS_ORIGINS` | Optional | Comma-separated browser origins. Unset means same-origin only. `*` is ignored. Credentials are not allowed. |
-| `DROP_WEBHOOK_URL` | Optional | ESP webhook for `POST /drop/subscribe` (The Drop) |
 | `PUBLIC_SITE_URL` | Optional (build, public) | Public origin, written `{SITE_URL}`. Inlined into the client. Custom domain: pending Michael's choice. Unset ships same-origin relative links and skips `sitemap.xml`. Not a secret. |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Optional (build, public) | Turnstile widget id. Inlined into the client and rendered only when set. Not a secret. The matching secret is `TURNSTILE_SECRET_KEY` on the Worker. Build the site key into the frontend before setting the secret, or agent calls return "Try again." |
 | `TURNSTILE_SECRET_KEY` | When the widget is on | Worker secret. siteverify for `/api/agent/*`. Not forwarded to the container. Unset, production logs a warning and keeps `AI_MAX_CALLS` plus the per-IP rate limits. `TURNSTILE_REQUIRED=1` with no secret logs one JSON line (`turnstile_unconfigured`, secret `missing`) and returns that code. |
