@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, Optional
 
 from path_to_climb import board_rating
@@ -169,6 +170,23 @@ def _plain_lever(path: Dict[str, Any]) -> str:
     return 'Beating better teams closes the gap.'
 
 
+def _trails_by_less_than_a_point(path: Dict[str, Any]) -> bool:
+    """True when the board gap is above 0 and rounds below 1."""
+    mine = path.get('shown_rating')
+    above = path.get('shown_rating_above')
+    try:
+        if mine is not None and above is not None:
+            gap = board_rating(float(above)) - board_rating(float(mine))
+        else:
+            gap = float(path.get('score_gap'))
+    except (TypeError, ValueError):
+        return False
+    if gap <= 0:
+        return False
+    whole = int(Decimal(str(gap)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    return whole < 1
+
+
 def stub_climb_blurb(context: Dict[str, Any]) -> str:
     """
     StoryBrand path-to-climb blurb: hero team, plain problem, one plan, debate CTA.
@@ -187,7 +205,12 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
         return blurb or accept_blurb(f'{name} is on top. Who takes the throne next?') or f'{name} is #1.'
 
     problem = _plain_lever(path)
-    if 'level on tr+' in problem.lower():
+    if _trails_by_less_than_a_point(path):
+        body = (
+            f'{name} trails {ahead} by less than a point on TR+. '
+            f'Beating better teams closes the gap.'
+        )
+    elif 'level on tr+' in problem.lower():
         body = f'{name} and {ahead} are level on TR+.'
     else:
         body = (
@@ -198,6 +221,8 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
     blurb = accept_blurb(f'{body} {hook}')
     if blurb:
         return blurb
+    if _trails_by_less_than_a_point(path):
+        return accept_blurb(body) or body
     return (
         accept_blurb(
             f'{name} is chasing {ahead} on TR+. '

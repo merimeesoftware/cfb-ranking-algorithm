@@ -1,6 +1,7 @@
 """StoryBrand-simple path-to-climb blurbs (≤280 chars)."""
 from __future__ import annotations
 
+from path_to_climb import compute_path_to_climb
 from shareable_blurb import (
     BLURB_MAX_CHARS,
     stub_climb_blurb,
@@ -70,6 +71,32 @@ def test_level_on_elo_does_not_use_the_record_as_the_lever():
     assert 'display-only' not in lower
     assert 'who they beat' not in lower
     assert 'conference' not in lower
+
+
+def test_sub_point_and_level_copy_on_both_surfaces():
+    trails = (
+        'Soft trails Sharp by less than a point on TR+. '
+        'Beating better teams closes the gap.'
+    )
+    climbed = compute_path_to_climb(
+        {'team_name': 'Soft', 'team_quality_score': 1900.0},
+        {'team_name': 'Sharp', 'team_quality_score': 1900.4},
+    )
+    assert climbed['summary'] == trails
+    blurb = stub_climb_blurb({'team_name': 'Soft', 'path_to_climb': climbed})
+    assert trails in blurb
+    assert 'chasing' not in blurb.lower()
+    assert 'less than a point' in blurb
+
+    tied = compute_path_to_climb(
+        {'team_name': 'Soft', 'team_quality_score': 1900.04},
+        {'team_name': 'Sharp', 'team_quality_score': 1900.0},
+    )
+    assert 'matches' in tied['summary']
+    assert 'less than a point' not in tied['summary']
+    level_blurb = stub_climb_blurb({'team_name': 'Soft', 'path_to_climb': tied})
+    assert 'level' in level_blurb.lower()
+    assert 'less than a point' not in level_blurb.lower()
 
 
 def test_board_gap_above_zero_is_not_level():
