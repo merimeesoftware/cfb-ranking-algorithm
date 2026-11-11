@@ -65,6 +65,17 @@ export interface Team {
 	quality_win_bonus?: number;
 	bad_win_penalty?: number;
 
+	/** Wins minus the wins Elo expected. Display only. */
+	record_ahead?: number | null;
+	/** Share of wins over FCS or below the résumé weak-loss line. Display only. */
+	soft_win_share?: number | null;
+	/** True when the record ran ahead of Elo. Not a sort key. */
+	record_quality_flag?: boolean;
+	/** Last-3 surprise versus Elo. Heat weight is 0. */
+	momentum?: number | null;
+	/** Fewer than 3 decisions. Not a sort key. */
+	early_season?: boolean;
+
 	// V4.5 Game Details
 	wins_details?: WinDetail[];
 	losses_details?: LossDetail[];

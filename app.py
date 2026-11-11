@@ -13,6 +13,7 @@ from ranking_service import (
     build_config,
     DEFAULT_CONFIG,
     FRS_WEIGHTS,
+    publish_order,
 )
 from agent_service import agent_bp
 from path_to_climb import compute_path_to_climb
@@ -127,6 +128,8 @@ def get_matchup():
         year = _parsed['year']
         week = _parsed['week']
         data = read_static_rankings_any(year, week)
+        if data:
+            data = publish_order(data)
         if not data:
             return jsonify({
                 "published": False,
@@ -191,6 +194,8 @@ def get_rankings():
         year = parsed['year']
         week = parsed['week']
         data = read_static_rankings_any(year, week)
+        if data:
+            data = publish_order(data)
         if not data:
             return jsonify({
                 "published": False,
@@ -251,7 +256,7 @@ def get_team_breakdown(team_name):
         ]
 
         def build_comparison(target, other, target_rank, other_rank):
-            diff_final = target['final_ranking_score'] - other['final_ranking_score']
+            diff_final = target['team_quality_score'] - other['team_quality_score']
             diff_tq = target['team_quality_score'] - other['team_quality_score']
             diff_rec = target['record_score'] - other['record_score']
             diff_cq = target['conference_quality_score'] - other['conference_quality_score']

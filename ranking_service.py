@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from api_integration import CFBDRequestError
 from data_processor import CFBDataProcessor
-from ranking_algorithm import TeamQualityRanker
+from ranking_algorithm import TeamQualityRanker, ordering_score
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
@@ -155,6 +155,14 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
 _LIST_STRIP_TEAM_KEYS = ('wins_details', 'losses_details')
 
 
+def publish_order(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Order the board by Elo. Heat weight is 0. Other columns stay off the key."""
+    teams = rankings_data.get('team_rankings')
+    if isinstance(teams, list):
+        rankings_data['team_rankings'] = sorted(teams, key=ordering_score, reverse=True)
+    return rankings_data
+
+
 def slim_rankings_for_list(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
     """Drop duplicate map and per-game details for list/table responses."""
     slim = {
@@ -284,7 +292,7 @@ def calculate_rankings_logic(
     rankings_data['algo'] = ALGO_VERSION
     # team_rankings is canonical; drop name-keyed duplicate before cache/API
     rankings_data.pop('rankings', None)
-    return rankings_data
+    return publish_order(rankings_data)
 
 
 def get_or_calculate_rankings(
@@ -305,16 +313,16 @@ def get_or_calculate_rankings(
             if static is not None and (prefer_static or not allow_compute):
                 if prefer_static and is_archived_week(year, week):
                     print(f"STATIC HIT: rankings {year} week={week}")
-                    return static
+                    return publish_order(static)
                 if not allow_compute:
                     print(f"STATIC HIT: rankings {year} week={week}")
-                    return static
+                    return publish_order(static)
         except Exception as e:
             print(f"Static rankings read error: {e}")
 
     if not allow_compute:
         if static is not None:
-            return static
+            return publish_order(static)
         print(f"STATIC MISS: rankings {year} week={week} (compute disabled)")
         return None
 

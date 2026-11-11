@@ -34,5 +34,5 @@ def test_mid_table_gap_to_team_above():
 def test_ohio_state_chasing_oregon():
     teams = _teams()
     result = compute_path_to_climb(teams[1], teams[0])
-    assert result['score_gap'] == 5.0
+    assert result['score_gap'] == 50.0
     assert result['team_above'] == 'Oregon'

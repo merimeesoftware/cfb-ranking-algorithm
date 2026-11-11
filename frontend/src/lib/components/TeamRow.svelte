@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Team } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
-	import { RATING_NAME, teamPath } from '$lib/brand';
+	import { teamPath } from '$lib/brand';
+	import { formatSigned, isEarlySeason } from '$lib/order';
 
 	export let team: Team;
 	export let rank: number;
@@ -42,6 +43,11 @@
 		prevRank != null && prevRank > 0 ? prevRank - rank : null;
 	$: href =
 		year != null && week != null ? teamPath(team.team_name, year, week) : teamPath(team.team_name);
+	$: early = isEarlySeason(team);
+	$: ahead =
+		typeof team.record_ahead === 'number' ? team.record_ahead : null;
+	$: soft =
+		typeof team.soft_win_share === 'number' ? team.soft_win_share : null;
 </script>
 
 <tr
@@ -84,8 +90,37 @@
 			{team.conference}
 		</span>
 	</td>
-	<td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+	<td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300 tabular-nums">
 		{team.records.total_wins}-{team.records.total_losses}
+	</td>
+	<td class="px-4 py-3 text-center text-sm tabular-nums text-gray-700 dark:text-gray-300">
+		{#if ahead == null}
+			—
+		{:else}
+			<span class={team.record_quality_flag ? 'text-amber-700 dark:text-amber-400 font-medium' : ''}>
+				{formatSigned(ahead)}
+			</span>
+			{#if soft != null && team.records.total_wins > 0}
+				<div class="text-xs text-gray-500 dark:text-gray-400">{Math.round(soft * 100)}% soft</div>
+			{/if}
+		{/if}
+	</td>
+	<td class="px-4 py-3 text-center text-sm tabular-nums text-gray-700 dark:text-gray-300">
+		{#if typeof team.momentum === 'number'}
+			{formatSigned(team.momentum)}
+		{:else}
+			—
+		{/if}
+	</td>
+	<td class="px-4 py-3 text-center">
+		{#if early}
+			<span
+				class="badge badge-ind"
+				title="Fewer than 3 decisions. The rating is still mostly the opening Elo. Week 1 keeps 70% of last year's final score."
+			>Early</span>
+		{:else}
+			<span class="text-gray-400">—</span>
+		{/if}
 	</td>
 	<td class="px-4 py-3 text-center text-sm tabular-nums text-gray-600 dark:text-gray-400">
 		{#if delta == null}
@@ -99,8 +134,8 @@
 		{/if}
 	</td>
 	<td class="px-4 py-3 text-right">
-		<span class="font-bold text-primary-600 dark:text-primary-400" title={RATING_NAME}>
-			{team.final_ranking_score.toFixed(1)}
+		<span class="font-bold text-primary-600 dark:text-primary-400 tabular-nums" title="Elo. This is the sort key.">
+			{team.team_quality_score.toFixed(1)}
 		</span>
 	</td>
 </tr>

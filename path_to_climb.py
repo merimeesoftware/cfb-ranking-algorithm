@@ -44,7 +44,8 @@ def compute_path_to_climb(
         'resume': theirs['resume'] - mine['resume'],
         'cq': theirs['cq'] - mine['cq'],
     }
-    score_gap = theirs['final'] - mine['final']
+    # The board is ordered by Elo. The gap to the team above is Elo points.
+    score_gap = float(team_above.get('team_quality_score') or 0) - float(team.get('team_quality_score') or 0)
 
     # Largest positive gap (where we trail most in contribution space)
     lever_key = max(gaps, key=lambda k: gaps[k])

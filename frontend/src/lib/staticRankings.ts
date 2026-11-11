@@ -5,6 +5,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Conference, Team } from '$lib/types';
+import { orderTeamsByElo } from '$lib/order';
 
 const STATIC_ROOT = join(process.cwd(), 'static', 'rankings');
 
@@ -55,6 +56,11 @@ function mapTeam(t: Record<string, unknown>): Team {
 		top_10_wins: (t.top_10_wins ?? 0) as number,
 		top_25_wins: (t.top_25_wins ?? 0) as number,
 		cross_tier_wins: (t.cross_tier_wins ?? 0) as number,
+		record_ahead: (t.record_ahead ?? null) as number | null,
+		soft_win_share: (t.soft_win_share ?? null) as number | null,
+		record_quality_flag: Boolean(t.record_quality_flag),
+		momentum: (t.momentum ?? null) as number | null,
+		early_season: typeof t.early_season === 'boolean' ? t.early_season : undefined,
 	};
 }
 
@@ -102,8 +108,8 @@ export function loadWeekRankings(
 	const path = join(STATIC_ROOT, String(year), `week-${week}.json`);
 	if (!existsSync(path)) return null;
 	const data = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;
-	const teams = ((data.team_rankings || data.teams || []) as Record<string, unknown>[]).map(
-		mapTeam
+	const teams = orderTeamsByElo(
+		((data.team_rankings || data.teams || []) as Record<string, unknown>[]).map(mapTeam)
 	);
 	const conferences = (
 		(data.conference_rankings || data.conferences || []) as Record<string, unknown>[]

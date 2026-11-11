@@ -24,7 +24,7 @@
 	// Get teams in this conference
 	$: conferenceTeams = allTeams
 		.filter(t => t.conference === conference.conference)
-		.sort((a, b) => b.final_ranking_score - a.final_ranking_score);
+		.sort((a, b) => b.team_quality_score - a.team_quality_score);
 
 	// Conference colors map
 	const conferenceColors: Record<string, string> = {
@@ -199,7 +199,7 @@
 									{team.records.total_wins}-{team.records.total_losses}
 								</span>
 								<span class="font-semibold text-primary-600 dark:text-primary-400">
-									{team.final_ranking_score.toFixed(1)}
+									{team.team_quality_score.toFixed(1)}
 								</span>
 							</div>
 						</div>
