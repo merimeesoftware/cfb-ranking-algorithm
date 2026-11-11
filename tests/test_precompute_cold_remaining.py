@@ -53,8 +53,8 @@ def _game(year, week):
         'completed': True,
         'week': week,
         'season': year,
-        'homeTeam': 'Alpha',
-        'awayTeam': 'Beta',
+        'homeTeam': 'Alabama',
+        'awayTeam': 'Ohio State',
         'homePoints': 28,
         'awayPoints': 14,
         'homeConference': 'SEC',
@@ -69,8 +69,8 @@ def _game(year, week):
 def _payload(url, params):
     if url.endswith('/teams'):
         return [
-            _team('Alpha', 'SEC'),
-            _team('Beta', 'Big Ten'),
+            _team('Alabama', 'SEC'),
+            _team('Ohio State', 'Big Ten'),
         ]
     if url.endswith('/games'):
         year = int(params['year'])

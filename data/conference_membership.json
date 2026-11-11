@@ -1,0 +1,652 @@
+{
+  "schema": "true-rankings/conference-membership/v1",
+  "version": "2026-11-09.2",
+  "issue": "merimeesoftware/cfb-ranking-algorithm#101",
+  "coverage": {
+    "first_season": 2017,
+    "last_season": 2026
+  },
+  "unknown_policy": "Seasons outside coverage raise. A team absent from a covered season is not FBS that season: its per-game conference is kept and its tier is FCS, unless that per-game conference is an FBS conference of that season, which raises.",
+  "base": {
+    "season": 2026,
+    "source": "frontend/static/rankings/2026/week-10.json team_rankings[].conference (in-repo 2026 board, git blob 32e8ac2a0f3c14a4f5c971de9fb194fa25db9de4; labels came from CFBD /teams captured for the 2026 season)",
+    "conferences": {
+      "ACC": [
+        "Boston College",
+        "California",
+        "Clemson",
+        "Duke",
+        "Florida State",
+        "Georgia Tech",
+        "Louisville",
+        "Miami",
+        "NC State",
+        "North Carolina",
+        "Pittsburgh",
+        "SMU",
+        "Stanford",
+        "Syracuse",
+        "Virginia",
+        "Virginia Tech",
+        "Wake Forest"
+      ],
+      "American Athletic": [
+        "Army",
+        "Charlotte",
+        "East Carolina",
+        "Florida Atlantic",
+        "Memphis",
+        "Navy",
+        "North Texas",
+        "Rice",
+        "South Florida",
+        "Temple",
+        "Tulane",
+        "Tulsa",
+        "UAB",
+        "UTSA"
+      ],
+      "Big 12": [
+        "Arizona",
+        "Arizona State",
+        "BYU",
+        "Baylor",
+        "Cincinnati",
+        "Colorado",
+        "Houston",
+        "Iowa State",
+        "Kansas",
+        "Kansas State",
+        "Oklahoma State",
+        "TCU",
+        "Texas Tech",
+        "UCF",
+        "Utah",
+        "West Virginia"
+      ],
+      "Big Ten": [
+        "Illinois",
+        "Indiana",
+        "Iowa",
+        "Maryland",
+        "Michigan",
+        "Michigan State",
+        "Minnesota",
+        "Nebraska",
+        "Northwestern",
+        "Ohio State",
+        "Oregon",
+        "Penn State",
+        "Purdue",
+        "Rutgers",
+        "UCLA",
+        "USC",
+        "Washington",
+        "Wisconsin"
+      ],
+      "Conference USA": [
+        "Delaware",
+        "Florida International",
+        "Jacksonville State",
+        "Kennesaw State",
+        "Liberty",
+        "Middle Tennessee",
+        "Missouri State",
+        "New Mexico State",
+        "Sam Houston",
+        "Western Kentucky"
+      ],
+      "FBS Independents": [
+        "Notre Dame",
+        "UConn"
+      ],
+      "Mid-American": [
+        "Akron",
+        "Ball State",
+        "Bowling Green",
+        "Buffalo",
+        "Central Michigan",
+        "Eastern Michigan",
+        "Kent State",
+        "Massachusetts",
+        "Miami (OH)",
+        "Ohio",
+        "Sacramento State",
+        "Toledo",
+        "Western Michigan"
+      ],
+      "Mountain West": [
+        "Air Force",
+        "Hawai'i",
+        "Nevada",
+        "New Mexico",
+        "North Dakota State",
+        "Northern Illinois",
+        "San José State",
+        "UNLV",
+        "UTEP",
+        "Wyoming"
+      ],
+      "Pac-12": [
+        "Boise State",
+        "Colorado State",
+        "Fresno State",
+        "Oregon State",
+        "San Diego State",
+        "Texas State",
+        "Utah State",
+        "Washington State"
+      ],
+      "SEC": [
+        "Alabama",
+        "Arkansas",
+        "Auburn",
+        "Florida",
+        "Georgia",
+        "Kentucky",
+        "LSU",
+        "Mississippi State",
+        "Missouri",
+        "Oklahoma",
+        "Ole Miss",
+        "South Carolina",
+        "Tennessee",
+        "Texas",
+        "Texas A&M",
+        "Vanderbilt"
+      ],
+      "Sun Belt": [
+        "App State",
+        "Arkansas State",
+        "Coastal Carolina",
+        "Georgia Southern",
+        "Georgia State",
+        "James Madison",
+        "Louisiana",
+        "Louisiana Tech",
+        "Marshall",
+        "Old Dominion",
+        "South Alabama",
+        "Southern Miss",
+        "Troy",
+        "UL Monroe"
+      ]
+    }
+  },
+  "moves": [
+    {
+      "season": 2026,
+      "team": "Sacramento State",
+      "from": null,
+      "to": "Mid-American",
+      "source": "https://en.wikipedia.org/wiki/2025_Sacramento_State_Hornets_football_team"
+    },
+    {
+      "season": 2026,
+      "team": "North Dakota State",
+      "from": null,
+      "to": "Mountain West",
+      "source": "https://www.ndsu.edu/news/2026-02-09-ndsu-joining-mountain-west-conference"
+    },
+    {
+      "season": 2026,
+      "team": "Northern Illinois",
+      "from": "Mid-American",
+      "to": "Mountain West",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "UTEP",
+      "from": "Conference USA",
+      "to": "Mountain West",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "Boise State",
+      "from": "Mountain West",
+      "to": "Pac-12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "Colorado State",
+      "from": "Mountain West",
+      "to": "Pac-12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "Fresno State",
+      "from": "Mountain West",
+      "to": "Pac-12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "San Diego State",
+      "from": "Mountain West",
+      "to": "Pac-12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "Texas State",
+      "from": "Sun Belt",
+      "to": "Pac-12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "Utah State",
+      "from": "Mountain West",
+      "to": "Pac-12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2026,
+      "team": "Louisiana Tech",
+      "from": "Conference USA",
+      "to": "Sun Belt",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2025,
+      "team": "Delaware",
+      "from": null,
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2025,
+      "team": "Missouri State",
+      "from": null,
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2025,
+      "team": "Massachusetts",
+      "from": "FBS Independents",
+      "to": "Mid-American",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "California",
+      "from": "Pac-12",
+      "to": "ACC",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "SMU",
+      "from": "American Athletic",
+      "to": "ACC",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Stanford",
+      "from": "Pac-12",
+      "to": "ACC",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Army",
+      "from": "FBS Independents",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Arizona",
+      "from": "Pac-12",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Arizona State",
+      "from": "Pac-12",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Colorado",
+      "from": "Pac-12",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Utah",
+      "from": "Pac-12",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Oregon",
+      "from": "Pac-12",
+      "to": "Big Ten",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "UCLA",
+      "from": "Pac-12",
+      "to": "Big Ten",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "USC",
+      "from": "Pac-12",
+      "to": "Big Ten",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Washington",
+      "from": "Pac-12",
+      "to": "Big Ten",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Kennesaw State",
+      "from": null,
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Oklahoma",
+      "from": "Big 12",
+      "to": "SEC",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2024,
+      "team": "Texas",
+      "from": "Big 12",
+      "to": "SEC",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Charlotte",
+      "from": "Conference USA",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Florida Atlantic",
+      "from": "Conference USA",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "North Texas",
+      "from": "Conference USA",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Rice",
+      "from": "Conference USA",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "UAB",
+      "from": "Conference USA",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "UTSA",
+      "from": "Conference USA",
+      "to": "American Athletic",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "BYU",
+      "from": "FBS Independents",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Cincinnati",
+      "from": "American Athletic",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Houston",
+      "from": "American Athletic",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "UCF",
+      "from": "American Athletic",
+      "to": "Big 12",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Jacksonville State",
+      "from": null,
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Liberty",
+      "from": "FBS Independents",
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "New Mexico State",
+      "from": "FBS Independents",
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2023,
+      "team": "Sam Houston",
+      "from": null,
+      "to": "Conference USA",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2022,
+      "team": "James Madison",
+      "from": null,
+      "to": "Sun Belt",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2022,
+      "team": "Marshall",
+      "from": "Conference USA",
+      "to": "Sun Belt",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2022,
+      "team": "Old Dominion",
+      "from": "Conference USA",
+      "to": "Sun Belt",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2022,
+      "team": "Southern Miss",
+      "from": "Conference USA",
+      "to": "Sun Belt",
+      "source": "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment"
+    },
+    {
+      "season": 2021,
+      "team": "Notre Dame",
+      "from": "ACC",
+      "to": "FBS Independents",
+      "source": "https://en.wikipedia.org/wiki/2020_Notre_Dame_Fighting_Irish_football_team"
+    },
+    {
+      "season": 2020,
+      "team": "Notre Dame",
+      "from": "FBS Independents",
+      "to": "ACC",
+      "source": "https://en.wikipedia.org/wiki/2020_Notre_Dame_Fighting_Irish_football_team"
+    },
+    {
+      "season": 2020,
+      "team": "UConn",
+      "from": "American Athletic",
+      "to": "FBS Independents",
+      "source": "https://www.espn.com/college-football/story/_/id/29360708/breaking-store-notre-dame-rest-independents-2020"
+    },
+    {
+      "season": 2018,
+      "team": "Idaho",
+      "from": "Sun Belt",
+      "to": null,
+      "source": "https://www.nbcsports.com/college-football/news/its-july-1-so-liberty-is-now-officially-college-footballs-newest-fbs-program-idaho-drops-to-fcs"
+    },
+    {
+      "season": 2018,
+      "team": "Liberty",
+      "from": null,
+      "to": "FBS Independents",
+      "source": "https://www.nbcsports.com/college-football/news/its-july-1-so-liberty-is-now-officially-college-footballs-newest-fbs-program-idaho-drops-to-fcs"
+    },
+    {
+      "season": 2018,
+      "team": "New Mexico State",
+      "from": "Sun Belt",
+      "to": "FBS Independents",
+      "source": "https://fbschedules.com/2018-fbs-independents-football-helmet-schedule/"
+    }
+  ],
+  "tier_policy": "Repo policy, not a provider fact. Pac-12 stays Power 4 through 2023; from 2024 it is Group of 5 (two-member league 2024-2025, then a Group of Six league in 2026 per the NDSU/MW CFP note). FBS Independents are Group of 5 by conference; Notre Dame alone is Power 4 by team_tiers override. This matches main's effective tiers, where UMass, Army, Liberty and New Mexico State carried their current G5 conference labels in every season (Archie review of #149, Fix 1). \"Group of 5\" means non-P4 FBS. Owner: True Rankings seat. Bump version on every edit; stored priors carry the version and are rejected on mismatch.",
+  "tiers": {
+    "SEC": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Power 4"
+      }
+    ],
+    "Big Ten": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Power 4"
+      }
+    ],
+    "ACC": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Power 4"
+      }
+    ],
+    "Big 12": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Power 4"
+      }
+    ],
+    "Pac-12": [
+      {
+        "first": 2017,
+        "last": 2023,
+        "tier": "Power 4"
+      },
+      {
+        "first": 2024,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ],
+    "FBS Independents": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ],
+    "American Athletic": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ],
+    "Conference USA": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ],
+    "Mid-American": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ],
+    "Mountain West": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ],
+    "Sun Belt": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Group of 5"
+      }
+    ]
+  },
+  "team_tiers": {
+    "Notre Dame": [
+      {
+        "first": 2017,
+        "last": 2026,
+        "tier": "Power 4"
+      }
+    ]
+  },
+  "sources_checked_2026_11_09": [
+    "https://en.wikipedia.org/wiki/2020_Notre_Dame_Fighting_Irish_football_team",
+    "https://en.wikipedia.org/wiki/2021%E2%80%932026_NCAA_conference_realignment",
+    "https://en.wikipedia.org/wiki/2025_Sacramento_State_Hornets_football_team",
+    "https://fbschedules.com/2018-fbs-independents-football-helmet-schedule/",
+    "https://www.espn.com/college-football/story/_/id/29360708/breaking-store-notre-dame-rest-independents-2020",
+    "https://www.nbcsports.com/college-football/news/its-july-1-so-liberty-is-now-officially-college-footballs-newest-fbs-program-idaho-drops-to-fcs",
+    "https://www.ndsu.edu/news/2026-02-09-ndsu-joining-mountain-west-conference"
+  ]
+}
