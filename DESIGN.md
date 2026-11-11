@@ -32,7 +32,7 @@ Primary Tailwind scale is anchored on field green (`primary-700` ≈ `#1a3d2e`).
 - **Brand first:** On home, “CFB Rankings” is a hero-level signal — not only nav text.  
 - **One composition** in the first viewport: brand, one headline, one supporting line, one CTA group, field atmosphere.  
 - **No hero cards / overlay chips.**  
-- **Board below the fold** via primary CTA → `#board` (smooth scroll + focus Find your team).  
+- **The board starts in the first viewport** on home, under the brand, the tagline, and the positioning line.  
 - Week story is **editorial** (rail + type), not admin card chrome.  
 - Filters: no “Ranking Controls” header bar.
 

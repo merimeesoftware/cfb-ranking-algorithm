@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import SeoHead from '$lib/components/SeoHead.svelte';
+	import ScoreBreakdown from '$lib/components/ScoreBreakdown.svelte';
 	import AgentChatPanel from '$lib/components/AgentChatPanel.svelte';
 	import {
 		BRAND_NAME,
@@ -117,6 +118,15 @@
 		Quality wins: {t.quality_wins ?? 0} · Quality losses: {t.quality_losses ?? 0} · Bad losses:
 		{t.bad_losses ?? 0}
 	</p>
+
+	<div class="mt-6 card p-4 sm:p-5">
+		<ScoreBreakdown team={t} />
+		<p class="mt-3 text-sm">
+			<a href="/methodology" class="text-primary-700 dark:text-cfb-gold-bright hover:underline">
+				How the board weights this
+			</a>
+		</p>
+	</div>
 
 	<div class="mt-6 flex flex-wrap gap-2">
 		<button type="button" class="btn btn-primary" on:click={() => (askOpen = true)}>

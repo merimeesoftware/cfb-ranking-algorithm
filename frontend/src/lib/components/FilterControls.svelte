@@ -46,7 +46,7 @@
 	}
 </script>
 
-<div class="mb-6 overflow-hidden rounded-lg border border-primary-200 dark:border-primary-800 bg-white dark:bg-primary-900 shadow-sm">
+<div class="mb-4 overflow-hidden rounded-lg border border-primary-200 dark:border-primary-800 bg-white dark:bg-primary-900 shadow-sm">
 	<div
 		class="flex border-b border-primary-100 dark:border-primary-800 bg-cfb-chalk/70 dark:bg-primary-950/60 overflow-x-auto"
 		role="tablist"

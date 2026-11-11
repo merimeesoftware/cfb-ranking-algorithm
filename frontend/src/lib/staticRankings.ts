@@ -5,6 +5,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Conference, Team } from '$lib/types';
+import { labelConferenceRows } from '$lib/labelConferences';
 
 const STATIC_ROOT = join(process.cwd(), 'static', 'rankings');
 
@@ -110,7 +111,7 @@ export function loadWeekRankings(
 	).map(mapConference);
 	return {
 		teams,
-		conferences,
+		conferences: labelConferenceRows(conferences, teams),
 		year: (data.year as number) || year,
 		week: (data.week as number) || week,
 	};

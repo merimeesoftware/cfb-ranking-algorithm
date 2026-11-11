@@ -5,6 +5,17 @@ import numpy as np
 from typing import List, Dict, Any, Optional, TypedDict
 from collections import defaultdict
 
+from conference_label import MIXED_TIER
+
+# Tier matchup weights. Values are the published formula; do not retune here.
+MATCHUP_WEIGHTS = {
+    'p4_p4': 1.0,
+    'p4_g5': 0.8,
+    'g5_g5': 0.65,
+    'fbs_fcs': 0.2,
+    'fcs_fcs': 0.1,
+}
+
 class Record(TypedDict):
     wins: int
     losses: int
@@ -277,18 +288,18 @@ class TeamQualityRanker:
         matchup_weight = 1.0
         
         if winner_conf_type == 'Power 4' and loser_conf_type == 'Power 4':
-            matchup_weight = 1.0
+            matchup_weight = MATCHUP_WEIGHTS['p4_p4']
         elif (winner_conf_type == 'Power 4' and loser_conf_type == 'Group of 5') or \
              (winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4'):
-            matchup_weight = 0.8
+            matchup_weight = MATCHUP_WEIGHTS['p4_g5']
         elif winner_conf_type == 'Group of 5' and loser_conf_type == 'Group of 5':
-            matchup_weight = 0.65  # V4.0: Reduced damping (was 0.5) to allow quality G5 teams to build Elo
+            matchup_weight = MATCHUP_WEIGHTS['g5_g5']
         elif (winner_conf_type in ['Power 4', 'Group of 5'] and loser_conf_type == 'FCS') or \
              (winner_conf_type == 'FCS' and loser_conf_type in ['Power 4', 'Group of 5']):
-            matchup_weight = 0.2
+            matchup_weight = MATCHUP_WEIGHTS['fbs_fcs']
         else:
-            # FCS vs FCS (or lower) - drastically reduce point exchange
-            matchup_weight = 0.1
+            # FCS vs FCS (or lower) — same weight as before this naming
+            matchup_weight = MATCHUP_WEIGHTS['fcs_fcs']
 
         # Live ratings (always what we update)
         r_home_live = self.team_stats[home_team]['quality_score']
@@ -897,9 +908,9 @@ class TeamQualityRanker:
         # Re-calculate aggregate records for display
         conf_records = defaultdict(lambda: {'p4': {'w':0,'l':0}, 'g5': {'w':0,'l':0}, 'fcs': {'w':0,'l':0}})
         conf_team_counts = defaultdict(int)
-        # #101: a conference's tier is its members' season tier, set from games.
-        # Mixed tiers (FBS Independents: Notre Dame P4, others G5) fall back to
-        # the legacy label so the row does not depend on team order.
+        # A row uses its members' tier when they share one.
+        # Mixed tiers (FBS Independents: Notre Dame is Power 4, the other
+        # independents are not) are labelled Mixed. The label is not a rating.
         conf_member_types: Dict[str, set] = defaultdict(set)
         
         for team, data in self.team_stats.items():
@@ -915,12 +926,22 @@ class TeamQualityRanker:
         from data_processor import POWER_4_CONFERENCES, GROUP_OF_5_CONFERENCES
         
         def get_conf_type(conf_name: str) -> str:
-            if conf_name in POWER_4_CONFERENCES or conf_name == 'FBS Independents':
+            if conf_name in POWER_4_CONFERENCES:
                 return 'Power 4'
             elif conf_name in GROUP_OF_5_CONFERENCES:
                 return 'Group of 5'
+            elif conf_name == 'FBS Independents':
+                return MIXED_TIER
             else:
                 return 'FCS'
+
+        def row_type(conf_name: str) -> str:
+            member_types = conf_member_types.get(conf_name, ())
+            if len(member_types) == 1:
+                return next(iter(member_types))
+            if len(member_types) > 1:
+                return MIXED_TIER
+            return get_conf_type(conf_name)
         
         for conf, avg_q in conf_quality.items():
             # Skip synthetic indie CQ entries (start with _indie_)
@@ -929,8 +950,7 @@ class TeamQualityRanker:
             recs = conf_records[conf]
             conf_rankings.append({
                 'conference_name': conf,
-                'conference_type': (next(iter(conf_member_types[conf])) if len(conf_member_types.get(conf, ())) == 1
-                                    else get_conf_type(conf)),
+                'conference_type': row_type(conf),
                 'average_team_quality': avg_q,
                 'number_of_teams': conf_team_counts[conf],
                 'record_vs_p4': f"{recs['p4']['w']}-{recs['p4']['l']}",

@@ -3,7 +3,9 @@
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
 	import AgentChatPanel from './AgentChatPanel.svelte';
+	import ScoreBreakdown from './ScoreBreakdown.svelte';
 	import { BUSY_MESSAGE } from '$lib/api';
+	import { scoreParts } from '$lib/publicFormula';
 
 	export let team: Team;
 	export let rank: number;
@@ -56,11 +58,6 @@
 		}
 	}
 
-	// Score breakdown calculations (V5.0 weights: 65/27/8)
-	$: tqContrib = team.team_quality_score * 0.65;
-	$: recContrib = team.record_score * 0.27;
-	$: confContrib = team.conference_quality_score * 0.08;
-
 	// Prefer API comparison payloads; fall back to neighbors from the rankings list
 	$: comparisonsAhead = (team.comparisons_ahead && team.comparisons_ahead.length > 0
 		? team.comparisons_ahead
@@ -79,13 +76,9 @@
 		.filter((_, i) => i > rank - 1 && i <= rank + 2)
 		.map((t, i) => ({ team: t, rank: rank + 1 + i }));
 
-	// Calculate component contributions for any team (V5.0 weights)
 	function getContribs(t: Team) {
-		return {
-			tq: t.team_quality_score * 0.65,
-			rec: t.record_score * 0.27,
-			conf: t.conference_quality_score * 0.08
-		};
+		const parts = scoreParts(t);
+		return { tq: parts.look, rec: parts.resume, conf: parts.league };
 	}
 
 	// Calculate differences between selected team and comparison team
@@ -293,75 +286,7 @@
 					Why here?
 				</button>
 
-				<!-- 4. Why this spot (score breakdown) -->
-				<div>
-					<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Why this spot</h3>
-					<div class="space-y-4">
-						<!-- How good they look -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">How good they look</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">65%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.team_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {tqContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-primary-500 rounded-full" 
-									style="width: {Math.min((tqContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-
-						<!-- Who they beat -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">Who they beat</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">27%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.record_score.toFixed(1)} <span class="text-gray-400">→</span> {recContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-amber-500 rounded-full" 
-									style="width: {Math.min((recContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-
-						<!-- League strength -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">League strength</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">8%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.conference_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {confContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-stone-500 rounded-full" 
-									style="width: {Math.min((confContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-					</div>
-					
-					<div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-						<span class="font-bold text-gray-900 dark:text-white">Board score</span>
-						<span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-							{team.final_ranking_score.toFixed(2)}
-						</span>
-					</div>
-				</div>
+				<ScoreBreakdown {team} />
 
 				<!-- 5. Key games / resume deep dive -->
 				<div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">

@@ -97,13 +97,13 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- Modal Backdrop -->
 <div
 	class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
 	on:click={handleBackdropClick}
+	on:keydown={handleKeydown}
 	role="dialog"
+	tabindex="-1"
 	aria-modal="true"
 	aria-labelledby="modal-title"
 >
@@ -127,13 +127,16 @@
 							{conference.conference}
 						</h2>
 						<p class="text-sm text-gray-500 dark:text-gray-400">
-							Avg Ranking Score: <span class="font-semibold text-gray-900 dark:text-white">{conference.avg_ranking.toFixed(2)}</span>
+							{conference.conference_type}
+							· Avg ranking score
+							<span class="font-semibold text-gray-900 dark:text-white">{conference.avg_ranking.toFixed(2)}</span>
 						</p>
 					</div>
 				</div>
 				<button
+					type="button"
 					on:click={close}
-					class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+					class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
 					aria-label="Close modal"
 				>
 					<svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +183,7 @@
 					Conference Teams ({conferenceTeams.length})
 				</h3>
 				<div class="space-y-2 max-h-48 overflow-y-auto">
-					{#each conferenceTeams as team}
+					{#each conferenceTeams as team (team.team_name)}
 						{@const teamRank = getTeamRank(team)}
 						<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30">
 							<div class="flex items-center gap-3">
@@ -221,7 +224,7 @@
 								Conferences Ranked Higher
 							</h4>
 							<div class="space-y-2">
-								{#each conferencesAhead as conf, i}
+								{#each conferencesAhead as conf (conf.conference)}
 									{@const confRank = sortedConferences.findIndex(c => c.conference === conf.conference) + 1}
 									{@const diff = getDiff(conference, conf)}
 									<div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30">
@@ -276,7 +279,7 @@
 								Conferences Ranked Lower
 							</h4>
 							<div class="space-y-2">
-								{#each conferencesBehind as conf, i}
+								{#each conferencesBehind as conf (conf.conference)}
 									{@const confRank = sortedConferences.findIndex(c => c.conference === conf.conference) + 1}
 									{@const diff = getDiff(conference, conf)}
 									<div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30">

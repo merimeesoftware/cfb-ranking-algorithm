@@ -7,6 +7,7 @@
 		BRAND_NAME,
 		RATING_NAME,
 		TAGLINE,
+		POSITIONING_LINE,
 		pageTitle,
 		weekPath,
 		publicUrl,
@@ -25,9 +26,7 @@
 	let tab: 'teams' | 'conferences' = 'teams';
 
 	$: title = pageTitle([`${data.year} Week ${data.week}`, `${RATING_NAME} rankings`]);
-	$: description = data.story?.headline
-		? `${data.story.headline} — ${TAGLINE}`
-		: `${BRAND_NAME} ${RATING_NAME} for ${data.year} Week ${data.week}. ${TAGLINE}`;
+	$: description = `${BRAND_NAME}, ${data.year} Week ${data.week}. ${POSITIONING_LINE}`;
 	$: path = weekPath(data.year, data.week);
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -53,6 +52,7 @@
 	<h1 class="mt-2 font-display text-3xl sm:text-4xl text-primary-900 dark:text-white">
 		{TAGLINE}
 	</h1>
+	<p class="mt-3 max-w-2xl text-base text-primary-800 dark:text-primary-200">{POSITIONING_LINE}</p>
 	{#if data.story?.headline}
 		<p class="mt-3 text-lg text-primary-800 dark:text-primary-200">{data.story.headline}</p>
 	{/if}
