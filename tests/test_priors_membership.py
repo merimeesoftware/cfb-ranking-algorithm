@@ -150,11 +150,13 @@ def test_read_prior_teams_requires_membership_argument(tmp_path):
 
 
 @pytest.mark.parametrize('year', [2024, 2025])
-def test_committed_priors_are_rejected_until_regenerated(year):
-    """The committed files predate the map (no membership field): not reused."""
+def test_committed_priors_match_the_current_map(year):
+    """The committed files were regenerated under the current map: reused as-is."""
     payload = json.loads((PUBLISHED / 'priors' / f'{year}.json').read_text())
-    assert payload['algo'] == ALGO_VERSION and 'membership' not in payload
-    assert read_prior_teams(year, algo=ALGO_VERSION, membership=VERSION, root=PUBLISHED) is None
+    assert payload['algo'] == ALGO_VERSION and payload['membership'] == VERSION
+    stored = read_prior_teams(year, algo=ALGO_VERSION, membership=VERSION, root=PUBLISHED)
+    assert stored == payload['teams']
+    assert read_prior_teams(year, algo=ALGO_VERSION, membership=VERSION + '-other', root=PUBLISHED) is None
 
 
 def test_ensure_priors_refetches_stale_priors(tmp_path):
