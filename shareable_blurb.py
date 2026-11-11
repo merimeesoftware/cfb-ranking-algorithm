@@ -155,8 +155,10 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
 def _plain_lever(path: Dict[str, Any]) -> str:
     """Map structured climb data to fan-language problem (StoryBrand)."""
     lever = str(path.get('primary_lever') or '').lower()
+    # The place is Elo. Do not pick the résumé gap even when it is larger.
+    if 'elo' in lever or lever == 'tq':
+        return 'Elo, which sets the place. The record is shown beside the order and does not move it'
     gaps = path.get('gaps') or {}
-    # Prefer structured gaps when present
     if gaps:
         key = max(gaps, key=lambda k: float(gaps.get(k) or 0))
         if float(gaps.get(key) or 0) > 0.5:

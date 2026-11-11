@@ -6,7 +6,6 @@
 	import { fetchTeamDetail, fetchWhyBlurb, fetchShareableBlurb, fetchClimbBlurb } from '$lib/api';
 	import { filterState } from '$lib/stores/rankings';
 	import { teamPath } from '$lib/brand';
-	import { formatSigned, isEarlySeason } from '$lib/order';
 
 	export let teams: Team[] = [];
 	/** Full unfiltered list for deep-link ?team= lookup and accurate ranks */
@@ -176,28 +175,9 @@
 							<span class="badge {team.conference_type === 'Power 4' ? 'badge-power4' : team.conference_type === 'Group of 5' ? 'badge-g5' : 'badge-ind'}">
 								{team.conference}
 							</span>
-							<span class="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
+							<span class="text-sm text-gray-500 dark:text-gray-400">
 								{team.records.total_wins}-{team.records.total_losses}
 							</span>
-							{#if isEarlySeason(team)}
-								<span
-									class="badge badge-ind"
-									title="Fewer than 3 decisions. The rating is still mostly the opening Elo. Week 1 keeps 70% of last year's final score."
-								>Early</span>
-							{/if}
-						</div>
-						<div class="mt-1 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-							{#if typeof team.record_ahead === 'number'}
-								<span class={team.record_quality_flag ? 'text-amber-700 dark:text-amber-400' : ''}>
-									Record {formatSigned(team.record_ahead)}
-								</span>
-								{#if typeof team.soft_win_share === 'number' && team.records.total_wins > 0}
-									· {Math.round(team.soft_win_share * 100)}% soft
-								{/if}
-							{/if}
-							{#if typeof team.momentum === 'number'}
-								· Form {formatSigned(team.momentum)}
-							{/if}
 						</div>
 					</div>
 
@@ -224,18 +204,6 @@
 					<th class="table-header px-4 py-3 text-left">Team</th>
 					<th class="table-header px-4 py-3 text-left">Conference</th>
 					<th class="table-header px-4 py-3 text-center">Record</th>
-					<th
-						class="table-header px-4 py-3 text-center"
-						title="Wins minus the wins Elo expected, and the share of those wins over FCS or below the weak-loss line. Not used to order the board."
-					>Record quality</th>
-					<th
-						class="table-header px-4 py-3 text-center"
-						title="Last three decisions: result minus Elo's pregame win chance. Weight 0. Not used to order the board."
-					>Momentum</th>
-					<th
-						class="table-header px-4 py-3 text-center"
-						title="Fewer than 3 decisions. The rating is still mostly the opening Elo. Week 1 keeps 70% of last year's final score."
-					>Early</th>
 					<th class="table-header px-4 py-3 text-center">Δ</th>
 					<th class="table-header px-4 py-3 text-right" title="Sort key. Heat weight is 0.">Elo</th>
 				</tr>

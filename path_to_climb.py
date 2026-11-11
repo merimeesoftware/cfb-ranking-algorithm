@@ -44,44 +44,28 @@ def compute_path_to_climb(
         'resume': theirs['resume'] - mine['resume'],
         'cq': theirs['cq'] - mine['cq'],
     }
-    # The board is ordered by Elo. The gap to the team above is Elo points.
+    # The board is ordered by Elo. Resume and conference gaps are display only.
     score_gap = float(team_above.get('team_quality_score') or 0) - float(team.get('team_quality_score') or 0)
-
-    # Largest positive gap (where we trail most in contribution space)
-    lever_key = max(gaps, key=lambda k: gaps[k])
-    lever_labels = {
-        'tq': 'how they look week to week',
-        'resume': 'who they beat',
-        'cq': 'conference company',
-    }
-    primary = lever_labels[lever_key] if gaps[lever_key] > 0.5 else 'balanced margins'
-
     above_name = team_above.get('team_name', 'the team above')
     team_name = team.get('team_name', 'This team')
-    if score_gap <= 0:
+    if score_gap > 0.5:
+        primary = 'Elo'
         summary = (
-            f'{team_name} already matches or exceeds {above_name} on this board snapshot.'
+            f'To catch {above_name}, {team_name} needs {score_gap:.0f} more Elo points. '
+            f'The record is shown beside the order and does not move the place.'
+        )
+    elif score_gap < -0.5:
+        primary = 'Elo'
+        summary = (
+            f'{team_name} is already ahead of {above_name} on Elo. '
+            f'The record is shown beside the order and does not move the place.'
         )
     else:
-        if lever_key == 'resume' and gaps['resume'] > 1:
-            summary = (
-                f'To catch {above_name}, {team_name} needs a stronger resume — '
-                f'more wins over good teams, not just more wins.'
-            )
-        elif lever_key == 'tq' and gaps['tq'] > 1:
-            summary = (
-                f'To catch {above_name}, {team_name} has to look stronger week to week — '
-                f'dominate quality opponents, not just survive them.'
-            )
-        elif lever_key == 'cq' and gaps['cq'] > 1:
-            summary = (
-                f'To catch {above_name}, {team_name} needs to prove it against '
-                f'tougher conference company.'
-            )
-        else:
-            summary = (
-                f'{team_name} is close to {above_name}. Keep winning the games that matter.'
-            )
+        primary = None
+        summary = (
+            f'{team_name} matches {above_name} on Elo. '
+            f'The record is shown beside the order and does not move the place.'
+        )
 
     return {
         'at_top': False,

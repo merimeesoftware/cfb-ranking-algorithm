@@ -141,7 +141,7 @@ def _build_team_context(rankings: Dict[str, Any], team_name: str) -> Optional[Di
                 'tq_contribution': round(tq * FRS_WEIGHTS[0], 2),
                 'rec_contribution': round(rec * FRS_WEIGHTS[1], 2),
                 'cq_contribution': round(cq * FRS_WEIGHTS[2], 2),
-                'total': team.get('final_ranking_score'),
+                'total': team.get('team_quality_score'),
             },
             'records': team.get('records', {}),
             'sos': team.get('sos'),

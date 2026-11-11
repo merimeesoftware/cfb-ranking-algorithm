@@ -32,7 +32,8 @@ def build_matchup_payload(
         return {
             "name": team["team_name"],
             "rank": rank,
-            "tr_plus": float(team["final_ranking_score"]),
+            "tr_plus": float(team["team_quality_score"]),
+            "rating_label": "Elo",
             "record": f"{wins}-{losses}",
         }
 

@@ -5,7 +5,6 @@
 	import AgentChatPanel from '$lib/components/AgentChatPanel.svelte';
 	import {
 		BRAND_NAME,
-		RATING_NAME,
 		TAGLINE,
 		pageTitle,
 		teamSlug,
@@ -53,8 +52,8 @@
 		}
 	});
 
-	$: title = pageTitle([`${t.team_name} ${RATING_NAME} rank`, `${year} Week ${week}`]);
-	$: description = `${t.team_name} is #${rank} in ${BRAND_NAME} (${RATING_NAME} ${t.final_ranking_score.toFixed(1)}) for ${year} Week ${week}. ${TAGLINE}`;
+	$: title = pageTitle([`${t.team_name} Elo rank`, `${year} Week ${week}`]);
+	$: description = `${t.team_name} is #${rank} in ${BRAND_NAME} (Elo ${t.team_quality_score.toFixed(1)}) for ${year} Week ${week}. ${TAGLINE}`;
 	$: path = `/teams/${teamSlug(t.team_name)}`;
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -88,21 +87,15 @@
 		</div>
 	</div>
 
-	<div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+	<div class="mt-6 grid grid-cols-3 gap-3">
 		<div class="card p-3">
 			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">Rank</p>
 			<p class="font-display text-2xl text-primary-900 dark:text-white">#{rank}</p>
 		</div>
 		<div class="card p-3">
-			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">{RATING_NAME}</p>
+			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">Elo</p>
 			<p class="font-display text-2xl text-primary-900 dark:text-white">
-				{t.final_ranking_score.toFixed(1)}
-			</p>
-		</div>
-		<div class="card p-3">
-			<p class="text-xs uppercase text-primary-600 dark:text-primary-400">How they look</p>
-			<p class="font-display text-2xl text-primary-900 dark:text-white">
-				{t.team_quality_score.toFixed(0)}
+				{t.team_quality_score.toFixed(1)}
 			</p>
 		</div>
 		<div class="card p-3">

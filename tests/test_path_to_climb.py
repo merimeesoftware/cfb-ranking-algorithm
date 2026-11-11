@@ -36,3 +36,25 @@ def test_ohio_state_chasing_oregon():
     result = compute_path_to_climb(teams[1], teams[0])
     assert result['score_gap'] == 50.0
     assert result['team_above'] == 'Oregon'
+    assert result['primary_lever'] == 'Elo'
+    assert 'does not move the place' in result['summary']
+
+
+def test_climb_follows_elo_when_resume_gap_is_larger():
+    above = {
+        'team_name': 'Sharp',
+        'team_quality_score': 1600.0,
+        'record_score': 800.0,
+        'conference_quality_score': 70.0,
+    }
+    below = {
+        'team_name': 'Soft',
+        'team_quality_score': 1590.0,
+        'record_score': 4000.0,
+        'conference_quality_score': 70.0,
+    }
+    result = compute_path_to_climb(below, above)
+    assert result['primary_lever'] == 'Elo'
+    assert result['score_gap'] == 10.0
+    assert 'resume' not in result['primary_lever'].lower()
+    assert 'record' in result['summary'].lower()

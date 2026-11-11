@@ -100,14 +100,14 @@
 				tq: theirContribs.tq - myContribs.tq,
 				rec: theirContribs.rec - myContribs.rec,
 				conf: theirContribs.conf - myContribs.conf,
-				total: compTeam.final_ranking_score - team.final_ranking_score
+				total: compTeam.team_quality_score - team.team_quality_score
 			};
 		} else {
 			return {
 				tq: myContribs.tq - theirContribs.tq,
 				rec: myContribs.rec - theirContribs.rec,
 				conf: myContribs.conf - theirContribs.conf,
-				total: team.final_ranking_score - compTeam.final_ranking_score
+				total: team.team_quality_score - compTeam.team_quality_score
 			};
 		}
 	}
@@ -356,9 +356,9 @@
 					</div>
 					
 					<div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-						<span class="font-bold text-gray-900 dark:text-white">Board score</span>
+						<span class="font-bold text-gray-900 dark:text-white">Elo</span>
 						<span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-							{team.final_ranking_score.toFixed(2)}
+							{team.team_quality_score.toFixed(1)}
 						</span>
 					</div>
 				</div>
@@ -600,7 +600,7 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(Math.abs(comp.score_diff))} pts ahead
+													{formatDiff(Math.abs(comp.score_diff))} Elo ahead
 												</span>
 											</div>
 											{#if comp.factors && comp.factors.length > 0}
@@ -632,7 +632,7 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(diff.total)} pts ahead
+													{formatDiff(diff.total)} Elo ahead
 												</span>
 											</div>
 											<div class="grid grid-cols-3 gap-2 text-xs">
@@ -670,7 +670,7 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(Math.abs(comp.score_diff))} pts behind
+													{formatDiff(Math.abs(comp.score_diff))} Elo behind
 												</span>
 											</div>
 											{#if comp.factors && comp.factors.length > 0}
@@ -702,7 +702,7 @@
 													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
 												</div>
 												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(diff.total)} pts behind
+													{formatDiff(diff.total)} Elo behind
 												</span>
 											</div>
 											<div class="grid grid-cols-3 gap-2 text-xs">

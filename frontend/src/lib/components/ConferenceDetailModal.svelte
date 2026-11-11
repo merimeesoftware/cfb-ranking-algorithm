@@ -200,6 +200,7 @@
 								</span>
 								<span class="font-semibold text-primary-600 dark:text-primary-400">
 									{team.team_quality_score.toFixed(1)}
+									<span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">Elo</span>
 								</span>
 							</div>
 						</div>

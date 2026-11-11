@@ -56,11 +56,6 @@ function mapTeam(t: Record<string, unknown>): Team {
 		top_10_wins: (t.top_10_wins ?? 0) as number,
 		top_25_wins: (t.top_25_wins ?? 0) as number,
 		cross_tier_wins: (t.cross_tier_wins ?? 0) as number,
-		record_ahead: (t.record_ahead ?? null) as number | null,
-		soft_win_share: (t.soft_win_share ?? null) as number | null,
-		record_quality_flag: Boolean(t.record_quality_flag),
-		momentum: (t.momentum ?? null) as number | null,
-		early_season: typeof t.early_season === 'boolean' ? t.early_season : undefined,
 	};
 }
 

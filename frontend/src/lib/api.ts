@@ -76,11 +76,6 @@ export function mapTeamFromApi(t: Record<string, unknown>): Team {
 		bad_loss_penalty: (t.bad_loss_penalty ?? 0) as number,
 		quality_win_bonus: (t.quality_win_bonus ?? 0) as number,
 		bad_win_penalty: (t.bad_win_penalty ?? 0) as number,
-		record_ahead: (t.record_ahead ?? null) as number | null,
-		soft_win_share: (t.soft_win_share ?? null) as number | null,
-		record_quality_flag: Boolean(t.record_quality_flag),
-		momentum: (t.momentum ?? null) as number | null,
-		early_season: typeof t.early_season === 'boolean' ? t.early_season : undefined,
 		wins_details: (t.wins_details || []) as Team['wins_details'],
 		losses_details: (t.losses_details || []) as Team['losses_details'],
 	};
