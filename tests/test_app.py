@@ -121,6 +121,21 @@ def test_rankings_detail_preserves_wins_details(client):
         assert data['code'] == 'formula_params'
 
 
+def test_team_route_unpublished_matches_the_board(client):
+    rankings = client.get('/rankings?year=2024&week=10')
+    team = client.get('/rankings/team/Georgia?year=2024&week=10')
+    assert rankings.status_code == 200
+    assert team.status_code == 200
+    board = rankings.get_json()
+    body = team.get_json()
+    assert body['published'] is False
+    assert body['code'] == board['code'] == 'not_published'
+    assert body['message'] == board['message']
+    assert body['year'] == board['year'] == 2024
+    assert body['week'] == board['week'] == 10
+    assert 'error' not in body
+
+
 def test_team_breakdown_includes_game_details(client):
     mock_data = {
         'team_rankings': [{

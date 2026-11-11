@@ -235,7 +235,15 @@ def get_team_breakdown(team_name):
             allow_compute=False,
         )
         if not data:
-            return jsonify({"error": f"No game data found for {year}."}), 404
+            return jsonify({
+                "published": False,
+                "message": UNPUBLISHED_MESSAGE,
+                "code": "not_published",
+                "year": year,
+                "week": week,
+                "team_rankings": [],
+                "conference_rankings": [],
+            }), 200
 
         team_rankings = data.get('team_rankings', [])
         team_index = None
