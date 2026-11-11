@@ -1,0 +1,22 @@
+{
+  "team_quality_weight": 0.8,
+  "record_weight": 0.15,
+  "conference_weight": 0.05,
+  "base_factor": 50.0,
+  "hfa_elo": 50.0,
+  "hfa_postseason": 20.0,
+  "upset_bonus_mult": 1.18,
+  "upset_elo_threshold": 150.0,
+  "g5_beats_p4_mult": 1.12,
+  "power_conf_initial": 1500.0,
+  "group5_initial": 1200.0,
+  "fcs_initial": 900.0,
+  "prior_strength": 0.15,
+  "postseason_k_mult": 0.65,
+  "elo_clamp_max": 1850.0,
+  "matchup_p4_p4": 1.0,
+  "matchup_p4_g5": 0.8,
+  "matchup_g5_g5": 0.65,
+  "matchup_fbs_fcs": 0.2,
+  "matchup_fcs_fcs": 0.1
+}

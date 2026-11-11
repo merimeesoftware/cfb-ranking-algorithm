@@ -1,5 +1,15 @@
 <script lang="ts">
-	// Methodology page - V5 (StoryBrand fan copy)
+	import WeightExplorer from '$lib/components/WeightExplorer.svelte';
+	import { PUBLIC_FORMULA, weightDecimal, weightPercent } from '$lib/publicFormula';
+
+	const f = PUBLIC_FORMULA;
+	const freshWeight = 1 - f.prior_strength;
+	const exampleMov = 1.08;
+	const exampleSurprise = 0.4;
+	const exampleDelta = f.base_factor * exampleMov * exampleSurprise;
+	const exampleHome = 1650;
+	const exampleAway = 1580;
+
 	let expandedSection: string | null = null;
 
 	function toggleSection(section: string) {
@@ -35,14 +45,16 @@
 		</h2>
 		<div class="bg-stone-100 dark:bg-stone-800/60 rounded-lg p-4 font-mono text-center text-base sm:text-lg mb-4">
 			<span class="text-primary-600 dark:text-primary-400 font-bold">Board score</span> =
-			(<span class="text-primary-600 dark:text-primary-400">0.65</span> × how they look) +
-			(<span class="text-amber-600 dark:text-amber-400">0.27</span> × who they beat) +
-			(<span class="text-stone-600 dark:text-stone-300">0.08</span> × league strength)
+			(<span class="text-primary-600 dark:text-primary-400">{weightDecimal(f.team_quality_weight)}</span> × how they look) +
+			(<span class="text-amber-600 dark:text-amber-400">{weightDecimal(f.record_weight)}</span> × who they beat) +
+			(<span class="text-stone-600 dark:text-stone-300">{weightDecimal(f.conference_weight)}</span> × league strength)
 		</div>
 		<p class="text-sm text-gray-600 dark:text-gray-400 text-center">
-			All components are normalized to a 0–100 scale before weighting.
+			The board score is those three parts added together. They are not rescaled to 0–100 before the weights.
 		</p>
 	</div>
+
+	<WeightExplorer />
 
 	<!-- Components Grid -->
 	<div class="grid md:grid-cols-3 gap-4 mb-8">
@@ -54,7 +66,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">How they look (65%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">How they look ({weightPercent(f.team_quality_weight)})</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Pure team strength — how good they look on the field, week to week.
@@ -78,7 +90,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">Who they beat (27%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">Who they beat ({weightPercent(f.record_weight)})</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				The ledger: wins, quality of opponents, schedule toughness, and milestones.
@@ -102,7 +114,7 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
 				</div>
-				<h3 class="font-semibold text-gray-900 dark:text-white">League strength (8%)</h3>
+				<h3 class="font-semibold text-gray-900 dark:text-white">League strength ({weightPercent(f.conference_weight)})</h3>
 			</div>
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Credit for the conference you play in — a tougher league means more.
@@ -142,21 +154,21 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Starting Elo Ratings by Tier</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Each team begins with a tier-based rating (85% weight) blended with their historical performance (15% weight) to reduce legacy bias while respecting pedigree:
+						Each team begins with a tier-based rating ({weightPercent(freshWeight)} weight) blended with their historical performance ({weightPercent(f.prior_strength)} weight) to reduce legacy bias while respecting pedigree:
 					</p>
 					<div class="grid grid-cols-3 gap-3 text-center">
 						<div class="bg-primary-50 dark:bg-primary-900/30 rounded-lg p-3">
-							<div class="text-2xl font-bold text-primary-600 dark:text-primary-400">1500</div>
+							<div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{f.power_conf_initial}</div>
 							<div class="text-xs text-gray-600 dark:text-gray-400">Power 4</div>
 							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">SEC, Big Ten, Big 12, ACC</div>
 						</div>
 						<div class="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3">
-							<div class="text-2xl font-bold text-amber-700 dark:text-amber-400">1200</div>
+							<div class="text-2xl font-bold text-amber-700 dark:text-amber-400">{f.group5_initial}</div>
 							<div class="text-xs text-gray-600 dark:text-gray-400">Group of 5</div>
 							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">AAC, MWC, C-USA, etc.</div>
 						</div>
 						<div class="bg-stone-100 dark:bg-stone-700/50 rounded-lg p-3">
-							<div class="text-2xl font-bold text-stone-600 dark:text-stone-300">900</div>
+							<div class="text-2xl font-bold text-stone-600 dark:text-stone-300">{f.fcs_initial}</div>
 							<div class="text-xs text-gray-600 dark:text-gray-400">FCS</div>
 							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Non-FBS teams</div>
 						</div>
@@ -172,7 +184,7 @@
 					<div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
 						<div class="flex gap-2">
 							<span class="font-medium text-gray-900 dark:text-white w-36">K-factor:</span>
-							<span>Base volatility = 40. Reduced in postseason (0.6-0.7) to prevent "Bowl Bias".</span>
+							<span>Base volatility = {f.base_factor}. Reduced in postseason ({f.postseason_k_mult}×) so bowl games move the rating less.</span>
 						</div>
 						<div class="flex gap-2">
 							<span class="font-medium text-gray-900 dark:text-white w-36">Expected Win:</span>
@@ -193,18 +205,18 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Upset Bonuses & Chaos Tax</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Upsets receive bonus multipliers, but are subject to a global cap (1.20×) and a "Chaos Tax" in high-variance conferences:
+						A major upset (Elo gap over {f.upset_elo_threshold}) is multiplied by {f.upset_bonus_mult}×. A Group of 5 win over a Power 4 team is multiplied by {f.g5_beats_p4_mult}×. Those can stack. High-variance conferences still take the chaos tax:
 					</p>
 					<div class="grid grid-cols-3 gap-3">
 						<div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center">
-							<div class="text-xl font-bold text-amber-700 dark:text-amber-400">1.25×</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Major Upset</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">150+ Elo gap (Capped at 1.20×)</div>
+							<div class="text-xl font-bold text-amber-700 dark:text-amber-400">{f.upset_bonus_mult}×</div>
+							<div class="text-xs text-gray-600 dark:text-gray-400">Major upset</div>
+							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Elo gap over {f.upset_elo_threshold}</div>
 						</div>
 						<div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3 text-center">
-							<div class="text-xl font-bold text-primary-600 dark:text-primary-400">1.20×</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Cross-Tier</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">G5 beats P4 team</div>
+							<div class="text-xl font-bold text-primary-600 dark:text-primary-400">{f.g5_beats_p4_mult}×</div>
+							<div class="text-xs text-gray-600 dark:text-gray-400">Cross-tier</div>
+							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Group of 5 beats Power 4</div>
 						</div>
 						<div class="bg-stone-100 dark:bg-stone-700/40 rounded-lg p-3 text-center">
 							<div class="text-xl font-bold text-stone-700 dark:text-stone-300">-10%</div>
@@ -232,27 +244,27 @@
 							<tbody class="text-gray-600 dark:text-gray-400">
 								<tr class="border-b border-gray-100 dark:border-gray-700">
 									<td class="py-2">P4 vs P4</td>
-									<td class="text-center font-mono font-bold text-primary-600 dark:text-primary-400">1.0</td>
+									<td class="text-center font-mono font-bold text-primary-600 dark:text-primary-400">{f.matchup_p4_p4}</td>
 									<td>Full weight; most competitive matchups</td>
 								</tr>
 								<tr class="border-b border-gray-100 dark:border-gray-700">
 									<td class="py-2">P4 vs G5</td>
-									<td class="text-center font-mono">0.8</td>
+									<td class="text-center font-mono">{f.matchup_p4_g5}</td>
 									<td>Reduced; expected talent gap</td>
 								</tr>
 								<tr class="border-b border-gray-100 dark:border-gray-700">
 									<td class="py-2">G5 vs G5</td>
-									<td class="text-center font-mono">0.5</td>
+									<td class="text-center font-mono">{f.matchup_g5_g5}</td>
 									<td>Dampened to prevent isolated inflation</td>
 								</tr>
 								<tr class="border-b border-gray-100 dark:border-gray-700">
 									<td class="py-2">FBS vs FCS</td>
-									<td class="text-center font-mono">0.2</td>
+									<td class="text-center font-mono">{f.matchup_fbs_fcs}</td>
 									<td>Minimal exchange; different divisions</td>
 								</tr>
 								<tr>
 									<td class="py-2">FCS vs FCS</td>
-									<td class="text-center font-mono text-gray-400">0.1</td>
+									<td class="text-center font-mono text-gray-400">{f.matchup_fcs_fcs}</td>
 									<td>Nearly isolated from FBS pool</td>
 								</tr>
 							</tbody>
@@ -292,10 +304,11 @@
 							<div><strong>Result:</strong> Ohio State wins 28-17 (11-point margin)</div>
 							<div class="mt-2 font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded">
 								Expected = 1 / (1 + 10^((1580-1650)/400)) = 0.60 (60% win prob)<br/>
-								MoV = log(11 + 1) = 1.08<br/>
-								Δ = 40 × 1.0 × 1.08 × (1.0 - 0.60) = +17.3 Elo
+								MoV = log(11 + 1) = {exampleMov}<br/>
+								Δ = {f.base_factor} × 1.0 × {exampleMov} × (1.0 - 0.60) = +{exampleDelta.toFixed(1)} Elo
 							</div>
-							<div class="mt-2"><strong>Post-game:</strong> Ohio State → 1667 Elo, Penn State → 1563 Elo</div>
+							<div class="mt-2"><strong>Post-game:</strong> Ohio State → {(exampleHome + exampleDelta).toFixed(1)} Elo, Penn State → {(exampleAway - exampleDelta).toFixed(1)} Elo</div>
+							<p class="text-xs text-gray-500">Illustration only. It uses the published K and skips home-field advantage.</p>
 						</div>
 					</div>
 				</div>
@@ -328,7 +341,7 @@
 						Resume = (Base + WeightedWinPct + SoV + SoS - BadLoss + QW) × MilestoneMultiplier
 					</div>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						All components are calculated then normalized to 0-100 scale.
+						The résumé score stays on the same scale as the other two ratings.
 					</p>
 				</div>
 
@@ -431,7 +444,7 @@
 								<div>BadLoss: 0 (Loss was to stronger team)</div>
 								<div>QL: (1680 - 1600) × 0.165 = +13</div>
 								<div class="border-t border-gray-300 dark:border-gray-600 pt-1 mt-1 font-bold">
-									Total: 2202 → Normalized to ~72/100
+									Total: 2202 on the résumé scale
 								</div>
 							</div>
 						</div>
@@ -497,9 +510,7 @@
 					<h4 class="font-medium text-gray-900 dark:text-white mb-2">FBS Independents</h4>
 					<div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
 						<p class="text-sm text-gray-600 dark:text-gray-400">
-							Teams without a conference (Notre Dame, UConn, UMass) receive a <strong>Synthetic Conference Quality</strong> score.
-							This is calculated as the average CQ of all the conferences on their schedule. If they play a P4 schedule, they get a P4 boost;
-							if they play a G5 schedule, they get a G5 boost.
+							Teams without a conference get a synthetic league-strength score: the average of the conferences on their schedule. Notre Dame is Power 4. The other independents are not, so the Independents row is mixed.
 						</p>
 					</div>
 				</div>
@@ -515,7 +526,7 @@
 								<div>RawCQ = (0.70 × 1520) + (0.30 × 1420) = 1490</div>
 								<div>OOC_Perf = 0.75 → Multiplier = 1.10</div>
 								<div class="border-t border-gray-300 dark:border-gray-600 pt-1 mt-1 font-bold">
-									FinalCQ = 1490 × 1.10 = 1639 → Normalized to ~85/100
+									FinalCQ = 1490 × 1.10 = 1639
 								</div>
 							</div>
 						</div>
@@ -635,19 +646,19 @@
 					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Home-Field Advantage:</strong> 65 Elo bonus for home team expectation</span>
+					<span><strong>Home-field advantage:</strong> {f.hfa_elo} points on the home team's expected result</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Elo Clamp:</strong> Ratings capped at 1850 to prevent outliers</span>
+					<span><strong>Elo clamp:</strong> Ratings capped at {f.elo_clamp_max} to limit outliers</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
-					<span><strong>Postseason K Reduction:</strong> 0.65× K-factor for bowl games</span>
+					<span><strong>Postseason K:</strong> {f.postseason_k_mult}× K for bowl games</span>
 				</div>
 				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -697,7 +708,7 @@
 				<div>
 					<h4 class="font-medium text-gray-900 dark:text-white">Balance Power & Resume</h4>
 					<p class="text-sm text-gray-600 dark:text-gray-400">
-						How they look (65%) answers "How good are you?" while who they beat (27%) answers "What have you actually done?"
+						How they look ({weightPercent(f.team_quality_weight)}) answers "How good are you?" while who they beat ({weightPercent(f.record_weight)}) answers "What have you actually done?"
 						Neither strength alone nor résumé alone — a hybrid that uses both.
 					</p>
 				</div>

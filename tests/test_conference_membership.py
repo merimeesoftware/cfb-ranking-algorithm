@@ -274,7 +274,7 @@ def test_mixed_tier_conference_row_does_not_depend_on_team_order(order):
         games.reverse()
     _, out = _rank(_processor(games).get_games_for_season(2023))
     by_conf = {c['conference_name']: c for c in out['conference_rankings']}
-    assert by_conf['FBS Independents']['conference_type'] == 'Power 4'  # legacy row label
+    assert by_conf['FBS Independents']['conference_type'] == 'Mixed'
     team = {t['team_name']: t for t in out['team_rankings']}
     assert team['Notre Dame']['conference_type'] == 'Power 4'
     assert team['Massachusetts']['conference_type'] == 'Group of 5'

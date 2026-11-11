@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import type { Conference } from '$lib/types';
+	import { tierBadgeClass } from '$lib/conferenceLabel.js';
 
 	export let conferences: Conference[] = [];
 	export let loading: boolean = false;
@@ -94,6 +95,7 @@
 								<h3 class="font-semibold text-gray-900 dark:text-white truncate">
 									{conf.conference}
 								</h3>
+								<span class="badge mt-1 {tierBadgeClass(conf.conference_type || '')}">{conf.conference_type}</span>
 								<div class="mt-2 grid grid-cols-4 gap-2 text-xs">
 									<div>
 										<div class="text-gray-500 dark:text-gray-400">Avg Rank</div>
@@ -156,7 +158,10 @@
 									</span>
 								</td>
 								<td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
-									{conf.conference}
+									<span class="inline-flex items-center gap-2">
+										{conf.conference}
+										<span class="badge {tierBadgeClass(conf.conference_type || '')}">{conf.conference_type}</span>
+									</span>
 								</td>
 								<td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
 									{conf.avg_ranking.toFixed(1)}

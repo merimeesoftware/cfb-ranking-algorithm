@@ -14,9 +14,11 @@
 
 	$: cite = citationText(year, week, pageUrl);
 
+	$: shareCount = Math.min(25, topTeams.length);
 	$: shareText = (() => {
-		const lines = topTeams.slice(0, 5).map((t, i) => `${i + 1}. ${t.team_name}`);
-		return `${BRAND_NAME} ${year} Week ${week} Top 5 (${RATING_NAME})\n${lines.join('\n')}\n${pageUrl}`;
+		const lines = topTeams.slice(0, shareCount).map((t, i) => `${i + 1}. ${t.team_name}`);
+		const label = shareCount === 25 ? 'Top 25' : `Top ${shareCount}`;
+		return `${BRAND_NAME} ${year} Week ${week} ${label} (${RATING_NAME})\n${lines.join('\n')}\n${pageUrl}`;
 	})();
 
 	async function copyCitation() {
@@ -44,7 +46,7 @@
 		}
 		try {
 			await navigator.clipboard.writeText(shareText);
-			copyStatus = 'Top 5 copied for posting';
+			copyStatus = shareCount === 25 ? 'Top 25 copied for posting' : `Top ${shareCount} copied for posting`;
 		} catch {
 			copyStatus = 'Could not copy share text';
 		}
@@ -52,7 +54,7 @@
 	}
 </script>
 
-<div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center" role="group" aria-label="Share and cite">
+<div class="flex flex-wrap gap-2 sm:items-center" role="group" aria-label="Share and cite">
 	<button type="button" class="btn btn-primary" on:click={shareTop25}>
 		Share Top 25
 	</button>

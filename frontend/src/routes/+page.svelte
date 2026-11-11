@@ -79,9 +79,7 @@
 		TAGLINE,
 	]);
 
-	$: seoDescription = data.story?.headline
-		? `${data.story.headline} — ${TAGLINE}`
-		: `${BRAND_NAME} ${RATING_NAME} board for ${$filterState.year} Week ${$filterState.week}. ${TAGLINE}`;
+	$: seoDescription = `${BRAND_NAME}, ${$filterState.year} Week ${$filterState.week}. ${POSITIONING_LINE}`;
 
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -214,7 +212,7 @@
 		<div class="absolute inset-y-0 right-[8%] w-px bg-cfb-gold/30"></div>
 	</div>
 
-	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 		<p id="hero-brand" class="hero-brand animate-hero-rise">{BRAND_NAME}</p>
 		<p class="mt-2 text-sm sm:text-base text-cfb-chalk/75 animate-hero-rise" style="animation-delay: 40ms">
 			{$filterState.year} Week {$filterState.week} · {RATING_NAME} · through Saturday
@@ -260,9 +258,10 @@
 	</div>
 </section>
 
-<div id="board" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 scroll-mt-20">
+<div id="board" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 scroll-mt-20 flex flex-col">
 	<WeekStoryStrip year={$filterState.year} week={$filterState.week} />
 
+	<div class="max-lg:order-2">
 	<FilterControls
 		years={$availableYears}
 		selectedYear={$filterState.year}
@@ -279,7 +278,9 @@
 		on:searchChange={handleSearchChange}
 		on:conferenceChange={handleConferenceFilterChange}
 	/>
+	</div>
 
+	<div class="max-lg:order-1">
 	<div
 		class="flex border-b border-primary-200 dark:border-primary-800 mb-4 mt-2"
 		role="tablist"
@@ -363,6 +364,7 @@
 			<ConferenceTable conferences={$filteredConferences} on:click={handleConferenceClick} />
 		{/if}
 	{/if}
+	</div>
 </div>
 
 {#if showConferenceModal && selectedConference}
