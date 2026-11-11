@@ -32,6 +32,8 @@ def test_stub_climb_blurb_is_caveman_simple():
     assert 40 <= len(blurb) <= BLURB_MAX_CHARS
     assert 'Indiana' in blurb
     assert 'Ohio State' in blurb
+    assert 'it. Close it' in blurb
+    assert 'it Close it' not in blurb
     lower = blurb.lower()
     # No math jargon (word-ish checks; avoid false positives like "below")
     for banned in ('tq contrib', 'cq Δ', 'resume Δ', 'contrib Δ', 'Δ', ' primary lever', 'elo gains'):

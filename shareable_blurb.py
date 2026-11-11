@@ -162,10 +162,10 @@ def _plain_lever(path: Dict[str, Any]) -> str:
         level = False
     # A tie on Elo is not a résumé gap. Do not read gaps when the lever is empty.
     if level or lever in ('', 'none', 'level'):
-        return 'They are level on Elo. The record is display-only and does not move the place'
+        return 'They are level on Elo. The record is display-only and does not move the place.'
     if 'elo' in lever or lever == 'tq' or 'quality' in lever:
-        return 'Elo sets the place. The record does not move it'
-    return 'Elo sets the place. The record is display-only and does not move it'
+        return 'Elo sets the place. The record does not move it.'
+    return 'Elo sets the place. The record is display-only and does not move it.'
 
 
 def stub_climb_blurb(context: Dict[str, Any]) -> str:
@@ -192,9 +192,10 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
             f'The record is display-only and does not move the place.'
         )
     else:
+        sentence = problem if problem.endswith('.') else f'{problem}.'
         body = (
             f'{name} is chasing {ahead}. The place is Elo. '
-            f'{problem} Close it by beating better teams.'
+            f'{sentence} Close it by beating better teams.'
         )
     hook = f' Think {name} already deserves that spot?'
     blurb = accept_blurb(f'{body} {hook}')
