@@ -69,14 +69,14 @@ The frame is labeled `Example only`. The sliders move a comparison list. They do
 
 No share line on the page. The board does not read `?whatif=`. When that parameter is read, the share text is `My what-if weights, not the official board: {url}` and the error is `Link weights didn’t load. See the board.`
 
-## Why this team is here
+## Opened row
 
-Sample: South Carolina, 2026 week 10. Gaps are the difference of the TR+ numbers shown to one decimal.
+Sample: South Carolina, 2026 week 10, expanded in place. Gaps are the difference of the TR+ numbers shown to one decimal. The homepage link is “How the formula works.”
 
 | Slot | Proposed |
 | --- | --- |
 | Heading | Why South Carolina is No. 12 |
-| Back | Back to the board |
+| Open control | The team name is a button. It expands the row. It does not open a team page. |
 | Rank line | TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke. |
 | Record | 6-3, 4-3 in the SEC. Beside the rank. It does not set the rank. |
 | Resume | Who they beat, ranked. 2 quality wins, 1 quality loss, 1 bad loss. 4-3 against Power 4. |

@@ -60,12 +60,12 @@
 			outline-offset: 3px;
 		}
 		.mast :focus-visible { outline-color: var(--chalk); }
-		.mast { background: var(--deep); color: var(--chalk); padding: 0.55rem 1rem 0.6rem; }
+		.mast { background: var(--deep); color: var(--chalk); padding: 0.35rem 0.75rem 0.4rem; }
 		.mast p { margin: 0; max-width: none; }
 		.mast-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.8rem; max-width: 72rem; margin: 0 auto; }
 		.brand { font-family: Oswald, sans-serif; font-weight: 600; font-size: 1.55rem; line-height: 1; }
 		.week { font-family: Oswald, sans-serif; font-weight: 500; color: #e8c547; letter-spacing: 0.03em; }
-		.position { max-width: 72rem; margin: 0.25rem auto 0; color: var(--mast-soft); font-size: 0.98rem; }
+		.position { max-width: 72rem; margin: 0.1rem auto 0; color: var(--mast-soft); font-size: 0.92rem; line-height: 1.25; }
 		main { max-width: 72rem; margin: 0 auto; padding: 0.65rem 1rem 2rem; }
 		h2 { font-family: Oswald, sans-serif; font-weight: 600; font-size: 1.65rem; line-height: 1.1; margin: 0 0 0.45rem; }
 		.week-line { margin: 0 0 0.45rem; }
@@ -77,7 +77,7 @@
 			background: var(--card);
 		}
 		table { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
-		caption { caption-side: top; text-align: left; padding: 0.4rem 0.65rem; color: var(--ink); }
+		caption { caption-side: top; text-align: left; padding: 0.2rem 0.55rem; color: var(--ink); }
 		thead th {
 			position: sticky; top: 0; background: var(--field); color: var(--chalk);
 			font-family: Oswald, sans-serif; font-weight: 500; text-align: left; padding: 0.4rem 0.6rem;
@@ -114,13 +114,15 @@
 		.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.5rem 0; }
 		.side { padding: 0.65rem 0.75rem; }
 		.elo-num { font-family: Oswald, sans-serif; font-size: 1.8rem; font-variant-numeric: tabular-nums; margin: 0.1rem 0; line-height: 1; }
-		.ladder { list-style: none; margin: 0.4rem 0 0.8rem; padding: 0; max-width: 28rem; }
+		.ladder { list-style: none; margin: 0.4rem 0 0.8rem; padding: 0; max-width: 100%; }
+		.rung .elo-num { font-size: 1.25rem; }
+		.rung.subject .elo-num { font-size: 2.75rem; }
 		.rung { padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--line); }
 		.rung .who { color: var(--muted); font-size: 0.92rem; }
 		.between { padding: 0.28rem 0.7rem; color: var(--muted); font-size: 0.92rem; background: var(--chalk); }
 		.rung.subject { border-top: 4px solid var(--field); padding: 0.7rem 0.75rem 0.8rem; }
 		.rung.subject .name { font-size: 1.7rem; display: block; }
-		.rung.subject .elo-num { font-size: 2.4rem; }
+		.rung.subject .name { font-size: 1.35rem; }
 		.back { display: inline-block; min-height: 44px; line-height: 44px; }
 		.leagues { list-style: none; margin: 0.3rem 0 0; padding: 0; }
 		.lrow { display: grid; grid-template-columns: minmax(14rem, 22rem) 1fr; gap: 0.6rem; align-items: center; margin: 0.3rem 0; }
@@ -150,9 +152,33 @@
 		.early-on { margin-top: 0.7rem; padding: 0.55rem 0.7rem; border-top: 3px solid var(--field); }
 		.tag { font-family: Oswald, sans-serif; font-size: 0.85rem; letter-spacing: 0.03em; }
 		body[data-shot="board"] section:not(#board),
-		body[data-shot="why"] section:not(#why),
+		body[data-shot="open"] section:not(#board),
 		body[data-shot="peers"] section:not(#peers),
 		body[data-shot="formula"] section:not(#formula) { display: none; }
+		body[data-shot="open"] tr.prior,
+		body[data-shot="open"] .find,
+		body[data-shot="open"] .states,
+		body[data-shot="open"] .early-on,
+		body[data-shot="open"] details { display: none; }
+		button.name {
+			background: none;
+			border: 0;
+			padding: 0.35rem 0;
+			min-height: 44px;
+			font: inherit;
+			font-family: Oswald, sans-serif;
+			font-weight: 500;
+			font-size: 1.08rem;
+			color: inherit;
+			cursor: pointer;
+			text-align: left;
+		}
+		tr.detail td { padding: 0.6rem 0.75rem 0.85rem; }
+		tr.detail td::before { content: none; }
+		tr[hidden] { display: none !important; }
+		.formula-link { color: #e8c547; }
+		.tr-inline { display: none; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+		.name-row { display: contents; }
 		body[data-shot]:not([data-shot="board"]) .position,
 		body[data-shot]:not([data-shot="board"]) .tagline { display: none; }
 		@container (width < 640px) {
@@ -165,6 +191,13 @@
 			tr.band th { box-shadow: inset 5px 0 0 var(--gold); }
 			td { border: 0; padding: 0.05rem 0 0.05rem 2rem; }
 			td::before { content: attr(data-label) ": "; font-family: Oswald, sans-serif; font-size: 0.82rem; }
+			td.tr-col { display: none; }
+			.name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; width: 100%; }
+			.tr-inline { display: inline; }
+			.team-cell { display: block; width: calc(100% - 1.8rem); }
+			button.name { min-height: 0; padding: 0; }
+			tr { padding: 0.12rem 0.5rem 0.16rem; }
+			.conf { line-height: 1.1; }
 		}
 		@media (max-width: 700px) {
 			#board .early-once { display: block; margin: 0.2rem 0 0; }
@@ -185,27 +218,13 @@
 			<p class="brand">True Rankings</p>
 			<p class="week">2026 · Week 10 · TR+</p>
 			<p class="tagline">How good they actually are.</p>
+			<p class="formula-link"><a href="#formula">How the formula works</a></p>
 		</div>
 		<p class="position">The order you check before you argue — not a poll, not a committee, not the narrative.</p>
 	</header>
 	<main>
 		<section id="board" aria-labelledby="board-title">
 			<h2 id="board-title" class="sr-only">2026 week 10 board</h2>
-			<p class="week-line">Miami fell from No. 1 at 8-0 to No. 6 at 8-1. Georgia climbed from No. 3 to No. 1 at 8-1. Ohio State fell from No. 11 to No. 27. Michigan State climbed from No. 78 to No. 54.</p>
-			<div class="cases">
-				<article class="case">
-					<h3>This week’s No. 1</h3>
-					<p>Georgia is No. 1 on TR+ at 1,806.1, 8-1, 6-1 in the SEC. Utah is 9.5 points behind.</p>
-				</article>
-				<article class="case">
-					<h3>The closest argument</h3>
-					<p>Utah is No. 2 on TR+ at 1,796.6, 9-0, 6-0 in the Big 12. The old blend has Utah No. 1 and Georgia No. 2. The official order does not.</p>
-				</article>
-				<article class="case">
-					<h3>A soft 8-1</h3>
-					<p>Liberty is No. 53 on TR+ at 1,386.4, 8-1, 5-0 in Conference USA. The record is 2.04 wins ahead of what TR+ expected, and 88% of the wins are soft. The rank stays 53.</p>
-				</article>
-			</div>
 			<div class="table-wrap" tabindex="0" role="region" aria-labelledby="board-caption">
 				<table>
 					<caption id="board-caption">2026 week 10. 138 teams. Ordered by TR+.</caption>
@@ -219,22 +238,43 @@
 						</tr>
 					</thead>
 					<tbody id="board-body">
-						<tr class="band" data-name="Georgia"><th scope="row"><span class="rk">1</span> <span class="team-cell"><span class="pip" style="background:#ba0c2f"></span><a class="name" href="/teams/georgia?year=2026&amp;week=10">Georgia</a><span class="conf">SEC</span></span></th><td data-label="Record">8-1, 6-1 in the SEC</td><td data-label="Record quality">1.46 wins ahead, 62% soft</td><td class="tr" data-label="TR+">1,806.1</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Utah"><th scope="row"><span class="rk">2</span> <span class="team-cell"><span class="pip" style="background:#be0000"></span><a class="name" href="/teams/utah?year=2026&amp;week=10">Utah</a><span class="conf">Big 12</span></span></th><td data-label="Record">9-0, 6-0 in the Big 12</td><td data-label="Record quality">2.13 wins ahead, 56% soft</td><td class="tr" data-label="TR+">1,796.6</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Alabama"><th scope="row"><span class="rk">3</span> <span class="team-cell"><span class="pip" style="background:#9e1b32"></span><a class="name" href="/teams/alabama?year=2026&amp;week=10">Alabama</a><span class="conf">SEC</span></span></th><td data-label="Record">7-2, 5-2 in the SEC</td><td data-label="Record quality">1.08 wins ahead, 29% soft</td><td class="tr" data-label="TR+">1,761.2</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Notre Dame"><th scope="row"><span class="rk">4</span> <span class="team-cell"><span class="pip" style="background:#0c2340"></span><a class="name" href="/teams/notre-dame?year=2026&amp;week=10">Notre Dame</a><span class="conf">FBS Independents</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">1.31 wins ahead, 50% soft</td><td class="tr" data-label="TR+">1,758.1</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="UCLA"><th scope="row"><span class="rk">5</span> <span class="team-cell"><span class="pip" style="background:#2774ae"></span><a class="name" href="/teams/ucla?year=2026&amp;week=10">UCLA</a><span class="conf">Big Ten</span></span></th><td data-label="Record">9-0, 6-0 in the Big Ten</td><td data-label="Record quality">2.23 wins ahead, 56% soft</td><td class="tr" data-label="TR+">1,751.9</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Miami"><th scope="row"><span class="rk">6</span> <span class="team-cell"><span class="pip" style="background:#f47321"></span><a class="name" href="/teams/miami?year=2026&amp;week=10">Miami</a><span class="conf">ACC</span></span></th><td data-label="Record">8-1, 6-0 in the ACC</td><td data-label="Record quality">1.22 wins ahead, 38% soft</td><td class="tr" data-label="TR+">1,737.8</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Tennessee"><th scope="row"><span class="rk">7</span> <span class="team-cell"><span class="pip" style="background:#ff8200"></span><a class="name" href="/teams/tennessee?year=2026&amp;week=10">Tennessee</a><span class="conf">SEC</span></span></th><td data-label="Record">7-2, 4-2 in the SEC</td><td data-label="Record quality">0.88 wins ahead, 57% soft</td><td class="tr" data-label="TR+">1,712.3</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Texas"><th scope="row"><span class="rk">8</span> <span class="team-cell"><span class="pip" style="background:#bf5700"></span><a class="name" href="/teams/texas?year=2026&amp;week=10">Texas</a><span class="conf">SEC</span></span></th><td data-label="Record">7-2, 4-2 in the SEC</td><td data-label="Record quality">1.27 wins ahead, 43% soft</td><td class="tr" data-label="TR+">1,702.4</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Indiana"><th scope="row"><span class="rk">9</span> <span class="team-cell"><span class="pip" style="background:#990000"></span><a class="name" href="/teams/indiana?year=2026&amp;week=10">Indiana</a><span class="conf">Big Ten</span></span></th><td data-label="Record">8-1, 5-1 in the Big Ten</td><td data-label="Record quality">1.25 wins ahead, 50% soft</td><td class="tr" data-label="TR+">1,697.7</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Wake Forest"><th scope="row"><span class="rk">10</span> <span class="team-cell"><span class="pip" style="background:#ceb888"></span><a class="name" href="/teams/wake-forest?year=2026&amp;week=10">Wake Forest</a><span class="conf">ACC</span></span></th><td data-label="Record">8-1, 5-1 in the ACC</td><td data-label="Record quality">1.89 wins ahead, 88% soft</td><td class="tr" data-label="TR+">1,694.0</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="Iowa"><th scope="row"><span class="rk">11</span> <span class="team-cell"><span class="pip" style="background:#000000"></span><a class="name" href="/teams/iowa?year=2026&amp;week=10">Iowa</a><span class="conf">Big Ten</span></span></th><td data-label="Record">7-2, 4-2 in the Big Ten</td><td data-label="Record quality">1.39 wins ahead, 29% soft</td><td class="tr" data-label="TR+">1,675.4</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="band" data-name="South Carolina"><th scope="row"><span class="rk">12</span> <span class="team-cell"><span class="pip" style="background:#73000a"></span><a class="name" href="#why">South Carolina</a><span class="conf">SEC</span></span></th><td data-label="Record">6-3, 4-3 in the SEC</td><td data-label="Record quality">1.13 wins ahead, 50% soft</td><td class="tr" data-label="TR+">1,653.0</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr data-name="Duke"><th scope="row"><span class="rk">13</span> <span class="team-cell"><span class="pip" style="background:#00539b"></span><a class="name" href="/teams/duke?year=2026&amp;week=10">Duke</a><span class="conf">ACC</span></span></th><td data-label="Record">7-2, 4-2 in the ACC</td><td data-label="Record quality">0.64 wins ahead, 86% soft</td><td class="tr" data-label="TR+">1,652.9</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="rest" data-name="Oregon"><th scope="row"><span class="rk">14</span> <span class="team-cell"><span class="pip" style="background:#007030"></span><a class="name" href="/teams/oregon?year=2026&amp;week=10">Oregon</a><span class="conf">Big Ten</span></span></th><td data-label="Record">6-3</td><td data-label="Record quality">0.66 wins ahead, 17% soft</td><td class="tr" data-label="TR+">1,648.5</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="rest" data-name="Texas Tech"><th scope="row"><span class="rk">15</span> <span class="team-cell"><span class="pip" style="background:#c30020"></span><a class="name" href="/teams/texas-tech?year=2026&amp;week=10">Texas Tech</a><span class="conf">Big 12</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">1.14 wins ahead, 50% soft</td><td class="tr" data-label="TR+">1,639.3</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
-						<tr class="rest" data-name="Houston"><th scope="row"><span class="rk">16</span> <span class="team-cell"><span class="pip" style="background:#c8102e"></span><a class="name" href="/teams/houston?year=2026&amp;week=10">Houston</a><span class="conf">Big 12</span></span></th><td data-label="Record">7-2</td><td data-label="Record quality">1.07 wins ahead, 57% soft</td><td class="tr" data-label="TR+">1,630.8</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Georgia"><th scope="row"><span class="rk">1</span> <span class="team-cell"><span class="pip" style="background:#ba0c2f"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Georgia</button><span class="tr-inline">1,806.1</span></span><span class="conf">SEC</span></span></th><td data-label="Record">8-1, 6-1 in the SEC</td><td data-label="Record quality">1.46 wins ahead, 63% soft</td><td class="tr tr-col" data-label="TR+">1,806.1</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Utah"><th scope="row"><span class="rk">2</span> <span class="team-cell"><span class="pip" style="background:#be0000"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Utah</button><span class="tr-inline">1,796.6</span></span><span class="conf">Big 12</span></span></th><td data-label="Record">9-0, 6-0 in the Big 12</td><td data-label="Record quality">2.13 wins ahead, 56% soft</td><td class="tr tr-col" data-label="TR+">1,796.6</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Alabama"><th scope="row"><span class="rk">3</span> <span class="team-cell"><span class="pip" style="background:#9e1b32"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Alabama</button><span class="tr-inline">1,761.2</span></span><span class="conf">SEC</span></span></th><td data-label="Record">7-2, 5-2 in the SEC</td><td data-label="Record quality">1.08 wins ahead, 29% soft</td><td class="tr tr-col" data-label="TR+">1,761.2</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Notre Dame"><th scope="row"><span class="rk">4</span> <span class="team-cell"><span class="pip" style="background:#0c2340"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Notre Dame</button><span class="tr-inline">1,758.1</span></span><span class="conf">FBS Independents</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">1.31 wins ahead, 50% soft</td><td class="tr tr-col" data-label="TR+">1,758.1</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="UCLA"><th scope="row"><span class="rk">5</span> <span class="team-cell"><span class="pip" style="background:#2774ae"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">UCLA</button><span class="tr-inline">1,751.9</span></span><span class="conf">Big Ten</span></span></th><td data-label="Record">9-0, 6-0 in the Big Ten</td><td data-label="Record quality">2.23 wins ahead, 56% soft</td><td class="tr tr-col" data-label="TR+">1,751.9</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Miami"><th scope="row"><span class="rk">6</span> <span class="team-cell"><span class="pip" style="background:#f47321"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Miami</button><span class="tr-inline">1,737.8</span></span><span class="conf">ACC</span></span></th><td data-label="Record">8-1, 6-0 in the ACC</td><td data-label="Record quality">1.22 wins ahead, 38% soft</td><td class="tr tr-col" data-label="TR+">1,737.8</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Tennessee"><th scope="row"><span class="rk">7</span> <span class="team-cell"><span class="pip" style="background:#ff8200"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Tennessee</button><span class="tr-inline">1,712.3</span></span><span class="conf">SEC</span></span></th><td data-label="Record">7-2, 4-2 in the SEC</td><td data-label="Record quality">0.88 wins ahead, 57% soft</td><td class="tr tr-col" data-label="TR+">1,712.3</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Texas"><th scope="row"><span class="rk">8</span> <span class="team-cell"><span class="pip" style="background:#bf5700"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Texas</button><span class="tr-inline">1,702.4</span></span><span class="conf">SEC</span></span></th><td data-label="Record">7-2, 4-2 in the SEC</td><td data-label="Record quality">1.27 wins ahead, 43% soft</td><td class="tr tr-col" data-label="TR+">1,702.4</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Indiana"><th scope="row"><span class="rk">9</span> <span class="team-cell"><span class="pip" style="background:#990000"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Indiana</button><span class="tr-inline">1,697.7</span></span><span class="conf">Big Ten</span></span></th><td data-label="Record">8-1, 5-1 in the Big Ten</td><td data-label="Record quality">1.25 wins ahead, 50% soft</td><td class="tr tr-col" data-label="TR+">1,697.7</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Wake Forest"><th scope="row"><span class="rk">10</span> <span class="team-cell"><span class="pip" style="background:#ceb888"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Wake Forest</button><span class="tr-inline">1,694.0</span></span><span class="conf">ACC</span></span></th><td data-label="Record">8-1, 5-1 in the ACC</td><td data-label="Record quality">1.89 wins ahead, 88% soft</td><td class="tr tr-col" data-label="TR+">1,694.0</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band prior" data-name="Iowa"><th scope="row"><span class="rk">11</span> <span class="team-cell"><span class="pip" style="background:#000000"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Iowa</button><span class="tr-inline">1,675.4</span></span><span class="conf">Big Ten</span></span></th><td data-label="Record">7-2, 4-2 in the Big Ten</td><td data-label="Record quality">1.39 wins ahead, 29% soft</td><td class="tr tr-col" data-label="TR+">1,675.4</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="band" data-name="South Carolina"><th scope="row"><span class="rk">12</span> <span class="team-cell"><span class="pip" style="background:#73000a"></span><span class="name-row"><button type="button" class="name row-toggle" id="open-sc" aria-expanded="false" aria-controls="detail-sc">South Carolina</button><span class="tr-inline">1,653.0</span></span><span class="conf">SEC</span></span></th><td data-label="Record">6-3, 4-3 in the SEC</td><td data-label="Record quality">1.13 wins ahead, 50% soft</td><td class="tr tr-col" data-label="TR+">1,653.0</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="detail" id="detail-sc" hidden>
+							<td colspan="5">
+								<ol class="ladder">
+									<li class="rung"><span class="rk">11</span> <span class="name">Iowa</span> <span class="who">7-2 · Big Ten</span><p class="elo-num">1,675.4</p></li>
+									<li class="between">22.4 behind No. 11 Iowa</li>
+									<li class="rung subject"><span class="rk">12</span> <span class="pip" style="background:#73000a"></span><span class="name">South Carolina</span> <span class="who">SEC · 6-3, 4-3 in the SEC</span><p class="elo-num">1,653.0</p></li>
+									<li class="between">0.1 ahead of No. 13 Duke</li>
+									<li class="rung"><span class="rk">13</span> <span class="name">Duke</span> <span class="who">7-2 · ACC</span><p class="elo-num">1,652.9</p></li>
+								</ol>
+								<p>TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke.</p>
+								<dl class="constants">
+									<dt>Record</dt><dd>6-3, 4-3 in the SEC. Beside the rank. It does not set the rank.</dd>
+									<dt>Resume</dt><dd>Who they beat, ranked. 2 quality wins, 1 quality loss, 1 bad loss. 4-3 against Power 4.</dd>
+									<dt>Schedule</dt><dd>Schedule rank 33 of 138. It does not set the order.</dd>
+									<dt>Record quality</dt><dd>1.13 wins ahead of what TR+ expected. 50% of the wins are soft. The old blend has them No. 19.</dd>
+									<dt>Early</dt><dd>Off. 9 games.</dd>
+								</dl>
+								<p class="note">Game scores aren’t on this page.</p>
+							</td>
+						</tr>
+
+						<tr data-name="Duke"><th scope="row"><span class="rk">13</span> <span class="team-cell"><span class="pip" style="background:#00539b"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Duke</button><span class="tr-inline">1,652.9</span></span><span class="conf">ACC</span></span></th><td data-label="Record">7-2, 4-2 in the ACC</td><td data-label="Record quality">0.64 wins ahead, 86% soft</td><td class="tr tr-col" data-label="TR+">1,652.9</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="rest" data-name="Oregon"><th scope="row"><span class="rk">14</span> <span class="team-cell"><span class="pip" style="background:#007030"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Oregon</button><span class="tr-inline">1,648.5</span></span><span class="conf">Big Ten</span></span></th><td data-label="Record">6-3</td><td data-label="Record quality">0.66 wins ahead, 17% soft</td><td class="tr tr-col" data-label="TR+">1,648.5</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="rest" data-name="Texas Tech"><th scope="row"><span class="rk">15</span> <span class="team-cell"><span class="pip" style="background:#c30020"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Texas Tech</button><span class="tr-inline">1,639.3</span></span><span class="conf">Big 12</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">1.14 wins ahead, 50% soft</td><td class="tr tr-col" data-label="TR+">1,639.3</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
+						<tr class="rest" data-name="Houston"><th scope="row"><span class="rk">16</span> <span class="team-cell"><span class="pip" style="background:#c8102e"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded="false">Houston</button><span class="tr-inline">1,630.8</span></span><span class="conf">Big 12</span></span></th><td data-label="Record">7-2</td><td data-label="Record quality">1.07 wins ahead, 57% soft</td><td class="tr tr-col" data-label="TR+">1,630.8</td><td class="col-early" data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Early off. 9 games.</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -255,46 +295,6 @@
 				<p>Couldn’t load this week’s board.</p>
 				<p>This week isn’t published yet.</p>
 			</div>
-		</section>
-
-		<section id="why" aria-labelledby="why-title">
-			<p><a class="back" href="#board">Back to the board</a></p>
-			<h2 id="why-title">Why South Carolina is No. 12</h2>
-			<ol class="ladder">
-				<li class="rung">
-					<span class="rk">11</span> <span class="name">Iowa</span>
-					<span class="who">7-2 · Big Ten</span>
-					<p class="elo-num">1,675.4</p>
-				</li>
-				<li class="between">22.4 behind No. 11 Iowa</li>
-				<li class="rung subject">
-					<span class="rk">12</span>
-					<span class="pip" style="background:#73000a"></span>
-					<span class="name">South Carolina</span>
-					<span class="who">SEC · 6-3, 4-3 in the SEC</span>
-					<p class="elo-num">1,653.0</p>
-				</li>
-				<li class="between">0.1 ahead of No. 13 Duke</li>
-				<li class="rung">
-					<span class="rk">13</span> <span class="name">Duke</span>
-					<span class="who">7-2 · ACC</span>
-					<p class="elo-num">1,652.9</p>
-				</li>
-			</ol>
-			<p>TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke.</p>
-			<dl class="constants">
-				<dt>Record</dt>
-				<dd>6-3, 4-3 in the SEC. Beside the rank. It does not set the rank.</dd>
-				<dt>Resume</dt>
-				<dd>Who they beat, ranked. 2 quality wins, 1 quality loss, 1 bad loss. 4-3 against Power 4.</dd>
-				<dt>Schedule</dt>
-				<dd>Schedule rank 33 of 138. It does not set the order.</dd>
-				<dt>Record quality</dt>
-				<dd>1.13 wins ahead of what TR+ expected. 50% of the wins are soft. The old blend has them No. 19.</dd>
-				<dt>Early</dt>
-				<dd>Off. 9 games.</dd>
-			</dl>
-			<p class="note">Game scores aren’t on this page.</p>
 		</section>
 
 		<section id="peers" aria-labelledby="peers-title">
@@ -340,9 +340,7 @@
 				<p>Heat is not in the order. It hasn’t passed its test yet.</p>
 				<div class="actions">
 					<button type="button" class="btn quiet" id="reset">Reset to official</button>
-					<button type="button" class="btn" id="copy">Copy link</button>
 				</div>
-				<p id="copy-status" role="status"></p>
 				<div class="lists">
 					<div>
 						<h4>Official</h4>
@@ -465,22 +463,31 @@
 				paint();
 			});
 		});
+		document.querySelectorAll(".row-toggle").forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const id = btn.getAttribute("aria-controls");
+				const panel = id ? document.getElementById(id) : null;
+				const willOpen = btn.getAttribute("aria-expanded") !== "true";
+				document.querySelectorAll(".row-toggle").forEach((other) => {
+					other.setAttribute("aria-expanded", "false");
+					const otherId = other.getAttribute("aria-controls");
+					const otherPanel = otherId ? document.getElementById(otherId) : null;
+					if (otherPanel) otherPanel.hidden = true;
+				});
+				if (willOpen && panel) {
+					btn.setAttribute("aria-expanded", "true");
+					panel.hidden = false;
+				}
+			});
+		});
+		if (shot === "open") {
+			document.getElementById("open-sc").click();
+		}
 		document.getElementById("reset").addEventListener("click", () => {
 			weights.look = 100;
 			weights.resume = 0;
 			weights.league = 0;
 			paint();
-		});
-		document.getElementById("copy").addEventListener("click", async () => {
-			const status = document.getElementById("copy-status");
-			const link = "/2026/week/10?whatif=" + weights.look + "-" + weights.resume + "-" + weights.league;
-			const text = "My what-if weights, not the official board: " + link;
-			try {
-				await navigator.clipboard.writeText(text);
-				status.textContent = "Copied. Example only.";
-			} catch (error) {
-				status.textContent = "Example only.";
-			}
 		});
 		document.getElementById("show-rest").addEventListener("click", () => {
 			document.querySelectorAll(".rest").forEach((row) => row.classList.add("shown"));

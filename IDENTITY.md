@@ -29,7 +29,7 @@ Primary Tailwind scale is anchored on field green (`primary-700` ≈ `#1a3d2e`).
 
 ## Composition rules
 
-- **This week first:** On home, the first screen is this week’s rankings board.
+- **This week first:** On home, the first screen is this week’s rankings board. The homepage is that board, with a link to how the formula works. Choosing a team expands that row in place. It does not open a team page.
 - **No hero cards / overlay chips.**
 - Week story is **editorial** (rail + type), not admin card chrome.
 - Filters: no “Ranking Controls” header bar.

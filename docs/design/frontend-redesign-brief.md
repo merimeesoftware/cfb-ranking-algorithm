@@ -4,13 +4,13 @@ Proposed for Dean’s review and Phil’s copy pass. Neither has signed. This is
 
 Figures are from the stored 2026 week boards on this branch. The label is `v5.5`. The place is TR+, which is `ordering_score` and equals how they look. No live CFBD call and no live AI call.
 
-The comp is `design/comps/elo-order-brief/preview.html`. `?shot=board`, `why`, `peers`, and `formula` are the still frames. Copy is in [phil-copy-table.md](phil-copy-table.md).
+The comp is `design/comps/elo-order-brief/preview.html`. `?shot=board`, `open`, `peers`, and `formula` are the still frames. Copy is in [phil-copy-table.md](phil-copy-table.md).
 
 ## What this leaves alone
 
 [PR #155](https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/155) corrected stale page numbers. This branch does not restyle that work. #156 sorts the board by Elo. #157 sets the upset multiplier that runs to 1.0. The Group of 5 bonus stays 1.12.
 
-Michael signed this in the True Rankings chat on 2026-11-12 at 8:08 AM EST: “Yes, put this week’s rankings first on the homepage and update IDENTITY.md to match.” `IDENTITY.md` now says the first screen is this week’s rankings board. The rest of that file is unchanged.
+Michael signed the homepage order in the True Rankings chat on 2026-11-12 at 8:08 AM EST: “Yes, put this week’s rankings first on the homepage and update IDENTITY.md to match.” Later the same morning, at 8:16 AM EST, he said clicking a team does not go to a team page: the row expands in place, and the homepage is just the rankings, with a link like “How the formula works.” `IDENTITY.md` matches both. The rest of that file is unchanged.
 
 Accounts, a forum, and guest posting stay proposals. Betting stays off the page.
 
@@ -32,11 +32,11 @@ Locked lines, used verbatim: the tagline, the positioning line, `RATING_TOOLTIP`
 
 The latest stored week is 2026 week 10. The comp opens on it. There is no “Jump to the board.”
 
-The rankings board is the first screen at every width, under a one-line week note. At 390×844 at least four rows sit above the fold. The caption is one line. The rest is in “How to read this.” The three cases follow the table. Empty Early cells are hidden under 640px, and one line says “Early: none this week.”
+The homepage is the rankings board, plus one link: “How the formula works.” At 390×844 at least four rows sit above the fold. The caption is one line. The rest is in “How to read this.” Empty Early cells are hidden under 640px, and one line says “Early: none this week.”
 
-Gold is the band mark on ranks 1–12 only. Rank numerals in that band use `#8a7010` so they clear 4.5:1 on white. Rank 13 and below use ink `#14241c`. Row 13, Duke, is the non-band sample. “Show ranks 14–16” reveals Oregon, Texas Tech, and Houston in that same ink. “Find your team” filters the rows.
+Gold is the band mark on ranks 1–12 only. Rank numerals in that band use `#8a7010` so they clear 4.5:1 on white. Rank 13 and below use ink `#14241c`. Row 13, Duke, is the non-band sample. “Show ranks 14–16” reveals Oregon, Texas Tech, and Houston in that same ink. “Find your team” filters the rows. Neither sits above the first rows.
 
-Each team name links to `/teams/{slug}?year=2026&week=10`. South Carolina links to the team section on this comp. That section links back to the board.
+Choosing a team expands that row. It does not open a team page. The opened row holds why the team is exactly there, the comparison with the teams on either side, and the evidence. South Carolina is the sample.
 
 Week 1 is drawn under the table: Early is on, and Indiana is No. 1 on TR+ at 1,824.5, 1-0.
 
@@ -46,11 +46,11 @@ Other states, drawn under the table:
 - Couldn’t load this week’s board.
 - This week isn’t published yet.
 
-## Team page
+## Opened row
 
-South Carolina is a three-rung ladder. Iowa is the smaller rung above. South Carolina is the large rung: field rule, pip, conference, 6-3, and TR+ at the large figure size. Duke is the smaller rung below. The gaps between rungs are the difference of the numbers shown to one decimal: 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke. It stays stacked at 390.
+South Carolina’s row expands into a three-rung ladder. Iowa is the smaller rung above. South Carolina is the large rung: field rule, pip, conference, 6-3, and TR+ at the large figure size. Duke is the smaller rung below. The gaps are the difference of the numbers shown to one decimal: 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke. It stays stacked at 390.
 
-The line under the ladder: TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke.
+The line under the ladder: TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke. Resume, schedule, and record quality sit in the same opened row.
 
 ## Same strength, and the what-if
 
@@ -60,7 +60,7 @@ The what-if frame is labeled “Example only.” Three sliders (how they look, r
 
 The starting state is 70 / 30 / 0. Georgia is No. 4 on that list and No. 1 on the official board. The old blend list is a comparison: Utah, Georgia, Alabama. There is no second table of the same three orders.
 
-Copy link writes a clipboard string and shows “Copied. Example only.” The page does not print a share line. The board does not read `?whatif=`. When it does, the share text is “My what-if weights, not the official board: {url}” and the error is “Link weights didn’t load. See the board.”
+There is no Copy link and no share line. The board does not read `?whatif=`. When #178 reads it, the share text is “My what-if weights, not the official board: {url}” and the error is “Link weights didn’t load. See the board.” On a narrow board, TR+ sits on the team line, right-aligned beside the name, so at least four full rows fit at 390×844.
 
 ## Formula
 
