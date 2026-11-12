@@ -121,7 +121,6 @@
 		.rung .who { color: var(--muted); font-size: 0.92rem; }
 		.between { padding: 0.28rem 0.7rem; color: var(--muted); font-size: 0.92rem; background: var(--chalk); }
 		.rung.subject { border-top: 4px solid var(--field); padding: 0.7rem 0.75rem 0.8rem; }
-		.rung.subject .name { font-size: 1.7rem; display: block; }
 		.rung.subject .name { font-size: 1.35rem; }
 		.back { display: inline-block; min-height: 44px; line-height: 44px; }
 		.leagues { list-style: none; margin: 0.3rem 0 0; padding: 0; }
@@ -160,11 +159,13 @@
 		body[data-shot="open"] .states,
 		body[data-shot="open"] .early-on,
 		body[data-shot="open"] details { display: none; }
+		tbody th { position: relative; }
 		button.name {
 			background: none;
 			border: 0;
 			padding: 0.35rem 0;
 			min-height: 44px;
+			min-width: 44px;
 			font: inherit;
 			font-family: Oswald, sans-serif;
 			font-weight: 500;
@@ -172,6 +173,11 @@
 			color: inherit;
 			cursor: pointer;
 			text-align: left;
+		}
+		button.name::after {
+			content: "";
+			position: absolute;
+			inset: 0;
 		}
 		tr.detail td { padding: 0.6rem 0.75rem 0.85rem; }
 		tr.detail td::before { content: none; }
@@ -185,19 +191,30 @@
 			table, thead, tbody, tr, th, td, caption { display: block; width: 100%; }
 			thead, .col-early { display: none; }
 			.early-once { display: none; }
-			tbody th { position: static; }
+			tbody th {
+				position: relative;
+				display: flex;
+				align-items: center;
+				gap: 0.35rem;
+			}
 			tr.rest.shown { display: block; }
-			tr { padding: 0.35rem 0.65rem 0.45rem; border-bottom: 1px solid var(--line); }
+			tr { padding: 0.15rem 0.5rem 0.2rem; border-bottom: 1px solid var(--line); }
 			tr.band th { box-shadow: inset 5px 0 0 var(--gold); }
-			td { border: 0; padding: 0.05rem 0 0.05rem 2rem; }
+			td { border: 0; padding: 0.02rem 0 0.02rem 0; }
 			td::before { content: attr(data-label) ": "; font-family: Oswald, sans-serif; font-size: 0.82rem; }
 			td.tr-col { display: none; }
-			.name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; width: 100%; }
+			.rk { width: auto; }
+			.team-cell { display: flex; align-items: baseline; flex: 1; gap: 0.35rem; width: auto; min-width: 0; }
+			.name-row { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; flex: 1; min-width: 0; }
 			.tr-inline { display: inline; }
-			.team-cell { display: block; width: calc(100% - 1.8rem); }
-			button.name { min-height: 0; padding: 0; }
-			tr { padding: 0.12rem 0.5rem 0.16rem; }
-			.conf { line-height: 1.1; }
+			.conf { display: inline; line-height: 1; }
+			button.name {
+				display: flex;
+				align-items: center;
+				min-height: 44px;
+				min-width: 44px;
+				padding: 0;
+			}
 		}
 		@media (max-width: 700px) {
 			#board .early-once { display: block; margin: 0.2rem 0 0; }
@@ -322,6 +339,43 @@
 				<li class="lrow"><div class="lmeta"><strong>ACC</strong><span>1,578.6 · Power 4 · 17 teams · 6-12 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1578.6" role="img" aria-label="ACC 1,578.6"></span></div></li>
 				<li class="lrow"><div class="lmeta"><strong>Pac-12</strong><span>1,154.3 · Group of 5 · 8 teams · 0-12 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1154.3" role="img" aria-label="Pac-12 1,154.3"></span></div></li>
 			</ul>
+		</section>
+
+		<section id="formula" aria-labelledby="formula-title">
+			<h2 id="formula-title">How the order works</h2>
+			<div class="pair">
+				<article class="side">
+					<h3>The order</h3>
+					<p class="elo-num" style="font-size:1.35rem">TR+</p>
+					<p>How good they look right now. This sets the order. Record, record quality, and early sit beside it.</p>
+				</article>
+				<article class="side">
+					<h3>Old blend</h3>
+					<p>For comparison, the old blend: 0.80 × how they look + 0.15 × resume + 0.05 × league strength. The board no longer sorts by it.</p>
+					<p>The parts are not scaled to 0–100 before weighting. On 2026 week 10, 121 of 138 teams sit in a different place. The average gap is 5.30 places.</p>
+				</article>
+			</div>
+			<p>How they look is the Elo rating in the code.</p>
+			<dl class="constants">
+				<dt>Step size</dt>
+				<dd>50. A postseason game multiplies it by 0.65, so 32.5.</dd>
+				<dt>Margin</dt>
+				<dd>The natural log of the margin plus 1. There is no cap.</dd>
+				<dt>Home field</dt>
+				<dd>50 in the regular season, 20 in the postseason, 0 on a neutral field. It changes the expectation only.</dd>
+				<dt>Upset</dt>
+				<dd>A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus.</dd>
+				<dt>Who plays whom</dt>
+				<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
+				<dt>Ceiling</dt>
+				<dd>No winner’s rating goes above 1,850. The loser still drops the full step.</dd>
+				<dt>Opening</dt>
+				<dd>In week 1, 70% of a team’s starting rating comes from last season’s final rating (bowl games included) and the season before, weighted 70/30. The other 30% comes from its conference tier. A team with no rating from last season starts from its tier alone. The head start shrinks each week and is gone by week 12.</dd>
+				<dt>Fade</dt>
+				<dd>max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0.</dd>
+				<dt>Heat</dt>
+				<dd>Heat is not in the order. It hasn’t passed its test yet.</dd>
+			</dl>
 			<div class="whatif">
 				<p class="example">Example only</p>
 				<h3>What-if. This does not change the official board.</h3>
@@ -364,43 +418,6 @@
 				<p id="whatif-georgia">At these weights Georgia is No. 4 on the what-if list. The official board still has Georgia No. 1.</p>
 				<p class="note">Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board.</p>
 			</div>
-		</section>
-
-		<section id="formula" aria-labelledby="formula-title">
-			<h2 id="formula-title">How the order works</h2>
-			<div class="pair">
-				<article class="side">
-					<h3>The order</h3>
-					<p class="elo-num" style="font-size:1.35rem">TR+</p>
-					<p>How good they look right now. This sets the order. Record, record quality, and early sit beside it.</p>
-				</article>
-				<article class="side">
-					<h3>Old blend</h3>
-					<p>For comparison, the old blend: 0.80 × how they look + 0.15 × resume + 0.05 × league strength. The board no longer sorts by it.</p>
-					<p>The parts are not scaled to 0–100 before weighting. On 2026 week 10, 121 of 138 teams sit in a different place. The average gap is 5.30 places.</p>
-				</article>
-			</div>
-			<p>How they look is the Elo rating in the code.</p>
-			<dl class="constants">
-				<dt>Step size</dt>
-				<dd>50. A postseason game multiplies it by 0.65, so 32.5.</dd>
-				<dt>Margin</dt>
-				<dd>The natural log of the margin plus 1. There is no cap.</dd>
-				<dt>Home field</dt>
-				<dd>50 in the regular season, 20 in the postseason, 0 on a neutral field. It changes the expectation only.</dd>
-				<dt>Upset</dt>
-				<dd>A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus.</dd>
-				<dt>Who plays whom</dt>
-				<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
-				<dt>Ceiling</dt>
-				<dd>No winner’s rating goes above 1,850. The loser still drops the full step.</dd>
-				<dt>Opening</dt>
-				<dd>In week 1, 70% of a team’s starting rating comes from last season’s final rating (bowl games included) and the season before, weighted 70/30. The other 30% comes from its conference tier. A team with no rating from last season starts from its tier alone. The head start shrinks each week and is gone by week 12.</dd>
-				<dt>Fade</dt>
-				<dd>max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0.</dd>
-				<dt>Heat</dt>
-				<dd>Heat is not in the order. It hasn’t passed its test yet.</dd>
-			</dl>
 			<p class="note">Figures from the stored 2026 weeks. Algo label v5.5. Design comp only.</p>
 		</section>
 	</main>

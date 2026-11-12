@@ -56,7 +56,7 @@ The line under the ladder: TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 I
 
 Indiana and Wake Forest are both 8-1, 3.7 points apart on TR+. Baylor and SMU are 2.2 points apart. League averages are printed in the row text and on each dot: SEC 1,710.2, Big 12 1,702.1, Big Ten 1,658.5, ACC 1,578.6, Pac-12 1,154.3. The scale runs from 1,100 to 1,800.
 
-The what-if frame is labeled “Example only.” Three sliders (how they look, resume, league strength) are enabled, 44px tall, and show their value. Moving one rebalances the other two so the three sum to 100. One weight at 100 sets the others to 0. Reset returns 100 / 0 / 0, and the what-if list matches the official order. A tie keeps the official order. The official list never changes.
+The what-if sits under the formula explainer, not on the homepage. The frame is labeled “Example only.” Three sliders (how they look, resume, league strength) are enabled, 44px tall, and show their value. Moving one rebalances the other two so the three sum to 100. One weight at 100 sets the others to 0. Reset returns 100 / 0 / 0, and the what-if list matches the official order. A tie keeps the official order. The official list never changes.
 
 The starting state is 70 / 30 / 0. Georgia is No. 4 on that list and No. 1 on the official board. The old blend list is a comparison: Utah, Georgia, Alabama. There is no second table of the same three orders.
 
