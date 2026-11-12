@@ -164,10 +164,13 @@ def test_cold_precompute_continues_when_remaining_header_is_missing(monkeypatch,
     assert len(logged) == len(calls)
     assert all(line.endswith('remaining=unknown') for line in logged)
     sidecar_weeks = [
+        'week-1.field.json',
         'week-1.games.json',
         'week-1.json',
+        'week-2.field.json',
         'week-2.games.json',
         'week-2.json',
+        'week-3.field.json',
         'week-3.games.json',
         'week-3.json',
     ]
