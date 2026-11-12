@@ -195,14 +195,20 @@ def publish_order(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def slim_rankings_for_list(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Drop duplicate map and per-game details for list/table responses."""
+    """Drop duplicate map and per-game details for list/table responses.
+
+    The stamp stays the board's own. A stored week that is missing
+    ``detail: False`` must not be relabeled with the current ALGO_VERSION.
+    A fresh calculate already set that stamp before this runs.
+    """
     slim = {
         'year': rankings_data.get('year'),
         'week': rankings_data.get('week'),
         'conference_rankings': rankings_data.get('conference_rankings', []),
         'detail': False,
-        'algo': ALGO_VERSION,
     }
+    if 'algo' in rankings_data:
+        slim['algo'] = rankings_data.get('algo')
     teams = []
     for team in rankings_data.get('team_rankings', []):
         entry = {k: v for k, v in team.items() if k not in _LIST_STRIP_TEAM_KEYS}

@@ -44,6 +44,9 @@ jobs:
       - name: Weekly dollar cap
         run: python scripts/check_weekly_usd.py
 
+      - name: Week board stamps match ALGO_VERSION
+        run: python scripts/check_board_stamps.py
+
   worker:
     name: Worker caps
     runs-on: ubuntu-latest
