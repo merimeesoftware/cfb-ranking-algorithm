@@ -65,6 +65,7 @@ ranking_results/
 !.cursor/environment.json
 !docs/algo_eval_results.json
 !docs/elo-order-brier.json
+!docs/monotonicity-counts.json
 !frontend/static/rankings/.gitkeep
 !frontend/static/rankings/**/*.json
 !tests/fixtures/**/*.json

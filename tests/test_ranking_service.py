@@ -7,6 +7,46 @@ import pytest
 os.environ.setdefault('CFBD_API_KEY', 'test-key-for-unit-tests')
 
 
+def test_v54_rankings_cache_is_not_read_under_v55():
+    import json
+    from ranking_service import ALGO_VERSION, get_or_calculate_rankings, rankings_cache_key
+
+    assert ALGO_VERSION == 'v5.5'
+    old_board = {
+        'algo': 'v5.4',
+        'year': 2024,
+        'week': 9,
+        'team_rankings': [{'team_name': 'Old', 'team_quality_score': 1.0}],
+    }
+    store = {}
+    seen = []
+
+    class _Cache:
+        def _generate_key(self, prefix, **kwargs):
+            return prefix + '|' + json.dumps(kwargs, sort_keys=True, default=str)
+
+        def get(self, key):
+            seen.append(key)
+            return store.get(key)
+
+        def set(self, key, data, ttl, prefix=None):
+            store[key] = data
+
+    cache = _Cache()
+    with patch('ranking_service.get_cache', return_value=cache):
+        with patch('ranking_service.ALGO_VERSION', 'v5.4'):
+            old_key = rankings_cache_key(2024, 9, {})
+        store[old_key] = old_board
+        with patch('ranking_service.calculate_rankings_logic', return_value=None):
+            out = get_or_calculate_rankings(
+                object(), 2024, 9, {}, prefer_static=False, allow_compute=True,
+            )
+        new_key = rankings_cache_key(2024, 9, {})
+    assert new_key != old_key
+    assert old_key not in seen
+    assert out is None
+
+
 def test_priors_cache_key_ignores_prior_strength():
     from ranking_service import priors_cache_key, DEFAULT_CONFIG
 

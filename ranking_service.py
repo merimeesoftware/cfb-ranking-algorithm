@@ -11,9 +11,9 @@ from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
 
-ALGO_VERSION = 'v5.4'
+ALGO_VERSION = 'v5.5'
 # Committed prior files stay the blend seed (résumé and league included).
-# Reading them under v5.4 would miss the files and try a live recompute.
+# Reading them under v5.5 would miss the files and try a live recompute.
 BLEND_PRIOR_ALGO = 'v5.3'
 
 DEFAULT_CONFIG = {
@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
     'fcs_initial': 900.0,
     'base_factor': 50.0,
     'hfa_elo': 50.0,
-    'upset_bonus_mult': 1.18,
+    'upset_bonus_mult': 1.0,
     'team_quality_weight': 0.80,
     'conference_weight': 0.05,
     'record_weight': 0.15,
@@ -68,6 +68,17 @@ def build_config(request_args) -> Dict[str, Any]:
     config['conference_weight'] = get_float_arg('conference_weight', config['conference_weight'])
     config['record_weight'] = get_float_arg('record_weight', config['record_weight'])
     return config
+
+
+def published_snapshot(data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """A computed-cache entry is current only when it was stored under this label.
+
+    Committed static files are not checked here. A v5.4 key is a different
+    cache entry and is not read.
+    """
+    if not isinstance(data, dict) or data.get('algo') != ALGO_VERSION:
+        return None
+    return data
 
 
 def rankings_cache_key(year: int, week: Optional[int], request_args) -> str:
@@ -351,7 +362,7 @@ def get_or_calculate_rankings(
 
     cache = get_cache()
     key = rankings_cache_key(year, week, request_args)
-    cached = cache.get(key)
+    cached = published_snapshot(cache.get(key))
     if cached is not None:
         print(f"Cache HIT: computed rankings {year} week={week}")
         return publish_order(cached)

@@ -2,7 +2,7 @@
 
 - **Status:** Proposed with this change. Heat weight stays 0. Issue #96 stays open.
 - **Cites:** [ADR 0001](0001-product-direction-2026-10-18.md) (2026-10-18). Decision D-20261018-198 asked for Elo plus Heat, and for Heat to stay at weight 0 when it misses its gate. D-20261019-335 makes 2025 the holdout. 2024 is a mid-gate check, not that holdout.
-- **Algo label:** `v5.4`. The label is the cache key for the order. It is not a weight.
+- **Algo label:** `v5.5`. The label is the cache key for the order and for a stored week. It is not a weight. `v5.4` still carried the 1.18 upset step.
 
 ## Decision
 
@@ -39,5 +39,5 @@ Point estimates are not worse. The intervals cross zero. The step is removed bec
 ## Consequences
 
 - Rank and the number beside it have to be `ordering_score`. A lower place must not show a higher rating.
-- `ALGO_VERSION` is `v5.4`, so a computed cache from `v5.3` is not reused. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
+- `ALGO_VERSION` is `v5.5`, so a computed cache from `v5.4` is not reused. Committed static boards are still served. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
 - Methodology copy that said 0.65 / 0.27 / 0.08, or that parts are scaled to 0–100 before weighting, was describing a different formula. The methodology page still names Elo. The board, team panel, title, and share copy call the rating TR+.

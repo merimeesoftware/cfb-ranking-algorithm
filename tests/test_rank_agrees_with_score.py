@@ -1,7 +1,7 @@
 """Rank and the score shown beside it are the same Elo number."""
 from unittest.mock import patch
 
-from ranking_service import get_or_calculate_rankings, publish_order
+from ranking_service import ALGO_VERSION, get_or_calculate_rankings, publish_order
 
 
 def _side(name, elo, blend):
@@ -34,6 +34,7 @@ def _board():
     return {
         'year': 2024,
         'week': 9,
+        'algo': ALGO_VERSION,
         'team_rankings': [
             _side('Soft', 1400.0, 1900.0),
             _side('Sharp', 1600.0, 1500.0),
