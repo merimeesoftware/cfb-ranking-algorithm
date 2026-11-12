@@ -164,6 +164,79 @@ def test_sidecar_is_not_a_week_board(tmp_path):
     assert manifest['years']['2024'] == [1]
 
 
+def test_missing_week_keeps_the_saved_snapshot(tmp_path, monkeypatch):
+    """A partial bulk payload must not wipe games the board still keeps."""
+    monkeypatch.setattr(pre, 'precompute', lambda *args, **kwargs: tmp_path / 'unused.json')
+    saved = _game(
+        week=2,
+        home_team_name='Oregon',
+        away_team_name='Ohio State',
+        home_score=24,
+        away_score=21,
+    )
+    pre.write_source(2024, 2, [saved], tmp_path)
+    write_games_sidecar(2024, 2, [saved], tmp_path)
+    bulk = [_game(
+        week=1,
+        home_team_name='Georgia',
+        away_team_name='Texas',
+        home_score=20,
+        away_score=10,
+    )]
+
+    class Processor:
+        class api_client:
+            @staticmethod
+            def get_games(**kwargs):
+                raise AssertionError('CFBD fetch')
+
+    result = pre.publish_year(
+        2024,
+        [1, 2],
+        Processor(),
+        static_root=tmp_path,
+        season_games=bulk,
+    )
+    assert result['bulk_calls'] == 0
+    week2 = read_games_sidecar(2024, 2, root=tmp_path)['games']
+    pairs = {(row['home'], row['away']) for row in week2}
+    assert ('Oregon', 'Ohio State') in pairs
+    assert ('Georgia', 'Texas') in pairs
+    week1 = read_games_sidecar(2024, 1, root=tmp_path)['games']
+    assert {(row['home'], row['away']) for row in week1} == {('Georgia', 'Texas')}
+
+
+def test_present_week_replaces_the_saved_snapshot(tmp_path, monkeypatch):
+    monkeypatch.setattr(pre, 'precompute', lambda *args, **kwargs: tmp_path / 'unused.json')
+    pre.write_source(2024, 2, [_game(week=2)], tmp_path)
+    bulk = [_game(
+        week=2,
+        home_team_name='Alabama',
+        away_team_name='Auburn',
+        home_score=21,
+        away_score=14,
+    )]
+
+    class Processor:
+        class api_client:
+            @staticmethod
+            def get_games(**kwargs):
+                raise AssertionError('CFBD fetch')
+
+    pre.publish_year(
+        2024,
+        [2],
+        Processor(),
+        static_root=tmp_path,
+        season_games=bulk,
+    )
+    pairs = {
+        (row['home'], row['away'])
+        for row in read_games_sidecar(2024, 2, root=tmp_path)['games']
+    }
+    assert pairs == {('Alabama', 'Auburn')}
+
+
 def test_publish_writes_sidecar_from_memory_without_a_fetch(tmp_path, monkeypatch):
     calls = []
 

@@ -445,6 +445,28 @@ def sidecar_roots(
     return roots
 
 
+def season_games_with_saved_weeks(
+    year: int,
+    weeks: list[int],
+    games: list,
+    static_root: Path | None,
+) -> list:
+    """Bulk rows, plus a saved week when this payload has none for that week.
+
+    The board already does this for its snapshot. The sidecar has to follow,
+    or a partial payload erases head-to-head rows the board still shows.
+    """
+    merged = list(games or [])
+    for week in weeks:
+        if games_for_week(merged, week):
+            continue
+        previous = read_source(year, week, static_root)
+        saved = previous.get('games') if isinstance(previous, dict) else None
+        if saved:
+            merged.extend(saved)
+    return merged
+
+
 def publish_games_sidecars(
     year: int,
     weeks: list[int],
@@ -455,13 +477,15 @@ def publish_games_sidecars(
 ) -> None:
     """Write each week's games sidecar from the payload already in memory.
 
-    The same writer is the only public games file. It does not fetch.
+    The same writer is the only public games file. It does not fetch. A week
+    missing from this payload keeps the games in the board's saved snapshot.
     """
     if year == SEALED_HOLDOUT_YEAR:
         return
+    rows = season_games_with_saved_weeks(year, weeks, games, static_root)
     for week in weeks:
         for root in sidecar_roots(output_root, static_root):
-            write_games_sidecar(year, week, games or [], root)
+            write_games_sidecar(year, week, rows, root)
 
 
 def publish_year(
