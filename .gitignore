@@ -41,6 +41,7 @@ coverage.xml
 # Build artifacts
 dist/
 build/
+.wrangler/
 node_modules/
 worker/node_modules/
 *.egg-info/

@@ -1,0 +1,8 @@
+# Build-step config. Produces the Worker bundle that wrangler.toml uploads.
+# Keep compatibility_date identical to wrangler.toml. The build script checks it.
+# Deploy does not read this file.
+name = "true-rankings-cfb"
+main = "worker/src/index.ts"
+compatibility_date = "2026-03-01"
+upload_source_maps = false
+preview_urls = false
