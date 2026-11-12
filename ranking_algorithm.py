@@ -157,7 +157,7 @@ class TeamQualityRanker:
         self.loss_penalty_base = self.config.get('loss_penalty_base', 150.0)
         self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.1) # V4.0+
         
-        # V5.3: Upset bonus configuration (dampened from V4)
+        # v5.5: Upset bonus configuration (dampened from V4)
         self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)  # Elo gap for upset bonus
         # 1.0: a live 150-point step let a bigger earlier win erase a later bonus.
         self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.0)

@@ -1,6 +1,7 @@
 """Tests for Flask API routes."""
 import os
 from unittest.mock import patch
+from urllib.parse import quote
 
 import pytest
 
@@ -121,19 +122,29 @@ def test_rankings_detail_preserves_wins_details(client):
         assert data['code'] == 'formula_params'
 
 
-def test_team_route_unpublished_matches_the_board(client):
-    rankings = client.get('/rankings?year=2024&week=10')
-    team = client.get('/rankings/team/Georgia?year=2024&week=10')
-    assert rankings.status_code == 200
+def test_committed_board_is_served_by_rankings_and_team(client):
+    board = client.get('/rankings?year=2024&week=10')
+    assert board.status_code == 200
+    teams = board.get_json()['team_rankings']
+    assert teams
+    name = teams[0]['team_name']
+    team = client.get(f'/rankings/team/{quote(name)}?year=2024&week=10')
     assert team.status_code == 200
-    board = rankings.get_json()
-    body = team.get_json()
-    assert body['published'] is False
-    assert body['code'] == board['code'] == 'not_published'
-    assert body['message'] == board['message']
-    assert body['year'] == board['year'] == 2024
-    assert body['week'] == board['week'] == 10
-    assert 'error' not in body
+    assert team.get_json()['team']['name'] == name
+
+
+def test_api_serves_every_week_that_weeks_lists(client):
+    for year in (2024, 2026):
+        listed = client.get(f'/weeks?year={year}')
+        assert listed.status_code == 200
+        weeks = listed.get_json()['weeks']
+        assert 10 in weeks
+        for week in weeks:
+            board = client.get(f'/rankings?year={year}&week={week}')
+            assert board.status_code == 200, (year, week)
+            body = board.get_json()
+            assert body.get('team_rankings'), (year, week)
+            assert body.get('published') is not False
 
 
 def test_team_breakdown_includes_game_details(client):

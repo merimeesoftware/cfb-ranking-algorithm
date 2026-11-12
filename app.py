@@ -14,7 +14,6 @@ from ranking_service import (
     build_config,
     DEFAULT_CONFIG,
     publish_order,
-    published_snapshot,
     formula_breakdown,
 )
 from agent_service import agent_bp
@@ -129,7 +128,7 @@ def get_matchup():
             return jsonify({"error": "team_a and team_b are required"}), 400
         year = _parsed['year']
         week = _parsed['week']
-        data = published_snapshot(read_static_rankings_any(year, week))
+        data = read_static_rankings_any(year, week)
         if data:
             data = publish_order(data)
         if not data:
@@ -195,7 +194,7 @@ def get_rankings():
             return jsonify(body), status
         year = parsed['year']
         week = parsed['week']
-        data = published_snapshot(read_static_rankings_any(year, week))
+        data = read_static_rankings_any(year, week)
         if data:
             data = publish_order(data)
         if not data:
@@ -235,15 +234,7 @@ def get_team_breakdown(team_name):
             allow_compute=False,
         )
         if not data:
-            return jsonify({
-                "published": False,
-                "message": UNPUBLISHED_MESSAGE,
-                "code": "not_published",
-                "year": year,
-                "week": week,
-                "team_rankings": [],
-                "conference_rankings": [],
-            }), 200
+            return jsonify({"error": f"No game data found for {year}."}), 404
 
         team_rankings = data.get('team_rankings', [])
         team_index = None

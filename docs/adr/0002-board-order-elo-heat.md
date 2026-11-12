@@ -39,5 +39,5 @@ Point estimates are not worse. The intervals cross zero. The step is removed bec
 ## Consequences
 
 - Rank and the number beside it have to be `ordering_score`. A lower place must not show a higher rating.
-- `ALGO_VERSION` is `v5.5`, so a computed cache or a stored week from `v5.4` or `v5.3` is not served. Those weeks were built with the 1.18 upset step. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
+- `ALGO_VERSION` is `v5.5`, so a computed cache from `v5.4` is not reused. Committed static boards are still served. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
 - Methodology copy that said 0.65 / 0.27 / 0.08, or that parts are scaled to 0–100 before weighting, was describing a different formula. The methodology page still names Elo. The board, team panel, title, and share copy call the rating TR+.

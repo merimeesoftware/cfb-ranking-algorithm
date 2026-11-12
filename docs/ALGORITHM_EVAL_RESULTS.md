@@ -62,7 +62,7 @@ Top-5 tune Briers were all ≥ 0.185; next-best configs (~0.188) were worse.
 
 | Key | Value |
 |-----|-------|
-| `ALGO_VERSION` | `v5.3` |
+| `ALGO_VERSION` | `v5.5` |
 | `team_quality_weight` | 0.80 |
 | `record_weight` | 0.15 |
 | `conference_weight` | 0.05 |

@@ -71,9 +71,10 @@ def build_config(request_args) -> Dict[str, Any]:
 
 
 def published_snapshot(data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """A stored week is current only when it was written under this algo label.
+    """A computed-cache entry is current only when it was stored under this label.
 
-    v5.4 and the committed v5.3 files were built with the 1.18 upset step.
+    Committed static files are not checked here. A v5.4 key is a different
+    cache entry and is not read.
     """
     if not isinstance(data, dict) or data.get('algo') != ALGO_VERSION:
         return None
@@ -339,7 +340,7 @@ def get_or_calculate_rankings(
     if week is not None and (prefer_static or not allow_compute):
         try:
             from static_rankings import read_static_rankings_any
-            static = published_snapshot(read_static_rankings_any(year, week))
+            static = read_static_rankings_any(year, week)
             if static is not None and (prefer_static or not allow_compute):
                 if prefer_static and is_archived_week(year, week):
                     print(f"STATIC HIT: rankings {year} week={week}")
@@ -351,7 +352,6 @@ def get_or_calculate_rankings(
             print(f"Static rankings read error: {e}")
 
     if not allow_compute:
-        static = published_snapshot(static)
         if static is not None:
             return publish_order(static)
         print(f"STATIC MISS: rankings {year} week={week} (compute disabled)")
@@ -362,7 +362,7 @@ def get_or_calculate_rankings(
 
     cache = get_cache()
     key = rankings_cache_key(year, week, request_args)
-    cached = cache.get(key)
+    cached = published_snapshot(cache.get(key))
     if cached is not None:
         print(f"Cache HIT: computed rankings {year} week={week}")
         return publish_order(cached)
