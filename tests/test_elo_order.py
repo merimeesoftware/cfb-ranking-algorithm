@@ -1,4 +1,6 @@
 """Published order is Elo. Record, fraud, momentum, and the early flag are columns."""
+import inspect
+
 from ranking_algorithm import HEAT_WEIGHT, ordering_score
 from ranking_service import publish_order
 from algo_lab.runner import rank_through_week
@@ -111,3 +113,47 @@ def test_ranker_order_matches_elo_and_columns_stay_off_the_key():
     assert cup_decisions < 3
     assert cup['early_season'] is True
     assert cup['momentum'] is None
+
+
+def test_vote_counts_never_touch_the_ordering_score():
+    """A too-high / too-low tally is not an input to the published order."""
+    ignored = inspect.getsource(ordering_score) + inspect.getsource(publish_order)
+    assert 'too_high' not in ignored
+    assert 'too_low' not in ignored
+
+    low_elo = {
+        'team_name': 'Loud',
+        'team_quality_score': 1400.0,
+        'too_high': 1,
+        'too_low': 9000,
+        'final_ranking_score': 9000.0,
+        'record_score': 2400.0,
+        'momentum': 8.0,
+    }
+    high_elo = {
+        'team_name': 'Quiet',
+        'team_quality_score': 1700.0,
+        'too_high': 9000,
+        'too_low': 1,
+        'final_ranking_score': 100.0,
+        'record_score': 100.0,
+        'momentum': -4.0,
+    }
+    assert ordering_score(low_elo) == 1400.0
+    assert ordering_score(high_elo) == 1700.0
+    ordered = publish_order({
+        'team_rankings': [dict(low_elo), dict(high_elo)],
+    })['team_rankings']
+    assert [team['team_name'] for team in ordered] == ['Quiet', 'Loud']
+    assert [team['ordering_score'] for team in ordered] == [1700.0, 1400.0]
+    assert ordered[0]['too_high'] == 9000
+    assert ordered[1]['too_low'] == 9000
+
+
+def test_rankings_rejects_vote_query_params(client):
+    for name in ('too_high', 'too_low'):
+        response = client.get(f'/rankings?year=2024&week=10&{name}=1')
+        assert response.status_code == 400
+        body = response.get_json()
+        assert body['code'] == 'formula_params'
+        assert name in body['rejected']
