@@ -511,6 +511,10 @@
 				}
 				row.hidden = !hit;
 			});
+			const team = document.querySelector('#board-body tr[data-name="South Carolina"]');
+			const detail = document.getElementById("detail-sc");
+			const open = document.getElementById("open-sc").getAttribute("aria-expanded") === "true";
+			if (detail) detail.hidden = !open || Boolean(team && team.hidden);
 		});
 		paint();
 	</script>
