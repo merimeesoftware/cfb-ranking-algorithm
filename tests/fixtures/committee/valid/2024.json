@@ -1,0 +1,25 @@
+[
+  {
+    "release_date": "2024-11-05",
+    "rank": 1,
+    "team_name": "Example State",
+    "record": "8-0"
+  },
+  {
+    "release_date": "2024-11-05",
+    "rank": 2,
+    "team_name": "Sample Tech",
+    "record": "7-1"
+  },
+  {
+    "release_date": "2024-11-12",
+    "rank": 1,
+    "team_name": "Example State",
+    "record": "9-0"
+  },
+  {
+    "release_date": "2024-11-12",
+    "rank": 2,
+    "team_name": "Fixture A&M"
+  }
+]
