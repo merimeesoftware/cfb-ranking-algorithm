@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 import precompute_rankings as pre
+from ranking_service import ALGO_VERSION
 from static_rankings import rebuild_rankings_manifest, write_static_rankings
 
 
@@ -50,7 +51,7 @@ def test_repeat_run_fetches_only_the_latest_week(tmp_path, monkeypatch):
     def fake_precompute(year, week, _processor, **_kwargs):
         computed.append(week)
         return write_static_rankings(
-            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            {'year': year, 'week': week, 'algo': ALGO_VERSION, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
             root=tmp_path,
@@ -82,7 +83,7 @@ def test_changed_latest_week_is_the_only_recompute(tmp_path, monkeypatch):
         pre,
         'precompute',
         lambda year, week, _processor, **_kwargs: write_static_rankings(
-            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            {'year': year, 'week': week, 'algo': ALGO_VERSION, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
             root=tmp_path,
@@ -180,7 +181,7 @@ def test_manifest_lists_weeks_through_the_latest_completed(tmp_path, monkeypatch
         pre,
         'precompute',
         lambda year, week, _processor, **_kwargs: write_static_rankings(
-            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            {'year': year, 'week': week, 'algo': ALGO_VERSION, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
             root=tmp_path,
@@ -241,7 +242,7 @@ def test_second_sunday_refetches_current_season_and_publishes_the_new_week(tmp_p
     def fake_precompute(year, week, _processor, **_kwargs):
         written.append(week)
         return write_static_rankings(
-            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            {'year': year, 'week': week, 'algo': ALGO_VERSION, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
             root=tmp_path,
@@ -280,7 +281,7 @@ def test_postseason_update_recomputes_week_15(tmp_path, monkeypatch):
 
     def fake_precompute(year, week, _processor, **_kwargs):
         return write_static_rankings(
-            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            {'year': year, 'week': week, 'algo': ALGO_VERSION, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
             root=tmp_path,
@@ -389,7 +390,7 @@ def test_current_season_refresh_drops_the_computed_board(tmp_path, monkeypatch):
         pre,
         'precompute',
         lambda year, week, processor, **_kwargs: write_static_rankings(
-            {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]},
+            {'year': year, 'week': week, 'algo': ALGO_VERSION, 'team_rankings': [{'team_name': 'A'}]},
             year,
             week,
             root=tmp_path,
@@ -417,7 +418,7 @@ def test_current_season_refresh_drops_the_computed_board(tmp_path, monkeypatch):
 
 def test_published_priors_make_zero_prior_season_cfbd_calls(tmp_path):
     """frontend/static/rankings/priors skips Y-1 and Y-2 game fetches."""
-    from ranking_service import ALGO_VERSION
+    from ranking_service import BLEND_PRIOR_ALGO
     from conference_membership import load_membership
     from static_rankings import write_prior_scores
 
@@ -434,9 +435,108 @@ def test_published_priors_make_zero_prior_season_cfbd_calls(tmp_path):
             {'Georgia': 1800.0},
             source_sha='abc',
             generated_at='2024-01-20T00:00:00Z',
-            algo=ALGO_VERSION,
+            algo=BLEND_PRIOR_ALGO,
             membership=load_membership().version,
             root=tmp_path,
         )
     assert pre.ensure_priors(Processor(), 2024, root=tmp_path) == []
     assert calls == []
+
+
+def test_stale_stamp_is_recomputed_when_games_are_unchanged(tmp_path, monkeypatch):
+    games = {1: [{'id': 1, 'week': 1}], 2: [{'id': 2, 'week': 2}]}
+    processor = FakeProcessor(games)
+    computed = []
+
+    def fake_precompute(year, week, _processor, **_kwargs):
+        computed.append(week)
+        return write_static_rankings(
+            {'year': year, 'week': week, 'algo': 'v5.3', 'team_rankings': [{'team_name': 'Old'}]},
+            year,
+            week,
+            root=tmp_path,
+        )
+
+    monkeypatch.setattr(pre, 'precompute', fake_precompute)
+    first = pre.publish_year(2024, [1, 2], processor, static_root=tmp_path)
+    assert first['computed'] == [1, 2]
+    computed.clear()
+    second = pre.publish_year(2024, [1, 2], processor, static_root=tmp_path)
+    assert second['bulk_calls'] == 1
+    assert second['computed'] == [1, 2]
+    assert computed == [1, 2]
+
+
+def test_version_bump_recomputes_on_the_next_run(tmp_path, monkeypatch):
+    games = {1: [{'id': 1, 'week': 1}]}
+    processor = FakeProcessor(games)
+    monkeypatch.setattr(
+        pre,
+        'precompute',
+        lambda year, week, _processor, **_kwargs: write_static_rankings(
+            {
+                'year': year,
+                'week': week,
+                'algo': ALGO_VERSION,
+                'team_rankings': [{'team_name': 'A'}],
+            },
+            year,
+            week,
+            root=tmp_path,
+        ),
+    )
+    pre.publish_year(2024, [1], processor, static_root=tmp_path)
+    monkeypatch.setattr(pre, 'ALGO_VERSION', 'v9.9')
+    again = pre.publish_year(2024, [1], processor, static_root=tmp_path)
+    assert again['computed'] == [1]
+
+
+def test_served_v53_board_is_not_current(monkeypatch):
+    def fake_read(year, week, root=None):
+        if root is None:
+            return None
+        return {'algo': 'v5.3', 'year': year, 'week': week}
+
+    monkeypatch.setattr(pre, 'read_static_rankings', fake_read)
+    assert pre.week_board_current(2024, 1, None) is False
+
+
+def test_current_served_board_does_not_need_a_private_copy(monkeypatch):
+    def fake_read(year, week, root=None):
+        if root is None:
+            return None
+        return {'algo': pre.ALGO_VERSION, 'year': year, 'week': week}
+
+    monkeypatch.setattr(pre, 'read_static_rankings', fake_read)
+    assert pre.week_board_current(2026, 10, None) is True
+
+
+def test_stamp_refresh_stays_inside_the_call_clamp():
+    assert pre.STAMP_REFRESH_CALLS == {2024: 4, 2026: 2}
+    assert max(pre.STAMP_REFRESH_CALLS.values()) <= 8
+    assert pre.SEALED_HOLDOUT_YEAR not in pre.STAMP_REFRESH_CALLS
+
+
+def test_holdout_2025_makes_no_cfbd_call(monkeypatch):
+    monkeypatch.setenv('CFBD_OFFLINE', '0')
+    monkeypatch.setenv('CFBD_API_KEY', 'test-key')
+    monkeypatch.setenv('CFBD_KILL', '0')
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError('2025 must not construct a processor')
+
+    monkeypatch.setattr(pre, 'CFBDataProcessor', explode)
+    assert pre.main(['--year', '2025', '--through-week', '15']) == 2
+
+
+def test_january_current_does_not_rebuild_2025(monkeypatch):
+    monkeypatch.setattr(pre, 'now_utc', lambda: datetime(2026, 1, 10))
+    monkeypatch.setenv('CFBD_OFFLINE', '0')
+    monkeypatch.setenv('CFBD_API_KEY', 'test-key')
+    monkeypatch.setenv('CFBD_KILL', '0')
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError('January current must not build 2025 boards')
+
+    monkeypatch.setattr(pre, 'CFBDataProcessor', explode)
+    assert pre.main(['--current']) == 2

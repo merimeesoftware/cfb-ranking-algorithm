@@ -346,15 +346,21 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     rankings = json.loads(
         (ROOT / 'frontend' / 'static' / 'rankings' / '2024' / 'week-15.json').read_text()
     )
-    from agent_service import _build_team_context, _explain_prompt, answer_is_grounded
+    from agent_service import (
+        _build_team_context,
+        _explain_prompt,
+        _number_token,
+        answer_is_grounded,
+    )
 
     context = _build_team_context(rankings, 'Oregon')
     assert context is not None
     assert context['games'] == []
     records = context['records']
+    quality = _number_token(format(float(context['team_quality_score']), 'f'))
     answers = [
         f"{context['team_name']} sits #{context['rank']} in the {context['conference']}.",
-        f"{context['team_name']}'s Team Quality is {int(context['team_quality_score'])}.",
+        f"{context['team_name']}'s Team Quality is {quality}.",
         (
             f"Record Score and Conference Quality sit with Team Quality "
             f"for {context['team_name']}."
@@ -409,7 +415,9 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded('Oregon is 12\u20130.', context)
     assert not answer_is_grounded('Oregon is 12 \u2013 0.', context)
     assert not answer_is_grounded('Oregon is 12\u22120.', context)
-    assert answer_is_grounded('Oregon sits just ahead of Ohio State.', context)
+    behind = context['neighbor_behind']
+    assert isinstance(behind, str) and behind.strip()
+    assert answer_is_grounded(f'Oregon sits just ahead of {behind}.', context)
     assert not answer_is_grounded(
         "Oregon's head-to-head edge on Ohio State keeps it ahead.", context,
     )
@@ -465,6 +473,11 @@ def test_real_2024_week_15_oregon_answers_pass_and_inventions_fail():
     assert not answer_is_grounded(f'{subject} edged {opponent}.', listed)
     prompt = _explain_prompt(context, 'Which results are carrying this rank?')
     assert 'This context has no played-game list.' in prompt
+    assert 'Do not call it Elo' in prompt
+    assert 'TR+' in prompt
+    assert '80%' not in prompt
+    assert '15%' not in prompt
+    assert '5%' not in prompt
     played = dict(context)
     played['games'] = [{'opponent': 'Ohio State', 'result': 'win'}]
     assert 'listed in games' in _explain_prompt(played, 'Which results are carrying this rank?')

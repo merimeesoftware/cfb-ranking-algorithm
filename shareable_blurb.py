@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, Optional
+
+from path_to_climb import board_rating
 
 BLURB_MAX_CHARS = 280
 
@@ -128,10 +131,7 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
         why = f'{name} is No. {rank}{record_bit} with nothing left to chase in the table.'
         hook = ' Is the board too locked in?'
     else:
-        why = (
-            f'{name} is No. {rank}{record_bit} ({conf}). '
-            f'The board ranks them on who they beat and how they look — not the hype.'
-        )
+        why = f'{name} is No. {rank}{record_bit} ({conf}) on TR+.'
         if ahead:
             hook = f' Fair ranking — or is {ahead} getting too much respect?'
         elif behind:
@@ -147,31 +147,44 @@ def stub_shareable_blurb(context: Dict[str, Any]) -> str:
         return blurb
     # Authoring guard: stubs must always fit — shorten deliberately, do not chop mid-thought
     return accept_blurb(
-        f'{name} is No. {rank}{record_bit}. The board ranks the full resume, not the noise. '
+        f'{name} is No. {rank}{record_bit} on TR+. '
         f'{"Prove " + behind + " belongs ahead?" if behind else "Fair ranking — or still up for debate?"}'
     ) or f'{name} is No. {rank}. Debate?'
 
 
 def _plain_lever(path: Dict[str, Any]) -> str:
     """Map structured climb data to fan-language problem (StoryBrand)."""
-    lever = str(path.get('primary_lever') or '').lower()
-    gaps = path.get('gaps') or {}
-    # Prefer structured gaps when present
-    if gaps:
-        key = max(gaps, key=lambda k: float(gaps.get(k) or 0))
-        if float(gaps.get(key) or 0) > 0.5:
-            return {
-                'tq': 'how strong they look week to week',
-                'resume': 'who they beat on the schedule',
-                'cq': 'the company they keep in conference',
-            }.get(key, 'the full body of work')
-    if 'quality' in lever or 'elo' in lever or lever == 'tq':
-        return 'how strong they look week to week'
-    if 'resume' in lever or 'record' in lever or 'beat' in lever:
-        return 'who they beat on the schedule'
-    if 'conference' in lever or lever == 'cq':
-        return 'the company they keep in conference'
-    return 'the full body of work'
+    # Level only when the two ratings printed on the board are the same.
+    mine = path.get('shown_rating')
+    above = path.get('shown_rating_above')
+    try:
+        level = (
+            mine is not None
+            and above is not None
+            and board_rating(float(mine)) == board_rating(float(above))
+        )
+    except (TypeError, ValueError):
+        level = False
+    if level:
+        return 'They are level on TR+.'
+    return 'Beating better teams closes the gap.'
+
+
+def _trails_by_less_than_a_point(path: Dict[str, Any]) -> bool:
+    """True when the board gap is above 0 and rounds below 1."""
+    mine = path.get('shown_rating')
+    above = path.get('shown_rating_above')
+    try:
+        if mine is not None and above is not None:
+            gap = board_rating(float(above)) - board_rating(float(mine))
+        else:
+            gap = float(path.get('score_gap'))
+    except (TypeError, ValueError):
+        return False
+    if gap <= 0:
+        return False
+    whole = int(Decimal(str(gap)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    return whole < 1
 
 
 def stub_climb_blurb(context: Dict[str, Any]) -> str:
@@ -187,30 +200,33 @@ def stub_climb_blurb(context: Dict[str, Any]) -> str:
     if path.get('at_top') or not ahead:
         hook = f' Can {behind} take the throne?' if behind else ' Who belongs up here next?'
         blurb = accept_blurb(
-            f'{name} is already on top. The board is impartial — wins, strength, '
-            f'and the whole resume decide it, not the noise.{hook}'
+            f'{name} is already on top on TR+, not a vote and not the resume.{hook}'
         )
         return blurb or accept_blurb(f'{name} is on top. Who takes the throne next?') or f'{name} is #1.'
 
     problem = _plain_lever(path)
-    plan = {
-        'who they beat on the schedule': 'Beat a real contender. Padding wins will not close this.',
-        'how strong they look week to week': 'Stack wins against good teams and look dominant doing it.',
-        'the company they keep in conference': 'Prove it against the best in their league.',
-    }.get(problem, 'Keep winning the games that matter.')
-
-    body = (
-        f'{name} is chasing {ahead}. The gap is mostly {problem} — '
-        f'the board weighs the whole resume, not the narrative. {plan}'
-    )
+    if _trails_by_less_than_a_point(path):
+        body = (
+            f'{name} trails {ahead} by less than a point on TR+. '
+            f'Beating better teams closes the gap.'
+        )
+    elif 'level on tr+' in problem.lower():
+        body = f'{name} and {ahead} are level on TR+.'
+    else:
+        body = (
+            f'{name} is chasing {ahead} on TR+. '
+            f'Beating better teams is how it climbs; the record alone doesn’t move it.'
+        )
     hook = f' Think {name} already deserves that spot?'
     blurb = accept_blurb(f'{body} {hook}')
     if blurb:
         return blurb
+    if _trails_by_less_than_a_point(path):
+        return accept_blurb(body) or body
     return (
         accept_blurb(
-            f'{name} is chasing {ahead}. Close it by beating better teams. '
-            f'Think they already deserve that spot?'
+            f'{name} is chasing {ahead} on TR+. '
+            f'Beating better teams is how it climbs; the record alone doesn’t move it.'
         )
         or f'{name} vs {ahead}: who belongs higher?'
     )
@@ -244,10 +260,10 @@ def build_climb_prompt(context: Dict[str, Any]) -> str:
         'Use Donald Miller StoryBrand simplicity: caveman-clear. Fan is the hero.\n'
         'Structure:\n'
         '1) Who they are chasing (team above).\n'
-        '2) The gap in plain football language (who they beat / how they look / schedule).\n'
+        '2) The gap in plain football language (how they look right now).\n'
         '3) One clear thing that would move them up.\n'
         '4) End with a complete debate question (?).\n'
-        'Voice: confident that an impartial model (wins + strength + full resume) beats hot takes.\n'
+        'Voice: confident that an impartial model beats hot takes.\n'
         f'{search_prompt_rules()}'
         'Do NOT use: TQ, CQ, Elo, delta, Δ, contrib, lever, point gaps, decimals, formulas.\n'
         'No hashtags, emojis, or quotes around the whole blurb.\n'

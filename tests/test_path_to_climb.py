@@ -34,5 +34,49 @@ def test_mid_table_gap_to_team_above():
 def test_ohio_state_chasing_oregon():
     teams = _teams()
     result = compute_path_to_climb(teams[1], teams[0])
-    assert result['score_gap'] == 5.0
+    assert result['score_gap'] == 50.0
     assert result['team_above'] == 'Oregon'
+    assert result['primary_lever'] == 'Elo'
+    assert result['summary'] == (
+        'Ohio State trails Oregon by 50 points on TR+. '
+        'Beating better teams closes the gap.'
+    )
+
+
+def test_gap_that_rounds_below_one_point_is_less_than_a_point():
+    above = {
+        'team_name': 'Sharp',
+        'team_quality_score': 1900.4,
+    }
+    below = {
+        'team_name': 'Soft',
+        'team_quality_score': 1900.0,
+    }
+    result = compute_path_to_climb(below, above)
+    assert result['summary'] == (
+        'Soft trails Sharp by less than a point on TR+. '
+        'Beating better teams closes the gap.'
+    )
+
+
+def test_climb_follows_elo_when_resume_gap_is_larger():
+    above = {
+        'team_name': 'Sharp',
+        'team_quality_score': 1600.0,
+        'record_score': 800.0,
+        'conference_quality_score': 70.0,
+    }
+    below = {
+        'team_name': 'Soft',
+        'team_quality_score': 1590.0,
+        'record_score': 4000.0,
+        'conference_quality_score': 70.0,
+    }
+    result = compute_path_to_climb(below, above)
+    assert result['primary_lever'] == 'Elo'
+    assert result['score_gap'] == 10.0
+    assert 'resume' not in result['primary_lever'].lower()
+    assert result['summary'] == (
+        'Soft trails Sharp by 10 points on TR+. '
+        'Beating better teams closes the gap.'
+    )

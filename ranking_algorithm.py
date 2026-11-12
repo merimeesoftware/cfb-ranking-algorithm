@@ -30,6 +30,11 @@ class LossDetail(TypedDict):
     notes: Optional[str]
     mov: int
 
+class Decision(TypedDict):
+    won: float
+    expected: float
+
+
 class TeamStat(TypedDict):
     quality_score: float
     conference: Optional[str]
@@ -47,6 +52,28 @@ class TeamStat(TypedDict):
     wins_details: List[WinDetail]
     losses_details: List[LossDetail]
     schedule: List[str]
+    decisions: List[Decision]
+
+
+# Heat lost its gate on 2019–2022. The weight stays 0. Momentum is a column.
+HEAT_WEIGHT = 0.0
+EARLY_SEASON_DECISIONS = 3
+
+
+def ordering_score(team: Dict[str, Any]) -> float:
+    """Published sort key: Elo only. Record, fraud, and momentum are not in it."""
+    try:
+        elo = float(team.get('team_quality_score') or 0.0)
+    except (TypeError, ValueError):
+        elo = 0.0
+    if HEAT_WEIGHT == 0.0:
+        return elo
+    raw = team.get('momentum')
+    try:
+        momentum = float(raw) if raw is not None else 0.0
+    except (TypeError, ValueError):
+        momentum = 0.0
+    return elo + HEAT_WEIGHT * momentum
 
 class TeamQualityRanker:
     """
@@ -89,7 +116,8 @@ class TeamQualityRanker:
             'inter_conf_records': {'p4': {'w': 0, 'l': 0}, 'g5': {'w': 0, 'l': 0}, 'fcs': {'w': 0, 'l': 0}},
             'wins_details': [],
             'losses_details': [],
-            'schedule': []
+            'schedule': [],
+            'decisions': [],
         }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None, priors: Optional[Dict[str, float]] = None):
@@ -129,9 +157,10 @@ class TeamQualityRanker:
         self.loss_penalty_base = self.config.get('loss_penalty_base', 150.0)
         self.loss_penalty_exp = self.config.get('loss_penalty_exp', 1.1) # V4.0+
         
-        # V5.3: Upset bonus configuration (dampened from V4)
+        # v5.5: Upset bonus configuration (dampened from V4)
         self.upset_elo_threshold = self.config.get('upset_elo_threshold', 150.0)  # Elo gap for upset bonus
-        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.18)  # V5.3: Reduced from 1.25
+        # 1.0: a live 150-point step let a bigger earlier win erase a later bonus.
+        self.upset_bonus_mult = self.config.get('upset_bonus_mult', 1.0)
         self.g5_beats_p4_mult = self.config.get('g5_beats_p4_mult', 1.12)  # V5.3: Reduced from 1.20
         
         # V5.3: Tier-specific SoV thresholds (now equalized)
@@ -365,6 +394,16 @@ class TeamQualityRanker:
         self.team_stats[winner]['quality_score'] = new_winner_score
         self.team_stats[loser]['quality_score'] = new_loser_score
         
+        # Pregame win chance Elo assigned, for the display columns only.
+        self.team_stats[winner]['decisions'].append({
+            'won': 1.0,
+            'expected': expected_score,
+        })
+        self.team_stats[loser]['decisions'].append({
+            'won': 0.0,
+            'expected': 1.0 - expected_score,
+        })
+
         # Update records
         self.team_stats[winner]['wins'] += 1
         self.team_stats[loser]['losses'] += 1
@@ -817,12 +856,28 @@ class TeamQualityRanker:
             quality_wins_count = sum(1 for w in enriched_wins if w['is_quality_win'])
             bad_losses_count = sum(1 for l in enriched_losses if l['is_bad_loss'])
             quality_losses_count = sum(1 for l in enriched_losses if l['is_quality_loss'])
-            
+
+            # Display columns. None of these enter ordering_score.
+            decisions = data.get('decisions') or []
+            expected_wins = sum(float(item['expected']) for item in decisions)
+            record_ahead = float(data['wins']) - expected_wins
+            soft_wins = sum(1 for win in enriched_wins if win['is_cupcake_win'])
+            soft_win_share = (soft_wins / data['wins']) if data['wins'] else 0.0
+            n_decisions = data['wins'] + data['losses']
+            early_season = n_decisions < EARLY_SEASON_DECISIONS
+            if n_decisions >= EARLY_SEASON_DECISIONS and len(decisions) >= EARLY_SEASON_DECISIONS:
+                last = decisions[-EARLY_SEASON_DECISIONS:]
+                surprise = sum(float(item['won']) - float(item['expected']) for item in last)
+                momentum = surprise / float(EARLY_SEASON_DECISIONS)
+            else:
+                momentum = None
+
             team_entry = {
                 'team_name': team,
                 'conference': data['conference'],
                 'conference_type': data['conference_type'],
                 'team_quality_score': data['quality_score'],
+                'ordering_score': data['quality_score'],
                 'conference_quality_score': cq,
                 'record_score': record_score,
                 'final_ranking_score': final_score,
@@ -850,13 +905,22 @@ class TeamQualityRanker:
                 'quality_loss_bonus': quality_loss_bonus,
                 'bad_loss_penalty': bad_loss_penalty,
                 'wins_details': enriched_wins,
-                'losses_details': enriched_losses
+                'losses_details': enriched_losses,
+                # Record quality: wins minus Elo's expected wins, plus the
+                # share of wins over FCS or below the weak-loss line.
+                'record_ahead': record_ahead,
+                'soft_win_share': soft_win_share,
+                'record_quality_flag': record_ahead > 0.0,
+                # Last-3 surprise versus Elo. Heat weight is 0.
+                'momentum': momentum,
+                'early_season': early_season,
             }
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
             
-        # Sort teams
-        team_rankings.sort(key=lambda x: x['final_ranking_score'], reverse=True)
+        # Order by Elo alone. Heat weight is 0. Record quality, momentum,
+        # and the early-season flag are columns, not sort keys.
+        team_rankings.sort(key=ordering_score, reverse=True)
         
         # Calculate SoS and SoV ranks
         sos_values = [(t['team_name'], t['sos']) for t in team_rankings]

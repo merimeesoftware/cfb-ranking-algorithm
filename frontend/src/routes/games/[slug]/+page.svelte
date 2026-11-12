@@ -15,6 +15,7 @@
 		matchupSlug,
 	} from '$lib/brand';
 	import { fetchRankingsFromApi } from '$lib/api';
+	import { shownScore } from '$lib/order';
 	import type { Team } from '$lib/types';
 
 	export let data: {
@@ -53,7 +54,7 @@
 	});
 
 	$: title = pageTitle([`${teamA.team_name} vs ${teamB.team_name}`, RATING_NAME]);
-	$: description = `${teamA.team_name} (#${teamA.rank}, ${RATING_NAME} ${teamA.final_ranking_score.toFixed(1)}) and ${teamB.team_name} (#${teamB.rank}, ${RATING_NAME} ${teamB.final_ranking_score.toFixed(1)}). ${TAGLINE}`;
+	$: description = `${teamA.team_name} (#${teamA.rank}, ${RATING_NAME} ${shownScore(teamA).toFixed(1)}) and ${teamB.team_name} (#${teamB.rank}, ${RATING_NAME} ${shownScore(teamB).toFixed(1)}). ${TAGLINE}`;
 	$: path = `/games/${canonicalSlug}`;
 	$: jsonLd = {
 		'@context': 'https://schema.org',
@@ -91,7 +92,7 @@
 				<p class="font-display text-xl text-primary-900 dark:text-white">{side.team_name}</p>
 				<p class="mt-1 text-sm text-primary-700 dark:text-primary-300">
 					{RATING_NAME}
-					{side.final_ranking_score.toFixed(1)} · {side.records.total_wins}-{side.records.total_losses}
+					{shownScore(side).toFixed(1)} · {side.records.total_wins}-{side.records.total_losses}
 				</p>
 			</a>
 		{/each}

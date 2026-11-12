@@ -7,9 +7,11 @@ Usage:
   ./venv/bin/python scripts/precompute_rankings.py --year 2024 --through-week 15
   ./venv/bin/python scripts/precompute_rankings.py --current   # current season, weeks 1..current-1
 
-Published weeks are not fetched again. When a week's games change, that
-week and every later week are recomputed from the games already in memory.
-Earlier weeks stay as saved. Also copies slim JSON into frontend/static/rankings/.
+A saved week is left in place only when its algo stamp is ALGO_VERSION and
+its games did not change. Any other stamp is rebuilt, so the next run after
+a version bump refreshes the board. Week solves read the season payload
+already in memory and are not extra CFBD calls. Also copies slim JSON into
+frontend/static/rankings/. 2025 week boards are refused.
 
 A regular week is ready when every kickoff older than 36 hours has a score.
 One older unscored game is left out of that week's ranking inputs instead
@@ -47,6 +49,7 @@ from spend_guards import CFBDOfflineError, is_cfbd_killed, is_cfbd_offline
 from ranking_algorithm import TeamQualityRanker
 from ranking_service import (
     ALGO_VERSION,
+    BLEND_PRIOR_ALGO,
     DEFAULT_CONFIG,
     get_or_calculate_rankings,
     slim_rankings_for_list,
@@ -62,6 +65,21 @@ from static_rankings import (
 
 # Within this process only. The next Sunday starts with an empty .cache.
 BATCH_TTL = 30 * 24 * 60 * 60
+
+# Sealed tuning holdout. Week boards for this season are not regenerated,
+# and its outcomes are not fetched to tune. The published v5.3 prior file
+# is still the blend seed for 2026.
+SEALED_HOLDOUT_YEAR = 2025
+
+# Cold Actions dispatch for the weeks this repo already serves. One bulk
+# /games payload covers every week of that season. Priors that are already
+# published under BLEND_PRIOR_ALGO are not fetched.
+# 2024 weeks 1-15: /teams + /games 2022 + /games 2023 + /games 2024 = 4
+#   (priors/2022.json and priors/2023.json are not in the tree)
+# 2026 weeks 1-10: /teams + /games 2026 = 2
+#   (priors/2024.json and priors/2025.json stay the v5.3 blend seeds)
+# Both sit under the per-run clamp of 8.
+STAMP_REFRESH_CALLS = {2024: 4, 2026: 2}
 
 
 def install_batch_cache_ttl(current_year: int | None = None) -> None:
@@ -301,6 +319,42 @@ def latest_completed_regular_week(games: list, now: datetime | None = None) -> i
     return max(done) if done else None
 
 
+def board_is_current(payload) -> bool:
+    """A saved week is current only when it was written under this label."""
+    return isinstance(payload, dict) and payload.get('algo') == ALGO_VERSION
+
+
+def served_rankings_root() -> Path:
+    return ROOT / 'frontend' / 'static' / 'rankings'
+
+
+def week_board_current(year: int, week: int, static_root: Path | None) -> bool:
+    """True when the board this run would keep already carries ALGO_VERSION.
+
+    Tests pass an explicit static_root and that directory is the only copy.
+    The real run also serves frontend/static/rankings. A missing served file,
+    or any copy whose stamp is not ALGO_VERSION, is rebuilt. A later version
+    bump makes every saved week stale on the next run. An empty private cache
+    does not veto a served file that already matches.
+    """
+    if static_root is not None:
+        return board_is_current(read_static_rankings(year, week, root=static_root))
+    served = read_static_rankings(year, week, root=served_rankings_root())
+    if not board_is_current(served):
+        return False
+    private = read_static_rankings(year, week)
+    if private is not None and not board_is_current(private):
+        return False
+    return True
+
+
+def requests_holdout(year: int | None, current: bool, now: datetime) -> bool:
+    """True when this invocation would build week boards for the holdout."""
+    if year == SEALED_HOLDOUT_YEAR:
+        return True
+    return bool(current) and season_year(now) == SEALED_HOLDOUT_YEAR
+
+
 def weeks_to_fetch(weeks: list[int], published: set[int], snapshots: set[int]) -> list[int]:
     """Unpublished weeks, the latest week, and any earlier week with no snapshot."""
     if not weeks:
@@ -394,7 +448,7 @@ def publish_year(
         bulk_calls = 1
     published = {
         week for week in weeks
-        if read_static_rankings(year, week, root=static_root) is not None
+        if week_board_current(year, week, static_root)
     }
     previous_fingerprint: dict[int, str | None] = {}
     by_week: dict[int, list] = {}
@@ -502,7 +556,7 @@ def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = No
     fetched = []
     membership = load_membership().version
     for prior in (year - 1, year - 2):
-        if read_prior_teams(prior, algo=ALGO_VERSION, membership=membership, root=root) is not None:
+        if read_prior_teams(prior, algo=BLEND_PRIOR_ALGO, membership=membership, root=root) is not None:
             print(f'Priors hit: {prior}')
             continue
         print(f'Priors fetch: {prior}')
@@ -513,7 +567,7 @@ def ensure_priors(processor: CFBDataProcessor, year: int, root: Path | None = No
             scores,
             source_sha=games_fingerprint(games),
             generated_at=prior_generated_at(games),
-            algo=ALGO_VERSION,
+            algo=BLEND_PRIOR_ALGO,
             membership=membership,
             root=root,
         )
@@ -598,6 +652,13 @@ def main(
         print('Off-season: precompute skipped (0 CFBD calls).')
         publish_stored_manifests(output_root, static_root)
         return 0
+
+    if requests_holdout(args.year, args.current, now):
+        print(
+            '2025 is the sealed holdout. Not regenerating week boards.',
+            file=sys.stderr,
+        )
+        return 2
 
     if is_cfbd_offline():
         # Prod stays CFBD_OFFLINE=1. Publishing still refreshes the manifest

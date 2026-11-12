@@ -1,8 +1,11 @@
 """Tests for Flask API routes."""
 import os
 from unittest.mock import patch
+from urllib.parse import quote
 
 import pytest
+
+from ranking_service import ALGO_VERSION
 
 os.environ.setdefault('CFBD_API_KEY', 'test-key-for-unit-tests')
 
@@ -87,9 +90,10 @@ def test_rankings_slim_by_default(client):
         'conference_rankings': [],
         'year': 2024,
         'week': 10,
+        'algo': ALGO_VERSION,
         'rankings': {'Georgia': {}},
     }
-    with patch('app.get_or_calculate_rankings', return_value=mock_data):
+    with patch('app.read_static_rankings_any', return_value=mock_data):
         response = client.get('/rankings?year=2024&week=10')
         assert response.status_code == 200
         data = response.get_json()
@@ -116,6 +120,31 @@ def test_rankings_detail_preserves_wins_details(client):
         assert response.status_code == 400
         data = response.get_json()
         assert data['code'] == 'formula_params'
+
+
+def test_committed_board_is_served_by_rankings_and_team(client):
+    board = client.get('/rankings?year=2024&week=10')
+    assert board.status_code == 200
+    teams = board.get_json()['team_rankings']
+    assert teams
+    name = teams[0]['team_name']
+    team = client.get(f'/rankings/team/{quote(name)}?year=2024&week=10')
+    assert team.status_code == 200
+    assert team.get_json()['team']['name'] == name
+
+
+def test_api_serves_every_week_that_weeks_lists(client):
+    for year in (2024, 2026):
+        listed = client.get(f'/weeks?year={year}')
+        assert listed.status_code == 200
+        weeks = listed.get_json()['weeks']
+        assert 10 in weeks
+        for week in weeks:
+            board = client.get(f'/rankings?year={year}&week={week}')
+            assert board.status_code == 200, (year, week)
+            body = board.get_json()
+            assert body.get('team_rankings'), (year, week)
+            assert body.get('published') is not False
 
 
 def test_team_breakdown_includes_game_details(client):
@@ -208,7 +237,7 @@ def test_team_breakdown_path_to_climb_vs_team_above(client):
         path = data['path_to_climb']
         assert path['at_top'] is False
         assert path['team_above'] == 'Oregon'
-        assert path['score_gap'] == 5.0
+        assert path['score_gap'] == 50.0
         assert path['summary']
 
 

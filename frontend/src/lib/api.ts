@@ -1,5 +1,6 @@
 import type { Team, Conference, FilterState, RankingsResponse } from '$lib/types';
 import { agentHeaders } from '$lib/turnstile';
+import { orderTeamsByElo } from '$lib/order';
 
 function parseWinPct(value: unknown): number {
 	if (typeof value === 'number') return value;
@@ -43,6 +44,7 @@ export function mapTeamFromApi(t: Record<string, unknown>): Team {
 		conference_type: (t.conference_type || '') as string,
 		final_ranking_score: (t.final_ranking_score || t.score || 0) as number,
 		team_quality_score: (t.team_quality_score || 0) as number,
+		ordering_score: (t.ordering_score ?? t.team_quality_score ?? 0) as number,
 		record_score: (t.record_score || 0) as number,
 		conference_quality_score: (t.conference_quality_score || 0) as number,
 		sos: (t.sos ?? null) as number | null,
@@ -146,7 +148,7 @@ async function fetchStaticRankings(year: number, week: number): Promise<Rankings
 		if (!response.ok) return null;
 		const data = await response.json();
 		return {
-			teams: (data.team_rankings || data.teams || []).map(mapTeamFromApi),
+			teams: orderTeamsByElo((data.team_rankings || data.teams || []).map(mapTeamFromApi)),
 			conferences: (data.conference_rankings || data.conferences || []).map(mapConferenceFromApi),
 			year: data.year || year,
 			week: data.week || week,
@@ -202,7 +204,7 @@ export async function fetchRankingsFromApi(
 		throw new Error(error.error || error.message || `HTTP ${response.status}`);
 	}
 	return {
-		teams: (data.team_rankings || data.teams || []).map(mapTeamFromApi),
+		teams: orderTeamsByElo((data.team_rankings || data.teams || []).map(mapTeamFromApi)),
 		conferences: (data.conference_rankings || data.conferences || []).map(mapConferenceFromApi),
 		year: data.year || year,
 		week: data.week || week,

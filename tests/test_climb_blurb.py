@@ -1,6 +1,7 @@
 """StoryBrand-simple path-to-climb blurbs (≤280 chars)."""
 from __future__ import annotations
 
+from path_to_climb import compute_path_to_climb
 from shareable_blurb import (
     BLURB_MAX_CHARS,
     stub_climb_blurb,
@@ -32,6 +33,10 @@ def test_stub_climb_blurb_is_caveman_simple():
     assert 40 <= len(blurb) <= BLURB_MAX_CHARS
     assert 'Indiana' in blurb
     assert 'Ohio State' in blurb
+    assert (
+        'Ohio State is chasing Indiana on TR+. '
+        'Beating better teams is how it climbs; the record alone doesn’t move it.'
+    ) in blurb
     lower = blurb.lower()
     # No math jargon (word-ish checks; avoid false positives like "below")
     for banned in ('tq contrib', 'cq Δ', 'resume Δ', 'contrib Δ', 'Δ', ' primary lever', 'elo gains'):
@@ -44,6 +49,86 @@ def test_stub_climb_blurb_is_caveman_simple():
     assert '+212' not in blurb
     # Debate / engagement cue
     assert '?' in blurb or any(w in lower for w in ('argue', 'debate', 'prove', 'think', 'buy'))
+
+
+def test_level_on_elo_does_not_use_the_record_as_the_lever():
+    blurb = stub_climb_blurb({
+        'team_name': 'Soft',
+        'neighbor_ahead': 'Sharp',
+        'path_to_climb': {
+            'at_top': False,
+            'team_above': 'Sharp',
+            'score_gap': 0.04,
+            'shown_rating': 1900.04,
+            'shown_rating_above': 1900.0,
+            'gaps': {'tq': 0.16, 'resume': 400.0, 'cq': 12.0},
+            'primary_lever': None,
+            'summary': 'Soft matches Sharp on Elo.',
+        },
+    })
+    lower = blurb.lower()
+    assert 'level on tr+' in lower
+    assert 'display-only' not in lower
+    assert 'who they beat' not in lower
+    assert 'conference' not in lower
+
+
+def test_sub_point_and_level_copy_on_both_surfaces():
+    trails = (
+        'Soft trails Sharp by less than a point on TR+. '
+        'Beating better teams closes the gap.'
+    )
+    climbed = compute_path_to_climb(
+        {'team_name': 'Soft', 'team_quality_score': 1900.0},
+        {'team_name': 'Sharp', 'team_quality_score': 1900.4},
+    )
+    assert climbed['summary'] == trails
+    blurb = stub_climb_blurb({'team_name': 'Soft', 'path_to_climb': climbed})
+    assert trails in blurb
+    assert 'chasing' not in blurb.lower()
+    assert 'less than a point' in blurb
+
+    tied = compute_path_to_climb(
+        {'team_name': 'Soft', 'team_quality_score': 1900.04},
+        {'team_name': 'Sharp', 'team_quality_score': 1900.0},
+    )
+    assert 'matches' in tied['summary']
+    assert 'less than a point' not in tied['summary']
+    level_blurb = stub_climb_blurb({'team_name': 'Soft', 'path_to_climb': tied})
+    assert 'level' in level_blurb.lower()
+    assert 'less than a point' not in level_blurb.lower()
+
+
+def test_board_gap_above_zero_is_not_level():
+    blurb = stub_climb_blurb({
+        'team_name': 'Soft',
+        'neighbor_ahead': 'Sharp',
+        'path_to_climb': {
+            'at_top': False,
+            'team_above': 'Sharp',
+            'score_gap': 0.4,
+            'shown_rating': 1900.0,
+            'shown_rating_above': 1900.4,
+            'primary_lever': 'Elo',
+        },
+    })
+    assert 'level' not in blurb.lower()
+
+
+def test_equal_shown_ratings_are_level():
+    blurb = stub_climb_blurb({
+        'team_name': 'Soft',
+        'neighbor_ahead': 'Sharp',
+        'path_to_climb': {
+            'at_top': False,
+            'team_above': 'Sharp',
+            'score_gap': 0.04,
+            'shown_rating': 1900.04,
+            'shown_rating_above': 1900.0,
+            'primary_lever': None,
+        },
+    })
+    assert 'level' in blurb.lower()
 
 
 def test_stub_climb_blurb_at_top():

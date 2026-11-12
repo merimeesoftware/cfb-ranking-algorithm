@@ -4,6 +4,8 @@
 	import { fade, fly, slide } from 'svelte/transition';
 	import AgentChatPanel from './AgentChatPanel.svelte';
 	import { BUSY_MESSAGE } from '$lib/api';
+	import { shownScore } from '$lib/order';
+	import { EARLY_SEASON_NOTE, RATING_NAME, RATING_TOOLTIP } from '$lib/brand';
 
 	export let team: Team;
 	export let rank: number;
@@ -56,10 +58,7 @@
 		}
 	}
 
-	// Score breakdown calculations (V5.0 weights: 65/27/8)
-	$: tqContrib = team.team_quality_score * 0.65;
-	$: recContrib = team.record_score * 0.27;
-	$: confContrib = team.conference_quality_score * 0.08;
+	$: eloScore = shownScore(team);
 
 	// Prefer API comparison payloads; fall back to neighbors from the rankings list
 	$: comparisonsAhead = (team.comparisons_ahead && team.comparisons_ahead.length > 0
@@ -82,9 +81,9 @@
 	// Calculate component contributions for any team (V5.0 weights)
 	function getContribs(t: Team) {
 		return {
-			tq: t.team_quality_score * 0.65,
-			rec: t.record_score * 0.27,
-			conf: t.conference_quality_score * 0.08
+			tq: shownScore(t),
+			rec: t.record_score,
+			conf: t.conference_quality_score
 		};
 	}
 
@@ -100,14 +99,14 @@
 				tq: theirContribs.tq - myContribs.tq,
 				rec: theirContribs.rec - myContribs.rec,
 				conf: theirContribs.conf - myContribs.conf,
-				total: compTeam.final_ranking_score - team.final_ranking_score
+				total: shownScore(compTeam) - shownScore(team)
 			};
 		} else {
 			return {
 				tq: myContribs.tq - theirContribs.tq,
 				rec: myContribs.rec - theirContribs.rec,
 				conf: myContribs.conf - theirContribs.conf,
-				total: team.final_ranking_score - compTeam.final_ranking_score
+				total: shownScore(team) - shownScore(compTeam)
 			};
 		}
 	}
@@ -115,15 +114,6 @@
 	function formatDiff(val: number): string {
 		if (val > 0) return `+${val.toFixed(1)}`;
 		return val.toFixed(1);
-	}
-
-	function getDiffClass(val: number, isPositiveGood: boolean): string {
-		if (Math.abs(val) < 0.5) return 'text-gray-500';
-		if (isPositiveGood) {
-			return val > 0 ? 'text-green-500' : 'text-red-500';
-		} else {
-			return val < 0 ? 'text-green-500' : 'text-red-500';
-		}
 	}
 
 	// Fallback narrative when shareable blurb API is unavailable
@@ -293,74 +283,18 @@
 					Why here?
 				</button>
 
-				<!-- 4. Why this spot (score breakdown) -->
+				<!-- 4. Why this spot -->
 				<div>
 					<h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Why this spot</h3>
-					<div class="space-y-4">
-						<!-- How good they look -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">How good they look</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">65%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.team_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {tqContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-primary-500 rounded-full" 
-									style="width: {Math.min((tqContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-
-						<!-- Who they beat -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">Who they beat</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">27%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.record_score.toFixed(1)} <span class="text-gray-400">→</span> {recContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-amber-500 rounded-full" 
-									style="width: {Math.min((recContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-
-						<!-- League strength -->
-						<div>
-							<div class="flex justify-between text-sm mb-1">
-								<div class="flex items-center gap-2">
-									<span class="font-medium text-gray-700 dark:text-gray-300">League strength</span>
-									<span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">8%</span>
-								</div>
-								<span class="font-mono text-gray-900 dark:text-white">
-									{team.conference_quality_score.toFixed(1)} <span class="text-gray-400">→</span> {confContrib.toFixed(1)}
-								</span>
-							</div>
-							<div class="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-								<div 
-									class="h-full bg-stone-500 rounded-full" 
-									style="width: {Math.min((confContrib / team.final_ranking_score) * 100, 100)}%"
-								></div>
-							</div>
-						</div>
-					</div>
-					
-					<div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-						<span class="font-bold text-gray-900 dark:text-white">Board score</span>
+					<div class="flex justify-between items-center">
+						<span class="font-bold text-gray-900 dark:text-white">{RATING_NAME}</span>
 						<span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-							{team.final_ranking_score.toFixed(2)}
+							{eloScore.toFixed(1)}
 						</span>
 					</div>
+					<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+						{EARLY_SEASON_NOTE}
+					</p>
 				</div>
 
 				<!-- 5. Key games / resume deep dive -->
@@ -394,7 +328,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{win.opponent_rank <= 25 ? `#${win.opponent_rank}` : ''} {win.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -440,7 +374,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{win.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({win.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -486,7 +420,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{loss.opponent_rank <= 25 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -532,7 +466,7 @@
 												<span class="font-bold text-gray-900 dark:text-white">
 													{loss.opponent_rank <= 136 ? `#${loss.opponent_rank}` : ''} {loss.opponent}
 												</span>
-												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} Elo)</span>
+												<span class="text-xs text-gray-500">({loss.opponent_elo.toFixed(0)} {RATING_NAME})</span>
 											</div>
 											<div class="flex items-center gap-3">
 												<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -588,66 +522,44 @@
 						<!-- Teams Ahead -->
 						{#if comparisonsAhead && comparisonsAhead.length > 0}
 							<div class="mb-4">
-								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
-									Chasing
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Teams ahead
 								</h4>
+								<p class="mt-1 mb-2 text-xs text-gray-500 dark:text-gray-400">{RATING_TOOLTIP}</p>
 								<div class="space-y-2">
 									{#each comparisonsAhead as comp}
 										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-											<div class="flex items-center justify-between mb-1">
-												<div class="flex items-center gap-2">
+											<div class="flex items-center justify-between gap-3">
+												<div class="flex items-center gap-2 min-w-0">
 													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{comp.other_rank}</span>
-													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm truncate">{comp.other_team}</span>
 												</div>
-												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(Math.abs(comp.score_diff))} pts ahead
+												<span class="text-xs font-mono text-gray-500 whitespace-nowrap">
+													{formatDiff(Math.abs(comp.score_diff))} {RATING_NAME} ahead
 												</span>
 											</div>
-											{#if comp.factors && comp.factors.length > 0}
-												<div class="grid grid-cols-3 gap-2 text-xs mt-2">
-													{#each comp.factors.slice(0, 3) as factor}
-														<div class="text-center">
-															<div class="text-gray-400 mb-0.5 capitalize">{factor.factor}</div>
-															<div class={getDiffClass(factor.diff, false)}>{formatDiff(factor.diff)}</div>
-														</div>
-													{/each}
-												</div>
-											{/if}
 										</div>
 									{/each}
 								</div>
 							</div>
 						{:else if fallbackAhead.length > 0}
 							<div class="mb-4">
-								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
-									Chasing
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Teams ahead
 								</h4>
+								<p class="mt-1 mb-2 text-xs text-gray-500 dark:text-gray-400">{RATING_TOOLTIP}</p>
 								<div class="space-y-2">
 									{#each fallbackAhead as { team: compTeam, rank: compRank }}
 										{@const diff = getDiff(compTeam, true)}
 										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-											<div class="flex items-center justify-between mb-2">
-												<div class="flex items-center gap-2">
+											<div class="flex items-center justify-between gap-3">
+												<div class="flex items-center gap-2 min-w-0">
 													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{compRank}</span>
-													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm truncate">{compTeam.team_name}</span>
 												</div>
-												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(diff.total)} pts ahead
+												<span class="text-xs font-mono text-gray-500 whitespace-nowrap">
+													{formatDiff(diff.total)} {RATING_NAME} ahead
 												</span>
-											</div>
-											<div class="grid grid-cols-3 gap-2 text-xs">
-												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">How they look</div>
-													<div class={getDiffClass(diff.tq, false)}>{formatDiff(diff.tq)}</div>
-												</div>
-												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Who they beat</div>
-													<div class={getDiffClass(diff.rec, false)}>{formatDiff(diff.rec)}</div>
-												</div>
-												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">League</div>
-													<div class={getDiffClass(diff.conf, false)}>{formatDiff(diff.conf)}</div>
-												</div>
 											</div>
 										</div>
 									{/each}
@@ -658,66 +570,44 @@
 						<!-- Teams Behind -->
 						{#if comparisonsBehind && comparisonsBehind.length > 0}
 							<div>
-								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
 									Teams behind
 								</h4>
+								<p class="mt-1 mb-2 text-xs text-gray-500 dark:text-gray-400">{RATING_TOOLTIP}</p>
 								<div class="space-y-2">
 									{#each comparisonsBehind as comp}
 										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-											<div class="flex items-center justify-between mb-1">
-												<div class="flex items-center gap-2">
+											<div class="flex items-center justify-between gap-3">
+												<div class="flex items-center gap-2 min-w-0">
 													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{comp.other_rank}</span>
-													<span class="font-medium text-gray-900 dark:text-white text-sm">{comp.other_team}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm truncate">{comp.other_team}</span>
 												</div>
-												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(Math.abs(comp.score_diff))} pts behind
+												<span class="text-xs font-mono text-gray-500 whitespace-nowrap">
+													{formatDiff(Math.abs(comp.score_diff))} {RATING_NAME} behind
 												</span>
 											</div>
-											{#if comp.factors && comp.factors.length > 0}
-												<div class="grid grid-cols-3 gap-2 text-xs mt-2">
-													{#each comp.factors.slice(0, 3) as factor}
-														<div class="text-center">
-															<div class="text-gray-400 mb-0.5 capitalize">{factor.factor}</div>
-															<div class={getDiffClass(factor.diff, true)}>{formatDiff(factor.diff)}</div>
-														</div>
-													{/each}
-												</div>
-											{/if}
 										</div>
 									{/each}
 								</div>
 							</div>
 						{:else if fallbackBehind.length > 0}
 							<div>
-								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase">
+								<h4 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
 									Teams behind
 								</h4>
+								<p class="mt-1 mb-2 text-xs text-gray-500 dark:text-gray-400">{RATING_TOOLTIP}</p>
 								<div class="space-y-2">
 									{#each fallbackBehind as { team: compTeam, rank: compRank }}
 										{@const diff = getDiff(compTeam, false)}
 										<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-											<div class="flex items-center justify-between mb-2">
-												<div class="flex items-center gap-2">
+											<div class="flex items-center justify-between gap-3">
+												<div class="flex items-center gap-2 min-w-0">
 													<span class="text-xs font-bold text-gray-500 dark:text-gray-400">#{compRank}</span>
-													<span class="font-medium text-gray-900 dark:text-white text-sm">{compTeam.team_name}</span>
+													<span class="font-medium text-gray-900 dark:text-white text-sm truncate">{compTeam.team_name}</span>
 												</div>
-												<span class="text-xs font-mono text-gray-500">
-													{formatDiff(diff.total)} pts behind
+												<span class="text-xs font-mono text-gray-500 whitespace-nowrap">
+													{formatDiff(diff.total)} {RATING_NAME} behind
 												</span>
-											</div>
-											<div class="grid grid-cols-3 gap-2 text-xs">
-												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">How they look</div>
-													<div class={getDiffClass(diff.tq, true)}>{formatDiff(diff.tq)}</div>
-												</div>
-												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">Who they beat</div>
-													<div class={getDiffClass(diff.rec, true)}>{formatDiff(diff.rec)}</div>
-												</div>
-												<div class="text-center">
-													<div class="text-gray-400 mb-0.5">League</div>
-													<div class={getDiffClass(diff.conf, true)}>{formatDiff(diff.conf)}</div>
-												</div>
 											</div>
 										</div>
 									{/each}

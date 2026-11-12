@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  # Precompute dispatches this on the bot branch. A GITHUB_TOKEN push
+  # does not start the push or pull_request triggers.
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: "3.11"
@@ -43,6 +46,9 @@ jobs:
 
       - name: Weekly dollar cap
         run: python scripts/check_weekly_usd.py
+
+      - name: Week board stamps match ALGO_VERSION
+        run: python scripts/check_board_stamps.py
 
   worker:
     name: Worker caps

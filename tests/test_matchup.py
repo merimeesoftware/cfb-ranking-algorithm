@@ -8,17 +8,21 @@ def test_build_matchup_payload_is_a_rating_comparison():
         {
             'team_name': 'Oregon',
             'final_ranking_score': 1840.0,
+            'team_quality_score': 1700.0,
             'records': {'total_wins': 8, 'total_losses': 0},
         },
         {
             'team_name': 'Ohio State',
-            'final_ranking_score': 1800.0,
+            'final_ranking_score': 1900.0,
+            'team_quality_score': 1600.0,
             'records': {'total_wins': 7, 'total_losses': 1},
         },
     ]
     payload = build_matchup_payload(teams, 'Oregon', 'Ohio State', 2024, 9)
     assert payload is not None
-    assert payload['team_a']['tr_plus'] == 1840.0
+    assert payload['team_a']['tr_plus'] == 1700.0
+    assert payload['team_a']['rating_label'] == 'TR+'
+    assert payload['team_b']['tr_plus'] == 1600.0
     assert payload['team_b']['rank'] == 2
     assert payload['team_a']['record'] == '8-0'
     for banned in ('implied_spread', 'market_spread', 'favorite', 'delta', 'odds'):
@@ -37,6 +41,7 @@ def test_matchup_route_has_no_spread_fields(client, monkeypatch):
     assert res.status_code in (200, 404)
     if res.status_code == 200:
         data = res.get_json()
-        assert 'team_a' in data and 'team_b' in data
         for banned in ('implied_spread', 'market_spread', 'favorite', 'delta'):
             assert banned not in data
+        if data.get('published') is not False:
+            assert 'team_a' in data and 'team_b' in data

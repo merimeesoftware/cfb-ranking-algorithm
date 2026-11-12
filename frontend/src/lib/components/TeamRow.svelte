@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Team } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
-	import { RATING_NAME, teamPath } from '$lib/brand';
+	import { teamPath, RATING_TOOLTIP } from '$lib/brand';
+	import { shownScore } from '$lib/order';
 
 	export let team: Team;
 	export let rank: number;
@@ -99,8 +100,8 @@
 		{/if}
 	</td>
 	<td class="px-4 py-3 text-right">
-		<span class="font-bold text-primary-600 dark:text-primary-400" title={RATING_NAME}>
-			{team.final_ranking_score.toFixed(1)}
+		<span class="font-bold text-primary-600 dark:text-primary-400 tabular-nums" title={RATING_TOOLTIP}>
+			{shownScore(team).toFixed(1)}
 		</span>
 	</td>
 </tr>
