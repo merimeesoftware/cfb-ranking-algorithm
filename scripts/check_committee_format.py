@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from committee_ingest import SEALED_YEAR, WEEK_FILE, YEAR_FILE, committee_errors
+from committee_ingest import WEEK_FILE, YEAR_FILE, committee_errors, path_is_sealed
 from ranking_service import ALGO_VERSION
 
 VALID_DIR = ROOT / 'tests' / 'fixtures' / 'committee' / 'valid'
@@ -27,8 +27,9 @@ def file_errors(path: Path, stamps: tuple[str, ...] = STAMPS) -> list[str]:
     errors: list[str] = []
     if WEEK_FILE.match(path.name) or not YEAR_FILE.match(path.name):
         errors.append(f'{path}: committee files are named {{year}}.json, not week-N.json')
-    if path.name == f'{SEALED_YEAR}.json' or SEALED_YEAR in path.parts:
+    if path_is_sealed(path):
         errors.append(f'{path}: 2025 is the sealed holdout.')
+        return errors
     try:
         payload = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError) as exc:

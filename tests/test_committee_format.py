@@ -18,6 +18,7 @@ from committee_ingest import (
     committee_errors,
     dumps_committee,
     hand_entered_rows,
+    path_is_sealed,
     write_committee_file,
 )
 from public_board import ROUTE_ALLOWED
@@ -180,6 +181,23 @@ def test_writer_does_not_stamp_or_touch_manifest(tmp_path):
         assert any('2025' in error for error in exc.errors)
     else:
         raise AssertionError('2025 must not be written')
+
+
+def test_sealed_path_is_refused_when_year_is_not_2025(tmp_path):
+    sealed = tmp_path / '2025' / 'committee'
+    try:
+        write_committee_file(sealed, _load(VALID), year=2024)
+    except CommitteeFormatError as exc:
+        assert any('2025 is the sealed holdout.' in error for error in exc.errors)
+    else:
+        raise AssertionError('a 2025 directory must be refused')
+    assert not sealed.exists()
+    assert not (tmp_path / '2025').exists()
+    nested = tmp_path / 'rankings' / '2025' / 'committee'
+    assert path_is_sealed(nested / '2024.json')
+    flagged = committee_check.file_errors(nested / '2024.json')
+    assert any('2025 is the sealed holdout.' in error for error in flagged)
+    assert not nested.exists()
 
 
 def test_manifest_and_board_stamp_ignore_committee_files(tmp_path):

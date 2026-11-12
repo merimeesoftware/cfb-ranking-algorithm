@@ -23,6 +23,7 @@ ALLOWED_KEYS = frozenset(STORED_FIELDS)
 YEAR_MIN = 2014
 YEAR_MAX = 2024
 SEALED_YEAR = 2025
+SEALED_YEAR_PART = str(SEALED_YEAR)
 RANK_MIN = 1
 RANK_MAX = 25
 COMMITTEE_POLL = 'Playoff Committee Rankings'
@@ -177,6 +178,17 @@ def dumps_committee(rows: Sequence[dict]) -> str:
     return json.dumps(_canonical(rows), indent=2) + '\n'
 
 
+def path_is_sealed(path: Path) -> bool:
+    """True when a path part, or the file name, is the sealed holdout year.
+
+    Path parts are strings. Comparing them to the integer year never matches.
+    """
+    candidate = Path(path)
+    if SEALED_YEAR_PART in candidate.parts:
+        return True
+    return candidate.name in {SEALED_YEAR_PART, f'{SEALED_YEAR_PART}.json'}
+
+
 def write_committee_file(
     directory: Path,
     rows: Any,
@@ -187,11 +199,11 @@ def write_committee_file(
     """Write ``{year}.json`` under ``directory``. Does not touch the manifest."""
     if type(year) is not int:
         raise CommitteeFormatError(['year must be an integer'])
-    if year == SEALED_YEAR or SEALED_YEAR in Path(directory).parts:
-        raise CommitteeFormatError(['2025 is the sealed holdout.'])
     filename = f'{year}.json'
-    stored = hand_entered_rows(rows, filename=filename, forbidden_stamps=forbidden_stamps)
     path = Path(directory) / filename
+    if year == SEALED_YEAR or path_is_sealed(path):
+        raise CommitteeFormatError(['2025 is the sealed holdout.'])
+    stored = hand_entered_rows(rows, filename=filename, forbidden_stamps=forbidden_stamps)
     if WEEK_FILE.match(path.name):
         raise CommitteeFormatError(['committee files are not named week-N.json'])
     path.parent.mkdir(parents=True, exist_ok=True)
