@@ -51,7 +51,7 @@ jobs:
         run: python scripts/check_board_stamps.py
 
   worker:
-    name: Worker bundle
+    name: Worker caps
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
