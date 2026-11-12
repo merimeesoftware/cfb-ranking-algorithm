@@ -1,5 +1,6 @@
 """Workers AI daily Neurons stay under 8,000."""
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -37,3 +38,16 @@ def test_live_config_stays_under_8000():
     assert spec['calls_per_day'] * per_call == 5800
     assert spec['calls_per_day'] * per_call <= spec['ceiling']
     assert main() == 0
+
+
+def test_preview_urls_are_off():
+    """Version uploads must not publish a preview URL. Top level and every env."""
+    text = (ROOT / 'wrangler.toml').read_text(encoding='utf-8')
+    assert 'preview_urls = true' not in text
+    top, *chunks = re.split(r'(?m)^\[env\.', text)
+    assert re.search(r'(?m)^preview_urls = false$', top)
+    envs = [chunk for chunk in chunks if not chunk.split(']', 1)[0].count('.')]
+    assert envs
+    for chunk in envs:
+        body = chunk.split(']', 1)[1]
+        assert re.search(r'(?m)^preview_urls = false$', body), chunk.split(']', 1)[0]

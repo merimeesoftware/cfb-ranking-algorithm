@@ -22,6 +22,7 @@ from pathlib import Path
 # (integration GitHub Actions). The fourth is the Cloudflare GitHub App.
 ACTIONS_CHECKS = ('Python', 'Worker caps', 'Frontend')
 WORKERS_BUILDS_CHECK = 'Workers Builds: true-rankings-cfb'
+OWNER_LABEL = 'owner:cfb-minicon'
 SEALED_HOLDOUT_YEAR = 2025
 SEALED_PREFIX = f'frontend/static/rankings/{SEALED_HOLDOUT_YEAR}/'
 WEEK_PATH = re.compile(r'^frontend/static/rankings/(\d{4})/week-(\d+)\.json$')
@@ -197,6 +198,11 @@ def ensure_pr(repo: str, base: str, branch: str, year: int, week: int, sha: str)
     ]).stdout or '[]')
     if listed:
         url = listed[0]['url']
+        run([
+            'gh', 'pr', 'edit', url,
+            '--repo', repo,
+            '--add-label', OWNER_LABEL,
+        ])
         print(f'Updated {url}')
         return url
     created = run([
@@ -206,6 +212,7 @@ def ensure_pr(repo: str, base: str, branch: str, year: int, week: int, sha: str)
         '--head', branch,
         '--title', f'Publish precomputed rankings ({year} week {week})',
         '--body', _pr_body(year, week, sha),
+        '--label', OWNER_LABEL,
     ])
     url = created.stdout.strip()
     print(f'Opened {url}')

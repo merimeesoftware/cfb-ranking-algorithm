@@ -3,6 +3,8 @@ main = "worker/src/index.ts"
 compatibility_date = "2026-03-01"
 # Wrangler 4.150+ uploads source maps when this is unset. Keep them off the upload.
 upload_source_maps = false
+# Version uploads must not publish a preview URL. Repo config only.
+preview_urls = false
 
 # Unified Workers deploy: SvelteKit static frontend + Flask API container.
 #   npm run build --prefix frontend && npx wrangler deploy
@@ -107,6 +109,7 @@ new_sqlite_classes = ["CfbApiContainer"]
 # Custom domain: pending Michael's choice. Do not hard-code a public host.
 [env.dev]
 name = "cfb-rankings-dev"
+preview_urls = false
 
 [env.dev.assets]
 directory = "./frontend/build"
