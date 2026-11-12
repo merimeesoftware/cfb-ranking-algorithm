@@ -1,7 +1,9 @@
 # Precompute archived rankings as static JSON (hybrid architecture).
 # Interim writer; retired when the #117 KV cron lands.
-# A GITHUB_TOKEN push does not trigger ci.yml or deploy-cloudflare.yml.
-# Publish relies on Workers Builds. Pending Release Ops confirmation.
+# Publish pushes bot/precompute-<year>-w<week> and opens a pull request.
+# A GITHUB_TOKEN push does not start ci.yml, so publish dispatches that
+# workflow on the bot branch. Workers Builds is the GitHub App check on
+# the push. No ruleset bypass.
 
 name: Precompute Rankings
 
@@ -82,11 +84,16 @@ jobs:
   publish:
     needs: precompute
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Push the bot branch, open the PR, and dispatch ci.yml.
     permissions:
       contents: write
+      pull-requests: write
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: true
 
       - name: Download precomputed rankings
@@ -95,14 +102,20 @@ jobs:
           name: static-rankings
           path: frontend/static/rankings
 
-      # Derived JSON only. A token push does not start ci.yml, so
-      # deploy-cloudflare.yml (workflow_run on CI) does not deploy it.
-      # Workers Builds is the path that publishes this commit.
-      # Pending Release Ops confirmation.
+      # Derived JSON only. Never push to the default branch: the ruleset
+      # rejects it. A token push does not start ci.yml, so the script
+      # dispatches that workflow. Workers Builds is the GitHub App on the
+      # push. deploy-cloudflare.yml still waits for a push of CI on main.
       - name: Publish static rankings
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BASE_REF: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BASE_SHA="$(git rev-parse HEAD)"
+          export BASE_SHA
           sh scripts/publish_static_rankings.sh
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          python3 scripts/open_rankings_pr.py
