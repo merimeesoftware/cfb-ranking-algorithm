@@ -32,9 +32,6 @@ jobs:
         env:
           CFBD_API_KEY: test-key-for-unit-tests
 
-      - name: Week board stamps match ALGO_VERSION
-        run: python scripts/check_board_stamps.py
-
       - name: CFBD monthly budget
         run: python scripts/check_cfbd_month.py
 
@@ -46,6 +43,9 @@ jobs:
 
       - name: Weekly dollar cap
         run: python scripts/check_weekly_usd.py
+
+      - name: Week board stamps match ALGO_VERSION
+        run: python scripts/check_board_stamps.py
 
   worker:
     name: Worker caps
