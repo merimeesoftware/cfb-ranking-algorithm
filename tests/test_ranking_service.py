@@ -104,6 +104,58 @@ def test_compute_priors_reads_published_scores_without_cfbd():
     mock_dp.get_games_for_season.assert_not_called()
 
 
+def test_stale_snapshot_under_the_current_cache_key_is_not_served():
+    """A payload planted on the v5.5 key with a different algo is not served.
+
+    Removing the published_snapshot() wrap makes this return the planted board.
+    """
+    import json
+    from ranking_service import ALGO_VERSION, get_or_calculate_rankings, rankings_cache_key
+
+    stale = {
+        'algo': 'v5.3',
+        'year': 2024,
+        'week': 9,
+        'team_rankings': [{'team_name': 'Stale', 'team_quality_score': 1.0}],
+    }
+    fresh = {
+        'algo': ALGO_VERSION,
+        'year': 2024,
+        'week': 9,
+        'team_rankings': [{'team_name': 'Fresh', 'team_quality_score': 2.0}],
+    }
+    store = {}
+    calculated = []
+
+    class _Cache:
+        def _generate_key(self, prefix, **kwargs):
+            return prefix + '|' + json.dumps(kwargs, sort_keys=True, default=str)
+
+        def get(self, key):
+            return store.get(key)
+
+        def set(self, key, data, ttl, prefix=None):
+            store[key] = data
+
+    cache = _Cache()
+    with patch('ranking_service.get_cache', return_value=cache):
+        key = rankings_cache_key(2024, 9, {})
+        store[key] = stale
+
+        def _calculate(*_args, **_kwargs):
+            calculated.append(1)
+            return fresh
+
+        with patch('ranking_service.calculate_rankings_logic', side_effect=_calculate):
+            out = get_or_calculate_rankings(
+                object(), 2024, 9, {}, prefer_static=False, allow_compute=True,
+            )
+    assert calculated == [1]
+    assert out['team_rankings'][0]['team_name'] == 'Fresh'
+    assert out['algo'] == ALGO_VERSION
+    assert out is not stale
+
+
 def test_slim_rankings_for_list_strips_heavy_fields():
     from ranking_service import slim_rankings_for_list
 
@@ -129,6 +181,27 @@ def test_slim_rankings_for_list_strips_heavy_fields():
     assert 'losses_details' not in slim['team_rankings'][0]
     assert full['team_rankings'][0]['wins_details']  # original untouched
     assert slim['detail'] is False
+    assert 'algo' not in slim
+
+
+def test_slim_rankings_for_list_keeps_the_boards_own_algo():
+    from ranking_service import ALGO_VERSION, slim_rankings_for_list
+
+    stored = {
+        'year': 2024,
+        'week': 10,
+        'algo': 'v5.3',
+        'team_rankings': [{'team_name': 'Georgia', 'team_quality_score': 1.0}],
+        'conference_rankings': [],
+    }
+    slim = slim_rankings_for_list(stored)
+    assert slim['detail'] is False
+    assert slim['algo'] == 'v5.3'
+    assert stored['algo'] == 'v5.3'
+
+    fresh = dict(stored)
+    fresh['algo'] = ALGO_VERSION
+    assert slim_rankings_for_list(fresh)['algo'] == ALGO_VERSION
 
 
 def test_is_archived_week():

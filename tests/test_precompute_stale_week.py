@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 
 import precompute_rankings as pre
 from cache import get_cache
+from ranking_service import ALGO_VERSION
 from static_rankings import write_static_rankings
 
 NOW = datetime(2026, 11, 1, 15, 0)
@@ -73,7 +74,12 @@ def _open(week, game_id, kickoff, **extra):
 
 def _install_precompute(monkeypatch):
     def fake(year, week, _processor, output_root=None, static_root=None):
-        body = {'year': year, 'week': week, 'team_rankings': [{'team_name': 'A'}]}
+        body = {
+            'year': year,
+            'week': week,
+            'algo': ALGO_VERSION,
+            'team_rankings': [{'team_name': 'A'}],
+        }
         path = write_static_rankings(body, year, week, root=output_root)
         if static_root is not None:
             write_static_rankings(body, year, week, root=static_root)

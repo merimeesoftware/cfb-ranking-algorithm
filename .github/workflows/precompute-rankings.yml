@@ -56,6 +56,12 @@ jobs:
           # Actions does not cache CFBD responses. A cold run is /teams,
           # two prior seasons (skipped when published priors exist), and
           # one bulk /games call. The clamp stays 8.
+          # A saved week whose algo stamp is not ALGO_VERSION is rebuilt,
+          # not only a missing week. Week solves are local after that one
+          # bulk payload. From this tree:
+          #   year=2024 through_week=15 → 4 calls
+          #   year=2026 through_week=10 → 2 calls
+          # 2025 is refused. Priors stay the v5.3 blend seed.
           CFBD_MAX_CALLS: "8"
           YEAR: ${{ github.event.inputs.year }}
           THROUGH_WEEK: ${{ github.event.inputs.through_week }}

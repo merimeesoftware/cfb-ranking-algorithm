@@ -60,9 +60,11 @@ Top-5 tune Briers were all ≥ 0.185; next-best configs (~0.188) were worse.
 
 ## Confirmed V5.3 config
 
+This table is the V5.3 confirmation. Live `ALGO_VERSION` is `v5.5` and the live `upset_bonus_mult` is `1.0`. The 1.18 multiplier belongs to that V5.3 confirmation, not to v5.5.
+
 | Key | Value |
 |-----|-------|
-| `ALGO_VERSION` | `v5.5` |
+| `ALGO_VERSION` at this confirmation | `v5.3` |
 | `team_quality_weight` | 0.80 |
 | `record_weight` | 0.15 |
 | `conference_weight` | 0.05 |
