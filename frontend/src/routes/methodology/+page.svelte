@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { EARLY_SEASON_NOTE } from '$lib/brand';
+	import { BRAND_NAME, EARLY_SEASON_NOTE, NAV } from '$lib/brand';
 
 	let expandedSection: string | null = null;
 
@@ -9,14 +9,14 @@
 </script>
 
 <svelte:head>
-	<title>How the board works | True Rankings</title>
+	<title>{NAV.formula} | {BRAND_NAME}</title>
 </svelte:head>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
 	<!-- Hero Section -->
 	<div class="text-center mb-8">
 		<h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-			How the board works
+			{NAV.formula}
 		</h1>
 		<p class="mt-3 text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
 			The place is Elo: how they look after the games so far. The record sits beside that order.

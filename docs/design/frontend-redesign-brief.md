@@ -64,6 +64,8 @@ There is no Copy link and no share line. The board does not read `?whatif=`. Whe
 
 ## Formula
 
+The page heading is the locked top-bar line, `NAV.formula`: “How the formula works.” It is not typed into the template. The what-if under that heading keeps “Example only” and has no share link.
+
 Two blocks. The order is TR+. The old blend is the comparison, with the running constants: K 50, postseason ×0.65, margin ln(margin + 1), home field 50 / 20 / 0, Group of 5 over Power 4 ×1.12 and no other upset bonus, matchup weights 1.0 / 0.8 / 0.65 / 0.2 / 0.1, winner ceiling 1,850. The opening paragraph is `EARLY_SEASON_NOTE` word for word. One deep-dive line gives the fade: max(0, 0.7 × (12 − week) / 11).
 
 ## Tokens

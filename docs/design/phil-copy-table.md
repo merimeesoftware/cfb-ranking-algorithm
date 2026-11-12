@@ -16,6 +16,7 @@ Facts are from the v5.5 week boards on this branch (current main, after #156, #1
 | Early-season note | In week 1, 70% of a team’s starting rating comes from last season’s final rating (bowl games included) and the season before, weighted 70/30. The other 30% comes from its conference tier. A team with no rating from last season starts from its tier alone. The head start shrinks each week and is gone by week 12. | `EARLY_SEASON_NOTE` |
 | Resume header | Resume | #98 |
 | Resume description | Who they beat, ranked. | #98 |
+| Nav, formula | How the formula works | `NAV.formula` |
 
 ## Landing and board
 
@@ -87,8 +88,11 @@ Sample: South Carolina, 2026 week 10, expanded in place. Gaps are the difference
 
 ## Formula page
 
+The page heading is `NAV.formula`, the same string as the top-bar link.
+
 | Slot | Proposed |
 | --- | --- |
+| Heading | How the formula works |
 | Order | How good they look right now. This sets the order. |
 | Old blend | For comparison, the old blend: 0.80 × how they look + 0.15 × resume + 0.05 × league strength. The board no longer sorts by it. |
 | Scale | The parts are not scaled to 0–100 before weighting. On 2026 week 10, 121 of 138 teams sit in a different place. The average gap is 5.30 places. |

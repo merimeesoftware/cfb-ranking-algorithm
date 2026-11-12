@@ -67,7 +67,7 @@
 		.week { font-family: Oswald, sans-serif; font-weight: 500; color: #e8c547; letter-spacing: 0.03em; }
 		.position { max-width: 72rem; margin: 0.1rem auto 0; color: var(--mast-soft); font-size: 0.92rem; line-height: 1.25; }
 		main { max-width: 72rem; margin: 0 auto; padding: 0.65rem 1rem 2rem; }
-		h2 { font-family: Oswald, sans-serif; font-weight: 600; font-size: 1.65rem; line-height: 1.1; margin: 0 0 0.45rem; }
+		h1, h2 { font-family: Oswald, sans-serif; font-weight: 600; font-size: 1.65rem; line-height: 1.1; margin: 0 0 0.45rem; }
 		.week-line { margin: 0 0 0.45rem; }
 		.table-wrap {
 			overflow: auto;
@@ -235,7 +235,7 @@
 			<p class="brand">True Rankings</p>
 			<p class="week">2026 · Week 10 · TR+</p>
 			<p class="tagline">How good they actually are.</p>
-			<p class="formula-link"><a href="#formula">How the formula works</a></p>
+			<p class="formula-link"><a data-nav="formula" href="#formula"></a></p>
 		</div>
 		<p class="position">The order you check before you argue — not a poll, not a committee, not the narrative.</p>
 	</header>
@@ -342,7 +342,7 @@
 		</section>
 
 		<section id="formula" aria-labelledby="formula-title">
-			<h2 id="formula-title">How the order works</h2>
+			<h1 id="formula-title" data-nav="formula"></h1>
 			<div class="pair">
 				<article class="side">
 					<h3>The order</h3>
@@ -421,6 +421,12 @@
 			<p class="note">Figures from the stored 2026 weeks. Algo label v5.5. Design comp only.</p>
 		</section>
 	</main>
+	<script type="module">
+		import { NAV } from "../../../frontend/src/lib/navCopy.js";
+		document.querySelectorAll("[data-nav='formula']").forEach((node) => {
+			node.textContent = NAV.formula;
+		});
+	</script>
 	<script>
 		const TEAMS = [["Georgia",1806.0888,1930.8658,1710.2136],["Utah",1796.5693,2140.1046,1702.0765],["Alabama",1761.1881,2099.1734,1710.2136],["Notre Dame",1758.0716,1924.8032,1529.1606],["UCLA",1751.861,2118.5725,1658.4892],["Miami",1737.765,1963.9937,1578.573],["Tennessee",1712.3371,1639.9355,1710.2136],["Texas",1702.4407,2037.7923,1710.2136],["Indiana",1697.7226,1745.5794,1658.4892],["Wake Forest",1694.0191,1801.2789,1578.573],["Iowa",1675.4116,1495.1501,1658.4892],["South Carolina",1653.0218,1310.6654,1710.2136],["Duke",1652.8938,1429.2952,1578.573],["Oregon",1648.4704,1617.333,1658.4892],["Texas Tech",1639.2668,1846.6955,1702.0765],["Houston",1630.7911,1552.3311,1702.0765],["Louisville",1625.0972,1253.5017,1578.573],["LSU",1617.4289,1421.0485,1710.2136],["Baylor",1616.6183,1156.344,1702.0765],["SMU",1614.3616,1434.0268,1578.573],["Arizona",1609.4316,1442.9516,1702.0765],["BYU",1608.697,1687.1125,1702.0765],["Oklahoma State",1590.8604,1224.5969,1702.0765],["USC",1585.8144,1542.7234,1658.4892],["Ole Miss",1577.5922,1734.1469,1710.2136],["Missouri",1554.5456,1151.3437,1710.2136],["Ohio State",1552.8736,1725.6323,1658.4892],["Clemson",1552.1419,1233.5509,1578.573],["Kentucky",1546.0057,1959.2987,1710.2136],["Illinois",1528.2427,1226.9792,1658.4892],["Oklahoma",1519.9737,1334.9796,1710.2136],["North Carolina",1517.4405,1331.3314,1578.573],["Wisconsin",1516.6904,1424.9169,1658.4892],["Virginia Tech",1490.2977,1130.0253,1578.573],["Pittsburgh",1486.6796,1160.242,1578.573],["Northwestern",1484.0223,1176.4493,1658.4892],["Washington",1480.1634,846.4252,1658.4892],["Penn State",1476.8594,871.1576,1658.4892],["Arizona State",1456.4265,842.4706,1702.0765],["TCU",1454.3564,619.8188,1702.0765],["Cincinnati",1454.1812,1107.9724,1702.0765],["Auburn",1442.9792,1454.5773,1710.2136],["West Virginia",1437.4895,885.4724,1702.0765],["Boise State",1424.1482,1792.275,1154.3478],["Nebraska",1417.0338,859.2818,1658.4892],["Florida State",1416.085,802.7493,1578.573],["Minnesota",1415.1737,935.6628,1658.4892],["Michigan",1411.4734,920.6361,1658.4892],["Texas A&M",1410.2477,677.07,1710.2136],["Iowa State",1405.1796,966.2851,1702.0765],["UCF",1404.1685,947.917,1702.0765],["New Mexico",1399.0433,1717.7685,1188.6976],["Liberty",1386.3805,1687.8265,1055.9945],["Michigan State",1379.0317,629.8288,1658.4892],["James Madison",1367.1288,1444.0508,1123.7042],["Syracuse",1362.8533,620.339,1578.573],["Florida",1361.1859,1417.2695,1710.2136],["Boston College",1350.1139,556.0633,1578.573],["NC State",1349.6412,560.2307,1578.573],["Virginia",1345.3396,558.9004,1578.573],["Mississippi State",1343.5046,1101.6816,1710.2136],["Louisiana Tech",1338.6469,1457.4461,1123.7042],["Stanford",1331.2438,865.4607,1578.573],["Memphis",1328.011,1435.6707,1174.5913],["North Texas",1319.0245,1455.9899,1174.5913],["Vanderbilt",1313.1521,560.8223,1710.2136],["Arkansas",1310.8529,611.1975,1710.2136],["North Dakota State",1302.7809,1426.3627,1188.6976],["Ohio",1301.6193,1389.4797,1055.0841],["Toledo",1298.3659,1406.1265,1055.0841],["Texas State",1295.229,879.3978,1154.3478],["Kansas",1294.9698,285.3508,1702.0765],["Air Force",1292.1836,1439.398,1188.6976],["Kansas State",1291.8432,484.4128,1702.0765],["Jacksonville State",1288.0296,1405.6023,1055.9945],["Maryland",1287.011,228.9685,1658.4892],["UTSA",1285.8428,1465.2135,1174.5913],["Colorado",1285.4492,533.2951,1702.0765],["Georgia Southern",1281.953,864.4879,1123.7042],["Tulsa",1277.5785,950.7259,1174.5913],["Purdue",1275.8374,620.5734,1658.4892],["Fresno State",1268.3961,832.667,1154.3478],["Western Michigan",1267.1798,1150.0295,1055.0841],["Florida Atlantic",1264.7719,1112.4844,1174.5913],["Wyoming",1264.4117,1086.7717,1188.6976],["South Florida",1264.1936,1079.0864,1174.5913],["Louisiana",1263.8152,1100.905,1123.7042],["Buffalo",1255.494,1118.9498,1055.0841],["UNLV",1246.6785,920.4447,1188.6976],["California",1243.6456,466.8649,1578.573],["Rutgers",1242.141,-128.523,1658.4892],["Utah State",1227.1927,523.3391,1154.3478],["Army",1220.8096,863.0826,1174.5913],["Georgia Tech",1220.5644,199.2156,1578.573],["UConn",1216.318,533.5103,1241.5745],["East Carolina",1206.0015,822.3617,1174.5913],["Oregon State",1203.7737,845.3605,1154.3478],["Delaware",1190.9079,490.4124,1055.9945],["Georgia State",1189.2346,780.3282,1123.7042],["Miami (OH)",1185.9094,823.6435,1055.0841],["UAB",1179.0989,805.5608,1174.5913],["Central Michigan",1177.8452,549.9897,1055.0841],["Marshall",1171.1769,807.5467,1123.7042],["Arkansas State",1156.4122,470.4837,1123.7042],["Tulane",1154.5901,582.3454,1174.5913],["Nevada",1150.3876,190.8669,1188.6976],["Florida International",1148.5442,497.3787,1055.9945],["Navy",1147.7973,246.4603,1174.5913],["South Alabama",1140.3312,540.7769,1123.7042],["Kennesaw State",1138.9734,213.729,1055.9945],["San Jos\u00e9 State",1136.084,576.724,1188.6976],["Massachusetts",1131.606,822.9172,1055.0841],["Hawai'i",1131.2785,221.1548,1188.6976],["Middle Tennessee",1129.7443,801.0186,1055.9945],["San Diego State",1117.6253,533.0353,1154.3478],["App State",1110.1633,819.3619,1123.7042],["Troy",1104.7817,497.0315,1123.7042],["Bowling Green",1099.2132,-147.3143,1055.0841],["Old Dominion",1097.1965,-0.4949,1123.7042],["Eastern Michigan",1085.3607,276.4677,1055.0841],["Western Kentucky",1084.1093,209.8975,1055.9945],["Coastal Carolina",1080.4248,199.704,1123.7042],["Southern Miss",1074.8011,195.7979,1123.7042],["Missouri State",1074.5297,174.2897,1055.9945],["Ball State",1069.5747,183.5838,1055.0841],["New Mexico State",1057.0868,199.5434,1055.9945],["Colorado State",1047.9116,249.2627,1154.3478],["Washington State",1046.2305,-386.8838,1154.3478],["Kent State",1037.0561,171.9399,1055.0841],["Temple",1024.7524,-125.7388,1174.5913],["UL Monroe",1023.4343,-163.7412,1123.7042],["Rice",1003.568,-365.6522,1174.5913],["Charlotte",1002.8941,-499.9253,1174.5913],["Sacramento State",984.3792,-420.7783,1055.0841],["Akron",966.3275,-448.544,1055.0841],["Sam Houston",962.1655,-498.5737,1055.9945],["UTEP",943.3032,-413.9403,1188.6976],["Northern Illinois",933.5413,-761.4651,1188.6976]];
 		const shot = new URLSearchParams(location.search).get("shot");
