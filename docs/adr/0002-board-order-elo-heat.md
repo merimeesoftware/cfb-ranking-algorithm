@@ -2,7 +2,7 @@
 
 - **Status:** Proposed with this change. Heat weight stays 0. Issue #96 stays open.
 - **Cites:** [ADR 0001](0001-product-direction-2026-10-18.md) (2026-10-18). Decision D-20261018-198 asked for Elo plus Heat, and for Heat to stay at weight 0 when it misses its gate. D-20261019-335 makes 2025 the holdout. 2024 is a mid-gate check, not that holdout.
-- **Algo label:** `v5.5` is the cache key for a computed week. It is not a weight, and it is not the stamp on a stored week that has not been rebuilt. Committed weekly boards stay `v5.3`, built with the 1.18 upset step, until a precompute run rewrites them. A stored week keeps the stamp in its file. `v5.4` still carried the 1.18 upset step. Committed prior files stay `v5.3`.
+- **Algo label:** `v5.5` is the cache key for a computed week and the stamp on the committed 2024 and 2026 week boards. It is not a weight. Those boards were `v5.3`, built with the 1.18 upset step, until this precompute rewrote them. A stored week keeps the stamp in its file. `v5.4` still carried the 1.18 upset step. Committed prior files stay `v5.3`.
 
 ## Decision
 
@@ -39,5 +39,5 @@ Point estimates are not worse. The intervals cross zero. The step is removed bec
 ## Consequences
 
 - Rank and the number beside it have to be `ordering_score`. A lower place must not show a higher rating.
-- `ALGO_VERSION` is `v5.5`, so a computed cache entry is served only when its payload stamp is `v5.5`, including one planted under the current cache key. Committed weekly boards stay `v5.3`, built with the 1.18 upset step, until a precompute run rewrites them. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
+- `ALGO_VERSION` is `v5.5`, so a computed cache entry is served only when its payload stamp is `v5.5`, including one planted under the current cache key. Committed weekly boards were `v5.3`, built with the 1.18 upset step, until this precompute rewrote 2024 weeks 1–15 and 2026 weeks 1–10 under `v5.5`. Committed prior files stay `v5.3` on purpose: they are the blend seed, and 2025 is not regenerated.
 - Methodology copy that said 0.65 / 0.27 / 0.08, or that parts are scaled to 0–100 before weighting, was describing a different formula. The methodology page still names Elo. The board, team panel, title, and share copy call the rating TR+.
