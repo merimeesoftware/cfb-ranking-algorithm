@@ -184,6 +184,8 @@ def _scripted(monkeypatch, paths, prs, views):
             return _ok(cmd, json.dumps(prs))
         if cmd[:3] == ['gh', 'pr', 'create']:
             return _ok(cmd, 'https://example.test/pull/7\n')
+        if cmd[:3] == ['gh', 'pr', 'edit']:
+            return _ok(cmd, '')
         if cmd[:3] == ['gh', 'workflow', 'run']:
             return _ok(cmd, '')
         if cmd[:3] == ['gh', 'run', 'list']:
@@ -224,6 +226,7 @@ def test_open_pr_pushes_bot_branch_and_dispatches_ci(monkeypatch):
     create = next(cmd for cmd in calls if cmd[:3] == ['gh', 'pr', 'create'])
     assert '--base' in create and create[create.index('--base') + 1] == 'main'
     assert create[create.index('--head') + 1] == 'bot/precompute-2026-w11'
+    assert create[create.index('--label') + 1] == 'owner:cfb-minicon'
     dispatch = next(cmd for cmd in calls if cmd[:3] == ['gh', 'workflow', 'run'])
     assert dispatch == [
         'gh', 'workflow', 'run', 'ci.yml',
@@ -244,6 +247,8 @@ def test_existing_pr_is_updated_without_a_second_create(monkeypatch):
     assert any(cmd[:2] == ['git', 'push'] for cmd in calls)
     assert any(cmd[:3] == ['gh', 'workflow', 'run'] for cmd in calls)
     assert not any(cmd[:3] == ['gh', 'pr', 'create'] for cmd in calls)
+    edit = next(cmd for cmd in calls if cmd[:3] == ['gh', 'pr', 'edit'])
+    assert edit[edit.index('--add-label') + 1] == 'owner:cfb-minicon'
 
 
 def test_holdout_diff_does_not_push(monkeypatch):
