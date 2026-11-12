@@ -911,7 +911,10 @@ class TeamQualityRanker:
                 'record_ahead': record_ahead,
                 'soft_win_share': soft_win_share,
                 'record_quality_flag': record_ahead > 0.0,
-                # Last-3 surprise versus Elo. Heat weight is 0.
+                # Momentum: mean of (won - expected) on the last 3
+                # decisions. Null before 3. FCS games stay in.
+                # This is not the #96 Heat form. HEAT_WEIGHT is 0,
+                # so the column stays out of the sort.
                 'momentum': momentum,
                 'early_season': early_season,
             }
