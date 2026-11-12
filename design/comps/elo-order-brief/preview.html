@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>True Rankings — 2026 week 10 design comp</title>
+	<style>
+		@font-face {
+			font-family: "Oswald";
+			src: url("fonts/Oswald.ttf") format("truetype");
+			font-weight: 400 700;
+			font-style: normal;
+			font-display: swap;
+		}
+		@font-face {
+			font-family: "Source Sans 3";
+			src: url("fonts/SourceSans3.ttf") format("truetype");
+			font-weight: 400 700;
+			font-style: normal;
+			font-display: swap;
+		}
+
+		:root {
+			--field: #1a3d2e;
+			--deep: #0f241b;
+			--chalk: #eef1ee;
+			--ink: #14241c;
+			--muted: #3d5248;
+			--line: #c9d4cc;
+			--gold: #c9a227;
+			--gold-bright: #e8c547;
+			--mast: 4.6rem;
+		}
+
+		* { box-sizing: border-box; }
+		html { scroll-padding-top: 5rem; }
+		body {
+			margin: 0;
+			background: var(--chalk);
+			color: var(--ink);
+			font-family: "Source Sans 3", "Source Sans 3", sans-serif;
+			font-size: 1.0625rem;
+			line-height: 1.4;
+		}
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+		a { color: var(--gold-bright); }
+		a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible {
+			outline: 2px solid var(--gold-bright);
+			outline-offset: 3px;
+		}
+
+		.mast {
+			background: var(--deep);
+			color: var(--chalk);
+			padding: 0.7rem 1.25rem 0.75rem;
+		}
+		.mast-row {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			gap: 0.4rem 1rem;
+			max-width: 72rem;
+			margin: 0 auto;
+		}
+		.brand {
+			font-family: Oswald, sans-serif;
+			font-weight: 600;
+			font-size: 1.7rem;
+			letter-spacing: 0.01em;
+			line-height: 1;
+		}
+		.week {
+			font-family: Oswald, sans-serif;
+			font-weight: 500;
+			letter-spacing: 0.04em;
+			color: var(--gold-bright);
+		}
+		.tagline { color: var(--chalk); }
+		.position {
+			max-width: 72rem;
+			margin: 0.35rem auto 0;
+			color: #d5e0d8;
+			font-size: 0.98rem;
+		}
+
+		main { max-width: 72rem; margin: 0 auto; padding: 0.85rem 1.25rem 2.5rem; }
+		section { margin-top: 1.75rem; }
+		section:first-child { margin-top: 0; }
+		h2 {
+			font-family: Oswald, sans-serif;
+			font-weight: 600;
+			font-size: 1.7rem;
+			line-height: 1.1;
+			margin: 0 0 0.55rem;
+		}
+		.week-line { margin: 0 0 0.7rem; max-width: 68rem; }
+
+		.cases {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 0.7rem;
+			margin-bottom: 0.8rem;
+		}
+		.case {
+			background: white;
+			border: 1px solid var(--line);
+			border-top: 3px solid var(--field);
+			padding: 0.5rem 0.7rem 0.6rem;
+		}
+		.case h3 {
+			font-family: Oswald, sans-serif;
+			font-size: 1.05rem;
+			font-weight: 600;
+			margin: 0 0 0.3rem;
+		}
+		.case p { margin: 0; font-size: 0.95rem; }
+
+		.table-wrap {
+			overflow: auto;
+			max-inline-size: 100%;
+			container-type: inline-size;
+			border: 1px solid var(--line);
+			background: white;
+		}
+		table {
+			width: 100%;
+			border-collapse: separate;
+			border-spacing: 0;
+			font-variant-numeric: tabular-nums;
+		}
+		caption {
+			caption-side: top;
+			text-align: left;
+			padding: 0.55rem 0.7rem 0.6rem;
+			color: var(--ink);
+			font-size: 0.92rem;
+		}
+		thead th {
+			position: sticky;
+			top: 0;
+			background: var(--field);
+			color: var(--chalk);
+			font-family: Oswald, sans-serif;
+			font-weight: 500;
+			font-size: 0.92rem;
+			letter-spacing: 0.03em;
+			text-align: left;
+			padding: 0.45rem 0.65rem;
+		}
+		tbody th {
+			position: sticky;
+			left: 0;
+			background: white;
+			text-align: left;
+			padding: 0.28rem 0.65rem;
+			border-bottom: 1px solid var(--line);
+			z-index: 1;
+		}
+		td {
+			padding: 0.28rem 0.65rem;
+			border-bottom: 1px solid var(--line);
+			vertical-align: middle;
+		}
+		tr.band th { box-shadow: inset 5px 0 0 var(--gold); }
+		.rk {
+			font-family: Oswald, sans-serif;
+			font-weight: 600;
+			font-size: 1.25rem;
+			display: inline-block;
+			width: 1.6rem;
+			color: #8a7010;
+		}
+		.pip {
+			display: inline-block;
+			width: 0.55rem;
+			height: 0.55rem;
+			border-radius: 50%;
+			margin-right: 0.35rem;
+			vertical-align: middle;
+			border: 1px solid rgba(20, 36, 28, 0.25);
+		}
+		.name { font-family: Oswald, sans-serif; font-weight: 500; font-size: 1.12rem; }
+		.conf { display: block; color: var(--muted); font-size: 0.82rem; font-family: "Source Sans 3", sans-serif; }
+		.team-cell { display: inline-block; vertical-align: middle; }
+
+		.note {
+			margin: 0.7rem 0 0;
+			color: var(--muted);
+			font-size: 0.92rem;
+		}
+
+		.pair {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 0.7rem;
+			margin: 0.6rem 0 0.9rem;
+		}
+		.side {
+			background: white;
+			border: 1px solid var(--line);
+			padding: 0.7rem 0.8rem;
+		}
+		.side h3 {
+			font-family: Oswald, sans-serif;
+			margin: 0;
+			font-size: 1.35rem;
+			font-weight: 600;
+		}
+		.elo-num {
+			font-family: Oswald, sans-serif;
+			font-size: 1.8rem;
+			font-variant-numeric: tabular-nums;
+			margin: 0.1rem 0;
+		}
+		.side p { margin: 0.2rem 0 0; }
+
+		.leagues { list-style: none; margin: 0.4rem 0 0; padding: 0; }
+		.lrow {
+			display: grid;
+			grid-template-columns: minmax(12rem, 18rem) 1fr;
+			gap: 0.6rem;
+			align-items: center;
+			margin: 0.35rem 0;
+		}
+		.lmeta strong { font-family: Oswald, sans-serif; font-weight: 500; }
+		.lmeta span { display: block; color: var(--muted); font-size: 0.88rem; }
+		.track {
+			position: relative;
+			height: 1.4rem;
+			background: linear-gradient(to right, transparent 0, transparent 100%);
+			border-bottom: 1px solid var(--line);
+		}
+		.track::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: 0.55rem;
+			height: 2px;
+			background: var(--line);
+		}
+		.dot {
+			position: absolute;
+			top: 0.2rem;
+			width: 0.85rem;
+			height: 0.85rem;
+			border-radius: 50%;
+			background: var(--field);
+			transform: translateX(-50%);
+			left: calc((var(--v) - 1100) / 700 * 100%);
+		}
+		.axis {
+			display: flex;
+			justify-content: space-between;
+			color: var(--muted);
+			font-size: 0.8rem;
+			font-variant-numeric: tabular-nums;
+			margin-left: calc(min(18rem, 42%) + 0.6rem);
+		}
+
+		.whatif {
+			border: 2px solid var(--field);
+			background: white;
+			padding: 0.8rem 0.9rem 1rem;
+			margin-top: 0.9rem;
+		}
+		.whatif h3 {
+			font-family: Oswald, sans-serif;
+			margin: 0 0 0.35rem;
+			font-size: 1.25rem;
+		}
+		.banner {
+			display: inline-block;
+			background: var(--field);
+			color: var(--chalk);
+			font-family: Oswald, sans-serif;
+			letter-spacing: 0.04em;
+			padding: 0.12rem 0.45rem;
+			margin-bottom: 0.4rem;
+		}
+		.sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 1.2rem; margin: 0.6rem 0; }
+		.sliders label { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.6rem; align-items: center; font-size: 0.95rem; }
+		.sliders input[type="range"] { grid-column: 1 / -1; accent-color: var(--field); width: 100%; }
+		.sliders input[type="range"]:disabled { opacity: 1; }
+		.math {
+			font-variant-numeric: tabular-nums;
+			background: var(--chalk);
+			padding: 0.45rem 0.6rem;
+			margin: 0.3rem 0;
+		}
+		.lists { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.7rem; margin-top: 0.6rem; }
+		.lists h4 { font-family: Oswald, sans-serif; margin: 0 0 0.25rem; font-weight: 500; }
+		.lists ol { margin: 0; padding-left: 1.2rem; font-variant-numeric: tabular-nums; }
+		.peer-table { width: 100%; margin-top: 0.8rem; }
+		.peer-table th, .peer-table td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+		.peer-table th { font-family: Oswald, sans-serif; font-weight: 500; }
+
+		.blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+		.block {
+			background: white;
+			border: 1px solid var(--line);
+			padding: 0.75rem 0.85rem;
+		}
+		.block.approved { border-top: 3px solid var(--field); }
+		.block h3 { font-family: Oswald, sans-serif; margin: 0 0 0.35rem; font-size: 1.2rem; }
+		.formula {
+			font-variant-numeric: tabular-nums;
+			font-size: 1.05rem;
+			margin: 0.4rem 0;
+		}
+		dl.constants { display: grid; grid-template-columns: 11rem 1fr; gap: 0.28rem 0.8rem; margin: 0.8rem 0 0; }
+		dl.constants dt { font-family: Oswald, sans-serif; font-weight: 500; }
+		dl.constants dd { margin: 0; }
+		.file-note { color: var(--muted); font-size: 0.88rem; margin-top: 1rem; }
+
+		body[data-shot="board"] section:not(#board),
+		body[data-shot="why"] section:not(#why),
+		body[data-shot="peers"] section:not(#peers),
+		body[data-shot="formula"] section:not(#formula) { display: none; }
+		body[data-shot]:not([data-shot="board"]) .position,
+		body[data-shot]:not([data-shot="board"]) .tagline { display: none; }
+		body[data-shot]:not([data-shot="board"]) .mast { padding-block: 0.45rem; }
+
+		#board { display: flex; flex-direction: column; }
+		#board .week-line { order: 0; }
+		#board .cases { order: 1; }
+		#board .table-wrap { order: 2; }
+		#board .note { order: 3; }
+
+		@container (width < 640px) {
+			table, thead, tbody, tr, th, td, caption { display: block; width: 100%; }
+			thead { display: none; }
+			tbody th { position: static; border-bottom: 0; padding-bottom: 0.15rem; }
+			tr {
+				border-bottom: 1px solid var(--line);
+				padding: 0.45rem 0.7rem 0.55rem;
+			}
+			tr.band th { box-shadow: inset 5px 0 0 var(--gold); }
+			td { border: 0; padding: 0.08rem 0 0.08rem 2.2rem; }
+			td::before {
+				content: attr(data-label) ": ";
+				font-family: Oswald, sans-serif;
+				font-weight: 500;
+				font-size: 0.82rem;
+				letter-spacing: 0.03em;
+			}
+		}
+
+		@media (max-width: 800px) {
+			#board .table-wrap { order: 1; }
+			#board .note { order: 2; }
+			#board .cases { order: 3; }
+			.cases, .pair, .blocks, .lists, .sliders { grid-template-columns: 1fr; }
+			.peer-table, .peer-table thead, .peer-table tbody, .peer-table tr, .peer-table th, .peer-table td {
+				display: block;
+				width: 100%;
+			}
+			.peer-table thead { display: none; }
+			.peer-table tr { border-bottom: 1px solid var(--line); padding: 0.4rem 0; }
+			.peer-table td::before {
+				content: attr(data-label) ": ";
+				font-family: Oswald, sans-serif;
+			}
+			.lrow { grid-template-columns: 1fr; }
+			.axis { margin-left: 0; }
+			dl.constants { grid-template-columns: 1fr; }
+			dl.constants dd { margin-bottom: 0.35rem; }
+			.mast { padding-inline: 0.9rem; }
+			main { padding-inline: 0.9rem; }
+			.brand { font-size: 1.45rem; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			* { scroll-behavior: auto; }
+		}
+	</style>
+</head>
+<body>
+	<header class="mast">
+		<div class="mast-row">
+			<p class="brand">True Rankings</p>
+			<p class="week">2026 · Week 10</p>
+			<p class="tagline">How good they actually are.</p>
+		</div>
+		<p class="position">The order you check before you argue — not a poll, not a committee, not the narrative.</p>
+	</header>
+
+	<main>
+		<section id="board" aria-labelledby="board-title">
+			<h2 id="board-title" class="sr-only">2026 week 10 board</h2>
+			<p class="week-line">Miami went from No. 1 at 8-0 to No. 6 at 8-1. Utah is No. 1 at 9-0, up from No. 2. Ohio State fell from No. 13 to No. 31. Michigan State climbed from No. 85 to No. 55.</p>
+			<div class="cases">
+				<article class="case">
+					<h3>This week's No. 1</h3>
+					<p>Utah is No. 1 on how they look at 1,820.8, up from No. 2. They are 9-0 in the Big 12, 8-0 against Power 4, with 2 quality wins and 1 win off the FBS board. Georgia is 20.4 points behind.</p>
+				</article>
+				<article class="case">
+					<h3>The closest argument</h3>
+					<p>Georgia is No. 2 at 1,800.3, 8-1, with 3 quality wins. UCLA is No. 3 at 1,780.8 and 9-0, 19.6 points back. The old blend had UCLA No. 2 and Georgia No. 3.</p>
+				</article>
+				<article class="case">
+					<h3>A soft 8-1</h3>
+					<p>Liberty is 8-1 and No. 58 on how they look. The old blend had them No. 42, 16 places higher. Schedule rank 137 of 138. Quality wins: 0. One win is off the FBS board. The column shows that. The rank stays 58.</p>
+				</article>
+			</div>
+
+			<div class="table-wrap" tabindex="0" role="region" aria-labelledby="board-caption">
+				<table>
+					<caption id="board-caption">2026 week 10. 138 teams. Ordered by how they look. Record quality is the old blend's place, and wins off this FBS board. Heat is weight 0. Early is on only under 3 games. None of these columns change the order. Gold mark: the top 12 on this order.</caption>
+					<thead>
+						<tr>
+							<th scope="col">Team</th>
+							<th scope="col">Record</th>
+							<th scope="col" title="The old blend's place, and wins off this FBS board. The column does not change the rank.">Record quality</th>
+							<th scope="col" title="Weight 0. No number is stored on this file.">Heat</th>
+							<th scope="col" title="On when a team has fewer than 3 games.">Early</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="band"><th scope="row"><span class="rk">1</span> <span class="team-cell"><span class="pip" style="background:#be0000"></span><span class="name">Utah</span><span class="conf">Big 12</span></span></th><td data-label="Record">9-0</td><td data-label="Record quality">Same place · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">2</span> <span class="team-cell"><span class="pip" style="background:#ba0c2f"></span><span class="name">Georgia</span><span class="conf">SEC</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">No. 3 · 1 lower · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">3</span> <span class="team-cell"><span class="pip" style="background:#2774ae"></span><span class="name">UCLA</span><span class="conf">Big Ten</span></span></th><td data-label="Record">9-0</td><td data-label="Record quality">No. 2 · 1 higher</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">4</span> <span class="team-cell"><span class="pip" style="background:#0c2340"></span><span class="name">Notre Dame</span><span class="conf">FBS Independents</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">No. 6 · 2 lower</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">5</span> <span class="team-cell"><span class="pip" style="background:#9e1b32"></span><span class="name">Alabama</span><span class="conf">SEC</span></span></th><td data-label="Record">7-2</td><td data-label="Record quality">No. 4 · 1 higher</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">6</span> <span class="team-cell"><span class="pip" style="background:#f47321"></span><span class="name">Miami</span><span class="conf">ACC</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">No. 5 · 1 higher · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">7</span> <span class="team-cell"><span class="pip" style="background:#bf5700"></span><span class="name">Texas</span><span class="conf">SEC</span></span></th><td data-label="Record">7-2</td><td data-label="Record quality">Same place</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">8</span> <span class="team-cell"><span class="pip" style="background:#ff8200"></span><span class="name">Tennessee</span><span class="conf">SEC</span></span></th><td data-label="Record">7-2</td><td data-label="Record quality">No. 10 · 2 lower · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">9</span> <span class="team-cell"><span class="pip" style="background:#990000"></span><span class="name">Indiana</span><span class="conf">Big Ten</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">Same place · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">10</span> <span class="team-cell"><span class="pip" style="background:#ceb888"></span><span class="name">Wake Forest</span><span class="conf">ACC</span></span></th><td data-label="Record">8-1</td><td data-label="Record quality">No. 8 · 2 higher · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">11</span> <span class="team-cell"><span class="pip" style="background:#000000"></span><span class="name">Iowa</span><span class="conf">Big Ten</span></span></th><td data-label="Record">7-2</td><td data-label="Record quality">No. 14 · 3 lower · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+						<tr class="band"><th scope="row"><span class="rk">12</span> <span class="team-cell"><span class="pip" style="background:#73000a"></span><span class="name">South Carolina</span><span class="conf">SEC</span></span></th><td data-label="Record">6-3</td><td data-label="Record quality">No. 20 · 8 lower · 1 off-board</td><td data-label="Heat"><span aria-hidden="true">—</span><span class="sr-only">Not scored. Weight 0.</span></td><td data-label="Early"><span aria-hidden="true">—</span><span class="sr-only">Off. 9 games.</span></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="note">Design order: how they look. The code on main still sorts by the old blend, 0.80 / 0.15 / 0.05, until that sort changes. This comp draws the approved order from the stored how-they-look column.</p>
+		</section>
+
+		<section id="why" aria-labelledby="why-title">
+			<h2 id="why-title">Why South Carolina is No. 12</h2>
+			<p class="formula">How they look, 1,662.2. This is the rank.</p>
+			<p>The gap to No. 11 Iowa is 17.3 points. The gap to No. 13 Houston is 4.8 points. Both gaps are how they look.</p>
+			<div class="pair">
+				<article class="side">
+					<h3>Iowa</h3>
+					<p class="elo-num">1,679.5</p>
+					<p>No. 11 · 7-2 · Big Ten · 17.3 points ahead</p>
+				</article>
+				<article class="side">
+					<h3>Houston</h3>
+					<p class="elo-num">1,657.5</p>
+					<p>No. 13 · 7-2 · Big 12 · 4.8 points behind</p>
+				</article>
+			</div>
+			<dl class="constants">
+				<dt>Record</dt>
+				<dd>6-3, SEC. Beside the rank. It does not set the rank.</dd>
+				<dt>Who they beat</dt>
+				<dd>2 quality wins, 1 quality loss, 1 bad loss, 4-3 against Power 4, 1-0 against Group of 5, 1 win off the FBS board.</dd>
+				<dt>Schedule</dt>
+				<dd>Schedule rank 37 of 138. Victory rank 24 of 138. Those ranks do not set the order.</dd>
+				<dt>Old blend</dt>
+				<dd>The old blend had them No. 20. The who-they-beat score is 1,308.0. That score is why the old order dropped them 8 places.</dd>
+				<dt>Heat</dt>
+				<dd>Weight 0. No number on this file.</dd>
+				<dt>Early-season</dt>
+				<dd>Off. 9 games. On 2026 week 1 the flag is on for every team. Indiana led that file at 1-0, how they look 1,827.4.</dd>
+			</dl>
+			<p class="note">The week file stores these counts. It does not store the game list, so this page does not invent scores.</p>
+		</section>
+
+		<section id="peers" aria-labelledby="peers-title">
+			<h2 id="peers-title">Same strength, different leagues</h2>
+			<div class="pair">
+				<article class="side">
+					<h3>Indiana · No. 9</h3>
+					<p class="elo-num">1,700.3</p>
+					<p>8-1 · Big Ten · schedule rank 71 of 138. 5-1 against Power 4. 0 quality wins. 1 win off the FBS board.</p>
+				</article>
+				<article class="side">
+					<h3>Wake Forest · No. 10</h3>
+					<p class="elo-num">1,698.3</p>
+					<p>8-1 · ACC · schedule rank 73 of 138. 6-1 against Power 4. 1 quality win. 1 win off the FBS board.</p>
+				</article>
+			</div>
+			<p>Indiana and Wake Forest are both 8-1. How they look: 1,700.3 and 1,698.3, 1.9 points apart. The order is Indiana, then Wake Forest.</p>
+			<p>BYU and LSU are 2.2 points apart. BYU is No. 21, 7-2, Big 12, schedule rank 18. LSU is No. 22, 6-3, SEC, schedule rank 24.</p>
+
+			<h3 class="formula">How the leagues look</h3>
+			<p class="axis" id="league-axis"><span>1,100</span><span>1,800</span></p>
+			<ul class="leagues" aria-describedby="league-axis">
+				<li class="lrow"><div class="lmeta"><strong>Big 12</strong><span>Power 4 · 16 teams · 12-7 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1740"></span></div></li>
+				<li class="lrow"><div class="lmeta"><strong>SEC</strong><span>Power 4 · 16 teams · 11-2 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1715.1"></span></div></li>
+				<li class="lrow"><div class="lmeta"><strong>Big Ten</strong><span>Power 4 · 18 teams · 10-10 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1693.2"></span></div></li>
+				<li class="lrow"><div class="lmeta"><strong>ACC</strong><span>Power 4 · 17 teams · 8-12 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1591.8"></span></div></li>
+				<li class="lrow"><div class="lmeta"><strong>Pac-12</strong><span>File says Power 4 · 8 teams · 0-12 against Power 4</span></div><div class="track"><span class="dot" style="--v: 1194.6"></span></div></li>
+			</ul>
+			<p class="note">Averages of how they look on the 2026 week 10 file. The scale runs from 1,100 to 1,800. The file's FBS Independents rollup is 0. Notre Dame's own league number is 1,552.8. This page does not treat 0 as a measured league strength.</p>
+
+			<div class="whatif">
+				<p class="banner">What-if</p>
+				<h3>What-if. This does not change the official board.</h3>
+				<div class="sliders">
+					<label>How they look <span>70</span>
+						<input type="range" min="0" max="100" value="70" aria-valuetext="70 percent" disabled>
+					</label>
+					<label>Résumé score <span>30</span>
+						<input type="range" min="0" max="100" value="30" aria-valuetext="30 percent" disabled>
+					</label>
+					<label>League strength <span>0</span>
+						<input type="range" min="0" max="100" value="0" aria-valuetext="0 percent" disabled>
+					</label>
+					<label>Heat <span>0</span>
+						<input type="range" min="0" max="100" value="0" aria-valuetext="0 percent. Heat has no stored number." disabled>
+					</label>
+				</div>
+				<p class="math">0.70 × how they look + 0.30 × résumé score + 0 × league strength + 0 × Heat.</p>
+				<p>Heat has no stored number. Its slider stays at 0.</p>
+				<p>At these weights Georgia is No. 5 on the what-if list. The official board still has Georgia No. 2.</p>
+				<div class="lists">
+					<div>
+						<h4>Official</h4>
+						<ol>
+							<li>Utah</li>
+							<li>Georgia</li>
+							<li>UCLA</li>
+							<li>Notre Dame</li>
+							<li>Alabama</li>
+						</ol>
+					</div>
+					<div>
+						<h4>Published blend</h4>
+						<ol>
+							<li>Utah</li>
+							<li>UCLA</li>
+							<li>Georgia</li>
+							<li>Alabama</li>
+							<li>Miami</li>
+						</ol>
+					</div>
+					<div>
+						<h4>This what-if</h4>
+						<ol>
+							<li>Utah</li>
+							<li>UCLA</li>
+							<li>Alabama</li>
+							<li>Miami</li>
+							<li>Georgia</li>
+						</ol>
+					</div>
+				</div>
+				<table class="peer-table">
+					<caption class="sr-only">Shared tables for 2026 week 10. Weights are how they look, résumé score, league strength, and Heat.</caption>
+					<thead>
+						<tr>
+							<th scope="col">Table</th>
+							<th scope="col">Weights</th>
+							<th scope="col">First three</th>
+							<th scope="col">What it is</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<th scope="row">Official</th>
+							<td data-label="Weights">100 / 0 / 0 / 0</td>
+							<td data-label="First three">Utah, Georgia, UCLA</td>
+							<td data-label="What it is">The board</td>
+						</tr>
+						<tr>
+							<th scope="row">Published blend</th>
+							<td data-label="Weights">80 / 15 / 5 / 0</td>
+							<td data-label="First three">Utah, UCLA, Georgia</td>
+							<td data-label="What it is">The code still sorts by this. It is a comparison.</td>
+						</tr>
+						<tr>
+							<th scope="row">This what-if</th>
+							<td data-label="Weights">70 / 30 / 0 / 0</td>
+							<td data-label="First three">Utah, UCLA, Alabama</td>
+							<td data-label="What it is">A comparison a link can carry.</td>
+						</tr>
+					</tbody>
+				</table>
+				<p class="note">Share the weights in the link. No account. /2026/week/10?whatif=70-30-0-0</p>
+			</div>
+		</section>
+
+		<section id="formula" aria-labelledby="formula-title">
+			<h2 id="formula-title">How the order works</h2>
+			<div class="blocks">
+				<article class="block approved">
+					<h3>Approved order</h3>
+					<p class="formula">Sorted by how they look, high to low.</p>
+					<p>Heat's weight is 0. Record, record quality, Heat, and early-season are columns.</p>
+				</article>
+				<article class="block">
+					<h3>Old blend, still what the code publishes</h3>
+					<p class="formula">0.80 × how they look + 0.15 × résumé score + 0.05 × league strength.</p>
+					<p>The parts are not scaled to 0–100 before weighting. On the 2026 week 10 file the old blend matches the stored score. 127 of 138 teams sit in a different place than how they look. The average gap is 5.99 places.</p>
+				</article>
+			</div>
+			<p>How they look is the Elo rating in the code.</p>
+			<dl class="constants">
+				<dt>Step size</dt>
+				<dd>50. A postseason game multiplies it by 0.65, so 32.5.</dd>
+				<dt>Margin</dt>
+				<dd>The natural log of the margin plus 1. There is no cap.</dd>
+				<dt>Home field</dt>
+				<dd>In the expectation only: 50 in the regular season, 20 in the postseason, 0 on a neutral field.</dd>
+				<dt>Surprise step</dt>
+				<dd>A win over a team rated more than 150 points higher multiplies the step by 1.18. A Group of 5 win over a Power 4 team multiplies it by 1.12. They stack. The product is not capped at 1.18.</dd>
+				<dt>Who plays whom</dt>
+				<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
+				<dt>Ceiling</dt>
+				<dd>No winner's rating goes above 1,850. The loser still drops the full step.</dd>
+				<dt>Opening number</dt>
+				<dd>A Power 4 team starts at 1,500, other FBS at 1,200, and FCS at 900, blended with 0.70 of last year's final score and 0.30 of the year before.</dd>
+				<dt>Fade and early</dt>
+				<dd>The opening blend fades by max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0. Early is on when a team has fewer than 3 games. On 2026 week 1 every team is early. Indiana led that file at 1-0, how they look 1,827.4. On week 10 the flag is off for all 138 teams.</dd>
+				<dt>Heat</dt>
+				<dd>Weight 0. Three definitions were tested. Every weight above 0 fit worse than how they look alone on 2019–2022. No Heat number is stored, so the column is empty.</dd>
+			</dl>
+			<p class="file-note">Figures from the stored 2026 week 1, week 9, and week 10 files. Algo label on the file: v5.3. Design comp only. The live app is unchanged.</p>
+		</section>
+	</main>
+	<script>
+		const shot = new URLSearchParams(location.search).get("shot");
+		if (shot) document.body.dataset.shot = shot;
+	</script>
+</body>
+</html>
