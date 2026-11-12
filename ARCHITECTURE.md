@@ -50,7 +50,13 @@ npx wrangler deploy --config wrangler.bundle.toml --dry-run --outdir .wrangler/t
 
 `wrangler.toml` sets `main = ".wrangler/tested/index.js"`, `no_bundle = true`, and `find_additional_modules = false`. The bundle is one ES module, so no `rules` entry is required. `npx wrangler deploy --env=""` uploads that file and the assets in `frontend/build`. `preview_urls = false` stays set on production and `env.dev`. `env.dev` inherits `main`, `no_bundle`, and `find_additional_modules`.
 
-The build runs a second `npx wrangler deploy --dry-run --outdir .wrangler/upload --containers-rollout=none --env=""`. The build fails when the worker file in that directory has a different sha256. The container image is still built from `./Dockerfile` by `npx wrangler deploy`, which is the container upload. The build step does not push that image.
+After the tests, the build packages the Worker with the deploy config:
+
+```bash
+npx wrangler deploy --env="" --dry-run --outdir .wrangler/deploy-check --containers-rollout=none
+```
+
+That command reads `wrangler.toml` (`main = ".wrangler/tested/index.js"`, `no_bundle = true`). The build fails unless the sha256 of every module in `.wrangler/deploy-check` matches `.wrangler/tested` and the directory has no extra module. `tests/fixtures/deploy-packaging/planted-mismatch` must trip that check. `--containers-rollout=none` keeps this packaging check off the Dockerfile. The container image is still built from `./Dockerfile` by `npx wrangler deploy`, which is the container upload. The build step does not push that image.
 
 ## Already-counted headers
 
