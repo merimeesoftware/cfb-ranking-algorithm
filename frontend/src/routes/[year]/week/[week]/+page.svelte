@@ -1,17 +1,11 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import RankingsTable from '$lib/components/RankingsTable.svelte';
 	import ConferenceTable from '$lib/components/ConferenceTable.svelte';
 	import BoardActions from '$lib/components/BoardActions.svelte';
 	import SeoHead from '$lib/components/SeoHead.svelte';
-	import {
-		BRAND_NAME,
-		RATING_NAME,
-		TAGLINE,
-		pageTitle,
-		weekPath,
-		publicUrl,
-		citationText,
-	} from '$lib/brand';
+	import { BRAND_NAME, RATING_NAME, TAGLINE, pageTitle, publicUrl, citationText } from '$lib/brand';
+	import { weekBoardModel } from '$lib/whatifPage';
 
 	export let data: {
 		year: number;
@@ -23,12 +17,24 @@
 	};
 
 	let tab: 'teams' | 'conferences' = 'teams';
+	let search = '';
+
+	onMount(() => {
+		search = window.location.search;
+	});
 
 	$: title = pageTitle([`${data.year} Week ${data.week}`, `${RATING_NAME} rankings`]);
 	$: description = data.story?.headline
 		? `${data.story.headline} — ${TAGLINE}`
 		: `${BRAND_NAME} ${RATING_NAME} for ${data.year} Week ${data.week}. ${TAGLINE}`;
-	$: path = weekPath(data.year, data.week);
+	// Share, citation, and JSON-LD stay on the bare week path. The second list is not rendered.
+	$: boardModel = weekBoardModel({
+		year: data.year,
+		week: data.week,
+		teams: data.teams,
+		search,
+	});
+	$: path = boardModel.sharePath;
 	$: jsonLd = {
 		'@context': 'https://schema.org',
 		'@type': 'ItemList',
