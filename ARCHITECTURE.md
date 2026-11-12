@@ -40,7 +40,7 @@ The Sunday job commits boards on `bot/precompute-<year>-w<week>` and opens a pul
 
 Workers Builds keeps the dashboard commands `npm run build` and `npx wrangler deploy --env=""`. There is no Wrangler `[build]` block.
 
-`npm run build` writes the frontend to `frontend/build`, then `scripts/build-tested-worker.mjs` produces the Worker with:
+`npm run build` writes the frontend to `frontend/build` and runs `npm ci --prefix worker` so the Worker install does not depend on `postinstall`. `scripts/build-tested-worker.mjs` installs those packages again, then produces the Worker with:
 
 ```bash
 npx wrangler deploy --config wrangler.bundle.toml --dry-run --outdir .wrangler/tested --containers-rollout=none --env=""

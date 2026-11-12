@@ -115,6 +115,8 @@ if (!existsSync(join(repoRoot, 'frontend/build'))) {
 rmSync(testedDir, { recursive: true, force: true });
 rmSync(uploadDir, { recursive: true, force: true });
 
+run(['npm', 'ci', '--prefix', 'worker'], repoRoot);
+
 run([
 	'npx', 'wrangler', 'deploy',
 	'--config', 'wrangler.bundle.toml',

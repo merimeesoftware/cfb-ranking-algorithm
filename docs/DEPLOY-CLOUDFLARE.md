@@ -82,7 +82,7 @@ For `cfb-rankings-dev` (only if you use the dev Worker): same steps on that Work
 | Deploy command | `npx wrangler deploy --env=""` |
 | API token | Custom token with **Containers** edit (see below) |
 
-Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps. The `build` script also runs `npm ci --prefix frontend` before `vite build` so the build still works if `postinstall` is skipped (e.g. cached install). The same script then builds `.wrangler/tested/index.js`, tests that file, and prints its sha256. `npx wrangler deploy --env=""` uploads that file with `no_bundle`. Leave both dashboard commands as they are. See ARCHITECTURE.md.
+Root `npm ci` runs `postinstall`, which installs `frontend/` and `worker/` deps. The `build` script also runs `npm ci --prefix frontend` before `vite build`, and `npm ci --prefix worker` before the Worker dry-run, so the build still works if `postinstall` is skipped (e.g. cached install). The same script then builds `.wrangler/tested/index.js`, tests that file, and prints its sha256. `npx wrangler deploy --env=""` uploads that file with `no_bundle`. Leave both dashboard commands as they are. See ARCHITECTURE.md.
 
 Use **Node.js 22+** (`.nvmrc` in repo root). Wrangler 4.119+ requires Node 22; Node 20 will fail at deploy with `Wrangler requires at least Node.js v22.0.0`.
 
