@@ -78,8 +78,10 @@ def test_compute_priors_only_fetches_two_prior_years():
         cache = MagicMock()
         cache.get.return_value = None
         mock_cache.return_value = cache
-
-        compute_priors(mock_dp, 2024, DEFAULT_CONFIG.copy())
+        # Published 2022/2023 seeds would skip the fetch. This proves the
+        # year set when those files are absent.
+        with patch('static_rankings.read_prior_teams', return_value=None):
+            compute_priors(mock_dp, 2024, DEFAULT_CONFIG.copy())
 
         years = [c.kwargs.get('year') or c.args[0] for c in mock_dp.get_games_for_season.call_args_list]
         # Only Y-1 and Y-2 (2023, 2022) — not Y-3 (2021)
