@@ -88,6 +88,14 @@ name = "AGENT_RATE_LIMITER"
 namespace_id = "9302"
 simple = { limit = 10, period = 60 }
 
+# Vote marks, on top of the 60/60s API cap. 10 per 60 seconds per
+# CF-Connecting-IP. POST /api/votes is not mounted, so this binding is idle
+# until that route is opened.
+[[ratelimits]]
+name = "VOTE_RATE_LIMITER"
+namespace_id = "9303"
+simple = { limit = 10, period = 60 }
+
 [[containers]]
 class_name = "CfbApiContainer"
 image = "./Dockerfile"
@@ -97,6 +105,14 @@ max_instances = 3
 name = "CFB_API"
 class_name = "CfbApiContainer"
 
+# Fan tallies. One SQLite object per year-week. Not CfbApiContainer: no
+# container, no internet, no CFBD client. Release Ops lands the v2 migration
+# below. A new migration tag fails the non-production Workers Builds version
+# upload until that migration is applied.
+[[durable_objects.bindings]]
+name = "FAN_VOTES"
+class_name = "FanVoteTally"
+
 # Daily AI/CFBD counters live on the existing CfbApiContainer class
 # (instance name spend-budget). Do not add a migration for them: non-production
 # Workers Builds upload a version, and a new migration tag fails that upload.
@@ -104,6 +120,11 @@ class_name = "CfbApiContainer"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
+
+# Release Ops lands this tag. Do not upload it from a pull-request version.
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["FanVoteTally"]
 
 # --- Dev environment ---
 # Custom domain: pending Michael's choice. Do not hard-code a public host.
@@ -145,6 +166,11 @@ name = "AGENT_RATE_LIMITER"
 namespace_id = "9312"
 simple = { limit = 10, period = 60 }
 
+[[env.dev.ratelimits]]
+name = "VOTE_RATE_LIMITER"
+namespace_id = "9313"
+simple = { limit = 10, period = 60 }
+
 [[env.dev.containers]]
 class_name = "CfbApiContainer"
 image = "./Dockerfile"
@@ -154,6 +180,15 @@ max_instances = 2
 name = "CFB_API"
 class_name = "CfbApiContainer"
 
+[[env.dev.durable_objects.bindings]]
+name = "FAN_VOTES"
+class_name = "FanVoteTally"
+
 [[env.dev.migrations]]
 tag = "v1"
 new_sqlite_classes = ["CfbApiContainer"]
+
+# Same v2 class as production. Release Ops lands the migration.
+[[env.dev.migrations]]
+tag = "v2"
+new_sqlite_classes = ["FanVoteTally"]

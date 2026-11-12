@@ -33,14 +33,19 @@ import {
 } from './caps.ts';
 import { completeFromRequest, WORKERS_AI_HOST, XAI_HOST, type WorkersAiBinding } from './providers.ts';
 import { cacheClearAuthorized, consumeSpend, publicKillSetBody, spendKillAuthorized } from './spend-object.ts';
+import { handleVoteGet, type FanVoteTally } from './votes.ts';
+
+export { FanVoteTally } from './votes.ts';
 
 export { ContainerProxy };
 
 export interface Env extends CapEnv {
 	ASSETS: Fetcher;
 	CFB_API: DurableObjectNamespace<CfbApiContainer>;
+	FAN_VOTES: DurableObjectNamespace<FanVoteTally>;
 	API_RATE_LIMITER: RateLimiter;
 	AGENT_RATE_LIMITER: RateLimiter;
+	VOTE_RATE_LIMITER: RateLimiter;
 	CFBD_API_KEY?: string;
 	XAI_API_KEY?: string;
 	CF_ACCOUNT_ID?: string;
@@ -275,6 +280,16 @@ export default {
 			agent: env.AGENT_RATE_LIMITER,
 		}, matchPath);
 		if (limit.limited) return busyResponse(limit.code);
+
+		if (matchPath === '/votes') {
+			if (request.method === 'GET') {
+				const manifest = await loadManifest(env, routed.origin);
+				return handleVoteGet(routed.searchParams, manifest, env.FAN_VOTES);
+			}
+			// POST stays dark until TURNSTILE_SECRET_KEY is confirmed by name.
+			// This branch does not read that secret and does not open the tally.
+			return jsonResponse({ ok: false }, 404);
+		}
 
 		if (isSpendKillRoute(request.method, matchPath)) {
 			const auth = await spendKillAuthorized(env, request);
