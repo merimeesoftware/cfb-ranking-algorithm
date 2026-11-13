@@ -6,6 +6,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Conference, Team } from '$lib/types';
 import { orderTeamsByElo } from '$lib/order';
+import { softSlateFromRow } from '$lib/softSlate';
 
 const STATIC_ROOT = join(process.cwd(), 'static', 'rankings');
 
@@ -21,6 +22,12 @@ function parseWinPct(value: unknown): number {
 	return 0;
 }
 
+/** Board JSON already stores this. Null before 3 decisions. Not a sort key. */
+function readMomentum(value: unknown): number | null {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	return null;
+}
+
 function mapTeam(t: Record<string, unknown>): Team {
 	const records = (t.records || {}) as Record<string, number>;
 	return {
@@ -30,6 +37,7 @@ function mapTeam(t: Record<string, unknown>): Team {
 		final_ranking_score: (t.final_ranking_score || t.score || 0) as number,
 		team_quality_score: (t.team_quality_score || 0) as number,
 		ordering_score: (t.ordering_score ?? t.team_quality_score ?? 0) as number,
+		momentum: readMomentum(t.momentum),
 		record_score: (t.record_score || 0) as number,
 		conference_quality_score: (t.conference_quality_score || 0) as number,
 		sos: (t.sos ?? null) as number | null,
@@ -51,6 +59,7 @@ function mapTeam(t: Record<string, unknown>): Team {
 			group_five_losses: records.group_five_losses ?? 0,
 		},
 		quality_wins: (t.quality_wins ?? 0) as number,
+		...softSlateFromRow(t),
 		quality_losses: (t.quality_losses ?? 0) as number,
 		bad_losses: (t.bad_losses ?? 0) as number,
 		bad_wins: (t.bad_wins ?? 0) as number,
