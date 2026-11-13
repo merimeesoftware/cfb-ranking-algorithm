@@ -1,762 +1,159 @@
 <script lang="ts">
-	import { BRAND_NAME, EARLY_SEASON_NOTE, NAV } from '$lib/brand';
+	import BoardMast from '$lib/components/BoardMast.svelte';
+	import { BRAND_NAME, EARLY_SEASON_NOTE, NAV, RATING_NAME, pageTitle } from '$lib/brand';
 
-	let expandedSection: string | null = null;
+	export let data: {
+		year: number;
+		week: number;
+		official: string[];
+		oldBlend: string[];
+		whatIf: string[];
+		parts: { name: string; look: number; resume: number; league: number }[];
+	};
 
-	function toggleSection(section: string) {
-		expandedSection = expandedSection === section ? null : section;
+	// svelte-ignore unused-export-let
+	export let params: Record<string, string> = {};
+
+	let look = 70;
+	let resume = 30;
+	let league = 0;
+
+	function rebalance(changed: 'look' | 'resume' | 'league', value: number) {
+		const current = { look, resume, league };
+		const others = (['look', 'resume', 'league'] as const).filter((key) => key !== changed);
+		const rest = 100 - value;
+		const sum = current[others[0]] + current[others[1]];
+		if (sum === 0) {
+			const first = Math.floor(rest / 2);
+			current[others[0]] = first;
+			current[others[1]] = rest - first;
+		} else {
+			const share = Math.round((rest * current[others[0]]) / sum);
+			current[others[0]] = share;
+			current[others[1]] = rest - share;
+		}
+		current[changed] = value;
+		look = current.look;
+		resume = current.resume;
+		league = current.league;
 	}
+
+	function reset() {
+		look = 100;
+		resume = 0;
+		league = 0;
+	}
+
+	$: whatIfNames = data.parts
+		.map((row, index) => ({
+			name: row.name,
+			index,
+			score: (look / 100) * row.look + (resume / 100) * row.resume + (league / 100) * row.league,
+		}))
+		.sort((a, b) => b.score - a.score || a.index - b.index)
+		.slice(0, 5);
+	$: georgiaRank = (() => {
+		const ordered = data.parts
+			.map((row, index) => ({
+				name: row.name,
+				index,
+				score: (look / 100) * row.look + (resume / 100) * row.resume + (league / 100) * row.league,
+			}))
+			.sort((a, b) => b.score - a.score || a.index - b.index);
+		const place = ordered.findIndex((row) => row.name === 'Georgia');
+		return place === -1 ? null : place + 1;
+	})();
+	$: math = `${(look / 100).toFixed(2)} × how they look + ${(resume / 100).toFixed(2)} × resume + ${(league / 100).toFixed(2)} × league strength.`;
 </script>
 
 <svelte:head>
-	<title>{NAV.formula} | {BRAND_NAME}</title>
+	<title>{pageTitle([NAV.formula])}</title>
 </svelte:head>
 
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-	<!-- Hero Section -->
-	<div class="text-center mb-8">
-		<h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-			{NAV.formula}
-		</h1>
-		<p class="mt-3 text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-			The place is Elo: how they look after the games so far. The record sits beside that order.
-		</p>
-		<p class="mt-2 text-sm text-stone-600 dark:text-stone-400 max-w-2xl mx-auto">
-			Nerdy version below — every weight, bonus, and floor.
-		</p>
-	</div>
+<BoardMast year={data.year} week={data.week} />
 
-	<!-- Formula Card -->
-	<div class="card p-6 mb-6">
-		<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-			<svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-			</svg>
-			The mix
-		</h2>
-		<div class="bg-stone-100 dark:bg-stone-800/60 rounded-lg p-4 font-mono text-center text-base sm:text-lg mb-4">
-			<span class="text-primary-600 dark:text-primary-400 font-bold">Place</span> =
-			<span class="text-primary-600 dark:text-primary-400">Elo</span>
+<main>
+	<section id="formula" aria-labelledby="formula-title">
+		<h1 id="formula-title">{NAV.formula}</h1>
+		<div class="pair">
+			<article class="side">
+				<h3>The order</h3>
+				<p class="elo-num" style="font-size:1.35rem">{RATING_NAME}</p>
+				<p>How good they look right now. This sets the order. Record, record quality, and early sit beside it.</p>
+			</article>
+			<article class="side">
+				<h3>Old blend</h3>
+				<p>For comparison, the old blend: 0.80 × how they look + 0.15 × resume + 0.05 × league strength. The board no longer sorts by it.</p>
+				<p>The parts are not scaled to 0–100 before weighting. On {data.year} week {data.week}, 121 of 138 teams sit in a different place. The average gap is 5.30 places.</p>
+			</article>
 		</div>
-		<p class="text-sm text-gray-600 dark:text-gray-400 text-center">
-			{EARLY_SEASON_NOTE}
-		</p>
-	</div>
-
-	<!-- Components Grid -->
-	<div class="grid md:grid-cols-3 gap-4 mb-8 items-stretch">
-		<!-- How they look -->
-		<div class="card p-5 flex flex-col h-full">
-			<div class="flex items-start gap-3 mb-3">
-				<div class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-					</svg>
+		<p>How they look is the Elo rating in the code.</p>
+		<dl class="constants">
+			<dt>Step size</dt>
+			<dd>50. A postseason game multiplies it by 0.65, so 32.5.</dd>
+			<dt>Margin</dt>
+			<dd>The natural log of the margin plus 1. There is no cap.</dd>
+			<dt>Home field</dt>
+			<dd>50 in the regular season, 20 in the postseason, 0 on a neutral field. It changes the expectation only.</dd>
+			<dt>Upset</dt>
+			<dd>A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus.</dd>
+			<dt>Who plays whom</dt>
+			<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
+			<dt>Ceiling</dt>
+			<dd>No winner’s rating goes above 1,850. The loser still drops the full step.</dd>
+			<dt>Opening</dt>
+			<dd>{EARLY_SEASON_NOTE}</dd>
+			<dt>Fade</dt>
+			<dd>max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0.</dd>
+			<dt>Heat</dt>
+			<dd>Heat is not in the order. It hasn’t passed its test yet.</dd>
+		</dl>
+		<div class="whatif">
+			<p class="example">Example only</p>
+			<h3>What-if. This does not change the official board.</h3>
+			<div class="sliders">
+				<div class="slider-row">
+					<label for="sl-look">How they look</label>
+					<output id="out-look" for="sl-look">{look}</output>
+					<input id="sl-look" type="range" min="0" max="100" value={look} aria-valuetext="{look} percent" on:input={(event) => rebalance('look', Number(event.currentTarget.value))}>
 				</div>
-				<div>
-					<h3 class="font-semibold text-gray-900 dark:text-white">How they look</h3>
-					<p class="text-xs text-gray-500 dark:text-gray-400">(the order)</p>
+				<div class="slider-row">
+					<label for="sl-resume">Resume</label>
+					<output id="out-resume" for="sl-resume">{resume}</output>
+					<input id="sl-resume" type="range" min="0" max="100" value={resume} aria-valuetext="{resume} percent" on:input={(event) => rebalance('resume', Number(event.currentTarget.value))}>
+				</div>
+				<div class="slider-row">
+					<label for="sl-league">League strength</label>
+					<output id="out-league" for="sl-league">{league}</output>
+					<input id="sl-league" type="range" min="0" max="100" value={league} aria-valuetext="{league} percent" on:input={(event) => rebalance('league', Number(event.currentTarget.value))}>
 				</div>
 			</div>
-			<p class="text-sm text-gray-600 dark:text-gray-400">
-				Pure team strength — how good they look on the field, week to week.
-			</p>
-			<button
-				on:click={() => toggleSection('teamQuality')}
-				class="mt-auto pt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-			>
-				{expandedSection === 'teamQuality' ? 'Show less' : 'Open the math'}
-				<svg class="w-4 h-4 transition-transform {expandedSection === 'teamQuality' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
+			<p class="math" id="math">{math}</p>
+			<p>Heat is not in the order. It hasn’t passed its test yet.</p>
+			<div class="actions">
+				<button type="button" class="btn quiet" on:click={reset}>Reset to official</button>
+			</div>
+			<div class="lists">
+				<div>
+					<h4>Official</h4>
+					<ol>{#each data.official as name}<li>{name}</li>{/each}</ol>
+				</div>
+				<div>
+					<h4>Old blend</h4>
+					<ol>{#each data.oldBlend as name}<li>{name}</li>{/each}</ol>
+				</div>
+				<div>
+					<h4>This what-if</h4>
+					<ol>{#each whatIfNames as row}<li>{row.name}</li>{/each}</ol>
+				</div>
+			</div>
+			{#if georgiaRank}
+				<p>At these weights Georgia is No. {georgiaRank} on the what-if list. The official board still has Georgia No. 1.</p>
+			{/if}
+			<p class="note">Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board.</p>
 		</div>
+		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.5.</p>
+	</section>
+</main>
 
-		<!-- Who they beat -->
-		<div class="card p-5 flex flex-col h-full">
-			<div class="flex items-start gap-3 mb-3">
-				<div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-					</svg>
-				</div>
-				<div>
-					<h3 class="font-semibold text-gray-900 dark:text-white">Who they beat</h3>
-					<p class="text-xs text-gray-500 dark:text-gray-400">(not in the order)</p>
-				</div>
-			</div>
-			<p class="text-sm text-gray-600 dark:text-gray-400">
-				The ledger: wins, quality of opponents, schedule toughness, and milestones.
-			</p>
-			<button
-				on:click={() => toggleSection('resume')}
-				class="mt-auto pt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-			>
-				{expandedSection === 'resume' ? 'Show less' : 'Open the math'}
-				<svg class="w-4 h-4 transition-transform {expandedSection === 'resume' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-		</div>
-
-		<!-- League strength -->
-		<div class="card p-5 flex flex-col h-full">
-			<div class="flex items-start gap-3 mb-3">
-				<div class="w-10 h-10 rounded-full bg-stone-200 dark:bg-stone-700/60 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-stone-700 dark:text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-					</svg>
-				</div>
-				<div>
-					<h3 class="font-semibold text-gray-900 dark:text-white">League strength</h3>
-					<p class="text-xs text-gray-500 dark:text-gray-400">(not in the order)</p>
-				</div>
-			</div>
-			<p class="text-sm text-gray-600 dark:text-gray-400">
-				Credit for the conference you play in — a tougher league means more.
-			</p>
-			<button
-				on:click={() => toggleSection('confQuality')}
-				class="mt-auto pt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-			>
-				{expandedSection === 'confQuality' ? 'Show less' : 'Open the math'}
-				<svg class="w-4 h-4 transition-transform {expandedSection === 'confQuality' ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-		</div>
-	</div>
-
-	<!-- Expanded Sections -->
-	{#if expandedSection === 'teamQuality'}
-		<div class="card p-6 mb-8">
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-				<svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-				</svg>
-				How they look — Deep Dive
-			</h3>
-
-			<div class="space-y-6">
-				<!-- Overview -->
-				<div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-					<p class="text-sm text-gray-700 dark:text-gray-300">
-						<strong>What it measures:</strong> Pure team strength based on game results. Uses an Elo-based system
-						with tier-weighted matchups, upset bonuses, and iterative solving for maximum accuracy.
-					</p>
-				</div>
-
-				<!-- Initial Ratings -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Starting Elo Ratings by Tier</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Each conference tier has its own starting rating:
-					</p>
-					<div class="grid grid-cols-3 gap-3 text-center">
-						<div class="bg-primary-50 dark:bg-primary-900/30 rounded-lg p-3">
-							<div class="text-2xl font-bold text-primary-600 dark:text-primary-400">1500</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Power 4</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">SEC, Big Ten, Big 12, ACC</div>
-						</div>
-						<div class="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3">
-							<div class="text-2xl font-bold text-amber-700 dark:text-amber-400">1200</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Group of 5</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">AAC, MWC, C-USA, etc.</div>
-						</div>
-						<div class="bg-stone-100 dark:bg-stone-700/50 rounded-lg p-3">
-							<div class="text-2xl font-bold text-stone-600 dark:text-stone-300">900</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">FCS</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Non-FBS teams</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Elo Update Formula -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">How Elo Updates Work</h4>
-					<div class="bg-stone-100 dark:bg-stone-800/60 rounded-lg p-4 font-mono text-sm mb-3">
-						Δ = K × Matchup_Weight × MoV_Factor × Upset_Bonus × (Actual - Expected)
-					</div>
-					<div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-						<div class="flex gap-2">
-							<span class="font-medium text-gray-900 dark:text-white w-36">K-factor:</span>
-							<span>Base volatility = 40. Reduced in postseason (0.6-0.7) to prevent "Bowl Bias".</span>
-						</div>
-						<div class="flex gap-2">
-							<span class="font-medium text-gray-900 dark:text-white w-36">Expected Win:</span>
-							<span>P(win) = 1 / (1 + 10^((Opp_Elo - Team_Elo) / 400))</span>
-						</div>
-						<div class="flex gap-2">
-							<span class="font-medium text-gray-900 dark:text-white w-36">MoV Factor:</span>
-							<span>log(margin + 1) — Logarithmic to prevent blowout exploitation</span>
-						</div>
-						<div class="flex gap-2">
-							<span class="font-medium text-gray-900 dark:text-white w-36">Zero-Sum:</span>
-							<span>Total Elo gained = Total Elo lost across all teams</span>
-						</div>
-					</div>
-				</div>
-
-				<!-- Upset Bonuses -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Upset Bonuses & Chaos Tax</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Upsets receive bonus multipliers, but are subject to a global cap (1.20×) and a "Chaos Tax" in high-variance conferences:
-					</p>
-					<div class="grid grid-cols-3 gap-3">
-						<div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center">
-							<div class="text-xl font-bold text-amber-700 dark:text-amber-400">1.25×</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Major Upset</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">150+ Elo gap (Capped at 1.20×)</div>
-						</div>
-						<div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3 text-center">
-							<div class="text-xl font-bold text-primary-600 dark:text-primary-400">1.20×</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Cross-Tier</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">G5 beats P4 team</div>
-						</div>
-						<div class="bg-stone-100 dark:bg-stone-700/40 rounded-lg p-3 text-center">
-							<div class="text-xl font-bold text-stone-700 dark:text-stone-300">-10%</div>
-							<div class="text-xs text-gray-600 dark:text-gray-400">Chaos Tax</div>
-							<div class="text-xs text-gray-500 dark:text-gray-500 mt-1">0.9x dampening if StdDev > 160</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Matchup Weights Table -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Tier Matchup Weights</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						Games are weighted by tier to prevent artificial rating inflation:
-					</p>
-					<div class="overflow-x-auto">
-						<table class="w-full text-sm">
-							<thead>
-								<tr class="border-b border-gray-200 dark:border-gray-600">
-									<th class="text-left py-2 text-gray-900 dark:text-white">Matchup</th>
-									<th class="text-center py-2 text-gray-900 dark:text-white">Weight</th>
-									<th class="text-left py-2 text-gray-900 dark:text-white">Rationale</th>
-								</tr>
-							</thead>
-							<tbody class="text-gray-600 dark:text-gray-400">
-								<tr class="border-b border-gray-100 dark:border-gray-700">
-									<td class="py-2">P4 vs P4</td>
-									<td class="text-center font-mono font-bold text-primary-600 dark:text-primary-400">1.0</td>
-									<td>Full weight; most competitive matchups</td>
-								</tr>
-								<tr class="border-b border-gray-100 dark:border-gray-700">
-									<td class="py-2">P4 vs G5</td>
-									<td class="text-center font-mono">0.8</td>
-									<td>Reduced; expected talent gap</td>
-								</tr>
-								<tr class="border-b border-gray-100 dark:border-gray-700">
-									<td class="py-2">G5 vs G5</td>
-									<td class="text-center font-mono">0.5</td>
-									<td>Dampened to prevent isolated inflation</td>
-								</tr>
-								<tr class="border-b border-gray-100 dark:border-gray-700">
-									<td class="py-2">FBS vs FCS</td>
-									<td class="text-center font-mono">0.2</td>
-									<td>Minimal exchange; different divisions</td>
-								</tr>
-								<tr>
-									<td class="py-2">FCS vs FCS</td>
-									<td class="text-center font-mono text-gray-400">0.1</td>
-									<td>Nearly isolated from FBS pool</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-
-				<!-- Iterative Solver -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">2-Pass Iterative Solver</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-						The algorithm simulates the entire season <strong>2 times</strong> to solve the chicken-and-egg problem:
-					</p>
-					<div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-						<div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-							<div class="flex items-center gap-2">
-								<span class="w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-								<span>Initial pass with tier-based starting Elos</span>
-							</div>
-							<div class="flex items-center gap-2">
-								<span class="w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-								<span>Re-evaluate using Pass 1 final ratings for convergence</span>
-							</div>
-						</div>
-						<p class="text-xs text-gray-500 dark:text-gray-500 mt-3">
-							This ensures Week 1 games are fairly evaluated using end-of-season opponent strength.
-						</p>
-					</div>
-				</div>
-
-				<!-- Example Calculation -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Example: Ohio State vs Penn State</h4>
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4 text-sm">
-						<div class="space-y-2 text-gray-600 dark:text-gray-400">
-							<div><strong>Pre-game:</strong> Ohio State (1650 Elo) vs Penn State (1580 Elo)</div>
-							<div><strong>Result:</strong> Ohio State wins 28-17 (11-point margin)</div>
-							<div class="mt-2 font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded">
-								Expected = 1 / (1 + 10^((1580-1650)/400)) = 0.60 (60% win prob)<br/>
-								MoV = log(11 + 1) = 1.08<br/>
-								Δ = 40 × 1.0 × 1.08 × (1.0 - 0.60) = +17.3 Elo
-							</div>
-							<div class="mt-2"><strong>Post-game:</strong> Ohio State → 1667 Elo, Penn State → 1563 Elo</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if expandedSection === 'resume'}
-		<div class="card p-6 mb-8">
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-				<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-				</svg>
-				Who they beat — Deep Dive
-			</h3>
-
-			<div class="space-y-6">
-				<!-- Overview -->
-				<div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
-					<p class="text-sm text-gray-700 dark:text-gray-300">
-						<strong>What it measures:</strong> On-field accomplishments — wins, quality of opponents beaten,
-						strength of schedule, head-to-head results, and momentum. This component answers "What have you actually done?"
-					</p>
-				</div>
-
-				<!-- Master Formula -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Resume Score Formula</h4>
-					<div class="bg-stone-100 dark:bg-stone-800/60 rounded-lg p-4 font-mono text-xs mb-3 overflow-x-auto">
-						Resume = (Base + WeightedWinPct + SoV + SoS - BadLoss + QW) × MilestoneMultiplier
-					</div>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						The place is Elo.
-					</p>
-				</div>
-
-				<!-- Component Grid -->
-				<div class="grid md:grid-cols-2 gap-4">
-					<!-- Weighted Win % -->
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4">
-						<h5 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-							<span class="w-5 h-5 bg-amber-600 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
-							Weighted Win Percentage
-						</h5>
-						<div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-							Road wins count 10% more than home wins:
-						</div>
-						<div class="font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded">
-							WinPct = (HomeW×1.0 + RoadW×1.1) / Games
-						</div>
-					</div>
-
-					<!-- Milestones -->
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4">
-						<h5 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-							<span class="w-5 h-5 bg-amber-600 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
-							Milestone Multiplier & Anchor
-						</h5>
-						<div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-							Multiplicative boost + additive anchor for elite achievements:
-						</div>
-						<div class="font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded space-y-1">
-							<div>Undefeated: +5% (1.05x)</div>
-							<div>Conf Champ: +7% (1.07x) + 140 pts</div>
-							<div>Champ App: +3% (1.03x) + 70 pts</div>
-						</div>
-					</div>
-
-					<!-- SoS -->
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4">
-						<h5 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-							<span class="w-5 h-5 bg-amber-600 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
-							Strength of Schedule (SoS)
-						</h5>
-						<div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-							Logarithmic reward for tough schedules (tier-specific):
-						</div>
-						<div class="font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded">
-							P4: base 1400 | G5: base 1300
-						</div>
-					</div>
-
-					<!-- Bad Loss Penalty -->
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4">
-						<h5 class="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-							<span class="w-5 h-5 bg-stone-600 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
-							Bad Loss Penalty
-						</h5>
-						<div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-							Penalizes losses to Bottom 25% opponents (Relative Threshold).
-						</div>
-						<div class="font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded">
-							Penalty = (Threshold - OppElo) × 0.5<br/>
-							<span class="text-gray-500 italic">Relative threshold ensures fairness</span>
-						</div>
-					</div>
-				</div>
-
-				<!-- Bonus Components -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-3">Bonus Components</h4>
-					<div class="space-y-3">
-						<!-- Quality Win -->
-						<div class="flex items-start gap-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
-							<span class="w-8 h-8 bg-primary-600 text-white rounded-lg flex items-center justify-center text-sm font-bold shrink-0">QW</span>
-							<div>
-								<h5 class="font-medium text-gray-900 dark:text-white">Quality Win Bonus</h5>
-								<p class="text-sm text-gray-600 dark:text-gray-400">
-									Bonus for beating Top 20% caliber teams (Relative Threshold).
-								</p>
-								<div class="font-mono text-xs bg-stone-100 dark:bg-stone-700 p-2 rounded mt-2">
-									QW = (OppElo - Threshold) × 0.50
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Example Calculation -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Example: 10-2 Power 4 Team</h4>
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4 text-sm">
-						<div class="space-y-2 text-gray-600 dark:text-gray-400">
-							<div><strong>Record:</strong> 10-2 (6 home wins, 4 road wins)</div>
-							<div><strong>Avg Win Elo:</strong> 1450 | <strong>Avg Opp Elo:</strong> 1520</div>
-							<div><strong>Context:</strong> Beat 2 teams with equal record, lost to #3 team (1680 Elo)</div>
-							<div class="mt-3 font-mono text-xs bg-stone-100 dark:bg-stone-700 p-3 rounded space-y-1">
-								<div>Base: 1000</div>
-								<div>WinPct: (6×1.0 + 4×1.1) / 12 = 0.87 → +867</div>
-								<div>SoV: (1450 - 1200) × 0.25 = +62</div>
-								<div>SoS: (1520 - 1400) × 2.0 = +240</div>
-								<div>Win Count Bonus: (10 - 9) × 20 = +20</div>
-								<div>BadLoss: 0 (Loss was to stronger team)</div>
-								<div>QL: (1680 - 1600) × 0.165 = +13</div>
-								<div class="border-t border-gray-300 dark:border-gray-600 pt-1 mt-1 font-bold">
-									Total: 2202 → Normalized to ~72/100
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if expandedSection === 'confQuality'}
-		<div class="card p-6 mb-8">
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-				<svg class="w-5 h-5 text-stone-600 dark:text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-				</svg>
-				League strength — Deep Dive
-			</h3>
-
-			<div class="space-y-6">
-				<!-- Overview -->
-				<div class="bg-stone-100 dark:bg-stone-800/40 rounded-lg p-4">
-					<p class="text-sm text-gray-700 dark:text-gray-300">
-						<strong>What it measures:</strong> The overall strength of a team's conference, providing contextual credit
-						for playing in tougher leagues. A 9-3 record in the SEC means more than 9-3 in a weak conference.
-					</p>
-				</div>
-
-				<!-- Hybrid Formula -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Simplified Formula</h4>
-					<div class="bg-stone-100 dark:bg-stone-800/60 rounded-lg p-4 font-mono text-sm mb-3">
-						CQ = Mean_Elo - (0.15 × StdDev)
-					</div>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						This formula rewards high average strength while penalizing extreme variance (cannibalization).
-						Floors are applied (P4=1400, G5=1250) to ensure baseline respect.
-						<br/><span class="text-xs italic mt-1 block">Note: SEC receives a +20.0 depth adjustment.</span>
-					</p>
-				</div>
-
-				<!-- Visual Breakdown -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Why StdDev Penalty?</h4>
-					<div class="grid md:grid-cols-2 gap-4">
-						<div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-							<h5 class="font-medium text-primary-700 dark:text-primary-300 mb-2">Mean Elo</h5>
-							<p class="text-sm text-gray-600 dark:text-gray-400">
-								The primary driver. A conference with higher average team strength is tougher to play in.
-							</p>
-						</div>
-						<div class="bg-stone-50 dark:bg-stone-700/50 rounded-lg p-4">
-							<h5 class="font-medium text-stone-700 dark:text-stone-300 mb-2">StdDev Penalty</h5>
-							<p class="text-sm text-gray-600 dark:text-gray-400">
-								High variance implies a "top-heavy" league with many weak teams. Low variance implies depth.
-								We penalize high variance to reward depth.
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<!-- Independents -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">FBS Independents</h4>
-					<div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
-						<p class="text-sm text-gray-600 dark:text-gray-400">
-							Teams without a conference (Notre Dame, UConn, UMass) receive a <strong>Synthetic Conference Quality</strong> score.
-							This is calculated as the average CQ of all the conferences on their schedule. If they play a P4 schedule, they get a P4 boost;
-							if they play a G5 schedule, they get a G5 boost.
-						</p>
-					</div>
-				</div>
-
-				<!-- Example -->
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white mb-2">Example: SEC Conference</h4>
-					<div class="bg-stone-50 dark:bg-stone-800/40 rounded-lg p-4 text-sm">
-						<div class="space-y-2 text-gray-600 dark:text-gray-400">
-							<div><strong>Teams:</strong> 16 teams (Top 8 avg Elo: 1520, Full avg Elo: 1420)</div>
-							<div><strong>OOC Record vs P4:</strong> 12-4 (0.75 win rate)</div>
-							<div class="mt-3 font-mono text-xs bg-stone-100 dark:bg-stone-700 p-3 rounded space-y-1">
-								<div>RawCQ = (0.70 × 1520) + (0.30 × 1420) = 1490</div>
-								<div>OOC_Perf = 0.75 → Multiplier = 1.10</div>
-								<div class="border-t border-gray-300 dark:border-gray-600 pt-1 mt-1 font-bold">
-									FinalCQ = 1490 × 1.10 = 1639 → Normalized to ~85/100
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Key Features -->
-	<div class="card p-6 mb-8">
-		<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-			<svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-			</svg>
-			Key Features of V5
-		</h2>
-
-		<!-- Feature Grid -->
-		<div class="grid md:grid-cols-2 gap-4 mb-6">
-			<!-- Iterative Solver -->
-			<div class="flex gap-3 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-				<div class="w-10 h-10 rounded-lg bg-primary-600 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-					</svg>
-				</div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">2-Pass Iterative Solver</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Re-simulates the entire season 2 times so Week 1 games are evaluated with end-of-season opponent strength data.
-					</p>
-				</div>
-			</div>
-
-			<!-- Zero-Sum Elo -->
-			<div class="flex gap-3 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-				<div class="w-10 h-10 rounded-lg bg-primary-500 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-					</svg>
-				</div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Zero-Sum Elo</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Total Elo gained always equals total Elo lost. No artificial inflation — every point earned is a point taken from an opponent.
-					</p>
-				</div>
-			</div>
-
-			<!-- Milestone Multiplier -->
-			<div class="flex gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-				<div class="w-10 h-10 rounded-lg bg-amber-600 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-					</svg>
-				</div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Milestone Anchors</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Champions get a massive boost (1.07x + 140pts). This "anchor" ensures conference winners rise to the top.
-					</p>
-				</div>
-			</div>
-
-			<!-- Relative Thresholds -->
-			<div class="flex gap-3 p-4 bg-stone-100 dark:bg-stone-800/40 rounded-lg">
-				<div class="w-10 h-10 rounded-lg bg-stone-600 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-					</svg>
-				</div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Relative Thresholds</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Quality Wins and Bad Losses are defined by dynamic percentiles (Top 20% / Bottom 25%) rather than fixed numbers.
-					</p>
-				</div>
-			</div>
-
-			<!-- Logarithmic MoV -->
-			<div class="flex gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-				<div class="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
-					<span class="text-white font-bold text-sm">log</span>
-				</div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Logarithmic Margin of Victory</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Uses log(margin + 1) to prevent blowout exploitation. Winning 42-7 isn't worth much more than 28-7.
-					</p>
-				</div>
-			</div>
-
-			<!-- Road Warrior -->
-			<div class="flex gap-3 p-4 bg-stone-100 dark:bg-stone-800/40 rounded-lg">
-				<div class="w-10 h-10 rounded-lg bg-stone-700 flex items-center justify-center shrink-0">
-					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-					</svg>
-				</div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Road Warrior Bonus</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Road wins count 1.1× in Resume calculations. Winning in hostile environments deserves extra credit.
-					</p>
-				</div>
-			</div>
-		</div>
-
-		<!-- Additional Features List -->
-		<div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-			<h4 class="font-medium text-gray-900 dark:text-white mb-3">Additional V5 Innovations</h4>
-			<div class="grid md:grid-cols-2 gap-3 text-sm">
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Home-Field Advantage:</strong> 65 Elo bonus for home team expectation</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Elo Clamp:</strong> Ratings capped at 1850 to prevent outliers</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Postseason K Reduction:</strong> 0.65× K-factor for bowl games</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Chaos Tax:</strong> 10% CQ penalty if conference StdDev > 160</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Quality Loss Bonus:</strong> Credit for losses to Top 10% teams</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Bad Loss Penalty:</strong> Penalty for losses to Bottom 25% teams</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Perfection Bonus:</strong> 5% for undefeated, 2% for one-loss</span>
-				</div>
-				<div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-					<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<span><strong>Synthetic Indie CQ:</strong> Schedule-weighted CQ for independents</span>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Philosophy Section -->
-	<div class="card p-6 mb-8 bg-gradient-to-br from-primary-50 to-amber-50 dark:from-gray-800 dark:to-gray-800 border-primary-200 dark:border-gray-600">
-		<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-			<svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-			</svg>
-			Design Philosophy
-		</h2>
-		<div class="space-y-4">
-			<div class="flex gap-4">
-				<div class="w-1 bg-primary-500 rounded-full shrink-0"></div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Balance Power & Resume</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Elo answers “How good are you?” and that is the place.
-					</p>
-				</div>
-			</div>
-			<div class="flex gap-4">
-				<div class="w-1 bg-amber-500 rounded-full shrink-0"></div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Fair Cross-Tier Evaluation</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						G5 teams aren't penalized for their conference but must prove themselves through SoS, cross-tier wins,
-						and scheduling. The best G5 teams can crack the Top 15.
-					</p>
-				</div>
-			</div>
-			<div class="flex gap-4">
-				<div class="w-1 bg-stone-500 rounded-full shrink-0"></div>
-				<div>
-					<h4 class="font-medium text-gray-900 dark:text-white">Recency Without Recency Bias</h4>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Early-season games are re-evaluated fairly through iterative solving.
-						No artificial late-season boost or "eye test" bias.
-					</p>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Data Source -->
-	<div class="card p-6">
-		<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-			<svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-			</svg>
-			Data Source
-		</h2>
-		<p class="text-gray-600 dark:text-gray-400">
-			All game data is sourced from the
-			<a href="https://collegefootballdata.com/" target="_blank" rel="noopener noreferrer"
-			   class="text-primary-600 dark:text-primary-400 hover:underline">
-				College Football Data API
-			</a>.
-			The board is ours — updated after each week's games are completed.
-		</p>
-	</div>
-
-	<!-- Back to the board -->
-	<div class="mt-8 text-center">
-		<a href="/" class="btn btn-primary inline-flex items-center gap-2">
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-			</svg>
-			Back to the board
-		</a>
-	</div>
-</div>
+<p class="sr-only">{BRAND_NAME}</p>

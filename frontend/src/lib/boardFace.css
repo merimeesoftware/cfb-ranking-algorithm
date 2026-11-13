@@ -1,0 +1,290 @@
+@font-face {
+			font-family: "BoardOswald";
+			src: url("/fonts/Oswald.ttf") format("truetype");
+			font-weight: 400 700;
+			font-style: normal;
+			font-display: swap;
+		}
+		@font-face {
+			font-family: "BoardSans";
+			src: url("/fonts/SourceSans3.ttf") format("truetype");
+			font-weight: 400 700;
+			font-style: normal;
+			font-display: swap;
+		}
+		:root {
+			--field: #1a3d2e;
+			--deep: #0f241b;
+			--chalk: #eef1ee;
+			--ink: #14241c;
+			--muted: #3d5248;
+			--line: #c9d4cc;
+			--gold: #c9a227;
+			--gold-ink: #8a7010;
+			--mast-soft: #d5e0d8;
+			--card: #fff;
+			--read: 42rem;
+		}
+		
+.board-face *{ box-sizing: border-box; }
+		
+.board-face html{ scroll-padding-top: 4.5rem; }
+		
+.board-face{
+			background: var(--chalk);
+			color: var(--ink);
+			font-family: "BoardSans", sans-serif;
+			font-size: 1.0625rem;
+			line-height: 1.4;
+			-webkit-font-smoothing: auto;
+			-moz-osx-font-smoothing: auto;
+		}
+		
+.board-face p{ max-width: var(--read); }
+		
+.board-face .sr-only{
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+		
+.board-face a{ color: inherit; }
+		
+.board-face :focus-visible{
+			outline: 3px solid var(--field);
+			outline-offset: 3px;
+		}
+		
+.board-face .mast :focus-visible{ outline-color: var(--chalk); }
+		
+.board-face .mast{ background: var(--deep); color: var(--chalk); padding: 0.35rem 0.75rem 0.4rem; }
+		
+.board-face .mast p{ margin: 0; max-width: none; }
+		
+.board-face .mast-row{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.8rem; max-width: 72rem; margin: 0 auto; }
+		
+.board-face .brand{ font-family: "BoardOswald", sans-serif; font-weight: 600; font-size: 1.55rem; line-height: 1; }
+		
+.board-face .week{ font-family: "BoardOswald", sans-serif; font-weight: 500; color: #e8c547; letter-spacing: 0.03em; }
+		
+.board-face .position{ max-width: 72rem; margin: 0.1rem auto 0; color: var(--mast-soft); font-size: 0.92rem; line-height: 1.25; }
+		
+.board-face main{ max-width: 72rem; margin: 0 auto; padding: 0.65rem 1rem 2rem; }
+		
+.board-face h1, .board-face h2{ font-family: "BoardOswald", sans-serif; font-weight: 600; font-size: 1.65rem; line-height: 1.1; margin: 0 0 0.45rem; }
+		
+.board-face .week-line{ margin: 0 0 0.45rem; }
+		
+.board-face .table-wrap{
+			overflow: auto;
+			max-inline-size: 100%;
+			container-type: inline-size;
+			border: 1px solid var(--line);
+			background: var(--card);
+		}
+		
+.board-face table{ width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+		
+.board-face caption{ caption-side: top; text-align: left; padding: 0.2rem 0.55rem; color: var(--ink); }
+		
+.board-face thead th{
+			position: sticky; top: 0; background: var(--field); color: var(--chalk);
+			font-family: "BoardOswald", sans-serif; font-weight: 500; text-align: left; padding: 0.4rem 0.6rem;
+		}
+		
+.board-face tbody th, .board-face td{ padding: 0.28rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: middle; background: var(--card); }
+		
+.board-face tbody th{ position: sticky; left: 0; text-align: left; z-index: 1; }
+		
+.board-face tr.band th{ box-shadow: inset 5px 0 0 var(--gold); }
+		
+.board-face .rk{ font-family: "BoardOswald", sans-serif; font-weight: 600; font-size: 1.2rem; display: inline-block; width: 1.7rem; color: var(--ink); }
+		
+.board-face tr.band .rk{ color: var(--gold-ink); }
+		
+.board-face .name{ font-family: "BoardOswald", sans-serif; font-weight: 500; font-size: 1.08rem; }
+		
+.board-face .conf{ display: block; color: var(--muted); font-size: 0.82rem; }
+		
+.board-face .pip{ display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.3rem; vertical-align: middle; border: 1px solid rgba(20, 36, 28, 0.25); }
+		
+.board-face .tr{ font-variant-numeric: tabular-nums; font-weight: 600; }
+		
+.board-face #board{ display: flex; flex-direction: column; }
+		
+.board-face #board > *{ order: 6; }
+		
+.board-face #board .week-line{ order: 1; }
+		
+.board-face #board .table-wrap{ order: 2; }
+		
+.board-face #board .early-once{ order: 3; }
+		
+.board-face #board .cases{ order: 8; }
+		
+.board-face .early-once, .board-face tr.rest{ display: none; }
+		
+.board-face tr.rest.shown{ display: table-row; }
+		
+.board-face .find{ margin: 0.6rem 0 0; }
+		
+.board-face .find input{ min-height: 44px; width: min(100%, 22rem); font: inherit; padding: 0 0.6rem; border: 1px solid var(--line); background: var(--card); }
+		
+.board-face .btn{
+			min-height: 44px; min-width: 44px; padding: 0 0.9rem; font: inherit;
+			background: var(--field); color: var(--chalk); border: 0; cursor: pointer;
+		}
+		
+.board-face .btn.quiet{ background: var(--card); color: var(--field); border: 1px solid var(--field); }
+		
+.board-face .states, .board-face .early-on, .board-face .ladder, .board-face .whatif, .board-face .side, .board-face .case{ background: var(--card); border: 1px solid var(--line); }
+		
+.board-face .case{ border-top: 3px solid var(--field); padding: 0.5rem 0.7rem; }
+		
+.board-face .case h3, .board-face .side h3{ font-family: "BoardOswald", sans-serif; margin: 0 0 0.25rem; font-size: 1.05rem; }
+		
+.board-face .case p, .board-face .side p{ margin: 0; }
+		
+.board-face .cases{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin: 0 0 0.55rem; }
+		
+.board-face .pair{ display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.5rem 0; }
+		
+.board-face .side{ padding: 0.65rem 0.75rem; }
+		
+.board-face .elo-num{ font-family: "BoardOswald", sans-serif; font-size: 1.8rem; font-variant-numeric: tabular-nums; margin: 0.1rem 0; line-height: 1; }
+		
+.board-face .ladder{ list-style: none; margin: 0.4rem 0 0.8rem; padding: 0; max-width: 100%; }
+		
+.board-face .rung .elo-num{ font-size: 1.25rem; }
+		
+.board-face .rung.subject .elo-num{ font-size: 2.75rem; }
+		
+.board-face .rung{ padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--line); }
+		
+.board-face .rung .who{ color: var(--muted); font-size: 0.92rem; }
+		
+.board-face .between{ padding: 0.28rem 0.7rem; color: var(--muted); font-size: 0.92rem; background: var(--chalk); }
+		
+.board-face .rung.subject{ border-top: 4px solid var(--field); padding: 0.7rem 0.75rem 0.8rem; }
+		
+.board-face .rung.subject .name{ font-size: 1.35rem; }
+		
+.board-face .back{ display: inline-block; min-height: 44px; line-height: 44px; }
+		
+.board-face .leagues{ list-style: none; margin: 0.3rem 0 0; padding: 0; }
+		
+.board-face .lrow{ display: grid; grid-template-columns: minmax(14rem, 22rem) 1fr; gap: 0.6rem; align-items: center; margin: 0.3rem 0; }
+		
+.board-face .lmeta strong{ font-family: "BoardOswald", sans-serif; font-weight: 500; }
+		
+.board-face .lmeta span{ display: block; color: var(--muted); font-size: 0.9rem; }
+		
+.board-face .track{ position: relative; height: 1.35rem; border-bottom: 1px solid var(--line); }
+		
+.board-face .dot{ position: absolute; top: 0.15rem; width: 0.85rem; height: 0.85rem; border-radius: 50%; background: var(--field); transform: translateX(-50%); left: calc((var(--v) - 1100) / 700 * 100%); }
+		
+.board-face .axis{ display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; margin-left: 22.6rem; max-width: calc(100% - 22.6rem); }
+		
+.board-face .whatif{ border: 2px solid var(--field); padding: 0.75rem 0.85rem 0.9rem; margin-top: 0.8rem; }
+		
+.board-face .whatif h3{ font-family: "BoardOswald", sans-serif; margin: 0 0 0.35rem; }
+		
+.board-face .example{ font-family: "BoardOswald", sans-serif; letter-spacing: 0.04em; color: var(--field); margin: 0 0 0.35rem; }
+		
+.board-face .sliders{ display: grid; gap: 0.15rem; margin: 0.4rem 0; }
+		
+.board-face .slider-row{ display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 0.6rem; align-items: center; }
+		
+.board-face .slider-row input[type="range"]{ grid-column: 1 / -1; inline-size: 100%; block-size: 44px; margin: 0; accent-color: var(--field); }
+		
+.board-face .actions{ display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.45rem 0; }
+		
+.board-face .lists{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.7rem; }
+		
+.board-face .lists h4{ font-family: "BoardOswald", sans-serif; margin: 0 0 0.2rem; font-weight: 500; }
+		
+.board-face .lists ol{ margin: 0; padding-left: 1.2rem; font-variant-numeric: tabular-nums; }
+		
+.board-face .math{ font-variant-numeric: tabular-nums; margin: 0.35rem 0; }
+		
+.board-face dl.constants{ display: grid; grid-template-columns: 11rem 1fr; gap: 0.28rem 0.75rem; margin: 0.7rem 0 0; max-width: 52rem; }
+		
+.board-face dl.constants dt{ font-family: "BoardOswald", sans-serif; font-weight: 500; }
+		
+.board-face dl.constants dd{ margin: 0; max-width: var(--read); }
+		
+.board-face .note{ color: var(--muted); font-size: 0.92rem; }
+		
+.board-face .states{ margin-top: 0.8rem; padding: 0.6rem 0.75rem; }
+		
+.board-face .states h3{ font-family: "BoardOswald", sans-serif; margin: 0 0 0.3rem; font-size: 1.05rem; }
+		
+.board-face .states p{ margin: 0.2rem 0; }
+		
+.board-face .early-on{ margin-top: 0.7rem; padding: 0.55rem 0.7rem; border-top: 3px solid var(--field); }
+		
+.board-face .tag{ font-family: "BoardOswald", sans-serif; font-size: 0.85rem; letter-spacing: 0.03em; }
+		
+.board-face[data-shot="board"] section:not(#board), .board-face[data-shot="open"] section:not(#board), .board-face[data-shot="peers"] section:not(#peers), .board-face[data-shot="formula"] section:not(#formula){ display: none; }
+		
+.board-face[data-shot="open"] tr.prior, .board-face[data-shot="open"] .find, .board-face[data-shot="open"] .states, .board-face[data-shot="open"] .early-on, .board-face[data-shot="open"] details{ display: none; }
+		
+.board-face button.name{
+			background: none;
+			border: 0;
+			padding: 0.35rem 0;
+			min-height: 44px;
+			min-width: 44px;
+			font: inherit;
+			font-family: "BoardOswald", sans-serif;
+			font-weight: 500;
+			font-size: 1.08rem;
+			color: inherit;
+			cursor: pointer;
+			text-align: left;
+		}
+		
+.board-face button.name::after{
+			content: "";
+			position: absolute;
+			inset: 0;
+		}
+		
+.board-face tr.detail td{ padding: 0.6rem 0.75rem 0.85rem; }
+		
+.board-face tr.detail td::before{ content: none; }
+		
+.board-face tr[hidden]{ display: none !important; }
+		
+.board-face .formula-link{ color: #e8c547; }
+		
+.board-face .tr-inline{ display: none; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+		
+.board-face .name-row{ display: contents; }
+		
+.board-face[data-shot]:not([data-shot="board"]) .position, .board-face[data-shot]:not([data-shot="board"]) .tagline{ display: none; }
+		@container (width < 640px) {.board-face table, .board-face thead, .board-face tbody, .board-face tr, .board-face th, .board-face td, .board-face caption{ display: block; width: 100%; }.board-face thead, .board-face .col-early{ display: none; }.board-face .early-once{ display: none; }.board-face tbody th{
+				display: flex;
+				align-items: center;
+				gap: 0.35rem;
+			}.board-face tr.rest.shown{ display: block; }.board-face tr{ padding: 0.15rem 0.5rem 0.2rem; border-bottom: 1px solid var(--line); }.board-face tr.band th{ box-shadow: inset 5px 0 0 var(--gold); }.board-face td{ border: 0; padding: 0.02rem 0 0.02rem 0; }.board-face td::before{ content: attr(data-label) ": "; font-family: "BoardOswald", sans-serif; font-size: 0.82rem; }.board-face td.tr-col{ display: none; }.board-face .rk{ width: auto; }.board-face .team-cell{ display: flex; align-items: baseline; flex: 1; gap: 0.35rem; width: auto; min-width: 0; }.board-face .name-row{ display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; flex: 1; min-width: 0; }.board-face .tr-inline{ display: inline; }.board-face .conf{ display: inline; line-height: 1; }.board-face button.name{
+				display: flex;
+				align-items: center;
+				min-height: 44px;
+				min-width: 44px;
+				padding: 0;
+			}
+		}
+		@media (max-width: 700px) {.board-face #board .early-once{ display: block; margin: 0.2rem 0 0; }.board-face .col-early{ display: none; }
+		}
+		@media (max-width: 800px) {.board-face .cases, .board-face .pair, .board-face .lists, .board-face .lrow{ grid-template-columns: 1fr; }.board-face .axis{ margin-left: 0; max-width: none; }.board-face dl.constants{ grid-template-columns: 1fr; }.board-face dl.constants dd{ margin-bottom: 0.35rem; }
+		}
+		@media (prefers-reduced-motion: reduce) {.board-face *{ scroll-behavior: auto; } }
+.board-face.formula .position,
+.board-face.formula .tagline { display: none; }
