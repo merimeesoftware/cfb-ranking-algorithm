@@ -50,13 +50,7 @@ npx wrangler deploy --config wrangler.bundle.toml --dry-run --outdir .wrangler/t
 
 `wrangler.toml` sets `main = ".wrangler/tested/index.js"`, `no_bundle = true`, and `find_additional_modules = false`. The bundle is one ES module, so no `rules` entry is required. `npx wrangler deploy --env=""` uploads that file and the assets in `frontend/build`. `preview_urls = false` stays set on production and `env.dev`. `env.dev` inherits `main`, `no_bundle`, and `find_additional_modules`.
 
-After the tests, the build packages the Worker with the deploy config:
-
-```bash
-npx wrangler deploy --env="" --dry-run --outdir .wrangler/deploy-check --containers-rollout=none
-```
-
-That command reads `wrangler.toml` (`main = ".wrangler/tested/index.js"`, `no_bundle = true`). The build fails unless the sha256 of every module in `.wrangler/deploy-check` matches `.wrangler/tested` and the directory has no extra module. `tests/fixtures/deploy-packaging/planted-mismatch` must trip that check. `--containers-rollout=none` keeps this packaging check off the Dockerfile. The container image is still built from `./Dockerfile` by `npx wrangler deploy`, which is the container upload. The build step does not push that image.
+After the tests, the build runs pinned Wrangler 4.156.0 as `npx wrangler deploy --env=""` with `--dry-run` and `--containers-rollout=none`. Dry-run calls `createWorkerUploadForm` with `{ dryRun: true }`, which does not change module bodies. The build records those form module bodies and fails unless each sha256 matches `.wrangler/tested`, a tested module is missing, or the form has an extra module. `tests/fixtures/upload-form/` plants one fixture for each of those three failures. `--containers-rollout=none` keeps this check off the Dockerfile. The container image is still built from `./Dockerfile` by `npx wrangler deploy`, which is the container upload. The build step does not push that image.
 
 ## Already-counted headers
 

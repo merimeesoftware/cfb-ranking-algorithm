@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * Build the Worker bundle, test that file, scan it, and refuse a deploy
- * packaging whose modules differ from the tested bundle.
+ * Build the Worker bundle, test that file, scan it, and refuse an upload
+ * form whose module bodies differ from the tested bundle.
  *
  * The bundle command is wrangler deploy --dry-run. wrangler.toml points main
  * at the result with no_bundle, so this step uses wrangler.bundle.toml.
- * --containers-rollout=none keeps the dry-run off the Dockerfile image.
- * The deploy command still builds that image when it uploads.
+ * After the tests, wrangler 4.156.0 deploy --dry-run builds the upload
+ * FormData with createWorkerUploadForm({ dryRun: true }). That flag does not
+ * change module bodies. --containers-rollout=none keeps the Dockerfile out.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -16,9 +17,9 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const testedDir = join(repoRoot, '.wrangler/tested');
-const deployCheckDir = join(repoRoot, '.wrangler/deploy-check');
+const formDir = join(repoRoot, '.wrangler/upload-form');
 const testedBundle = join(testedDir, 'index.js');
-const fixtureRoot = join(repoRoot, 'tests/fixtures/deploy-packaging');
+const fixtureRoot = join(repoRoot, 'tests/fixtures/upload-form');
 
 function fail(message) {
 	console.error(message);
@@ -29,11 +30,12 @@ function sha256(path) {
 	return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function run(args, cwd) {
+function run(args, cwd, extraEnv = {}) {
 	const env = {
 		...process.env,
 		CI: 'true',
 		WRANGLER_SEND_METRICS: 'false',
+		...extraEnv,
 	};
 	for (const key of [
 		'CLOUDFLARE_API_TOKEN',
@@ -55,11 +57,11 @@ function compatibilityDate(path) {
 	return match[1];
 }
 
-function moduleFiles(dir) {
+function listFiles(dir, { skipReadme = false } = {}) {
 	const names = [];
 	function walk(current) {
 		for (const name of readdirSync(current)) {
-			if (current === dir && name === 'README.md') continue;
+			if (skipReadme && current === dir && name === 'README.md') continue;
 			const path = join(current, name);
 			if (statSync(path).isDirectory()) {
 				walk(path);
@@ -72,49 +74,55 @@ function moduleFiles(dir) {
 	return names.sort();
 }
 
-function compareDeployModules(testedDirPath, deployDirPath) {
-	const testedNames = moduleFiles(testedDirPath);
-	const deployNames = moduleFiles(deployDirPath);
+function compareFormModules(testedDirPath, formDirPath) {
+	const testedNames = listFiles(testedDirPath, { skipReadme: true });
+	const formNames = listFiles(formDirPath);
 	const testedHash = existsSync(join(testedDirPath, 'index.js')) ? sha256(join(testedDirPath, 'index.js')) : '';
-	const extra = deployNames.filter((name) => !testedNames.includes(name));
-	const missing = testedNames.filter((name) => !deployNames.includes(name));
+	const extra = formNames.filter((name) => !testedNames.includes(name));
+	const missing = testedNames.filter((name) => !formNames.includes(name));
 	if (extra.length || missing.length) {
 		return {
 			ok: false,
 			testedHash,
-			reason: `deploy modules [${deployNames.join(', ')}] do not match tested modules [${testedNames.join(', ')}]`,
+			reason: `form modules [${formNames.join(', ')}] do not match tested modules [${testedNames.join(', ')}]`,
 		};
 	}
 	for (const name of testedNames) {
 		const testedFile = sha256(join(testedDirPath, name));
-		const deployFile = sha256(join(deployDirPath, name));
-		if (deployFile !== testedFile) {
+		const formFile = sha256(join(formDirPath, name));
+		if (formFile !== testedFile) {
 			return {
 				ok: false,
 				testedHash,
-				reason: `${name} sha256 ${deployFile} does not match tested ${testedFile}`,
+				reason: `${name} sha256 ${formFile} does not match tested ${testedFile}`,
 			};
 		}
 	}
 	return { ok: true, testedHash };
 }
 
-function assertPlantedMismatchTrips() {
+function assertPlantedFormTrips() {
 	const mismatchTested = join(fixtureRoot, 'planted-mismatch/tested');
-	const mismatchDeploy = join(fixtureRoot, 'planted-mismatch/deploy-check');
-	const same = compareDeployModules(mismatchTested, mismatchTested);
+	const same = compareFormModules(mismatchTested, mismatchTested);
 	if (!same.ok) fail(`checker rejected a bundle compared with itself: ${same.reason}`);
-	const mismatch = compareDeployModules(mismatchTested, mismatchDeploy);
-	if (mismatch.ok) fail('planted deploy-packaging mismatch did not trip');
-	const extra = compareDeployModules(
-		join(fixtureRoot, 'planted-extra/tested'),
-		join(fixtureRoot, 'planted-extra/deploy-check'),
+	const mismatch = compareFormModules(mismatchTested, join(fixtureRoot, 'planted-mismatch/form'));
+	if (mismatch.ok || !mismatch.reason.includes('does not match tested')) {
+		fail('planted form mismatch did not trip');
+	}
+	const missing = compareFormModules(
+		join(fixtureRoot, 'planted-missing/tested'),
+		join(fixtureRoot, 'planted-missing/form'),
 	);
-	if (extra.ok) fail('planted extra deploy file did not trip');
-	console.log('planted deploy-packaging mismatch tripped');
+	if (missing.ok || !missing.reason.includes('other.js')) fail('planted missing form module did not trip');
+	const extra = compareFormModules(
+		join(fixtureRoot, 'planted-extra/tested'),
+		join(fixtureRoot, 'planted-extra/form'),
+	);
+	if (extra.ok || !extra.reason.includes('side.js')) fail('planted extra form module did not trip');
+	console.log('planted upload-form mismatch, missing module, and extra module tripped');
 }
 
-assertPlantedMismatchTrips();
+assertPlantedFormTrips();
 
 const deployDate = compatibilityDate(join(repoRoot, 'wrangler.toml'));
 const bundleDate = compatibilityDate(join(repoRoot, 'wrangler.bundle.toml'));
@@ -127,7 +135,7 @@ if (!existsSync(join(repoRoot, 'frontend/build'))) {
 }
 
 rmSync(testedDir, { recursive: true, force: true });
-rmSync(deployCheckDir, { recursive: true, force: true });
+rmSync(formDir, { recursive: true, force: true });
 
 run(['npm', 'ci', '--prefix', 'worker'], repoRoot);
 
@@ -167,13 +175,15 @@ const testedHash = sha256(testedBundle);
 console.log(`tested worker bundle sha256: ${testedHash}`);
 
 run([
-	'npx', 'wrangler', 'deploy',
+	process.execPath,
+	'--import', './scripts/capture-worker-upload.mjs',
+	'./node_modules/wrangler/bin/wrangler.js',
+	'deploy',
 	'--env=',
 	'--dry-run',
-	'--outdir', '.wrangler/deploy-check',
 	'--containers-rollout=none',
-], repoRoot);
+], repoRoot, { WORKER_UPLOAD_FORM_DIR: formDir });
 
-const compared = compareDeployModules(testedDir, deployCheckDir);
+const compared = compareFormModules(testedDir, formDir);
 if (!compared.ok) fail(compared.reason);
-if (compared.testedHash !== testedHash) fail('tested bundle changed during the deploy packaging check');
+if (compared.testedHash !== testedHash) fail('tested bundle changed during the upload form check');
