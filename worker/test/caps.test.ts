@@ -217,6 +217,22 @@ test('manifest allowlist rejects formula params and unlisted weeks', () => {
 	}
 });
 
+test('whatif stays off the public rankings allowlist', () => {
+	const manifest = { years: { '2026': [10] } };
+	const rejected = checkPublicQuery(
+		'/rankings',
+		new URL('https://truerankings.com/rankings?year=2026&week=10&whatif=70-30-0-0').searchParams,
+		manifest,
+	);
+	assert.ok(rejected && !rejected.ok);
+	if (rejected && !rejected.ok) {
+		assert.equal(rejected.status, 400);
+		assert.equal(rejected.body.code, 'formula_params');
+		assert.deepEqual(rejected.body.rejected, ['whatif']);
+		assert.equal(JSON.stringify(rejected.body).includes('v5.5'), false);
+	}
+});
+
 test('kill switch blocks both AI providers and CFBD', () => {
 	const fixture = load('kill_switch.json');
 	const env = {

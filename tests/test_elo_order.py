@@ -1,7 +1,7 @@
-"""Published order is Elo. Record, fraud, momentum, and the early flag are columns."""
+"""Published order is Elo. Record, momentum, and the early flag are columns."""
 import inspect
 
-from ranking_algorithm import HEAT_WEIGHT, ordering_score
+from ranking_algorithm import HEAT_WEIGHT, ordering_score, soft_slate_flag
 from ranking_service import publish_order
 from algo_lab.runner import rank_through_week
 
@@ -106,6 +106,8 @@ def test_ranker_order_matches_elo_and_columns_stay_off_the_key():
     assert pretty['record_quality_flag'] is True
     assert pretty['record_ahead'] > 0
     assert pretty['soft_win_share'] == 1.0
+    assert pretty['soft_slate_flag'] is False
+    assert pretty['soft_slate_flag'] is soft_slate_flag(pretty)
     assert isinstance(pretty['momentum'], float)
 
     cup = next(team for team in rankings['team_rankings'] if team['team_name'] == 'CupA')
