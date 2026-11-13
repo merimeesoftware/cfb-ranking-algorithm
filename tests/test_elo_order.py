@@ -1,9 +1,14 @@
 """Published order is Elo. Record, momentum, and the early flag are columns."""
 import inspect
+import json
+from pathlib import Path
 
 from ranking_algorithm import HEAT_WEIGHT, ordering_score, soft_slate_flag
 from ranking_service import publish_order
 from algo_lab.runner import rank_through_week
+
+ROOT = Path(__file__).resolve().parents[1]
+BOARDS_2024 = ROOT / 'frontend' / 'static' / 'rankings' / '2024'
 
 
 def _game(week, home, away, hs, as_, htype, atype, hconf, aconf):
@@ -159,3 +164,76 @@ def test_rankings_rejects_vote_query_params(client):
         body = response.get_json()
         assert body['code'] == 'formula_params'
         assert name in body['rejected']
+
+
+def _week_boards_2024():
+    paths = [
+        path for path in BOARDS_2024.glob('week-*.json')
+        if path.name.count('.') == 1
+    ]
+    paths.sort(key=lambda path: int(path.stem.split('-', 1)[1]))
+    assert [path.name for path in paths] == [f'week-{n}.json' for n in range(1, 16)]
+    return paths
+
+
+def test_committed_2024_order_stays_elo_with_momentum_on_the_row():
+    """Official 2024 order is Elo. Momentum is a column and does not move places."""
+    assert HEAT_WEIGHT == 0.0
+    rows = 0
+    nulls = 0
+    numbers = 0
+    momentum_would_reorder = False
+    for path in _week_boards_2024():
+        board = json.loads(path.read_text(encoding='utf-8'))
+        assert board['year'] == 2024
+        assert board['algo'] == 'v5.5'
+        teams = board['team_rankings']
+        names = [team['team_name'] for team in teams]
+        by_elo = [
+            team['team_name']
+            for team in sorted(
+                teams,
+                key=lambda team: team['team_quality_score'],
+                reverse=True,
+            )
+        ]
+        by_order = [
+            team['team_name']
+            for team in sorted(teams, key=ordering_score, reverse=True)
+        ]
+        assert names == by_elo == by_order
+        republished = publish_order({'team_rankings': [dict(team) for team in teams]})
+        again = [team['team_name'] for team in republished['team_rankings']]
+        assert again == names
+        by_momentum = [
+            team['team_name']
+            for team in sorted(
+                teams,
+                key=lambda team: (
+                    team.get('momentum') is not None,
+                    float(team['momentum'])
+                    if team.get('momentum') is not None else 0.0,
+                ),
+                reverse=True,
+            )
+        ]
+        if by_momentum != names:
+            momentum_would_reorder = True
+        for team in teams:
+            rows += 1
+            assert team['ordering_score'] == team['team_quality_score']
+            assert ordering_score(team) == team['team_quality_score']
+            decisions = (
+                team['records']['total_wins'] + team['records']['total_losses']
+            )
+            momentum = team['momentum']
+            if decisions < 3:
+                assert momentum is None
+                nulls += 1
+            else:
+                assert isinstance(momentum, (int, float)) and not isinstance(momentum, bool)
+                numbers += 1
+    assert rows > 0
+    assert nulls > 0
+    assert numbers > 0
+    assert momentum_would_reorder
