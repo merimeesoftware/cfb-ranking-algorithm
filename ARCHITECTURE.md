@@ -36,6 +36,22 @@ It commits derived week JSON and `priors/{year}.json` (schema, algo version, sou
 
 The Sunday job commits boards on `bot/precompute-<year>-w<week>` and opens a pull request into the default branch. A `GITHUB_TOKEN` push does not start `ci.yml`, so the job dispatches that workflow on the bot branch. `deploy-cloudflare.yml` still runs only after CI's `push` event on `main`. Workers Builds is the GitHub App check on the push. The production deploy is the merge to `main`.
 
+## Deploy
+
+Workers Builds keeps the dashboard commands `npm run build` and `npx wrangler deploy --env=""`. There is no Wrangler `[build]` block.
+
+`npm run build` writes the frontend to `frontend/build` and runs `npm ci --prefix worker` so the Worker install does not depend on `postinstall`. `scripts/build-tested-worker.mjs` installs those packages again, then produces the Worker with:
+
+```bash
+npx wrangler deploy --config wrangler.bundle.toml --dry-run --outdir .wrangler/tested --containers-rollout=none --env=""
+```
+
+`wrangler.bundle.toml` points `main` at `worker/src/index.ts` so that dry-run runs esbuild. `--containers-rollout=none` keeps the dry-run off the Dockerfile. The script then runs the Worker smoke test and the functional tests against `.wrangler/tested/index.js`, runs the public-host scan on that file plus `frontend/build` and `worker/src`, and prints `tested worker bundle sha256: <hex>`.
+
+`wrangler.toml` sets `main = ".wrangler/tested/index.js"`, `no_bundle = true`, and `find_additional_modules = false`. The bundle is one ES module, so no `rules` entry is required. `npx wrangler deploy --env=""` uploads that file and the assets in `frontend/build`. `preview_urls = false` stays set on production and `env.dev`. `env.dev` inherits `main`, `no_bundle`, and `find_additional_modules`.
+
+After the tests, the build runs pinned Wrangler 4.156.0 as `npx wrangler deploy --env=""` with `--dry-run` and `--containers-rollout=none`. Dry-run calls `createWorkerUploadForm` with `{ dryRun: true }`, which does not change module bodies. The build records those form module bodies and fails unless each sha256 matches `.wrangler/tested`, a tested module is missing, or the form has an extra module. `tests/fixtures/upload-form/` plants one fixture for each of those three failures. `--containers-rollout=none` keeps this check off the Dockerfile. The container image is still built from `./Dockerfile` by `npx wrangler deploy`, which is the container upload. The build step does not push that image.
+
 ## Already-counted headers
 
 `x-workers-ai-reserved` and `x-xai-week-reserved` mean the container already reserved that paid call on SpendBudget. The outbound handlers trust them only on the container's request to `ai.workers` and `ai.xai`. The edge deletes both headers from visitor requests before the container fetch, so a visitor cannot plant them.

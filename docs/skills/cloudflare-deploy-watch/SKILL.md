@@ -18,6 +18,8 @@ Watch the deployment, read logs, diagnose failures, apply minimal fixes, push, a
 | Static assets | `frontend/build` (includes `_headers` from `frontend/static/_headers`) |
 | API | Flask container via `/api/*` |
 
+`npm run build` writes `.wrangler/tested/index.js` and prints its sha256. `npx wrangler deploy --env=""` uploads that file with `no_bundle`. Leave both commands as they are.
+
 ## Watch loop
 
 ```mermaid
@@ -124,6 +126,8 @@ Handoff template:
 | Deploy command | `npx wrangler deploy --env=""` |
 | API token | Custom token with Workers Scripts **and** Containers edit |
 | Node | 22 |
+
+The build command produces the tested Worker bundle. The deploy command uploads it. Do not change either command.
 
 ## Related files
 

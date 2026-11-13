@@ -73,6 +73,9 @@ jobs:
           npm ci
           npm ci --prefix worker
 
+      - name: Build the tested Worker bundle
+        run: node scripts/build-tested-worker.mjs
+
       - name: Deploy production Worker
         run: npx wrangler deploy
         env:
