@@ -2,8 +2,10 @@
 """Fail when a committed week board's algo stamp is not ALGO_VERSION.
 
 Priors stay the v5.3 blend seed and are not week boards. Story, why, share,
-and climb files are not boards. 2025 has no week boards here; this check
-does not create any.
+and climb files are not boards. Committee files are ``{year}.json`` under
+``rankings/committee/`` and are not boards; ``check_committee_format.py``
+rejects a ``week-N.json`` name there and rejects an algo stamp on them.
+2025 has no week boards here; this check does not create any.
 """
 from __future__ import annotations
 

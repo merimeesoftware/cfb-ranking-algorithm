@@ -122,3 +122,11 @@ Sample: South Carolina, 2026 week 10. The same slots fill for every team.
 | A made-up Heat value | The why-here-98 fixture is illustrative. It is not this file. |
 | Sign in, post, forum, account | Still proposals. |
 | Elo, on the board and the team case | Deep dive only, one sentence on the formula page. |
+
+## Gold-band legend, before a committee column
+
+Legal log D-20261112-15. The committee column is not on the board. Phil writes the new name in the empty cell. The rendered legend stays `CFP Playoff (1-12)` in `frontend/src/lib/components/RankingsTable.svelte` until that cell is filled and the column ships. This slot is the one that rename waits on. The "Playoff mark" proposal higher up is a separate redesign line.
+
+| Slot | Rendered today | New name |
+| --- | --- | --- |
+| Gold 1-12 legend | CFP Playoff (1-12) | |
