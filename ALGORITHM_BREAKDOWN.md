@@ -1,12 +1,20 @@
 # CFB Ranking Algorithm - Complete Breakdown (V5)
 
+## Published order (v5.5)
+
+The board is ordered by Elo. `ordering_score` is `team_quality_score`. `HEAT_WEIGHT` is `0.0`, so a later form term cannot move a place. Record and conference quality stay on the row as their own numbers. See `docs/adr/0002-board-order-elo-heat.md`.
+
+### Momentum (display column)
+
+Momentum is the mean of `won - expected` over the last 3 decisions. It is null before 3 decisions. FCS games stay inside that mean. The #96 Heat form is a different column (decay `0.5^(weeks_ago / H)`, shrink `min(1, n/4)`, a 40% single-game cap, FBS-vs-FBS only, margin clipped at 28) and is unbuilt. Momentum does not enter the sort. `ALGO_VERSION` stays `v5.5` while `HEAT_WEIGHT` is 0.
+
 ## Master Formula
 
 ```
 FRS = (0.80 × TeamQuality) + (0.15 × RecordScore) + (0.05 × ConferenceQuality)
 ```
 
-**Final Ranking Score (FRS)** combines three weighted components to produce the final rankings.
+**Final Ranking Score (FRS)** is the stored blend `final_ranking_score`. It is the old three-part total, kept for reference. The published order is Elo, above.
 (V5.3 blend — tuned on 2019–2022, validated 2023, holdout 2024; see `docs/ALGORITHM_EVAL_RESULTS.md`.)
 
 ---
@@ -182,7 +190,11 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 
 ## Version History
 
-- **V5.3 (Current):**
+- **V5.5 (published order):**
+  - The place is Elo. `HEAT_WEIGHT` is `0.0`.
+  - Momentum is a display column: last-3 mean of `won - expected`, null before 3 decisions, FCS included. The #96 Heat form is unbuilt. Momentum is out of the sort.
+
+- **V5.3:**
   - **Weights:** 80/15/05 (TQ/RS/CQ) — promoted after expanding tune window to 2019–2022
   - **Elo knobs:** K=`base_factor` 50, HFA 50 (was 40/65)
   - **Eval:** tune 2019–2022 / validate 2023 / holdout 2024
@@ -237,4 +249,4 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 
 Predictive backtesting (week-by-week, leak-free) lives in `algo_lab/` —
 see [docs/ALGORITHM_EVAL.md](docs/ALGORITHM_EVAL.md). Use **Team Quality (Elo)** for
-next-game probabilities; FRS remains the published deservingness ranking.
+next-game probabilities and for the published order. Momentum stays a display column.
