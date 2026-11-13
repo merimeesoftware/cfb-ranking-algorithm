@@ -47,6 +47,7 @@ from conference_membership import load_membership
 from data_processor import CFBDataProcessor
 from spend_guards import CFBDOfflineError, is_cfbd_killed, is_cfbd_offline
 from ranking_algorithm import TeamQualityRanker
+from games_sidecar import write_games_sidecar
 from ranking_service import (
     ALGO_VERSION,
     BLEND_PRIOR_ALGO,
@@ -426,6 +427,67 @@ def precompute(
     return path
 
 
+def sidecar_roots(
+    output_root: Path | None,
+    static_root: Path | None,
+) -> list[Path]:
+    """Where this run already writes boards. Tests that pass one root stay there."""
+    if output_root is None and static_root is None:
+        return [Path(DEFAULT_ROOT), ROOT / 'frontend' / 'static' / 'rankings']
+    roots: list[Path] = []
+    for root in (output_root, static_root):
+        if root is None:
+            continue
+        path = Path(root)
+        if any(path.resolve() == existing.resolve() for existing in roots):
+            continue
+        roots.append(path)
+    return roots
+
+
+def season_games_with_saved_weeks(
+    year: int,
+    weeks: list[int],
+    games: list,
+    static_root: Path | None,
+) -> list:
+    """Bulk rows, plus a saved week when this payload has none for that week.
+
+    The board already does this for its snapshot. The sidecar has to follow,
+    or a partial payload erases head-to-head rows the board still shows.
+    """
+    merged = list(games or [])
+    for week in weeks:
+        if games_for_week(merged, week):
+            continue
+        previous = read_source(year, week, static_root)
+        saved = previous.get('games') if isinstance(previous, dict) else None
+        if saved:
+            merged.extend(saved)
+    return merged
+
+
+def publish_games_sidecars(
+    year: int,
+    weeks: list[int],
+    games: list,
+    *,
+    output_root: Path | None = None,
+    static_root: Path | None = None,
+) -> None:
+    """Write each week's games sidecar from the payload already in memory.
+
+    The same writer is the only public games file. It does not fetch. A week
+    missing from this payload keeps the games in the board's saved snapshot.
+    """
+    if year == SEALED_HOLDOUT_YEAR:
+        return
+    rows = season_games_with_saved_weeks(year, weeks, games, static_root)
+    for week in weeks:
+        for root in sidecar_roots(output_root, static_root):
+            write_games_sidecar(year, week, rows, root)
+
+
 def publish_year(
     year: int,
     weeks: list[int],
@@ -495,6 +557,13 @@ def publish_year(
         games = by_week.get(week)
         if games:
             write_source(year, week, games, static_root)
+    publish_games_sidecars(
+        year,
+        weeks,
+        season_games or [],
+        output_root=output_root,
+        static_root=static_root,
+    )
     return {
         'bulk_calls': bulk_calls,
         'computed': compute,
