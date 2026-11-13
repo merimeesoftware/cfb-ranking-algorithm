@@ -86,6 +86,7 @@ jobs:
           PUBLIC_SITE_URL: ""
         run: |
           npm ci
+          npm test
           npm run check
           npm run build
 
