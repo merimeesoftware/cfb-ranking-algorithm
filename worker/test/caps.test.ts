@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, publicKillSetBody, type SpendState } from '../src/spend-object.ts';
-import worker, { CfbApiContainer } from '../src/index.ts';
+import worker, { CfbApiContainer } from '../../.wrangler/tested/index.js';
 import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_HOST, WORKERS_AI_MAX_OUTPUT_TOKENS, XAI_HOST, type GatewayCall } from '../src/providers.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from '../src/xai-usd.ts';
 import {

@@ -47,7 +47,8 @@ from conference_membership import load_membership
 from data_processor import CFBDataProcessor
 from spend_guards import CFBDOfflineError, is_cfbd_killed, is_cfbd_offline
 from ranking_algorithm import TeamQualityRanker
-from games_sidecar import write_games_sidecar
+from games_sidecar import read_games_sidecar, write_games_sidecar
+from playoff_field import field_from_board, write_field_file
 from ranking_service import (
     ALGO_VERSION,
     BLEND_PRIOR_ALGO,
@@ -488,6 +489,30 @@ def publish_games_sidecars(
             write_games_sidecar(year, week, rows, root)
 
 
+def publish_field_files(
+    year: int,
+    weeks: list[int],
+    *,
+    output_root: Path | None = None,
+    static_root: Path | None = None,
+) -> None:
+    """Write the sibling field from the board and the games sidecar already on disk.
+
+    Uses the one games writer. No second games file and no CFBD call.
+    """
+    if year not in (2024, 2026):
+        return
+    for root in sidecar_roots(output_root, static_root):
+        for week in weeks:
+            board = read_static_rankings(year, week, root=root)
+            if not isinstance(board, dict):
+                continue
+            sidecar = read_games_sidecar(year, week, root=root)
+            games = sidecar['games'] if sidecar.get('present') else []
+            document = field_from_board(board, games, year, week)
+            write_field_file(year, week, document, root)
+
+
 def publish_year(
     year: int,
     weeks: list[int],
@@ -561,6 +586,12 @@ def publish_year(
         year,
         weeks,
         season_games or [],
+        output_root=output_root,
+        static_root=static_root,
+    )
+    publish_field_files(
+        year,
+        weeks,
         output_root=output_root,
         static_root=static_root,
     )
