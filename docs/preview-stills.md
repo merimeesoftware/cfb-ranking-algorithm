@@ -110,7 +110,9 @@ Capture uses `browserContext.route` for every request, `serviceWorkers: 'block'`
 
 ## Offline API
 
-`/` asks the client for the current week. The capture server answers `/api/rankings` and `/api/weeks` from `design/comps/api/rankings.json` and never forwards them. The fixture board is fixed on 2024 week 15 (four teams) so the still does not follow the calendar. A signed comp of `/` is that fixture board. `/2024/week/15` is the prerendered static week and does not call `/api/rankings`. Logo URLs on `cdn.collegefootballdata.com` and the Google Fonts stylesheets in the built HTML are rewritten to same-origin resources before the browser sees them. Any other off-site request still fails the run.
+`/` asks the client for the current week when the page fetches it. The capture server answers `/api/rankings` and `/api/weeks` from `design/comps/api/rankings.json` and never forwards them. The fixture board is fixed on 2024 week 15 (four teams: Oregon, Texas, Ohio State, Georgia) so a fetched still does not follow the calendar. That fixture is not Dean’s signed home comp. `/2024/week/15` is the prerendered static week and does not call `/api/rankings`.
+
+Dean has not signed `/2024/week/15`. Once any comp is signed, a route that stays in `routes` without a signed comp is exit 3 and fails later pull requests. That route is left off `routes` until he signs it. The checker does not invent a sign. Logo URLs on `cdn.collegefootballdata.com` and the Google Fonts stylesheets in the built HTML are rewritten to same-origin resources before the browser sees them. Any other off-site request still fails the run.
 
 ## Workers preview
 
