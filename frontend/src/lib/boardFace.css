@@ -58,6 +58,7 @@
 		}
 		
 .board-face a{ color: inherit; }
+.board-face .brand a{ color: inherit; text-decoration: none; }
 		
 .board-face :focus-visible{
 			outline: 3px solid var(--field);

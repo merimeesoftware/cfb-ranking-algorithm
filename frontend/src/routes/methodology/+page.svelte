@@ -21,6 +21,15 @@
 	let look = 70;
 	let resume = 30;
 	let league = 0;
+	let lookInput: HTMLInputElement | undefined;
+	let resumeInput: HTMLInputElement | undefined;
+	let leagueInput: HTMLInputElement | undefined;
+
+	function writeInputs() {
+		if (lookInput) lookInput.value = String(look);
+		if (resumeInput) resumeInput.value = String(resume);
+		if (leagueInput) leagueInput.value = String(league);
+	}
 
 	function rebalance(changed: 'look' | 'resume' | 'league', value: number) {
 		const current = { look, resume, league };
@@ -40,12 +49,14 @@
 		look = current.look;
 		resume = current.resume;
 		league = current.league;
+		writeInputs();
 	}
 
 	function reset() {
 		look = 100;
 		resume = 0;
 		league = 0;
+		writeInputs();
 	}
 
 	$: whatIfNames = data.parts
@@ -72,7 +83,7 @@
 	<title>{pageTitle([NAV.formula])}</title>
 </svelte:head>
 
-<BoardMast year={data.year} week={data.week} />
+<BoardMast year={data.year} week={data.week} linkHome />
 
 <main>
 	<section id="formula" aria-labelledby="formula-title">
@@ -117,17 +128,17 @@
 				<div class="slider-row">
 					<label for="sl-look">How they look</label>
 					<output id="out-look" for="sl-look">{look}</output>
-					<input id="sl-look" type="range" min="0" max="100" value={look} aria-valuetext="{look} percent" on:input={(event) => rebalance('look', Number(event.currentTarget.value))}>
+					<input id="sl-look" bind:this={lookInput} type="range" min="0" max="100" value={look} aria-valuetext="{look} percent" on:input={(event) => rebalance('look', Number(event.currentTarget.value))}>
 				</div>
 				<div class="slider-row">
 					<label for="sl-resume">Resume</label>
 					<output id="out-resume" for="sl-resume">{resume}</output>
-					<input id="sl-resume" type="range" min="0" max="100" value={resume} aria-valuetext="{resume} percent" on:input={(event) => rebalance('resume', Number(event.currentTarget.value))}>
+					<input id="sl-resume" bind:this={resumeInput} type="range" min="0" max="100" value={resume} aria-valuetext="{resume} percent" on:input={(event) => rebalance('resume', Number(event.currentTarget.value))}>
 				</div>
 				<div class="slider-row">
 					<label for="sl-league">League strength</label>
 					<output id="out-league" for="sl-league">{league}</output>
-					<input id="sl-league" type="range" min="0" max="100" value={league} aria-valuetext="{league} percent" on:input={(event) => rebalance('league', Number(event.currentTarget.value))}>
+					<input id="sl-league" bind:this={leagueInput} type="range" min="0" max="100" value={league} aria-valuetext="{league} percent" on:input={(event) => rebalance('league', Number(event.currentTarget.value))}>
 				</div>
 			</div>
 			<p class="math" id="math">{math}</p>
