@@ -112,22 +112,7 @@
 					<tbody id="board-body">
 						{#each visible as row (row.rank)}
 							<tr class:band={row.rank <= 12} class:rest={row.rank >= 14} class:shown={row.rank >= 14} data-name={row.name}>
-								<th scope="row">
-									<span class="rk">{row.rank}</span>
-									<span class="team-cell">
-										<span class="pip" style="background:{row.color}"></span>
-										<span class="name-row">
-											<button
-												type="button"
-												class="name row-toggle"
-												aria-expanded={openRank === row.rank}
-												on:click={() => toggle(row)}
-											>{row.name}</button>
-											<span class="tr-inline">{row.tr}</span>
-										</span>
-										<span class="conf">{row.conference}</span>
-									</span>
-								</th>
+								<th scope="row"><span class="rk">{row.rank}</span> <span class="team-cell"><span class="pip" style="background:{row.color}"></span><span class="name-row"><button type="button" class="name row-toggle" aria-expanded={openRank === row.rank} on:click={() => toggle(row)}>{row.name}</button><span class="tr-inline">{row.tr}</span></span><span class="conf">{row.conference}</span></span></th>
 								<td data-label="Record">{row.record}</td>
 								<td data-label="Record quality">{row.quality}</td>
 								<td class="tr tr-col" data-label={RATING_NAME}>{row.tr}</td>

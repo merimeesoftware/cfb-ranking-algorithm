@@ -43,7 +43,8 @@
 		}
 .board-face h1, .board-face h2, .board-face h3, .board-face .brand, .board-face button.name{ letter-spacing: normal; }
 		
-.board-face p{ max-width: var(--read); }
+.board-face p{ max-width: var(--read); margin: 1em 0; }
+.board-face h3{ font-weight: 700; }
 		
 .board-face .sr-only{
 			position: absolute;
@@ -197,7 +198,7 @@
 		
 .board-face .whatif{ border: 2px solid var(--field); padding: 0.75rem 0.85rem 0.9rem; margin-top: 0.8rem; }
 		
-.board-face .whatif h3{ font-family: "BoardOswald", sans-serif; margin: 0 0 0.35rem; }
+.board-face .whatif h3{ font-family: "BoardOswald", sans-serif; margin: 0 0 0.35rem; font-size: 1.17em; font-weight: 700; }
 		
 .board-face .example{ font-family: "BoardOswald", sans-serif; letter-spacing: 0.04em; color: var(--field); margin: 0 0 0.35rem; }
 		
