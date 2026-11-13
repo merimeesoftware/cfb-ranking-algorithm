@@ -3,14 +3,14 @@
 			src: url("/fonts/Oswald.ttf") format("truetype");
 			font-weight: 400 700;
 			font-style: normal;
-			font-display: swap;
+			font-display: block;
 		}
 		@font-face {
 			font-family: "BoardSans";
 			src: url("/fonts/SourceSans3.ttf") format("truetype");
 			font-weight: 400 700;
 			font-style: normal;
-			font-display: swap;
+			font-display: block;
 		}
 		:root {
 			--field: #1a3d2e;
@@ -36,9 +36,12 @@
 			font-family: "BoardSans", sans-serif;
 			font-size: 1.0625rem;
 			line-height: 1.4;
+			font-variant-numeric: normal;
+			letter-spacing: normal;
 			-webkit-font-smoothing: auto;
 			-moz-osx-font-smoothing: auto;
 		}
+.board-face h1, .board-face h2, .board-face h3, .board-face .brand, .board-face button.name{ letter-spacing: normal; }
 		
 .board-face p{ max-width: var(--read); }
 		

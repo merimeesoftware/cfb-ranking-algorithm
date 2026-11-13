@@ -129,10 +129,9 @@
 							{#if openRow && openRow.rank === row.rank}
 								<tr class="detail">
 									<td colspan="5">
-										{@const above = neighbor(row.rank, -1)}
-										{@const below = neighbor(row.rank, 1)}
 										<ol class="ladder">
-											{#if above}
+											{#if neighbor(row.rank, -1)}
+												{@const above = neighbor(row.rank, -1)}
 												<li class="rung">
 													<span class="rk">{above.rank}</span>
 													<span class="name">{above.name}</span>
@@ -148,7 +147,8 @@
 												<span class="who">{row.conference} · {row.record}</span>
 												<p class="elo-num">{row.tr}</p>
 											</li>
-											{#if below}
+											{#if neighbor(row.rank, 1)}
+												{@const below = neighbor(row.rank, 1)}
 												<li class="between">{shownGap(row.tr, below.tr)} ahead of No. {below.rank} {below.name}</li>
 												<li class="rung">
 													<span class="rk">{below.rank}</span>
