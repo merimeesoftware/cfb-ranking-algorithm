@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from api_integration import CFBDRequestError
 from data_processor import CFBDataProcessor
-from ranking_algorithm import TeamQualityRanker, ordering_score
+from ranking_algorithm import TeamQualityRanker, ordering_score, soft_slate_flag
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
@@ -170,16 +170,28 @@ _LIST_STRIP_TEAM_KEYS = ('wins_details', 'losses_details')
 
 
 def formula_breakdown(team: Dict[str, Any]) -> Dict[str, Any]:
-    """The place is Elo. Record and conference stay display-only, not parts of the total."""
+    """The place is Elo. Record, conference, and the slate label stay display-only."""
     score = ordering_score(team)
+    display: Dict[str, Any] = {
+        'record_score': float(team.get('record_score') or 0),
+        'conference_quality': float(team.get('conference_quality_score') or 0),
+        'soft_slate_flag': soft_slate_flag(team),
+        # Cupcake marks use the rating after the week, not the pregame rating.
+        'soft_win_share_basis': (
+            'End-of-week Elo. A later rating can move a win under the line after the fact.'
+        ),
+    }
+    ahead = team.get('record_ahead')
+    if isinstance(ahead, (int, float)) and not isinstance(ahead, bool):
+        display['record_ahead'] = float(ahead)
+    share = team.get('soft_win_share')
+    if isinstance(share, (int, float)) and not isinstance(share, bool):
+        display['soft_win_share'] = float(share)
     return {
         'ordering': 'elo',
         'tq_contribution': score,
         'total': score,
-        'display_only': {
-            'record_score': float(team.get('record_score') or 0),
-            'conference_quality': float(team.get('conference_quality_score') or 0),
-        },
+        'display_only': display,
     }
 
 

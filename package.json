@@ -9,13 +9,13 @@
     "sitemap": "node scripts/generate-sitemap.mjs",
     "test:visual": "npm test --prefix scripts/visual",
     "stills": "node scripts/visual/visual-check.mjs",
-    "build": "npm run sitemap && npm ci --prefix frontend && npm run build --prefix frontend",
+    "build": "npm run sitemap && npm ci --prefix frontend && npm run build --prefix frontend && npm ci --prefix worker && node scripts/build-tested-worker.mjs",
     "check": "npm run check --prefix frontend && npm run check --prefix worker",
     "deploy": "npm run build && wrangler deploy --env=\"\"",
     "deploy:dev": "npm run build && wrangler deploy --env dev",
     "check:worker": "npm run check --prefix worker"
   },
   "devDependencies": {
-    "wrangler": "^4.156.0"
+    "wrangler": "4.156.0"
   }
 }

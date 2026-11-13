@@ -41,6 +41,11 @@ export interface Team {
 	team_quality_score: number;
 	/** Place and the headline rating. Elo. Legacy blend stays on final_ranking_score. */
 	ordering_score?: number;
+	/**
+	 * Display column. Mean of won minus expected over the last 3 decisions.
+	 * Null before 3 decisions. Out of the sort while HEAT_WEIGHT is 0.
+	 */
+	momentum?: number | null;
 	record_score: number;
 	conference_quality_score: number;
 	sos: number | null;
@@ -55,6 +60,12 @@ export interface Team {
 	
 	// V4.2 Resume Metrics
 	quality_wins?: number;
+	/** Wins minus the sum of pregame win probabilities. Display only. Not a slate gate. */
+	record_ahead?: number;
+	/** Share of wins under the résumé line. End-of-week Elo. Display only. */
+	soft_win_share?: number;
+	/** Strong record, soft slate. Display only. Not part of the Elo order. */
+	soft_slate_flag?: boolean;
 	quality_losses?: number;
 	bad_losses?: number;
 	bad_wins?: number;

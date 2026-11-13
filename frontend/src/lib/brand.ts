@@ -8,6 +8,17 @@ export const RATING_TOOLTIP = 'How good they look right now. This sets the order
 /** Week-1 prior. Curly apostrophes are part of the locked sentence. */
 export const EARLY_SEASON_NOTE =
 	'In week 1, 70% of a team’s starting rating comes from last season’s final rating (bowl games included) and the season before, weighted 70/30. The other 30% comes from its conference tier. A team with no rating from last season starts from its tier alone. The head start shrinks each week and is gone by week 12.';
+
+/**
+ * Soft-slate copy slots. Phil locks the words. Dean signs before any page
+ * renders them. Both stay empty until then, so no page imports this object.
+ */
+export const SOFT_SLATE_COPY = {
+	/** Sentence for a team the slate label marks. */
+	note: '',
+	/** Name for the ahead-of-expected number shown beside the label. Not a gate. */
+	aheadLabel: '',
+} as const;
 export const TAGLINE = 'How good they actually are.';
 /** Public positioning line. Keep this sentence exact. */
 export const POSITIONING_LINE =

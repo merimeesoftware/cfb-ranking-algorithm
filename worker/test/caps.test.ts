@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { consumeDaily, dailyLimitFor, resolveDailyLimit, DEFAULT_XAI_MAX_CALLS_PER_DAY, DEFAULT_AI_MAX_CALLS_PER_DAY, DEFAULT_CFBD_MAX_CALLS_PER_DAY } from '../src/budget.ts';
 import { consumeSpend, publicKillSetBody, type SpendState } from '../src/spend-object.ts';
-import worker, { CfbApiContainer } from '../src/index.ts';
+import worker, { CfbApiContainer } from '../../.wrangler/tested/index.js';
 import { completeWorkersAi, completeXai, gatewayBypassErrors, isGatewayXaiUrl, xaiCompletionBody, xaiGatewayUrl, DEFAULT_WORKERS_AI_MODEL, WORKERS_AI_HOST, WORKERS_AI_MAX_OUTPUT_TOKENS, XAI_HOST, type GatewayCall } from '../src/providers.ts';
 import { isoWeekId, weeklyCapMicros, worstCaseMicros, wouldCross, xaiUsdKey } from '../src/xai-usd.ts';
 import {
@@ -214,6 +214,22 @@ test('manifest allowlist rejects formula params and unlisted weeks', () => {
 	if (unlisted && !unlisted.ok) {
 		assert.equal(unlisted.body.code, 'not_published');
 		assert.equal(unlisted.body.message, "That week isn't on the board yet.");
+	}
+});
+
+test('whatif stays off the public rankings allowlist', () => {
+	const manifest = { years: { '2026': [10] } };
+	const rejected = checkPublicQuery(
+		'/rankings',
+		new URL('https://truerankings.com/rankings?year=2026&week=10&whatif=70-30-0-0').searchParams,
+		manifest,
+	);
+	assert.ok(rejected && !rejected.ok);
+	if (rejected && !rejected.ok) {
+		assert.equal(rejected.status, 400);
+		assert.equal(rejected.body.code, 'formula_params');
+		assert.deepEqual(rejected.body.rejected, ['whatif']);
+		assert.equal(JSON.stringify(rejected.body).includes('v5.5'), false);
 	}
 });
 

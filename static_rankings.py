@@ -22,7 +22,15 @@ _YEAR_MIN = 1869
 _YEAR_MAX = 2100
 _WEEK_MIN = 0
 _WEEK_MAX = 20
-_FILE_SUFFIXES = ('json', 'story.json', 'why.json', 'share.json', 'climb.json')
+_FILE_SUFFIXES = (
+    'json',
+    'story.json',
+    'why.json',
+    'share.json',
+    'climb.json',
+    'games.json',
+    'field.json',
+)
 
 
 def _root_prefix(root: Optional[Union[str, Path]]) -> str:
