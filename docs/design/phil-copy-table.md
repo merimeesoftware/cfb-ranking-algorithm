@@ -109,4 +109,21 @@ The page heading is `NAV.formula`, the same string as the top-bar link.
 
 ## Words that stay off these surfaces
 
-Betting, odds, spreads, picks, The Drop, accounts, a forum, and guest posts. 65 / 27 / 8. “Scaled to 0–100 before weighting.” Heat as a board column or a slider. A share line before `?whatif=` is read.
+| Keep off | Why |
+| --- | --- |
+| bet, odds, spread, pick, lock, cover, projection, The Drop | Removed product direction. |
+| Jump to the board | The board is the page. |
+| 65%, 27%, 8%, 0.65, 0.27, 0.08 | Stale. PR #155 removes them. This design does not bring them back. |
+| Scaled to 0–100 before weighting | The code does not do that. |
+| Heat as a board column or a slider, and a made-up Heat value | Heat is the weight-0 column. The why-here-98 fixture is illustrative. It is not this file. |
+| Sign in, post, forum, account, guest posts | Still proposals. |
+| A share line before `?whatif=` is read | The board does not read that parameter yet. |
+| Elo, on the board and the team case | Deep dive only, one sentence on the formula page. |
+
+## Gold-band legend, before a committee column
+
+Legal log D-20261112-15. The committee column is not on the board. Phil writes the new name in the empty cell. The rendered legend stays `CFP Playoff (1-12)` in `frontend/src/lib/components/RankingsTable.svelte` until that cell is filled and the column ships. This slot is the one that rename waits on. The "Playoff mark" proposal higher up is a separate redesign line.
+
+| Slot | Rendered today | New name |
+| --- | --- | --- |
+| Gold 1-12 legend | CFP Playoff (1-12) | |

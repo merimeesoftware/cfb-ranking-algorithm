@@ -50,6 +50,9 @@ jobs:
       - name: Week board stamps match ALGO_VERSION
         run: python scripts/check_board_stamps.py
 
+      - name: Committee files are hand-entered rows
+        run: python scripts/check_committee_format.py
+
   worker:
     name: Worker caps
     runs-on: ubuntu-latest

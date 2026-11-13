@@ -1,0 +1,50 @@
+[
+  {
+    "season": 2024,
+    "seasonType": "regular",
+    "week": 12,
+    "polls": [
+      {
+        "poll": "AP Top 25",
+        "ranks": [
+          {
+            "rank": 1,
+            "school": "Wire Service",
+            "conference": "Invented",
+            "firstPlaceVotes": 20,
+            "points": 1500
+          }
+        ]
+      },
+      {
+        "poll": "Coaches Poll",
+        "ranks": [
+          {
+            "rank": 1,
+            "school": "Sideline Coach",
+            "points": 1400
+          }
+        ]
+      },
+      {
+        "poll": "Playoff Committee Rankings",
+        "ranks": [
+          {
+            "rank": 1,
+            "school": "Example State",
+            "conference": "Invented",
+            "firstPlaceVotes": 12,
+            "points": 0
+          },
+          {
+            "rank": 2,
+            "school": "Sample Tech",
+            "conference": "Invented",
+            "firstPlaceVotes": 1,
+            "points": 0
+          }
+        ]
+      }
+    ]
+  }
+]
