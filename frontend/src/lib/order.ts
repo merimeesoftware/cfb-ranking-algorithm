@@ -7,7 +7,7 @@ export function shownScore(team: Pick<Team, 'ordering_score' | 'team_quality_sco
 	return Number.isFinite(value) ? value : 0;
 }
 
-/** Published order is Elo. Heat weight is 0. Equal Elo keeps the previous order. */
+/** Published order is Elo. The slate label is not a sort key. Equal Elo keeps the previous order. */
 export function orderTeamsByElo(teams: Team[]): Team[] {
 	return teams
 		.map((team, index) => ({ team, index }))

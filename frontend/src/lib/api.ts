@@ -1,6 +1,7 @@
 import type { Team, Conference, FilterState, RankingsResponse } from '$lib/types';
 import { agentHeaders } from '$lib/turnstile';
 import { orderTeamsByElo } from '$lib/order';
+import { softSlateFromRow } from '$lib/softSlate';
 
 function parseWinPct(value: unknown): number {
 	if (typeof value === 'number') return value;
@@ -66,6 +67,7 @@ export function mapTeamFromApi(t: Record<string, unknown>): Team {
 			group_five_losses: (t.records as Record<string, number>)?.group_five_losses ?? 0,
 		},
 		quality_wins: (t.quality_wins ?? 0) as number,
+		...softSlateFromRow(t),
 		quality_losses: (t.quality_losses ?? 0) as number,
 		bad_losses: (t.bad_losses ?? 0) as number,
 		bad_wins: (t.bad_wins ?? 0) as number,
