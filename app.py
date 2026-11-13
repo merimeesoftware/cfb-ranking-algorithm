@@ -18,6 +18,7 @@ from ranking_service import (
 )
 from agent_service import agent_bp
 from path_to_climb import compute_path_to_climb
+from games_sidecar import read_games_sidecar
 from matchup_service import build_matchup_payload
 from public_board import (
     UNPUBLISHED_MESSAGE,
@@ -138,12 +139,14 @@ def get_matchup():
                 "year": year,
                 "week": week,
             }), 200
+        sidecar = read_games_sidecar(year, week)
         payload = build_matchup_payload(
             data.get('team_rankings') or [],
             team_a,
             team_b,
             year,
             week or data.get('week'),
+            games=sidecar['games'] if sidecar['present'] else None,
         )
         if not payload:
             return jsonify({"error": "One or both teams not found in rankings."}), 404
