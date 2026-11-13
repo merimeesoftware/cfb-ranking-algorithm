@@ -50,8 +50,14 @@
 		openRank = openRank === row.rank ? null : row.rank;
 	}
 
-	function neighbor(rank: number, delta: number): BoardRow | undefined {
-		return rows.find((row) => row.rank === rank + delta);
+	function hasNeighbor(rank: number, delta: number): boolean {
+		return rows.some((row) => row.rank === rank + delta);
+	}
+
+	function neighbor(rank: number, delta: number): BoardRow {
+		const row = rows.find((item) => item.rank === rank + delta);
+		if (!row) throw new Error('missing neighbor');
+		return row;
 	}
 
 	$: earlyLine = earlySummary(rows);
@@ -64,11 +70,15 @@
 	}
 
 	function gapLine(row: BoardRow): string {
-		const above = neighbor(row.rank, -1);
-		const below = neighbor(row.rank, 1);
 		const parts: string[] = [];
-		if (above) parts.push(`${shownGap(above.tr, row.tr)} behind No. ${above.rank} ${above.name}`);
-		if (below) parts.push(`${shownGap(row.tr, below.tr)} ahead of No. ${below.rank} ${below.name}`);
+		if (hasNeighbor(row.rank, -1)) {
+			const above = neighbor(row.rank, -1);
+			parts.push(`${shownGap(above.tr, row.tr)} behind No. ${above.rank} ${above.name}`);
+		}
+		if (hasNeighbor(row.rank, 1)) {
+			const below = neighbor(row.rank, 1);
+			parts.push(`${shownGap(row.tr, below.tr)} ahead of No. ${below.rank} ${below.name}`);
+		}
 		return parts.join(', ');
 	}
 </script>
@@ -130,7 +140,7 @@
 								<tr class="detail">
 									<td colspan="5">
 										<ol class="ladder">
-											{#if neighbor(row.rank, -1)}
+											{#if hasNeighbor(row.rank, -1)}
 												{@const above = neighbor(row.rank, -1)}
 												<li class="rung">
 													<span class="rk">{above.rank}</span>
@@ -147,7 +157,7 @@
 												<span class="who">{row.conference} · {row.record}</span>
 												<p class="elo-num">{row.tr}</p>
 											</li>
-											{#if neighbor(row.rank, 1)}
+											{#if hasNeighbor(row.rank, 1)}
 												{@const below = neighbor(row.rank, 1)}
 												<li class="between">{shownGap(row.tr, below.tr)} ahead of No. {below.rank} {below.name}</li>
 												<li class="rung">
