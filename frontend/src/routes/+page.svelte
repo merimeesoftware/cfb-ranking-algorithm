@@ -54,6 +54,15 @@
 		return rows.find((row) => row.rank === rank + delta);
 	}
 
+	$: earlyLine = earlySummary(rows);
+
+	function earlySummary(list: BoardRow[]): string {
+		const early = list.filter((row) => row.early).length;
+		if (early === 0) return 'Early: none this week.';
+		if (early === list.length) return 'Early is on for every team.';
+		return 'Early is on when a team has fewer than 3 games.';
+	}
+
 	function gapLine(row: BoardRow): string {
 		const above = neighbor(row.rank, -1);
 		const below = neighbor(row.rank, 1);
@@ -120,7 +129,36 @@
 							{#if openRow && openRow.rank === row.rank}
 								<tr class="detail">
 									<td colspan="5">
-										<p>{RATING_NAME} {row.tr}. This sets the rank. {gapLine(row)}.</p>
+										{@const above = neighbor(row.rank, -1)}
+										{@const below = neighbor(row.rank, 1)}
+										<ol class="ladder">
+											{#if above}
+												<li class="rung">
+													<span class="rk">{above.rank}</span>
+													<span class="name">{above.name}</span>
+													<span class="who">{above.overall} · {above.conference}</span>
+													<p class="elo-num">{above.tr}</p>
+												</li>
+												<li class="between">{shownGap(above.tr, row.tr)} behind No. {above.rank} {above.name}</li>
+											{/if}
+											<li class="rung subject">
+												<span class="rk">{row.rank}</span>
+												<span class="pip" style="background:{row.color}"></span>
+												<span class="name">{row.name}</span>
+												<span class="who">{row.conference} · {row.record}</span>
+												<p class="elo-num">{row.tr}</p>
+											</li>
+											{#if below}
+												<li class="between">{shownGap(row.tr, below.tr)} ahead of No. {below.rank} {below.name}</li>
+												<li class="rung">
+													<span class="rk">{below.rank}</span>
+													<span class="name">{below.name}</span>
+													<span class="who">{below.overall} · {below.conference}</span>
+													<p class="elo-num">{below.tr}</p>
+												</li>
+											{/if}
+										</ol>
+										<p>{RATING_NAME} {row.tr}. This sets the rank.{gapLine(row) ? ` ${gapLine(row)}.` : ''}</p>
 										<dl class="constants">
 											<dt>Record</dt>
 											<dd>{row.record}. Beside the rank. It does not set the rank.</dd>
@@ -141,7 +179,7 @@
 					</tbody>
 				</table>
 			</div>
-			<p class="early-once">Early: none this week.</p>
+			<p class="early-once">{earlyLine}</p>
 			<p class="find"><label>Find your team <input type="search" autocomplete="off" bind:value={query}></label></p>
 			<p><button type="button" class="btn quiet" on:click={() => (showSlice = true)}>Show ranks 14–16</button></p>
 			<p><button type="button" class="btn quiet" on:click={() => (showAll = true)}>Show the full board</button></p>
@@ -149,12 +187,6 @@
 				<summary>How to read this</summary>
 				<p>{RATING_NAME} sets the order. Record quality is wins ahead of what {RATING_NAME} expected, and the share of wins that are soft. Early is on when a team has fewer than 3 games. None of these columns change the rank. Gold marks ranks 1 through 12. Ranks 13 and below use ink.</p>
 			</details>
-			<div class="states">
-				<h3>Other states</h3>
-				<p>Loading this week’s board.</p>
-				<p>Couldn’t load this week’s board.</p>
-				<p>This week isn’t published yet.</p>
-			</div>
 		{/if}
 	</section>
 </main>

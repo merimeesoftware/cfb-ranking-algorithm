@@ -9,6 +9,10 @@
 		oldBlend: string[];
 		whatIf: string[];
 		parts: { name: string; look: number; resume: number; league: number }[];
+		teamCount: number;
+		moved: number;
+		meanGap: string;
+		officialLeader: string;
 	};
 
 	// svelte-ignore unused-export-let
@@ -52,17 +56,15 @@
 		}))
 		.sort((a, b) => b.score - a.score || a.index - b.index)
 		.slice(0, 5);
-	$: georgiaRank = (() => {
-		const ordered = data.parts
-			.map((row, index) => ({
-				name: row.name,
-				index,
-				score: (look / 100) * row.look + (resume / 100) * row.resume + (league / 100) * row.league,
-			}))
-			.sort((a, b) => b.score - a.score || a.index - b.index);
-		const place = ordered.findIndex((row) => row.name === 'Georgia');
-		return place === -1 ? null : place + 1;
-	})();
+	$: rankedNames = data.parts
+		.map((row, index) => ({
+			name: row.name,
+			index,
+			score: (look / 100) * row.look + (resume / 100) * row.resume + (league / 100) * row.league,
+		}))
+		.sort((a, b) => b.score - a.score || a.index - b.index);
+	$: georgiaPlace = rankedNames.findIndex((row) => row.name === 'Georgia');
+	$: georgiaOfficial = data.parts.findIndex((row) => row.name === 'Georgia');
 	$: math = `${(look / 100).toFixed(2)} × how they look + ${(resume / 100).toFixed(2)} × resume + ${(league / 100).toFixed(2)} × league strength.`;
 </script>
 
@@ -84,7 +86,7 @@
 			<article class="side">
 				<h3>Old blend</h3>
 				<p>For comparison, the old blend: 0.80 × how they look + 0.15 × resume + 0.05 × league strength. The board no longer sorts by it.</p>
-				<p>The parts are not scaled to 0–100 before weighting. On {data.year} week {data.week}, 121 of 138 teams sit in a different place. The average gap is 5.30 places.</p>
+				<p>The parts are not scaled to 0–100 before weighting. On {data.year} week {data.week}, {data.moved} of {data.teamCount} teams sit in a different place. The average gap is {data.meanGap} places.</p>
 			</article>
 		</div>
 		<p>How they look is the Elo rating in the code.</p>
@@ -147,8 +149,8 @@
 					<ol>{#each whatIfNames as row}<li>{row.name}</li>{/each}</ol>
 				</div>
 			</div>
-			{#if georgiaRank}
-				<p>At these weights Georgia is No. {georgiaRank} on the what-if list. The official board still has Georgia No. 1.</p>
+			{#if georgiaPlace >= 0 && georgiaOfficial >= 0}
+				<p>At these weights Georgia is No. {georgiaPlace + 1} on the what-if list. The official board still has Georgia No. {georgiaOfficial + 1}.</p>
 			{/if}
 			<p class="note">Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board.</p>
 		</div>

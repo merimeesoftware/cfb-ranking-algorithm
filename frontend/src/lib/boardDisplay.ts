@@ -6,6 +6,7 @@ export type BoardRow = {
 	conference: string;
 	color: string;
 	tr: string;
+	overall: string;
 	record: string;
 	quality: string;
 	games: number;
@@ -73,6 +74,7 @@ export function toBoardRows(teams: Team[]): BoardRow[] {
 			conference: team.conference,
 			color: team.color || '#14241c',
 			tr: formatTr(team.ordering_score ?? team.team_quality_score),
+			overall: `${wins}-${losses}`,
 			record: recordLine(team),
 			quality: `${ahead} wins ahead, ${soft}% soft`,
 			games,
