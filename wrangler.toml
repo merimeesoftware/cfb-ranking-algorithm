@@ -1,13 +1,18 @@
 name = "true-rankings-cfb"
-main = "worker/src/index.ts"
+# Built by scripts/build-tested-worker.mjs. Deploy uploads this file as-is.
+main = ".wrangler/tested/index.js"
 compatibility_date = "2026-03-01"
+# The build step already ran esbuild. Deploy must not bundle again.
+no_bundle = true
+# One ES module. Leave discovery off so README.md in the outdir is not uploaded.
+find_additional_modules = false
 # Wrangler 4.150+ uploads source maps when this is unset. Keep them off the upload.
 upload_source_maps = false
 # Version uploads must not publish a preview URL. Repo config only.
 preview_urls = false
 
 # Unified Workers deploy: SvelteKit static frontend + Flask API container.
-#   npm run build --prefix frontend && npx wrangler deploy
+#   npm run build && npx wrangler deploy --env=""
 #
 # Secrets (set once per environment, outside this file):
 #   wrangler secret put CFBD_API_KEY

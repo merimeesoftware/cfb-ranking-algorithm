@@ -7,12 +7,12 @@
     "deploy:dev": "wrangler deploy --env dev",
     "check": "wrangler check",
     "types": "wrangler types",
-    "test": "node --experimental-strip-types --import ./test/register-cf-loader.mjs --test test/caps.test.ts"
+    "test": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./test/register-cf-loader.mjs --test test/bundle-smoke.test.ts test/caps.test.ts"
   },
   "devDependencies": {
     "@cloudflare/containers": "^0.2.0",
     "@cloudflare/workers-types": "^5.20260801.1",
     "typescript": "^5.8.0",
-    "wrangler": "^4.156.0"
+    "wrangler": "4.156.0"
   }
 }
