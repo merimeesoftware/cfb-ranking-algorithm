@@ -6,6 +6,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Conference, Team } from '$lib/types';
 import { orderTeamsByElo } from '$lib/order';
+import { softSlateFromRow } from '$lib/softSlate';
 
 const STATIC_ROOT = join(process.cwd(), 'static', 'rankings');
 
@@ -58,6 +59,7 @@ function mapTeam(t: Record<string, unknown>): Team {
 			group_five_losses: records.group_five_losses ?? 0,
 		},
 		quality_wins: (t.quality_wins ?? 0) as number,
+		...softSlateFromRow(t),
 		quality_losses: (t.quality_losses ?? 0) as number,
 		bad_losses: (t.bad_losses ?? 0) as number,
 		bad_wins: (t.bad_wins ?? 0) as number,

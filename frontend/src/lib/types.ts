@@ -60,6 +60,12 @@ export interface Team {
 	
 	// V4.2 Resume Metrics
 	quality_wins?: number;
+	/** Wins minus the sum of pregame win probabilities. Display only. Not a slate gate. */
+	record_ahead?: number;
+	/** Share of wins under the résumé line. End-of-week Elo. Display only. */
+	soft_win_share?: number;
+	/** Strong record, soft slate. Display only. Not part of the Elo order. */
+	soft_slate_flag?: boolean;
 	quality_losses?: number;
 	bad_losses?: number;
 	bad_wins?: number;

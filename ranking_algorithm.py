@@ -60,8 +60,75 @@ HEAT_WEIGHT = 0.0
 EARLY_SEASON_DECISIONS = 3
 
 
+# Display label only. None of these enter ordering_score.
+# soft_win_share uses end-of-week Elo, so a later rating can move a win
+# under the weak-loss line after the fact.
+SOFT_SLATE_MIN_DECISIONS = 6
+SOFT_SLATE_MIN_WIN_RATE = 0.75
+SOFT_SLATE_MIN_SOFT_WIN_SHARE = 0.50
+
+
+def _optional_number(value: Any) -> Optional[float]:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and math.isnan(value):
+            return None
+        return float(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            number = float(text)
+        except ValueError:
+            return None
+        if math.isnan(number):
+            return None
+        return number
+    return None
+
+
+def soft_slate_flag(team: Dict[str, Any]) -> bool:
+    """True when the record is strong and the slate so far is soft.
+
+    Display only. Not a sort key. True only when decisions are at least 6,
+    win rate is at least 0.75, quality_wins is 0, and soft_win_share is at
+    least 0.50. record_ahead is shown beside the label and is not a gate.
+    record_quality_flag stays wins minus expected wins.
+
+    A stored boolean on the row is ignored. The flag is derived from the
+    columns already on the v5.5 board. soft_win_share uses end-of-week Elo.
+    """
+    if not isinstance(team, dict):
+        return False
+    records = team.get('records')
+    if not isinstance(records, dict):
+        records = {}
+    wins = _optional_number(records.get('total_wins'))
+    if wins is None:
+        wins = _optional_number(team.get('wins'))
+    losses = _optional_number(records.get('total_losses'))
+    if losses is None:
+        losses = _optional_number(team.get('losses'))
+    quality = _optional_number(team.get('quality_wins'))
+    share = _optional_number(team.get('soft_win_share'))
+    if wins is None or losses is None or quality is None or share is None:
+        return False
+    if wins < 0 or losses < 0:
+        return False
+    decisions = wins + losses
+    if decisions < SOFT_SLATE_MIN_DECISIONS:
+        return False
+    if wins / decisions < SOFT_SLATE_MIN_WIN_RATE:
+        return False
+    if quality != 0.0:
+        return False
+    return share >= SOFT_SLATE_MIN_SOFT_WIN_SHARE
+
+
 def ordering_score(team: Dict[str, Any]) -> float:
-    """Published sort key: Elo only. Record, fraud, and momentum are not in it."""
+    """Published sort key: Elo only. Record and momentum are not in it."""
     try:
         elo = float(team.get('team_quality_score') or 0.0)
     except (TypeError, ValueError):
@@ -906,8 +973,7 @@ class TeamQualityRanker:
                 'bad_loss_penalty': bad_loss_penalty,
                 'wins_details': enriched_wins,
                 'losses_details': enriched_losses,
-                # Record quality: wins minus Elo's expected wins, plus the
-                # share of wins over FCS or below the weak-loss line.
+                # Ahead of expected wins. Not the slate label.
                 'record_ahead': record_ahead,
                 'soft_win_share': soft_win_share,
                 'record_quality_flag': record_ahead > 0.0,
@@ -918,11 +984,12 @@ class TeamQualityRanker:
                 'momentum': momentum,
                 'early_season': early_season,
             }
+            team_entry['soft_slate_flag'] = soft_slate_flag(team_entry)
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
-            
-        # Order by Elo alone. Heat weight is 0. Record quality, momentum,
-        # and the early-season flag are columns, not sort keys.
+
+        # Order by Elo alone. Heat weight is 0. Record quality, the slate
+        # label, momentum, and the early-season flag are columns, not sort keys.
         team_rankings.sort(key=ordering_score, reverse=True)
         
         # Calculate SoS and SoV ranks
