@@ -19,7 +19,7 @@
       "file": "renders/home-390.png",
       "sha256": "5d7a4a1365e72ba9fd8d059887c8563633160fea9d1528ce8e22e46a026975f8",
       "signed_by": "owner:dean-cfb",
-      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6866547425",
+      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6867039844",
       "masks": []
     },
     {
@@ -28,7 +28,7 @@
       "file": "renders/home-1440.png",
       "sha256": "fbe43eb8b3235a11475ac7ea839cd41eb2628c8e9f6537216f8c01bc6290b3b3",
       "signed_by": "owner:dean-cfb",
-      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6866547425",
+      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6867039844",
       "masks": []
     },
     {
@@ -37,7 +37,7 @@
       "file": "renders/methodology-390.png",
       "sha256": "27943cce439832cb5300f350d29084d832460b634f4b1d43d1e9eb484a599ccf",
       "signed_by": "owner:dean-cfb",
-      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6866547425",
+      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6867039844",
       "masks": []
     },
     {
@@ -46,7 +46,7 @@
       "file": "renders/methodology-1440.png",
       "sha256": "0c6b143e4b4a4ca2235884c64e0a41d66e971f4c899a0cf4f883bc0f2893ba89",
       "signed_by": "owner:dean-cfb",
-      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6866547425",
+      "signoff": "https://github.com/merimeesoftware/cfb-ranking-algorithm/pull/179#issuecomment-6867039844",
       "masks": []
     }
   ]
