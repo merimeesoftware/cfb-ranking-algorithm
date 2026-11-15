@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "kind": "tr-plus-field",
+  "projection": "TR+",
+  "ruleset_id": "2026",
+  "rules_source": "https://www.ncaa.com/news/football/article/2026-08-11/how-college-football-playoff-works-schedule-selections-rankings-byes-and-more",
+  "rules_retrieved": "2026-08-27",
+  "board_algo": "v5.5",
+  "year": 2026,
+  "week": 5,
+  "as_of": {
+    "year": 2026,
+    "week": 5
+  },
+  "incomplete": true,
+  "champion_map": {
+    "ACC": null,
+    "Big Ten": null,
+    "Big 12": null,
+    "SEC": null
+  },
+  "slots": [
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": "ACC",
+      "bid": "power-conference-champion",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": "Big Ten",
+      "bid": "power-conference-champion",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": "Big 12",
+      "bid": "power-conference-champion",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": "SEC",
+      "bid": "power-conference-champion",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": "James Madison",
+      "rank": 47,
+      "conference": "Sun Belt",
+      "bid": "group-of-six-highest-ranked",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": "Notre Dame",
+      "rank": 6,
+      "conference": "FBS Independents",
+      "bid": "notre-dame-top-12",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": null,
+      "bid": "unfilled",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": null,
+      "bid": "unfilled",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": null,
+      "bid": "unfilled",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": null,
+      "bid": "unfilled",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": null,
+      "bid": "unfilled",
+      "bye": null
+    },
+    {
+      "seed": null,
+      "team": null,
+      "rank": null,
+      "conference": null,
+      "bid": "unfilled",
+      "bye": null
+    }
+  ],
+  "first_round": []
+}
