@@ -11,9 +11,10 @@ from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
 
-ALGO_VERSION = 'v5.5'
-# Committed prior files stay the blend seed (résumé and league included).
-# Reading them under v5.5 would miss the files and try a live recompute.
+ALGO_VERSION = 'v5.6'
+# v5.6 is the G5-G5 weight of 1.0. The week fade stays. C is held.
+# Committed prior files stay the v5.3 blend seed. Reading them under v5.6
+# would miss the files and try a live recompute.
 BLEND_PRIOR_ALGO = 'v5.3'
 
 DEFAULT_CONFIG = {
@@ -213,7 +214,10 @@ def publish_order(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
         for team in teams:
             if isinstance(team, dict):
                 team['ordering_score'] = ordering_score(team)
-        rankings_data['team_rankings'] = sorted(teams, key=ordering_score, reverse=True)
+        rankings_data['team_rankings'] = sorted(
+            teams,
+            key=lambda team: (-ordering_score(team), str(team.get('team_name') or '')),
+        )
     return rankings_data
 
 

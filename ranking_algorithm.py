@@ -1000,9 +1000,8 @@ class TeamQualityRanker:
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
 
-        # Order by Elo alone. Heat weight is 0. Record quality, the slate
-        # label, momentum, and the early-season flag are columns, not sort keys.
-        team_rankings.sort(key=ordering_score, reverse=True)
+        # Order by Elo alone. Ties break by team name. Heat weight is 0.
+        team_rankings.sort(key=lambda team: (-ordering_score(team), team.get('team_name') or ''))
         
         # Calculate SoS and SoV ranks
         sos_values = [(t['team_name'], t['sos']) for t in team_rankings]

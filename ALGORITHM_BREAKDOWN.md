@@ -1,12 +1,12 @@
 # CFB Ranking Algorithm - Complete Breakdown (V5)
 
-## Published order (v5.5)
+## Published order (v5.6)
 
 The board is ordered by Elo. `ordering_score` is `team_quality_score`. `HEAT_WEIGHT` is `0.0`, so a later form term cannot move a place. Record and conference quality stay on the row as their own numbers. See `docs/adr/0002-board-order-elo-heat.md`.
 
 ### Momentum (display column)
 
-Momentum is the mean of `won - expected` over the last 3 decisions. It is null before 3 decisions. FCS games stay inside that mean. The #96 Heat form is a different column (decay `0.5^(weeks_ago / H)`, shrink `min(1, n/4)`, a 40% single-game cap, FBS-vs-FBS only, margin clipped at 28) and is unbuilt. Momentum does not enter the sort. `ALGO_VERSION` stays `v5.5` while `HEAT_WEIGHT` is 0.
+Momentum is the mean of `won - expected` over the last 3 decisions. It is null before 3 decisions. FCS games stay inside that mean. The #96 Heat form is a different column (decay `0.5^(weeks_ago / H)`, shrink `min(1, n/4)`, a 40% single-game cap, FBS-vs-FBS only, margin clipped at 28) and is unbuilt. Momentum does not enter the sort. `HEAT_WEIGHT` stays 0. `ALGO_VERSION` is `v5.6` for the G5-G5 weight of 1.0. The week fade stays.
 
 ## Master Formula
 
@@ -236,8 +236,8 @@ Multiplier = 0.8 + (0.4 × Performance_Ratio)   # Range: 0.8 to 1.2
 | $E_A$ | Expected score for team A |
 | $R_A$ | Elo rating for team A |
 | $\Delta$ | Elo delta |
-| $K$ | Base factor (40, ×0.65 postseason) |
-| $HFA$ | Home-field advantage (65 regular, 20 postseason) |
+| $K$ | Base factor (50, ×0.65 postseason) |
+| $HFA$ | Home-field advantage (50 regular, 20 postseason) |
 | $FRS$ | Final Ranking Score |
 | $P_{75}$ | 75th percentile Elo (quality win threshold) |
 | $P_{90}$ | 90th percentile Elo (quality loss threshold) |

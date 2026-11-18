@@ -85,7 +85,7 @@ def committee_errors(
     payload: Any,
     *,
     filename: Optional[str] = None,
-    forbidden_stamps: Iterable[str] = ('v5.5',),
+    forbidden_stamps: Iterable[str] = ('v5.5', 'v5.6'),
 ) -> list[str]:
     """Problems that keep ``payload`` from being a committee file. Empty means valid."""
     stamps = tuple(dict.fromkeys(str(stamp) for stamp in forbidden_stamps))
@@ -134,7 +134,7 @@ def hand_entered_rows(
     rows: Any,
     *,
     filename: Optional[str] = None,
-    forbidden_stamps: Iterable[str] = ('v5.5',),
+    forbidden_stamps: Iterable[str] = ('v5.5', 'v5.6'),
 ) -> list[dict]:
     """Return canonical hand-entered rows, or raise ``CommitteeFormatError``."""
     errors = committee_errors(rows, filename=filename, forbidden_stamps=forbidden_stamps)
@@ -147,7 +147,7 @@ def checked_backfill(
     hand_rows: Any,
     cfbd_body: Any,
     *,
-    forbidden_stamps: Iterable[str] = ('v5.5',),
+    forbidden_stamps: Iterable[str] = ('v5.5', 'v5.6'),
 ) -> list[dict]:
     """Keep the hand-entered rows when one CFBD fixture matches them.
 
@@ -194,7 +194,7 @@ def write_committee_file(
     rows: Any,
     *,
     year: int,
-    forbidden_stamps: Iterable[str] = ('v5.5',),
+    forbidden_stamps: Iterable[str] = ('v5.5', 'v5.6'),
 ) -> Path:
     """Write ``{year}.json`` under ``directory``. Does not touch the manifest."""
     if type(year) is not int:

@@ -84,7 +84,7 @@ test('the second list reorders and the official list, share, and citation do not
 		'Alabama',
 		'UCLA',
 		'Georgia',
-		'Notre Dame',
+		'Miami',
 	]);
 	assert.deepEqual(moved.shareNames, [
 		'Georgia',

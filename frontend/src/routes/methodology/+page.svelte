@@ -165,7 +165,7 @@
 			{/if}
 			<p class="note">Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board.</p>
 		</div>
-		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.5.</p>
+		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.6. On 2026-11-18 the stored 2024 and 2026 boards were recomputed because Group of 5 vs Group of 5 went to 1.0. Places moved because of that weight, not because new games were added. On 2024 week 15, Boise State moved from No. 41 to No. 26. On 2026 week 10, Boise State moved from No. 44 to No. 34. 2025 boards were not restated.</p>
 	</section>
 </main>
 
