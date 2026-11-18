@@ -25,6 +25,8 @@ export const POSITIONING_LINE =
 	'The order you check before you argue — not a poll, not a committee, not the narrative.';
 export const HANDLE = '@TrueCFB';
 
+export { NAV } from './navCopy.js';
+
 /** http(s) origin from PUBLIC_SITE_URL. Empty when the setting is unset — no default host. */
 export function siteOriginFrom(raw: string | undefined | null): string {
 	if (typeof raw !== 'string') return '';

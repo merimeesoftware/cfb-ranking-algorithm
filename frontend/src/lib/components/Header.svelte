@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { theme, toggleTheme, isDarkMode } from '$lib/stores/theme';
 	import { page } from '$app/state';
-	import { BRAND_NAME, BRAND_SHORT } from '$lib/brand';
+	import { BRAND_NAME, BRAND_SHORT, NAV } from '$lib/brand';
 
 	let mobileMenuOpen = false;
 
 	const navItems = [
 		{ href: '/', label: 'The Board' },
-		{ href: '/methodology', label: 'How it works' }
+		{ href: '/methodology', label: NAV.formula }
 	];
 
 	$: darkMode = isDarkMode($theme);

@@ -2,125 +2,122 @@
 
 Proposed copy for Phil. Not signed. Dean has not signed the comp.
 
-Locked lines are copied verbatim from `PURPOSE.md` and `frontend/src/lib/brand.ts`. Everything else is a proposal.
-
-"On main today" is `main` at `41767f4`. "PR #155" is the number-fix pull request. Where that pull request corrects a stale number, this table tells Phil to keep the correction. The proposed cell is the redesign's sentence, not a return to 65/27/8.
-
-Public surfaces say "how they look." The formula page adds one deep-dive sentence: how they look is the Elo rating in the code. The board does not say Elo.
-
-Heat is the column with weight 0. A drop in the order is "fell," not "taking heat."
-
-No accounts, no forum, no guest posting, no betting language.
+Facts are from the v5.5 week boards on this branch (current main, after #156, #157, and #166). The place is TR+. Curly apostrophes are part of the public sentences.
 
 ## Locked, do not paraphrase
 
-| Slot | Text |
-| --- | --- |
-| Tagline | How good they actually are. |
-| Positioning | The order you check before you argue — not a poll, not a committee, not the narrative. |
-| Brand | True Rankings |
-| Rating name | TR+ |
+| Slot | Text | Source |
+| --- | --- | --- |
+| Tagline | How good they actually are. | PURPOSE |
+| Positioning | The order you check before you argue — not a poll, not a committee, not the narrative. | PURPOSE |
+| Brand | True Rankings | PURPOSE |
+| Rating name | TR+ | `RATING_NAME` |
+| Rating tooltip | How good they look right now. This sets the order. | `RATING_TOOLTIP` |
+| Early-season note | In week 1, 70% of a team’s starting rating comes from last season’s final rating (bowl games included) and the season before, weighted 70/30. The other 30% comes from its conference tier. A team with no rating from last season starts from its tier alone. The head start shrinks each week and is gone by week 12. | `EARLY_SEASON_NOTE` |
+| Resume header | Resume | #98 |
+| Resume description | Who they beat, ranked. | #98 |
+| Nav, formula | How the formula works | `NAV.formula` |
 
 ## Landing and board
 
-| Slot | On main today | PR #155 | Proposed |
-| --- | --- | --- | --- |
-| Home first screen | Brand, week line, tagline, positioning line, then a link "Jump to the board." The board follows a hero. | Pulls the table into the first viewport. Keep that. | The week board is the first paint. No "Jump to the board." |
-| Week line | `{year} Week {week} · TR+ · through Saturday` | Unchanged in intent. | `2026 · Week 10` on this file, because it is the latest stored week. |
-| Order line | The sort is the published blend, and the page does not say so in one line. | Still the blend, with corrected weights. | Ordered by how they look. Record, record quality, Heat, and early-season are columns. |
-| Week movement | Stub prose can say "Taking heat" for a drop. | Not this redesign. | Miami went from No. 1 at 8-0 to No. 6 at 8-1. Utah is No. 1 at 9-0, up from No. 2. Ohio State fell from No. 13 to No. 31. Michigan State climbed from No. 85 to No. 55. |
-| Case, No. 1 | No per-team case on the first screen. | Not this redesign. | Utah is No. 1 on how they look at 1,820.8, up from No. 2. They are 9-0 in the Big 12, 8-0 against Power 4, with 2 quality wins and 1 win off the FBS board. Georgia is 20.4 points behind. |
-| Case, neighbors | None on the first screen. | Not this redesign. | Georgia is No. 2 at 1,800.3, 8-1, with 3 quality wins. UCLA is No. 3 at 1,780.8 and 9-0, 19.6 points back. The old blend had UCLA No. 2 and Georgia No. 3. |
-| Case, record quality | None. | Not this redesign. | Liberty is 8-1 and No. 58 on how they look. The old blend had them No. 42, 16 places higher. Schedule rank 137 of 138. Quality wins: 0. One win is off the FBS board. The column shows that. The rank stays 58. |
-| Column: rank | Rank | Keep. | The number of the how-they-look order. |
-| Column: team | Team, conference in its own column | Keep the names. | Team, with the conference under the name. |
-| Column: record | Record (wins-losses) | Keep the win-loss record. | Record. The win-loss line. Not the résumé score. |
-| Column: move | Δ | Keep a move only if it is this order's move. | Not a column. The week line carries the moves. Δ on the old blend would be a second order. |
-| Column: score | TR+ (the published blend, shown as the rating) | Keep TR+ as the product name. | TR+ stays the product name in the masthead. It is not a column of the old blend. |
-| Column: record quality | Absent. | Absent. | Header: Record quality. Description: The old blend's place, and wins off this FBS board. The column does not change the rank. |
-| Column: Heat | Absent. The word Heat is not a column. | Absent. | Header: Heat. Description: Weight 0. No number is stored on this file. Cell: an em dash, and for a screen reader "Not scored. Weight 0." |
-| Column: early | Absent. | Absent. | Header: Early. Description: On when a team has fewer than 3 games. Cell this week: an em dash, and for a screen reader "Off. 9 games." |
-| Playoff mark | A top-12 treatment already exists in the table component. | Leave the cutoff at 12. | Gold mark on ranks 1 through 12 only. Caption: Gold mark: the top 12 on this order. |
-| Table caption | None of this text. | Do not revert the first-viewport table. | 2026 week 10. 138 teams. Ordered by how they look. Record quality is the old blend's place, and wins off this FBS board. Heat is weight 0. Early is on only under 3 games. None of these columns change the order. |
+| Slot | Proposed |
+| --- | --- |
+| Week line | Miami fell from No. 1 at 8-0 to No. 6 at 8-1. Georgia climbed from No. 3 to No. 1 at 8-1. Ohio State fell from No. 11 to No. 27. Michigan State climbed from No. 78 to No. 54. |
+| Case, No. 1 | Georgia is No. 1 on TR+ at 1,806.1, 8-1, 6-1 in the SEC. Utah is 9.5 points behind. |
+| Case, neighbors | Utah is No. 2 on TR+ at 1,796.6, 9-0, 6-0 in the Big 12. The old blend has Utah No. 1 and Georgia No. 2. The official order does not. |
+| Case, record quality | Liberty is No. 53 on TR+ at 1,386.4, 8-1, 5-0 in Conference USA. The record is 2.04 wins ahead of what TR+ expected, and 88% of the wins are soft. The rank stays 53. |
+| Caption | 2026 week 10. 138 teams. Ordered by TR+. |
+| How to read this | TR+ sets the order. Record quality is wins ahead of what TR+ expected, and the share of wins that are soft. Early is on when a team has fewer than 3 games. None of these columns change the rank. Gold marks ranks 1 through 12. Ranks 13 and below use ink. |
+| Column: TR+ | Header `TR+`. Tooltip: How good they look right now. This sets the order. |
+| Column: record | The win-loss line, then the conference line. Georgia: 8-1, 6-1 in the SEC. |
+| Column: record quality | Wins ahead of what TR+ expected, and the share of wins that are soft. South Carolina: 1.13 wins ahead, 50% soft. |
+| Column: early | On when a team has fewer than 3 games. This week the shown rows are off. The screen reader uses that team’s game count. |
+| Early, none this week | Early: none this week. |
+| Early, week 1 | 2026 week 1. Early is on for every team. Indiana is No. 1 on TR+ at 1,824.5, 1-0. |
+| Find your team | Find your team |
+| Show more | Show ranks 14–16 |
+| Loading | Loading this week’s board. |
+| Error | Couldn’t load this week’s board. |
+| Empty | This week isn’t published yet. |
 
-## Per-team line (any team)
+## Per-team line
 
-Proposed template. Fill only from the week file. Omit a sentence when the field is missing. Do not invent a game.
+`{Team} is No. {rank} on TR+ at {tr_plus}. {record}, {conference}. They were No. {previous} a week ago. {quality_wins} quality wins.`
 
-`{Team} is No. {elo rank} on how they look at {how they look}, {record}, {conference}. {If the previous week exists: They were No. {previous} a week ago.} {quality wins} quality wins. {wins off the FBS board} wins off the FBS board. The old blend had them No. {blend rank}.`
-
-The current stub says: "The board ranks them on who they beat and how they look — not the hype." That sentence describes the blend. Proposed replacement is the template above. PR #155 does not need to keep the stub sentence.
+Omit the previous-week sentence when that week is missing.
 
 ## Cross-conference
 
-| Slot | On main today | Proposed |
-| --- | --- | --- |
-| Pair | No similar-strength pair on the board. | Indiana and Wake Forest are both 8-1. How they look: 1,700.3 and 1,698.3, 1.9 points apart. Schedule ranks 71 and 73 of 138. Indiana, Big Ten, is 5-1 against Power 4 with 0 quality wins. Wake Forest, ACC, is 6-1 against Power 4 with 1 quality win. Each has 1 win off the FBS board. The order is Indiana, then Wake Forest. |
-| Second pair | None. | BYU and LSU are 2.2 points apart. BYU is No. 21, 7-2, Big 12, schedule rank 18. LSU is No. 22, 6-3, SEC, schedule rank 24. |
-| Leagues | Conference table headers: #, Conference, Avg Rank, Teams, Power 4 W%, G5 W%, FCS W%. | Big 12 averages 1,740.0 and is 12-7 against Power 4. SEC 1,715.1, 11-2. Big Ten 1,693.2, 10-10. ACC 1,591.8, 8-12. The file's Pac-12 row is labeled Power 4, averages 1,194.6, and is 0-12 against Power 4. |
-| Independents rollup | The file stores average 0 for FBS Independents. | The FBS Independents rollup on this file is 0. Notre Dame's own league number is 1,552.8. This page does not treat 0 as a measured league strength. |
-| Section title | Conferences | Same strength, different leagues |
+| Slot | Proposed |
+| --- | --- |
+| Pair | Indiana and Wake Forest are both 8-1. TR+ 1,697.7 and 1,694.0, 3.7 points apart. The order is Indiana, then Wake Forest. |
+| Second pair | Baylor and SMU are 2.2 points apart. Baylor is No. 19, 6-3, 4-2 in the Big 12, schedule rank 59. SMU is No. 20, 7-2, 5-2 in the ACC, schedule rank 63. |
+| Leagues | SEC 1,710.2, 10-2 against Power 4. Big 12 1,702.1, 6-7. Big Ten 1,658.5, 4-10. ACC 1,578.6, 6-12. Pac-12 1,154.3, 0-12. |
 
-## Peers and what-if
+## What-if
 
-| Slot | On main today | PR #155 | Proposed |
-| --- | --- | --- | --- |
-| What-if label | No what-if on main. | An exploratory weight control, labeled so it does not change the official board. Keep that rule. | What-if. This does not change the official board. |
-| Open math | The methodology page shows one blend and calls it the board score. | That blend should read 0.80 / 0.15 / 0.05, matching the code. Keep those three numbers when the sentence is about the code. | At the slider state in the comp: 0.70 × how they look + 0.30 × résumé score + 0 × league strength + 0 × Heat. |
-| Heat slider | Absent. | Absent. | Heat has no stored number. Its slider stays at 0. |
-| Result of this state | Absent. | The explorer must not rewrite the official order. | At these weights Georgia is No. 5 on the what-if list. The official board still has Georgia No. 2. |
-| Share | Share of the official top 25. | Keep official share honest. | Share the weights in the link. No account. Example path: /2026/week/10?whatif=70-30-0-0 |
-| Peer table, official | Absent. | Absent. | Official. Weights 100 / 0 / 0 / 0. First three: Utah, Georgia, UCLA. This is the board. |
-| Peer table, blend | Absent. | The corrected blend is the code's sort. | Published blend. Weights 80 / 15 / 5 / 0. First three: Utah, UCLA, Georgia. The code still sorts by this. It is a comparison. |
-| Peer table, what-if | Absent. | Absent. | This what-if. Weights 70 / 30 / 0 / 0. First three: Utah, UCLA, Alabama. A comparison a link can carry. |
+The frame is labeled `Example only`. The sliders move a comparison list. They do not change the official rows.
 
-## Why this team is here
+| Slot | Proposed |
+| --- | --- |
+| Frame | Example only |
+| Banner | What-if. This does not change the official board. |
+| Open math, starting state | 0.70 × how they look + 0.30 × resume + 0 × league strength. |
+| Result of that state | At these weights Georgia is No. 4 on the what-if list. The official board still has Georgia No. 1. |
+| Reset | Reset to official |
+| Old blend | Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board. |
+| Heat | Heat is not in the order. It hasn’t passed its test yet. |
 
-Sample: South Carolina, 2026 week 10. The same slots fill for every team.
+No share line on the page. The board does not read `?whatif=`. When that parameter is read, the share text is `My what-if weights, not the official board: {url}` and the error is `Link weights didn’t load. See the board.`
 
-| Slot | On main today | PR #155 | Proposed |
-| --- | --- | --- | --- |
-| Heading | Why here? opens a generated line. The modal then shows three weighted bars. | The bars become 80 / 15 / 5 and must sum to the published score. Keep that identity for any view of the old blend. | Why South Carolina is No. 12 |
-| Ordering bar | How good they look 65%, Who they beat 27%, League strength 8%. | 80 / 15 / 5. Do not restore 65 / 27 / 8. | How they look, 1,662.2. This is the rank. The gap to No. 11 Iowa is 17.3 points. The gap to No. 13 Houston is 4.8 points. Both gaps are how they look. |
-| Record | Inside the weighted résumé, not as the win-loss column of the reason. | The breakdown may still show the résumé term of the blend. Label it as the old blend if both stay on the page. | Record, beside the rank: 6-3, SEC. It does not set the rank. |
-| Who they beat | "Who they beat (27%)." | Weight 15% if the bar is the blend. | 2 quality wins, 1 quality loss, 1 bad loss, 4-3 against Power 4, 1-0 against Group of 5, 1 win off the FBS board. |
-| Schedule | Schedule fields exist on the model; the modal leads with the three weights. | Keep stored ranks. | Schedule rank 37 of 138. Victory rank 24 of 138. Those ranks do not set the order. |
-| Game list | The modal tries to load game detail from the API. | No live call in this design pass. | The week file stores these counts. It does not store the game list, so this page does not invent scores. |
-| Old blend on the team | Shown as the reason for the rank, at the wrong weights. | Shown as 80 / 15 / 5, which matches the code's score. | The old blend had them No. 20. The who-they-beat score is 1,308.0. That score is why the old order dropped them 8 places. |
-| Heat on the team | Not shown. A design fixture under `design/comps/why-here-98/` uses an illustrative Heat number. Do not import it. | Absent. | Heat: weight 0. No number on this file. |
-| Early on the team | Absent. | Absent. | Early-season: off. 9 games. |
+## Opened row
+
+Sample: South Carolina, 2026 week 10, expanded in place. Gaps are the difference of the TR+ numbers shown to one decimal. The homepage link is “How the formula works.”
+
+| Slot | Proposed |
+| --- | --- |
+| Heading | Why South Carolina is No. 12 |
+| Open control | The team name is a button. It expands the row. It does not open a team page. |
+| Rank line | TR+ 1,653.0. This sets the rank. 22.4 behind No. 11 Iowa, 0.1 ahead of No. 13 Duke. |
+| Record | 6-3, 4-3 in the SEC. Beside the rank. It does not set the rank. |
+| Resume | Who they beat, ranked. 2 quality wins, 1 quality loss, 1 bad loss. 4-3 against Power 4. |
+| Schedule | Schedule rank 33 of 138. It does not set the order. |
+| Record quality | 1.13 wins ahead of what TR+ expected. 50% of the wins are soft. The old blend has them No. 19. |
+| Early | Off. 9 games. |
+| Games | Game scores aren’t on this page. |
 
 ## Formula page
 
-| Slot | On main today | PR #155, keep | Proposed |
-| --- | --- | --- | --- |
-| Title | How the board works | Keep a plain title. | How the order works |
-| Intro | Meathead version: who they beat + how they look + the league they live in. | The three parts are the code's blend, at 80 / 15 / 5. | Two blocks. The approved order is how they look alone. The old blend is what the code still publishes. |
-| Mix | Board score = (0.65 × how they look) + (0.27 × who they beat) + (0.08 × league strength) | 0.80, 0.15, and 0.05. Do not go back to 0.65, 0.27, 0.08. | Approved order: the board is sorted by how they look, high to low. Heat's weight is 0. Record, record quality, Heat, and early-season are columns. |
-| Old blend sentence | The 65/27/8 line is presented as the board. | One blend, corrected. | Old blend, still what the code publishes: 0.80 × how they look + 0.15 × résumé score + 0.05 × league strength. |
-| Scale sentence | All components are normalized to a 0–100 scale before weighting. | Remove it. The code weights the raw numbers. | The parts are not scaled to 0–100 before weighting. On the 2026 week 10 file the old blend matches the stored score. 127 of 138 teams sit in a different place than how they look. The average gap is 5.99 places. |
-| Deep-dive name | The page says Elo inside the nerdy sections and also misstates the constants. | Keep the code's constant values. | How they look is the Elo rating in the code. |
-| K | Base volatility = 40. Reduced in postseason (0.6-0.7). | K is 50. Postseason factor is 0.65. | Step size is 50. A postseason game multiplies it by 0.65, so 32.5. |
-| Home field | The running value is 50. The page has carried 65. | Home field 50. | Home field, in the expectation only: 50 in the regular season, 20 in the postseason, 0 on a neutral field. |
-| Upset | 1.25× major upset, capped at 1.20×, and 1.20× cross-tier. | 1.18 when the gap is over 150, and 1.12 for a Group of 5 win over a Power 4 team. They stack. There is no 1.18 cap on the product. | A win over a team rated more than 150 points higher multiplies the step by 1.18. A Group of 5 win over a Power 4 team multiplies it by 1.12. They stack. The product is not capped at 1.18. |
-| Margin | The nerdy section is incomplete relative to the code. | The code has no margin cap. | Margin moves the step by the natural log of the margin plus 1. There is no cap. |
-| Matchup weights | The table of 1.0 / 0.8 / 0.65 / 0.2 / 0.1 is the part that already matches. | Keep those five numbers. | Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1. |
-| Ceiling | Not stated as 1,850 on the fan page. | The cap is 1,850, winner only. | No winner's rating goes above 1,850. The loser still drops the full step. |
-| Starts and prior | 1500 / 1200 / 900 are on the page. The fade and the 0.70 / 0.30 prior are easy to miss. | Keep 1,500 / 1,200 / 900. | Before the games, a Power 4 team starts at 1,500, other FBS at 1,200, and FCS at 900, blended with 0.70 of last year's final score and 0.30 of the year before. |
-| Fade and early | Not stated as this formula. | Do not invent a different fade. | The opening blend fades by max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0. Early is a column, on when a team has fewer than 3 games. On 2026 week 1 every team is early. Indiana led that file at 1-0, how they look 1,827.4. On week 10 the flag is off for all 138 teams. |
-| Heat | Not in the mix. | Do not add a Heat weight. | Heat's weight is 0. Three definitions were tested. Every weight above 0 fit worse than how they look alone on 2019–2022. No Heat number is stored, so the column is empty. |
+The page heading is `NAV.formula`, the same string as the top-bar link.
+
+| Slot | Proposed |
+| --- | --- |
+| Heading | How the formula works |
+| Order | How good they look right now. This sets the order. |
+| Old blend | For comparison, the old blend: 0.80 × how they look + 0.15 × resume + 0.05 × league strength. The board no longer sorts by it. |
+| Scale | The parts are not scaled to 0–100 before weighting. On 2026 week 10, 121 of 138 teams sit in a different place. The average gap is 5.30 places. |
+| Deep-dive name | How they look is the Elo rating in the code. |
+| Step size | 50. A postseason game multiplies it by 0.65, so 32.5. |
+| Margin | The natural log of the margin plus 1. There is no cap. |
+| Home field | 50 in the regular season, 20 in the postseason, 0 on a neutral field. It changes the expectation only. |
+| Upset | A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus. |
+| Matchups | Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1. |
+| Ceiling | No winner’s rating goes above 1,850. The loser still drops the full step. |
+| Opening | The `EARLY_SEASON_NOTE` sentence, word for word. |
+| Fade | max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0. |
+| Heat | Heat is not in the order. It hasn’t passed its test yet. |
 
 ## Words that stay off these surfaces
 
 | Keep off | Why |
 | --- | --- |
-| bet, odds, spread, pick, lock, cover, projection | Removed product direction. |
+| bet, odds, spread, pick, lock, cover, projection, The Drop | Removed product direction. |
 | Jump to the board | The board is the page. |
 | 65%, 27%, 8%, 0.65, 0.27, 0.08 | Stale. PR #155 removes them. This design does not bring them back. |
 | Scaled to 0–100 before weighting | The code does not do that. |
-| Taking heat, for a team that fell | Heat is the weight-0 column. |
-| A made-up Heat value | The why-here-98 fixture is illustrative. It is not this file. |
-| Sign in, post, forum, account | Still proposals. |
+| Heat as a board column or a slider, and a made-up Heat value | Heat is the weight-0 column. The why-here-98 fixture is illustrative. It is not this file. |
+| Sign in, post, forum, account, guest posts | Still proposals. |
+| A share line before `?whatif=` is read | The board does not read that parameter yet. |
 | Elo, on the board and the team case | Deep dive only, one sentence on the formula page. |
 
 ## Gold-band legend, before a committee column

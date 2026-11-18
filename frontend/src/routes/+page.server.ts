@@ -21,7 +21,7 @@ export const load: PageServerLoad = async () => {
 			? {
 					year: weekData.year,
 					week: weekData.week,
-					teams: weekData.teams.slice(0, 25),
+					teams: weekData.teams,
 					teamCount: weekData.teams.length,
 				}
 			: null,

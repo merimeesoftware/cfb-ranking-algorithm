@@ -14,7 +14,12 @@ export async function launchChrome() {
     channel: 'chrome',
     headless: true,
     chromiumSandbox: true,
-    args: ['--disable-dev-shm-usage', '--disable-background-networking', '--no-first-run'],
+    args: [
+      '--disable-dev-shm-usage',
+      '--disable-background-networking',
+      '--no-first-run',
+      '--font-render-hinting=none',
+    ],
   });
   const version = browser.version();
   assertChromeMajor(version);
