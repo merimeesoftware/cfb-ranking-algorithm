@@ -1,6 +1,6 @@
 # ADR 0002: The board is ordered by Elo
 
-- **Status:** Proposed with this change. Heat weight stays 0. Issue #96 stays open.
+- **Status:** Proposed with this change. Heat weight stays 0. Issue #96 stays open. Decision 4 is superseded by [ADR 0003](0003-earned-start-and-g5-weight.md). The text below stays as written.
 - **Cites:** [ADR 0001](0001-product-direction-2026-10-18.md) (2026-10-18). Decision D-20261018-198 asked for Elo plus Heat, and for Heat to stay at weight 0 when it misses its gate. D-20261019-335 makes 2025 the holdout. 2024 is a mid-gate check, not that holdout.
 - **Algo label:** `v5.5` is the cache key for a computed week and the stamp on the committed 2024 and 2026 week boards. It is not a weight. Those boards were `v5.3`, built with the 1.18 upset step, until this precompute rewrote them. A stored week keeps the stamp in its file. `v5.4` still carried the 1.18 upset step. Committed prior files stay `v5.3`.
 

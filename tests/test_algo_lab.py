@@ -108,15 +108,14 @@ class TestRunner:
         assert len(games_through_week(games, 1)) == 2
         assert len(games_through_week(games, 3)) == 6
 
-    def test_preseason_uses_priors(self):
-        priors = {'Alpha': 1700.0, 'Delta': 1100.0}
+    def test_preseason_uses_offsets(self):
         meta = {
             'Alpha': {'conference': 'SEC', 'conference_type': 'Power 4'},
             'Delta': {'conference': 'SEC', 'conference_type': 'Power 4'},
         }
         ratings = preseason_ratings(
-            config={'prior_strength': 1.0},
-            priors=priors,
+            config={'prior_offset_strength': 1.0, 'prior_offset_cap': 10000.0},
+            start_offsets={'Alpha': 200.0, 'Delta': -400.0},
             team_meta=meta,
         )
         assert ratings['Alpha'] == pytest.approx(1700.0)
@@ -171,11 +170,11 @@ class TestReferenceRanks:
         from ranking_algorithm import TeamQualityRanker
 
         game = _game(1, 'Alpha', 'Delta', 35, 7)
-        live = TeamQualityRanker({'use_reference_ranks': True, 'prior_strength': 0.0})
+        live = TeamQualityRanker({'use_reference_ranks': True, 'prior_offset_strength': 0.0})
         live.update_quality_scores(game)
         live_alpha = live.team_stats['Alpha']['quality_score']
 
-        ref = TeamQualityRanker({'use_reference_ranks': True, 'prior_strength': 0.0})
+        ref = TeamQualityRanker({'use_reference_ranks': True, 'prior_offset_strength': 0.0})
         # Pretend prior iteration already knows Alpha is elite and Delta is weak
         ref.update_quality_scores(
             game,
@@ -189,9 +188,9 @@ class TestReferenceRanks:
         from ranking_algorithm import TeamQualityRanker
 
         game = _game(1, 'Alpha', 'Delta', 35, 7)
-        a = TeamQualityRanker({'use_reference_ranks': False, 'prior_strength': 0.0})
+        a = TeamQualityRanker({'use_reference_ranks': False, 'prior_offset_strength': 0.0})
         a.update_quality_scores(game)
-        b = TeamQualityRanker({'use_reference_ranks': False, 'prior_strength': 0.0})
+        b = TeamQualityRanker({'use_reference_ranks': False, 'prior_offset_strength': 0.0})
         b.update_quality_scores(game, reference_ranks={'Alpha': 1800.0, 'Delta': 1000.0})
         assert a.team_stats['Alpha']['quality_score'] == pytest.approx(
             b.team_stats['Alpha']['quality_score']

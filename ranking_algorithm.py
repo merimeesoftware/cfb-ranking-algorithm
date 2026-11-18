@@ -127,6 +127,89 @@ def soft_slate_flag(team: Dict[str, Any]) -> bool:
     return share >= SOFT_SLATE_MIN_SOFT_WIN_SHARE
 
 
+FBS_TIERS = ('Power 4', 'Group of 5')
+# Display ranks for résumé columns. FCS does not take an FBS place.
+FBS_RANK_TYPES = ('Power 4', 'Group of 5', 'FBS Independents')
+
+
+def apply_start_offset(tier_initial: float, offset: float, strength: float, cap: float) -> float:
+    """Tier start plus a clamped share of the history offset. No week argument."""
+    applied = float(strength) * float(offset)
+    limit = abs(float(cap))
+    if applied > limit:
+        applied = limit
+    elif applied < -limit:
+        applied = -limit
+    return float(tier_initial) + applied
+
+
+def season_tier_offsets(scores: Dict[str, float], tiers: Dict[str, str]) -> Dict[str, float]:
+    """Offset is FRS minus the mean FRS of that team's tier. FBS teams only."""
+    buckets: Dict[str, List[tuple]] = defaultdict(list)
+    for team, score in scores.items():
+        tier = tiers.get(team)
+        if tier not in FBS_TIERS or not isinstance(score, (int, float)) or isinstance(score, bool):
+            continue
+        buckets[tier].append((team, float(score)))
+    offsets: Dict[str, float] = {}
+    for rows in buckets.values():
+        mean = sum(score for _, score in rows) / len(rows)
+        for team, score in rows:
+            offsets[team] = score - mean
+    return offsets
+
+
+def combine_season_offsets(season_offsets: List[Dict[str, float]], weights) -> Dict[str, float]:
+    """0.7/0.3 blend, renormalized over the seasons that team actually has."""
+    names = set()
+    for offsets in season_offsets:
+        names.update(offsets)
+    combined: Dict[str, float] = {}
+    for name in names:
+        numerator = 0.0
+        denominator = 0.0
+        for index, offsets in enumerate(season_offsets):
+            if index >= len(weights):
+                break
+            if name in offsets:
+                numerator += float(weights[index]) * offsets[name]
+                denominator += float(weights[index])
+        if denominator > 0.0:
+            combined[name] = numerator / denominator
+    return combined
+
+
+def earned_start_offsets(seasons: List[Dict[str, Any]], weights) -> Dict[str, float]:
+    """Newest season first.
+
+    A season is ``{'year', 'scores'}`` (tier from that season's membership map)
+    or ``{'scores', 'tiers'}`` (explicit tiers, for fixtures). A team that was
+    not FBS that season is absent, not a zero. No FBS history means no key.
+    """
+    from conference_membership import load_membership
+
+    membership = None
+    per_season = []
+    for season in seasons:
+        scores = season.get('scores') or {}
+        if 'tiers' in season:
+            tiers = season['tiers']
+        else:
+            if membership is None:
+                membership = load_membership()
+            year = int(season['year'])
+            tiers = {}
+            for team in scores:
+                conference = membership.conference_for(team, year)
+                if conference is None:
+                    continue
+                tier = membership.tier_for(conference, year, team=team)
+                if tier in FBS_TIERS:
+                    tiers[team] = tier
+        per_season.append(season_tier_offsets(scores, tiers))
+    return combine_season_offsets(per_season, weights)
+
+
 def ordering_score(team: Dict[str, Any]) -> float:
     """Published sort key: Elo only. Record and momentum are not in it."""
     try:
@@ -187,9 +270,14 @@ class TeamQualityRanker:
             'decisions': [],
         }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None, priors: Optional[Dict[str, float]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, priors: Optional[Dict[str, float]] = None,
+                 start_offsets: Optional[Dict[str, float]] = None):
         self.config = config or {}
-        self.priors = priors or {}
+        # `priors` is the start-offset map. Raw FRS blends are not accepted here.
+        if start_offsets is None:
+            start_offsets = priors or {}
+        self.start_offsets = start_offsets
+        self.priors = self.start_offsets
         
         # Configuration parameters with defaults (Elo Scale)
         self.power_conf_initial = self.config.get('power_conf_initial', 1500.0)
@@ -200,10 +288,10 @@ class TeamQualityRanker:
         self.conference_weight = self.config.get('conference_weight', 0.05)   # V5.3: 5% CQ
         self.record_weight = self.config.get('record_weight', 0.15)           # V5.3: 15% Resume
         self.team_quality_weight = self.config.get('team_quality_weight', 0.80) # V5.3: 80% TQ
-        
-        # V4.0: Configurable prior strength (0.0 = pure tier, 1.0 = full historical)
-        # Default 0.15 means 85% tier initial + 15% prior (reduced legacy bias)
-        self.prior_strength = self.config.get('prior_strength', 0.15)
+
+        # Held all season. Not a week schedule. Issue #202 C.
+        self.prior_offset_strength = float(self._config_value('prior_offset_strength'))
+        self.prior_offset_cap = float(self._config_value('prior_offset_cap'))
         
         # V5.3: Number of iterative solver passes (reduced from 4 to 2 for efficiency)
         self.num_iterations = self.config.get('num_iterations', 2)
@@ -300,12 +388,20 @@ class TeamQualityRanker:
         """Return a mapping of team names to conferences for visualization compatibility."""
         return {team: data['conference'] for team, data in self.team_stats.items() if data['conference']}
 
+    def _starting_elo(self, team_name: str, tier_initial: float) -> float:
+        offset = float(self.start_offsets.get(team_name, 0.0))
+        return apply_start_offset(
+            tier_initial,
+            offset,
+            self.prior_offset_strength,
+            self.prior_offset_cap,
+        )
+
     def _initialize_team(self, team_name: str, conference: Optional[str], conference_type: str):
-        """Initialize a team with base score if not already seen.
-        
-        V4.0: Uses configurable prior_strength to blend tier initial with historical prior.
-        Formula: initial = (1 - prior_strength) * tier_initial + prior_strength * historical_prior
-        Default prior_strength=0.15 means 85% fresh start + 15% prior (reduces legacy bias).
+        """Initialize a team at its tier start plus the clamped history offset.
+
+        The offset does not depend on the week. A team with no FBS history
+        has offset 0 and starts at the tier rating.
         """
         if team_name in self.initialized_teams:
             # Update conference info if it was missing (e.g. from FCS game)
@@ -313,21 +409,14 @@ class TeamQualityRanker:
                 self.team_stats[team_name]['conference'] = conference
                 self.team_stats[team_name]['conference_type'] = conference_type
             return
-        
-        # Determine tier-based initial score
+
         tier_initial = self.fcs_initial
         if conference_type == 'Power 4':
             tier_initial = self.power_conf_initial
         elif conference_type == 'Group of 5':
             tier_initial = self.group_five_initial
-        
-        # V4.0: Blend tier initial with historical prior based on prior_strength
-        # prior_strength=0.15 means 85% tier + 15% prior (significantly reduces legacy bias)
-        if team_name in self.priors:
-            historical_prior = self.priors[team_name]
-            initial_score = (1 - self.prior_strength) * tier_initial + self.prior_strength * historical_prior
-        else:
-            initial_score = tier_initial
+
+        initial_score = self._starting_elo(team_name, tier_initial)
             
         self.team_stats[team_name]['quality_score'] = initial_score
         self.team_stats[team_name]['conference'] = conference
@@ -1000,21 +1089,23 @@ class TeamQualityRanker:
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
 
-        # Order by Elo alone. Heat weight is 0. Record quality, the slate
-        # label, momentum, and the early-season flag are columns, not sort keys.
-        team_rankings.sort(key=ordering_score, reverse=True)
-        
-        # Calculate SoS and SoV ranks
-        sos_values = [(t['team_name'], t['sos']) for t in team_rankings]
-        sov_values = [(t['team_name'], t['sov']) for t in team_rankings]
-        
-        # Sort descending (higher is better/harder)
-        sos_values.sort(key=lambda x: x[1], reverse=True)
-        sov_values.sort(key=lambda x: x[1], reverse=True)
-        
-        # Create rank lookups
-        sos_ranks = {team: rank + 1 for rank, (team, _) in enumerate(sos_values)}
-        sov_ranks = {team: rank + 1 for rank, (team, _) in enumerate(sov_values)}
+        # Order by Elo alone. Ties break by team name. Heat weight is 0.
+        team_rankings.sort(key=lambda team: (-ordering_score(team), team.get('team_name') or ''))
+
+        fbs_rows = [
+            team for team in team_rankings
+            if team.get('conference_type') in FBS_RANK_TYPES
+        ]
+
+        def _place(rows: List[Dict[str, Any]], field: str) -> Dict[str, int]:
+            ordered = sorted(
+                rows,
+                key=lambda team: (-float(team.get(field) or 0.0), team.get('team_name') or ''),
+            )
+            return {team['team_name']: index + 1 for index, team in enumerate(ordered)}
+
+        sos_ranks = _place(fbs_rows, 'sos')
+        sov_ranks = _place(fbs_rows, 'sov')
         
         # V5.0: Populate opponent_rank in wins_details and losses_details
         # Create a rank lookup from sorted team_rankings
@@ -1113,37 +1204,31 @@ class TeamQualityRanker:
         return rankings_data
 
     @staticmethod
-    def calculate_priors(history_data: List[Dict[str, Any]]) -> Dict[str, float]:
+    def calculate_priors(history_data: List[Dict[str, Any]], weights=None) -> Dict[str, float]:
+        """Start offsets from prior seasons, newest first.
+
+        Each season is demeaned inside its own tier, then combined with
+        ``weights`` renormalized over the seasons present. This is not a raw
+        FRS blend.
         """
-        Calculate prior scores based on historical data.
-        Expected history_data: List of ranking results (dicts) from previous years,
-        ordered from most recent to oldest.
-        
-        V4.0 Formula: T_prior = 0.70(T_Y-1) + 0.30(T_Y-2)
-        - Dropped Y-3 to reduce legacy drag
-        - These priors are then blended with tier_initial using prior_strength config
-        - Default prior_strength=0.15 means final = 0.85*tier + 0.15*prior
-        - Net effect: ~10.5% Y-1 + ~4.5% Y-2 influence (significantly reduced legacy echo)
-        """
-        priors = defaultdict(float)
-        weights = [0.70, 0.30]  # V4.0: 70% Y-1, 30% Y-2 (slight adjustment from 0.67/0.33)
-        
-        for i, year_data in enumerate(history_data):
-            if i >= len(weights):
-                break
-            
-            weight = weights[i]
-            # year_data is the result of calculate_final_rankings()
-            # It contains 'rankings' dict mapping team names to data
+        if weights is None:
+            from ranking_service import DEFAULT_CONFIG
+            weights = tuple(DEFAULT_CONFIG['prior_offset_weights'])
+        seasons = []
+        for year_data in history_data:
             rankings = year_data.get('rankings', {})
-            
+            scores: Dict[str, float] = {}
+            tiers: Dict[str, str] = {}
             for team, data in rankings.items():
-                # Use final_ranking_score (Elo scale) to maintain consistency
-                # Do NOT use normalized_score as it would reset teams to ~50-100 range
-                score = data.get('final_ranking_score', 1200.0)
-                priors[team] += score * weight
-                
-        return dict(priors)
+                score = data.get('final_ranking_score', None)
+                if not isinstance(score, (int, float)) or isinstance(score, bool):
+                    continue
+                scores[team] = float(score)
+                tier = data.get('conference_type')
+                if tier in FBS_TIERS:
+                    tiers[team] = tier
+            seasons.append({'scores': scores, 'tiers': tiers})
+        return earned_start_offsets(seasons, weights)
 
 # Legacy wrapper for backward compatibility
 def calculate_rankings(processed_games, initial_scores, alpha, alpha_away_win_home_loss, k_conf_weight):

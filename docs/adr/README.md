@@ -22,3 +22,5 @@ Accepted text stays as written. A change of mind is a new ADR.
 | ADR | Title | Status |
 | --- | --- | --- |
 | [0001](0001-product-direction-2026-10-18.md) | Product direction, 2026-10-18 | Accepted 2026-10-18 |
+| [0002](0002-board-order-elo-heat.md) | The board is ordered by Elo | Proposed; decision 4 superseded by 0003 |
+| [0003](0003-earned-start-and-g5-weight.md) | Earned start and G5 weight | Proposed 2026-11-18 |

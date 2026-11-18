@@ -23,7 +23,7 @@ os.chdir(ROOT)
 
 from api_integration import CFBDApiClient
 from data_processor import CFBDataProcessor
-from ranking_algorithm import TeamQualityRanker
+from ranking_algorithm import TeamQualityRanker, earned_start_offsets
 from ranking_service import DEFAULT_CONFIG
 from algo_lab.predict import predict_game
 from algo_lab.runner import rank_through_week, ratings_from_rankings
@@ -169,7 +169,13 @@ def main(argv=None):
         blend_preds = []
         for year in years:
             games = by_year[year]
-            priors = blend_priors(cold[year - 1], cold[year - 2])
+            offsets = earned_start_offsets(
+                [
+                    {'year': year - 1, 'scores': cold[year - 1]},
+                    {'year': year - 2, 'scores': cold[year - 2]},
+                ],
+                DEFAULT_CONFIG['prior_offset_weights'],
+            )
             weeks = sorted({int(game['week']) for game in games})
             for week in weeks:
                 if week == 1:
@@ -185,10 +191,10 @@ def main(argv=None):
                             'conference_type': game.get('away_conference_type'),
                         }
                     rankings = None
-                    ratings_elo = preseason_ratings(priors=priors, team_meta=meta)
+                    ratings_elo = preseason_ratings(priors=offsets, team_meta=meta)
                     ratings_blend = ratings_elo
                 else:
-                    rankings, _ = ranked(games, week - 1, priors, upset_bonus)
+                    rankings, _ = ranked(games, week - 1, offsets, upset_bonus)
                     ratings_elo = ratings_from_rankings(rankings, field='team_quality_score')
                     ratings_blend = ratings_from_rankings(rankings, field='final_ranking_score')
                 for game in games:

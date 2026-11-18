@@ -6,15 +6,34 @@ from typing import Any, Dict, Optional
 
 from api_integration import CFBDRequestError
 from data_processor import CFBDataProcessor
-from ranking_algorithm import TeamQualityRanker, ordering_score, soft_slate_flag
+from ranking_algorithm import (
+    TeamQualityRanker,
+    earned_start_offsets,
+    ordering_score,
+    soft_slate_flag,
+)
 from cache import get_cache, TTL_RANKINGS, TTL_PRIORS
 from conference_membership import MembershipError, load_membership
 from spend_guards import CFBDOfflineError
 
-ALGO_VERSION = 'v5.5'
-# Committed prior files stay the blend seed (résumé and league included).
-# Reading them under v5.5 would miss the files and try a live recompute.
+ALGO_VERSION = 'v5.6'
+# Committed prior files stay the v5.3 blend seed. Do not regenerate them:
+# a 2026 prior rebuild would read 2025 games. Tier means are computed at run time.
 BLEND_PRIOR_ALGO = 'v5.3'
+
+# Request keys that must not change a board. Ignored by build_config.
+# Public routes reject them. ``*_override`` is rejected the same way.
+LOCKED_FORMULA_KEYS = frozenset({
+    'prior_strength',
+    'prior_offset_strength',
+    'prior_offset_weights',
+    'prior_offset_cap',
+    'mw_p4_p4',
+    'mw_p4_g5',
+    'mw_g5_g5',
+    'mw_fbs_fcs',
+    'mw_fcs_fcs',
+})
 
 DEFAULT_CONFIG = {
     'power_conf_initial': 1500.0,
@@ -26,7 +45,12 @@ DEFAULT_CONFIG = {
     'team_quality_weight': 0.80,
     'conference_weight': 0.05,
     'record_weight': 0.15,
-    'prior_strength': 0.15,
+    # History offset, held all season (issue #202 C). Strength is the
+    # 2019–2022 tune pick from {0.3, 0.4, 0.5, 0.6, 0.7}. Cap is half the
+    # 300-point tier gap. Weights renormalize over seasons that exist.
+    'prior_offset_strength': 0.4,
+    'prior_offset_weights': [0.70, 0.30],
+    'prior_offset_cap': 150.0,
     # Matchup weights. One table. G5-G5 is full weight (issue #202 A).
     'mw_p4_p4': 1.0,
     'mw_p4_g5': 0.8,
@@ -44,7 +68,8 @@ FRS_WEIGHTS = (
     DEFAULT_CONFIG['conference_weight'],
 )
 
-# Fields that affect historical Elo used for priors (not prior_strength blend)
+# Fields that affect the stored-score replay used when a prior file is missing.
+# prior_offset_strength and prior_offset_cap are applied at kickoff, not here.
 _PRIORS_CONFIG_KEYS = (
     'power_conf_initial',
     'group5_initial',
@@ -61,6 +86,7 @@ _PRIORS_CONFIG_KEYS = (
     'mw_g5_g5',
     'mw_fbs_fcs',
     'mw_fcs_fcs',
+    'prior_offset_weights',
 )
 
 
@@ -105,14 +131,17 @@ def rankings_cache_key(year: int, week: Optional[int], request_args) -> str:
         'team_quality_weight': request_args.get('team_quality_weight'),
         'conference_weight': request_args.get('conference_weight'),
         'record_weight': request_args.get('record_weight'),
-        'prior_strength': request_args.get('prior_strength'),
         'algo': ALGO_VERSION,
     }
     return cache._generate_key('rankings_computed', **cache_params)
 
 
 def priors_cache_key(year: int, config: Dict[str, Any]) -> str:
-    """Key priors by season + algo fingerprint (excludes prior_strength)."""
+    """Key offsets by season + algo fingerprint.
+
+    Strength and the cap are applied when a team is initialized, so they
+    are not part of this key. The 0.7/0.3 weights are.
+    """
     cache = get_cache()
     fingerprint = {k: config.get(k, DEFAULT_CONFIG.get(k)) for k in _PRIORS_CONFIG_KEYS}
     fingerprint['algo'] = ALGO_VERSION
@@ -134,14 +163,14 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
         return cached
 
     print(f"Cache MISS: priors for {year}")
-    history_data = []
-    # calculate_priors only weights Y-1 and Y-2 — skip Y-3.
-    # Published priors are end-of-season scores, not CFBD game rows.
+    seasons = []
+    # Y-1 and Y-2 only. Published files stay v5.3. A missing file is replayed
+    # from tier starts (offset 0) so history enters once. Do not write that
+    # replay back over the committed prior files.
     from static_rankings import read_prior_teams
     membership = load_membership()
     for h_year in range(year - 1, year - 3, -1):
         if h_year < membership.first_season:
-            # Explicit: no membership map before coverage, so no history.
             print(f"Priors: skipping {h_year}, before conference membership "
                   f"coverage {membership.first_season}-{membership.last_season} "
                   f"(map {membership.version})")
@@ -149,30 +178,33 @@ def compute_priors(data_processor: CFBDataProcessor, year: int, config: Dict[str
         try:
             stored = read_prior_teams(h_year, algo=BLEND_PRIOR_ALGO, membership=membership.version)
             if stored is not None:
-                history_data.append({
-                    'rankings': {
-                        name: {'final_ranking_score': score}
-                        for name, score in stored.items()
-                    },
-                })
+                seasons.append({'year': h_year, 'scores': stored})
                 continue
             h_games = data_processor.get_games_for_season(h_year, use_week_scoped_fetch=False)
             if h_games:
-                h_ranker = TeamQualityRanker(config)
+                replay_config = dict(config)
+                replay_config['prior_offset_strength'] = 0.0
+                h_ranker = TeamQualityRanker(replay_config)
                 h_games_by_week = data_processor.organize_games_by_week(h_games)
                 for w in sorted(h_games_by_week.keys()):
                     for g in h_games_by_week[w]:
                         h_ranker.update_quality_scores(g)
                 h_results = h_ranker.calculate_final_rankings()
                 h_results = h_ranker.normalize_scores(h_results)
-                history_data.append(h_results)
+                scores = {}
+                for name, data in h_results.get('rankings', {}).items():
+                    score = data.get('final_ranking_score')
+                    if isinstance(score, (int, float)) and not isinstance(score, bool):
+                        scores[name] = float(score)
+                seasons.append({'year': h_year, 'scores': scores})
         except (CFBDRequestError, CFBDOfflineError, MembershipError):
             # MembershipError fails closed (#101): a map gap is not "no history".
             raise
         except Exception as e:
             print(f"Could not process history for {h_year}: {e}")
 
-    priors = TeamQualityRanker.calculate_priors(history_data)
+    weights = config.get('prior_offset_weights', DEFAULT_CONFIG['prior_offset_weights'])
+    priors = earned_start_offsets(seasons, weights)
     cache.set(key, priors, TTL_PRIORS, prefix='priors')
     return priors
 
@@ -213,7 +245,10 @@ def publish_order(rankings_data: Dict[str, Any]) -> Dict[str, Any]:
         for team in teams:
             if isinstance(team, dict):
                 team['ordering_score'] = ordering_score(team)
-        rankings_data['team_rankings'] = sorted(teams, key=ordering_score, reverse=True)
+        rankings_data['team_rankings'] = sorted(
+            teams,
+            key=lambda team: (-ordering_score(team), str(team.get('team_name') or '')),
+        )
     return rankings_data
 
 
@@ -284,12 +319,7 @@ def calculate_rankings_logic(
 
     games_by_week = data_processor.organize_games_by_week(games)
     config = build_config(request_args)
-
-    if request_args.get('prior_strength') is not None:
-        config['prior_strength'] = float(request_args.get('prior_strength'))
-    else:
-        calc_week = week if week is not None else 15
-        config['prior_strength'] = max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
+    # prior_offset_* and mw_* stay on DEFAULT_CONFIG. A request cannot set them.
 
     priors = compute_priors(data_processor, year, config)
     print(f"Calculated priors for {len(priors)} teams.")

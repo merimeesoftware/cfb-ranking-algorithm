@@ -1,12 +1,12 @@
 # CFB Ranking Algorithm - Complete Breakdown (V5)
 
-## Published order (v5.5)
+## Published order (v5.6)
 
-The board is ordered by Elo. `ordering_score` is `team_quality_score`. `HEAT_WEIGHT` is `0.0`, so a later form term cannot move a place. Record and conference quality stay on the row as their own numbers. See `docs/adr/0002-board-order-elo-heat.md`.
+The board is ordered by Elo. `ordering_score` is `team_quality_score`. `HEAT_WEIGHT` is `0.0`, so a later form term cannot move a place. Record and conference quality stay on the row as their own numbers. See `docs/adr/0002-board-order-elo-heat.md` and `docs/adr/0003-earned-start-and-g5-weight.md`.
 
 ### Momentum (display column)
 
-Momentum is the mean of `won - expected` over the last 3 decisions. It is null before 3 decisions. FCS games stay inside that mean. The #96 Heat form is a different column (decay `0.5^(weeks_ago / H)`, shrink `min(1, n/4)`, a 40% single-game cap, FBS-vs-FBS only, margin clipped at 28) and is unbuilt. Momentum does not enter the sort. `ALGO_VERSION` stays `v5.5` while `HEAT_WEIGHT` is 0.
+Momentum is the mean of `won - expected` over the last 3 decisions. It is null before 3 decisions. FCS games stay inside that mean. The #96 Heat form is a different column (decay `0.5^(weeks_ago / H)`, shrink `min(1, n/4)`, a 40% single-game cap, FBS-vs-FBS only, margin clipped at 28) and is unbuilt. Momentum does not enter the sort. `HEAT_WEIGHT` stays 0. `ALGO_VERSION` is `v5.6` because the G5 weight and the held start changed.
 
 ## Master Formula
 
@@ -19,7 +19,7 @@ FRS = (0.80 × TeamQuality) + (0.15 × RecordScore) + (0.05 × ConferenceQuality
 
 ---
 
-## 1. Team Quality (65%) — Elo-Based Rating
+## 1. Team Quality — Elo-Based Rating
 
 The foundation of the ranking system. This component measures **pure team strength** through a zero-sum Elo system that updates after every game.
 
@@ -31,7 +31,7 @@ The foundation of the ranking system. This component measures **pure team streng
 | Group of 5 | 1200 |
 | FCS | 900 |
 
-**Historical Priors:** If multi-year historical data exists, initial ratings use a blended approach (85% fresh start, 15% historical).
+**Starting point:** tier rating plus a held offset. Power 4 starts at 1500, Group of 5 at 1200, FCS at 900. The offset is how far the team's last two FBS seasons sat above or below that season's tier average (weights 0.70 and 0.30, renormalized if a season is missing). It is multiplied by `prior_offset_strength` and clamped to ±150 Elo. It does not fade. A team with no FBS history starts at the tier rating. See `docs/adr/0003-earned-start-and-g5-weight.md`.
 
 ### Elo Update Formula
 
@@ -74,7 +74,7 @@ HFA Values:
 
 ```
 if (loser_Elo - winner_Elo) > 150:
-    Δ ×= 1.18   # Major upset bonus (reduced from 1.25)
+    Δ ×= 1.0   # Upset step removed in v5.5 (was 1.18). It stays off.
 
 if winner is G5 and loser is P4:
     Δ ×= 1.12   # Cross-tier upset bonus (reduced from 1.20)
@@ -92,7 +92,7 @@ Winner Elo is capped at **1850** to prevent runaway outliers.
 
 ---
 
-## 2. Record Score (27%) — Resume / Deserving Component
+## 2. Record Score (15% of the stored blend, not the order)
 
 Rewards **winning record**, **milestones**, and **quality of victories**. This component answers: "Does this team's resume deserve a high ranking?"
 
@@ -127,7 +127,7 @@ Applied after all other RecordScore components:
 
 ---
 
-## 3. Conference Quality (8%) — Contextual League Boost
+## 3. Conference Quality (5% of the stored blend, not the order)
 
 Measures the overall strength of a team's conference.
 

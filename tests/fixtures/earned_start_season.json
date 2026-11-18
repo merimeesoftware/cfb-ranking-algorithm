@@ -1,0 +1,15 @@
+{
+  "note": "Synthetic. No CFBD rows. Strength 0.4, cap 150, offsets Alpha +40, Beta -40, Gamma +80, Delta -80. Week 1 after the production two-pass solve.",
+  "starts": {
+    "Alpha": 1516.0,
+    "Beta": 1484.0,
+    "Gamma": 1232.0,
+    "Delta": 1168.0
+  },
+  "week1_elo": {
+    "Alpha": 1568.0129644863098,
+    "Beta": 1431.9870355136902,
+    "Gamma": 1259.4880310186643,
+    "Delta": 1140.5119689813357
+  }
+}

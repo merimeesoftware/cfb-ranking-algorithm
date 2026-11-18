@@ -37,7 +37,7 @@ function loadWeek(year: 2024 | 2026): WeekRow[] {
 		algo?: string;
 		team_rankings: WeekRow[];
 	};
-	assert.equal(data.algo, 'v5.5');
+	assert.equal(data.algo, 'v5.6');
 	assert.ok(data.team_rankings.length > 25);
 	return data.team_rankings.map((row) => ({ ...row }));
 }
@@ -107,10 +107,10 @@ test('omitted and 100-0-0-0 stay on the official order', () => {
 	}
 });
 
-test('80-15-5-0 matches the stored blend order and 70-30-0-0 matches v5.5', () => {
+test('80-15-5-0 matches the stored blend order and 70-30-0-0 matches v5.6', () => {
 	const expected70 = {
-		2024: ['Oregon', 'Ohio State', 'BYU', 'Miami', 'Indiana'],
-		2026: ['Utah', 'Alabama', 'UCLA', 'Georgia', 'Notre Dame'],
+		2024: ['Ohio State', 'Oregon', 'BYU', 'Georgia', 'Miami'],
+		2026: ['Utah', 'Georgia', 'Alabama', 'Texas', 'Miami'],
 	} as const;
 	for (const year of [2024, 2026] as const) {
 		const rows = official(loadWeek(year));
@@ -149,20 +149,20 @@ test('80-15-5-0 matches the stored blend order and 70-30-0-0 matches v5.5', () =
 	}
 	const week2026 = official(loadWeek(2026));
 	const moved = orderWhatIf(week2026, '70-30-0-0');
-	assert.equal(moved.names.indexOf('Georgia'), 3);
+	assert.equal(moved.names.indexOf('Georgia'), 1);
 	assert.deepEqual(names(official(loadWeek(2024))).slice(0, 5), [
-		'Indiana',
-		'Ohio State',
 		'Oregon',
+		'Ohio State',
 		'Georgia',
+		'SMU',
 		'Notre Dame',
 	]);
 	assert.deepEqual(names(week2026).slice(0, 5), [
 		'Georgia',
 		'Utah',
-		'Alabama',
 		'Notre Dame',
-		'UCLA',
+		'Alabama',
+		'Miami',
 	]);
 });
 

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from ranking_algorithm import HEAT_WEIGHT, ordering_score, soft_slate_flag
-from ranking_service import publish_order
+from ranking_service import ALGO_VERSION, publish_order
 from algo_lab.runner import rank_through_week
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,7 +89,7 @@ def test_ranker_order_matches_elo_and_columns_stay_off_the_key():
     rankings, _ranker = rank_through_week(
         games,
         through_week=3,
-        config={'prior_strength': 0.0},
+        config={'prior_offset_strength': 0.0},
     )
     board = _fbs(rankings)
     names = [team['team_name'] for team in board]
@@ -186,15 +186,14 @@ def test_committed_2024_order_stays_elo_with_momentum_on_the_row():
     for path in _week_boards_2024():
         board = json.loads(path.read_text(encoding='utf-8'))
         assert board['year'] == 2024
-        assert board['algo'] == 'v5.5'
+        assert board['algo'] == ALGO_VERSION
         teams = board['team_rankings']
         names = [team['team_name'] for team in teams]
         by_elo = [
             team['team_name']
             for team in sorted(
                 teams,
-                key=lambda team: team['team_quality_score'],
-                reverse=True,
+                key=lambda team: (-team['team_quality_score'], team['team_name']),
             )
         ]
         by_order = [

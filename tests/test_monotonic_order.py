@@ -30,11 +30,19 @@ def _game(week, home, away, home_score, away_score, home_type='Power 4', away_ty
 
 def _end(games, name, priors=None, strength=0.0):
     week = max(int(game['week']) for game in games)
+    # These tests pass desired Power 4 starting Elos. Offset is that Elo minus 1500.
+    offsets = {}
+    if priors and strength:
+        for team, elo in priors.items():
+            offsets[team] = float(elo) - 1500.0
     rankings, _ranker = rank_through_week(
         games,
         week,
-        config={'prior_strength': strength},
-        priors=priors or {},
+        config={
+            'prior_offset_strength': 1.0 if strength else 0.0,
+            'prior_offset_cap': 10000.0,
+        },
+        start_offsets=offsets,
     )
     teams = rankings['team_rankings']
     scores = [ordering_score(team) for team in teams]
@@ -124,7 +132,7 @@ def test_published_sort_is_elo_when_the_blend_disagrees():
         _game(2, 'Rival', 'Battle', 24, 17, 'Group of 5', 'Group of 5', 'Mid-American', 'American Athletic'),
         _game(3, 'Battle', 'Other', 31, 14, 'Group of 5', 'Group of 5', 'American Athletic', 'Conference USA'),
     ]
-    rankings, _ranker = rank_through_week(games, 3, config={'prior_strength': 0.0})
+    rankings, _ranker = rank_through_week(games, 3, config={'prior_offset_strength': 0.0})
     keep = {'Power 4', 'Group of 5', 'FBS Independents'}
     board = [team for team in rankings['team_rankings'] if team.get('conference_type') in keep]
     elos = [ordering_score(team) for team in board]

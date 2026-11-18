@@ -170,7 +170,7 @@ def test_six_cupcake_wins_set_the_column_and_elo_still_sorts():
     rankings, _ranker = rank_through_week(
         games,
         through_week=6,
-        config={'prior_strength': 0.0},
+        config={'prior_offset_strength': 0.0},
     )
     board = _fbs(rankings)
     names = [team['team_name'] for team in board]

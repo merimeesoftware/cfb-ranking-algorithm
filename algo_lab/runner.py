@@ -23,12 +23,6 @@ def games_in_week(games: List[Dict[str, Any]], week: int) -> List[Dict[str, Any]
     return [g for g in games if int(g['week']) == week]
 
 
-def dynamic_prior_strength(week: Optional[int]) -> float:
-    """Match ranking_service schedule: strong early, ~0 by week 12+."""
-    calc_week = week if week is not None else 15
-    return max(0.0, 0.7 * (12.0 - calc_week) / 11.0)
-
-
 def merge_config(overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     config = DEFAULT_CONFIG.copy()
     if overrides:
@@ -42,27 +36,27 @@ def rank_through_week(
     *,
     config: Optional[Dict[str, Any]] = None,
     priors: Optional[Dict[str, float]] = None,
-    apply_dynamic_priors: bool = True,
+    start_offsets: Optional[Dict[str, float]] = None,
+    ranker_cls=None,
 ) -> Tuple[Dict[str, Any], TeamQualityRanker]:
     """Recompute rankings from scratch using only games with week <= through_week.
 
-    Mirrors ranking_service.calculate_rankings_logic iteration protocol so sandbox
-    scores match production math.
+    Mirrors ranking_service.calculate_rankings_logic. The history offset does
+    not fade with ``through_week``. ``priors`` is that offset map.
     """
     subset = games_through_week(games, through_week)
     by_week = organize_by_week(subset)
     cfg = merge_config(config)
-    if apply_dynamic_priors and 'prior_strength' not in (config or {}):
-        cfg['prior_strength'] = dynamic_prior_strength(through_week)
+    offsets = start_offsets if start_offsets is not None else (priors or {})
+    cls = ranker_cls or TeamQualityRanker
 
-    priors = priors or {}
     reference_ranks = None
     conf_stddevs: Dict[str, float] = {}
-    num_iterations = TeamQualityRanker(cfg, priors).num_iterations
-    ranker = TeamQualityRanker(cfg, priors)
+    num_iterations = cls(cfg, start_offsets=offsets).num_iterations
+    ranker = cls(cfg, start_offsets=offsets)
 
     for i in range(num_iterations):
-        ranker = TeamQualityRanker(cfg, priors)
+        ranker = cls(cfg, start_offsets=offsets)
         if conf_stddevs:
             ranker.set_conference_stddevs(conf_stddevs)
         for week_num in sorted(by_week.keys()):
@@ -100,27 +94,28 @@ def preseason_ratings(
     *,
     config: Optional[Dict[str, Any]] = None,
     priors: Optional[Dict[str, float]] = None,
+    start_offsets: Optional[Dict[str, float]] = None,
     team_meta: Optional[Dict[str, Dict[str, Any]]] = None,
+    ranker_cls=None,
 ) -> Dict[str, float]:
-    """Week-0 ratings: tier initials blended with priors (no games yet).
+    """Week-0 ratings: tier start plus the held history offset. No games yet.
 
     team_meta maps team_name -> {conference, conference_type}.
-    Teams only in priors default to Power-4-like blend via prior alone.
+    A name that is only in the offset map, with no meta, is treated as FCS
+    unless the caller says otherwise. FCS plus a missing offset is the tier start.
     """
     cfg = merge_config(config)
-    # Preseason uses the week-1 prior_strength schedule unless overridden
-    if config is None or 'prior_strength' not in config:
-        cfg['prior_strength'] = dynamic_prior_strength(1)
-    priors = priors or {}
-    ranker = TeamQualityRanker(cfg, priors)
+    offsets = start_offsets if start_offsets is not None else (priors or {})
+    cls = ranker_cls or TeamQualityRanker
+    ranker = cls(cfg, start_offsets=offsets)
     ratings: Dict[str, float] = {}
 
     team_meta = team_meta or {}
-    names = set(priors) | set(team_meta)
+    names = set(offsets) | set(team_meta)
     for name in names:
         meta = team_meta.get(name, {})
         conf = meta.get('conference')
-        conf_type = meta.get('conference_type', 'Power 4' if name in priors else 'FCS')
+        conf_type = meta.get('conference_type', 'FCS')
         ranker._initialize_team(name, conf, conf_type)
         ratings[name] = float(ranker.team_stats[name]['quality_score'])
     return ratings

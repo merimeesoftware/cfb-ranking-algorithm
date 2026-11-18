@@ -112,21 +112,12 @@ class CFBRankingApp:
         # Calculate priors from history
         if history_results:
             priors = TeamQualityRanker.calculate_priors(history_results)
-            logger.info(f"Calculated priors for {len(priors)} teams")
+            logger.info(f"Calculated start offsets for {len(priors)} teams")
         
         # 2. Initialize the ranking algorithm for Current Year
         ranking_config = config or {}
 
-        # V4.3: Dynamic Prior Strength
-        # Formula: 0.2 * (1 - week/15) -> 20% at Week 0, 0% at Week 15
-        if 'prior_strength' not in ranking_config:
-             calc_week = week if week is not None else 15
-             # Ensure week doesn't exceed 15 for calculation to avoid negative priors
-             calc_week = min(calc_week, 15)
-             ranking_config['prior_strength'] = max(0.0, 0.2 * (1.0 - (calc_week / 15.0)))
-             logger.info(f"Using dynamic prior_strength: {ranking_config['prior_strength']:.3f} for week {calc_week}")
-
-        ranker = TeamQualityRanker(config=ranking_config, priors=priors)
+        ranker = TeamQualityRanker(config=ranking_config, start_offsets=priors)
         
         # Fetch all game data
         raw_games = self.data_processor.get_games_for_season(year, through_week=week)
@@ -153,7 +144,7 @@ class CFBRankingApp:
             
             # Reset ranker state for new iteration (keep priors and config)
             # We need to re-initialize the ranker but keep the same config/priors
-            ranker = TeamQualityRanker(config=ranking_config, priors=priors)
+            ranker = TeamQualityRanker(config=ranking_config, start_offsets=priors)
             
             # Process games sequentially by week
             for week_num, weekly_games in sorted(games_by_week.items()):

@@ -81,17 +81,17 @@ test('the second list reorders and the official list, share, and citation do not
 	});
 	assert.deepEqual(names(moved.secondTeams).slice(0, 5), [
 		'Utah',
-		'Alabama',
-		'UCLA',
 		'Georgia',
-		'Notre Dame',
+		'Alabama',
+		'Texas',
+		'Miami',
 	]);
 	assert.deepEqual(moved.shareNames, [
 		'Georgia',
 		'Utah',
-		'Alabama',
 		'Notre Dame',
-		'UCLA',
+		'Alabama',
+		'Miami',
 	]);
 
 	const bad = weekBoardModel({

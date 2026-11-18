@@ -11,7 +11,7 @@ def test_v54_rankings_cache_is_not_read_under_v55():
     import json
     from ranking_service import ALGO_VERSION, get_or_calculate_rankings, rankings_cache_key
 
-    assert ALGO_VERSION == 'v5.5'
+    assert ALGO_VERSION == 'v5.6'
     old_board = {
         'algo': 'v5.4',
         'year': 2024,
@@ -47,13 +47,13 @@ def test_v54_rankings_cache_is_not_read_under_v55():
     assert out is None
 
 
-def test_priors_cache_key_ignores_prior_strength():
+def test_priors_cache_key_ignores_offset_strength():
     from ranking_service import priors_cache_key, DEFAULT_CONFIG
 
     config_a = DEFAULT_CONFIG.copy()
-    config_a['prior_strength'] = 0.7
+    config_a['prior_offset_strength'] = 0.7
     config_b = DEFAULT_CONFIG.copy()
-    config_b['prior_strength'] = 0.0
+    config_b['prior_offset_strength'] = 0.0
 
     assert priors_cache_key(2024, config_a) == priors_cache_key(2024, config_b)
 

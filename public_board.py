@@ -27,6 +27,9 @@ FORMULA_PARAMS = frozenset({
     'conference_weight',
     'record_weight',
     'prior_strength',
+    'prior_offset_strength',
+    'prior_offset_weights',
+    'prior_offset_cap',
     'mw_p4_p4',
     'mw_p4_g5',
     'mw_g5_g5',
@@ -102,7 +105,7 @@ def rejected_param_names(route: str, args: Mapping[str, Any]) -> list:
     allowed = ROUTE_ALLOWED[route]
     names = []
     for key in args.keys():
-        if key in FORMULA_PARAMS or key not in allowed:
+        if key in FORMULA_PARAMS or str(key).endswith('_override') or key not in allowed:
             names.append(str(key))
     return names
 

@@ -116,8 +116,8 @@
 			<dd>No winner’s rating goes above 1,850. The loser still drops the full step.</dd>
 			<dt>Opening</dt>
 			<dd>{EARLY_SEASON_NOTE}</dd>
-			<dt>Fade</dt>
-			<dd>max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0.</dd>
+			<dt>Held start</dt>
+			<dd>The offset is not faded. Week 12 keeps the same head start week 1 had.</dd>
 			<dt>Heat</dt>
 			<dd>Heat is not in the order. It hasn’t passed its test yet.</dd>
 		</dl>
@@ -165,7 +165,7 @@
 			{/if}
 			<p class="note">Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board.</p>
 		</div>
-		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.5.</p>
+		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.6.</p>
 	</section>
 </main>
 
