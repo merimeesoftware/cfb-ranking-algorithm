@@ -27,6 +27,12 @@ DEFAULT_CONFIG = {
     'conference_weight': 0.05,
     'record_weight': 0.15,
     'prior_strength': 0.15,
+    # Matchup weights. One table. G5-G5 is full weight (issue #202 A).
+    'mw_p4_p4': 1.0,
+    'mw_p4_g5': 0.8,
+    'mw_g5_g5': 1.0,
+    'mw_fbs_fcs': 0.2,
+    'mw_fcs_fcs': 0.1,
     # A/B on 2019–2024: reference ranks hurt pooled Brier; keep off by default.
     'use_reference_ranks': False,
 }
@@ -50,6 +56,11 @@ _PRIORS_CONFIG_KEYS = (
     'conference_weight',
     'record_weight',
     'use_reference_ranks',
+    'mw_p4_p4',
+    'mw_p4_g5',
+    'mw_g5_g5',
+    'mw_fbs_fcs',
+    'mw_fcs_fcs',
 )
 
 

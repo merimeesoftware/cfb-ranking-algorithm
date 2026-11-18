@@ -52,7 +52,7 @@ Loser:   New_Elo = Current_Elo - Δ
 | **Expected Score** | `1 / (1 + 10^((R_opp_eff - R_team_eff) / 400))` | Standard logistic Elo formula with HFA adjustment. |
 | **Actual Score** | 1.0 | Win = 1.0, Loss = 0.0. |
 | **Margin of Victory (MoV)** | `log(score_diff + 1)` | Logarithmic scaling prevents exploitation of blowout wins. |
-| **Matchup Weight** | Varies | Tier-based damping (P4 vs P4 = 1.0, G5 vs G5 = 0.65). |
+| **Matchup Weight** | Varies | Tier table in `DEFAULT_CONFIG` (P4 vs P4 = 1.0, P4 vs G5 = 0.8, G5 vs G5 = 1.0, FBS vs FCS = 0.2, FCS vs FCS = 0.1). |
 
 ### Home-Field Advantage (HFA)
 

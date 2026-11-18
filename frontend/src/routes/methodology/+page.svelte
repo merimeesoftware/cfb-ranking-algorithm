@@ -111,7 +111,7 @@
 			<dt>Upset</dt>
 			<dd>A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus.</dd>
 			<dt>Who plays whom</dt>
-			<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
+			<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 1.0. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
 			<dt>Ceiling</dt>
 			<dd>No winner’s rating goes above 1,850. The loser still drops the full step.</dd>
 			<dt>Opening</dt>
