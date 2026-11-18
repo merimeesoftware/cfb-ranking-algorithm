@@ -8,6 +8,9 @@ export const RATING_TOOLTIP = 'How good they look right now. This sets the order
 /** Week-1 prior. Curly apostrophes are part of the locked sentence. */
 export const EARLY_SEASON_NOTE =
 	'In week 1, 70% of a team’s starting rating comes from last season’s final rating (bowl games included) and the season before, weighted 70/30. The other 30% comes from its conference tier. A team with no rating from last season starts from its tier alone. The head start shrinks each week and is gone by week 12.';
+/** Dated method change. Phil locks the words. */
+export const METHOD_CHANGE_NOTE =
+	'On Nov. 18, 2026, the stored 2024 and 2026 boards were recomputed because the Group of 5 vs Group of 5 weight went from 0.65 to 1.0. Places moved because of that weight, not because new games were added. On 2024 week 15, Boise State moved from No. 41 to No. 26. On 2026 week 10, Boise State moved from No. 44 to No. 34. There are no 2025 boards on the site. The 2024 and 2025 final ratings that give 2026 its head start were not recomputed.';
 
 /**
  * Soft-slate copy slots. Phil locks the words. Dean signs before any page

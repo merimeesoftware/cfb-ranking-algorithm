@@ -201,9 +201,12 @@ def test_sealed_path_is_refused_when_year_is_not_2025(tmp_path):
 
 
 def test_manifest_and_board_stamp_ignore_committee_files(tmp_path):
+    from ranking_service import ALGO_VERSION
     week = tmp_path / '2024'
     week.mkdir()
-    (week / 'week-1.json').write_text('{"algo": "v5.5"}', encoding='utf-8')
+    (week / 'week-1.json').write_text(
+        json.dumps({'algo': ALGO_VERSION}), encoding='utf-8',
+    )
     committee = tmp_path / 'committee'
     committee.mkdir()
     (committee / '2024.json').write_text(VALID.read_text(encoding='utf-8'), encoding='utf-8')

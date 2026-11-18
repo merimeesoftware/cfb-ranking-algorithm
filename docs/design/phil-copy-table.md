@@ -101,7 +101,7 @@ The page heading is `NAV.formula`, the same string as the top-bar link.
 | Margin | The natural log of the margin plus 1. There is no cap. |
 | Home field | 50 in the regular season, 20 in the postseason, 0 on a neutral field. It changes the expectation only. |
 | Upset | A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus. |
-| Matchups | Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1. |
+| Matchups | Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 1.0. FBS vs FCS is 0.2. Anything else is 0.1. |
 | Ceiling | No winner’s rating goes above 1,850. The loser still drops the full step. |
 | Opening | The `EARLY_SEASON_NOTE` sentence, word for word. |
 | Fade | max(0, 0.7 × (12 − week) / 11). Week 1 keeps 0.7. Week 10 keeps 0.127. Week 12 keeps 0. |

@@ -11,7 +11,7 @@ def test_v54_rankings_cache_is_not_read_under_v55():
     import json
     from ranking_service import ALGO_VERSION, get_or_calculate_rankings, rankings_cache_key
 
-    assert ALGO_VERSION == 'v5.5'
+    assert ALGO_VERSION == 'v5.6'
     old_board = {
         'algo': 'v5.4',
         'year': 2024,

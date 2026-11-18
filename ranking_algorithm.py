@@ -250,6 +250,11 @@ class TeamQualityRanker:
         
         # V5.3: Winstreak bonus REMOVED - G5 teams compete on equal footing
         # (previously: winstreak_bonus=150 for G5 teams with ≤1 loss and ≥7 conf wins)
+        self.mw_p4_p4 = float(self._config_value('mw_p4_p4'))
+        self.mw_p4_g5 = float(self._config_value('mw_p4_g5'))
+        self.mw_g5_g5 = float(self._config_value('mw_g5_g5'))
+        self.mw_fbs_fcs = float(self._config_value('mw_fbs_fcs'))
+        self.mw_fcs_fcs = float(self._config_value('mw_fcs_fcs'))
         
         # V5.3: Quality Loss / Bad Loss configuration
         self.quality_loss_mult = self.config.get('quality_loss_mult', 0.10)  # Conservative to avoid V4 imbalance
@@ -267,6 +272,28 @@ class TeamQualityRanker:
         
         # V5.3: Conference StdDevs for chaos tax (populated by previous iteration)
         self.conference_stddevs: Dict[str, float] = {}
+
+    def _config_value(self, key: str) -> Any:
+        """One source for formula constants: DEFAULT_CONFIG, unless this run set the key."""
+        if key in self.config and self.config[key] is not None:
+            return self.config[key]
+        from ranking_service import DEFAULT_CONFIG
+        return DEFAULT_CONFIG[key]
+
+    def _matchup_weight(self, winner_type: str, loser_type: str) -> float:
+        """Tier weight from the config table. No inline literals."""
+        fbs = ('Power 4', 'Group of 5')
+        if winner_type == 'Power 4' and loser_type == 'Power 4':
+            return self.mw_p4_p4
+        if {winner_type, loser_type} == {'Power 4', 'Group of 5'}:
+            return self.mw_p4_g5
+        if winner_type == 'Group of 5' and loser_type == 'Group of 5':
+            return self.mw_g5_g5
+        if (winner_type in fbs and loser_type == 'FCS') or (
+            loser_type in fbs and winner_type == 'FCS'
+        ):
+            return self.mw_fbs_fcs
+        return self.mw_fcs_fcs
 
     @property
     def team_conferences(self) -> Dict[str, str]:
@@ -368,23 +395,8 @@ class TeamQualityRanker:
         winner_conf_type = self.team_stats[winner]['conference_type']
         loser_conf_type = self.team_stats[loser]['conference_type']
 
-        # Calculate Matchup Weight (K-factor scaling based on division)
-        # This prevents lower division teams from inflating their scores in closed pools
-        matchup_weight = 1.0
-        
-        if winner_conf_type == 'Power 4' and loser_conf_type == 'Power 4':
-            matchup_weight = 1.0
-        elif (winner_conf_type == 'Power 4' and loser_conf_type == 'Group of 5') or \
-             (winner_conf_type == 'Group of 5' and loser_conf_type == 'Power 4'):
-            matchup_weight = 0.8
-        elif winner_conf_type == 'Group of 5' and loser_conf_type == 'Group of 5':
-            matchup_weight = 0.65  # V4.0: Reduced damping (was 0.5) to allow quality G5 teams to build Elo
-        elif (winner_conf_type in ['Power 4', 'Group of 5'] and loser_conf_type == 'FCS') or \
-             (winner_conf_type == 'FCS' and loser_conf_type in ['Power 4', 'Group of 5']):
-            matchup_weight = 0.2
-        else:
-            # FCS vs FCS (or lower) - drastically reduce point exchange
-            matchup_weight = 0.1
+        # Tier weight from DEFAULT_CONFIG. G5-G5 matches P4-P4 (issue #202 A).
+        matchup_weight = self._matchup_weight(winner_conf_type, loser_conf_type)
 
         # Live ratings (always what we update)
         r_home_live = self.team_stats[home_team]['quality_score']
@@ -988,9 +1000,8 @@ class TeamQualityRanker:
             team_rankings.append(team_entry)
             rankings_dict[team] = team_entry
 
-        # Order by Elo alone. Heat weight is 0. Record quality, the slate
-        # label, momentum, and the early-season flag are columns, not sort keys.
-        team_rankings.sort(key=ordering_score, reverse=True)
+        # Order by Elo alone. Ties break by team name. Heat weight is 0.
+        team_rankings.sort(key=lambda team: (-ordering_score(team), team.get('team_name') or ''))
         
         # Calculate SoS and SoV ranks
         sos_values = [(t['team_name'], t['sos']) for t in team_rankings]

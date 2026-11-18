@@ -151,11 +151,12 @@ def test_postseason_rows_wait_for_week_15(tmp_path):
 
 def test_sidecar_is_not_a_week_board(tmp_path):
     import check_board_stamps as stamps
+    from ranking_service import ALGO_VERSION
 
     week = tmp_path / '2024'
     week.mkdir()
     (week / 'week-1.json').write_text(
-        json.dumps({'year': 2024, 'week': 1, 'algo': 'v5.5', 'team_rankings': []}),
+        json.dumps({'year': 2024, 'week': 1, 'algo': ALGO_VERSION, 'team_rankings': []}),
         encoding='utf-8',
     )
     write_games_sidecar(2024, 1, [_game(week=1)], root=tmp_path)

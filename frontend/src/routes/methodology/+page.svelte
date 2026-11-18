@@ -1,6 +1,6 @@
 <script lang="ts">
 	import BoardMast from '$lib/components/BoardMast.svelte';
-	import { BRAND_NAME, EARLY_SEASON_NOTE, NAV, RATING_NAME, pageTitle } from '$lib/brand';
+	import { BRAND_NAME, EARLY_SEASON_NOTE, METHOD_CHANGE_NOTE, NAV, RATING_NAME, pageTitle } from '$lib/brand';
 
 	export let data: {
 		year: number;
@@ -111,7 +111,7 @@
 			<dt>Upset</dt>
 			<dd>A Group of 5 win over a Power 4 team multiplies the step by 1.12. There is no other upset bonus.</dd>
 			<dt>Who plays whom</dt>
-			<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 0.65. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
+			<dd>Power 4 vs Power 4 is 1.0. Power 4 vs Group of 5 is 0.8. Group of 5 vs Group of 5 is 1.0. FBS vs FCS is 0.2. Anything else is 0.1.</dd>
 			<dt>Ceiling</dt>
 			<dd>No winner’s rating goes above 1,850. The loser still drops the full step.</dd>
 			<dt>Opening</dt>
@@ -165,7 +165,8 @@
 			{/if}
 			<p class="note">Old blend. Weights 80 / 15 / 5 / 0. A comparison, not the board.</p>
 		</div>
-		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.5.</p>
+		<p class="note">Figures from the stored {data.year} weeks. Algo label v5.6.</p>
+		<p class="note">{METHOD_CHANGE_NOTE}</p>
 	</section>
 </main>
 
