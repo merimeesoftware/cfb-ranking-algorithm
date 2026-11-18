@@ -17,6 +17,7 @@ export async function launchChrome() {
     args: [
       '--disable-dev-shm-usage',
       '--disable-background-networking',
+      '--disable-lcd-text',
       '--no-first-run',
       '--font-render-hinting=none',
     ],
